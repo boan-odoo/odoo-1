@@ -25,8 +25,7 @@ import werkzeug.utils
 import werkzeug.wrappers
 import werkzeug.wsgi
 from lxml import etree, html
-from markupsafe import Markup
-from werkzeug.urls import url_encode, url_parse, iri_to_uri
+from werkzeug.urls import URL, url_encode, url_parse, iri_to_uri
 
 import odoo
 import odoo.modules.registry
@@ -808,10 +807,12 @@ class Home(http.Controller):
     @http.route('/web', type='http', auth="none")
     def web_client(self, s_action=None, **kw):
         ensure_db()
+        redirect = kw.get('redirect') or ''
         if not request.session.uid:
-            return request.redirect('/web/login', 303)
-        if kw.get('redirect'):
-            return request.redirect(kw.get('redirect'), 303)
+            redirect = URL('', '', '/web/login', url_encode({'redirect': redirect or None}), '')
+
+        if redirect:
+            return request.redirect(redirect, 303)
 
         request.uid = request.session.uid
         try:
