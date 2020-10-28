@@ -279,7 +279,7 @@ class EventRegistration(models.Model):
             for r in self}
 
     def _message_post_after_hook(self, message, msg_vals):
-        if self.email and not self.partner_id:
+        if msg_vals.get('partner_ids') and self.email and not self.partner_id:
             # we consider that posting a message with a specified recipient (not a follower, a specific one)
             # on a document without customer means that it was created through the chatter using
             # suggested recipients. This heuristic allows to avoid ugly hacks in JS.

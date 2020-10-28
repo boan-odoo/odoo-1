@@ -2079,12 +2079,12 @@ class Task(models.Model):
         return headers
 
     def _message_post_after_hook(self, message, msg_vals):
-        if message.attachment_ids and not self.displayed_image_id:
+        if msg_vals.get('attachment_ids') and not self.displayed_image_id:
             image_attachments = message.attachment_ids.filtered(lambda a: a.mimetype == 'image')
             if image_attachments:
                 self.displayed_image_id = image_attachments[0]
 
-        if self.email_from and not self.partner_id:
+        if msg_vals.get('partner_ids') and self.email_from and not self.partner_id:
             # we consider that posting a message with a specified recipient (not a follower, a specific one)
             # on a document without customer means that it was created through the chatter using
             # suggested recipients. This heuristic allows to avoid ugly hacks in JS.
