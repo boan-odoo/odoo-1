@@ -4568,6 +4568,8 @@ Fields:
         :return: the qualified field name (or expression) to use for ``field``
         """
         if self.env.lang:
+            # for the COALESCE to work properly, the column must be flushed
+            self.flush([field])
             alias = query.left_join(
                 table_alias, 'id', 'ir_translation', 'res_id', field,
                 extra='"{rhs}"."type" = \'model\' AND "{rhs}"."name" = %s AND "{rhs}"."lang" = %s AND "{rhs}"."value" != %s',
