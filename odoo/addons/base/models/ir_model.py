@@ -1352,11 +1352,13 @@ class IrModelSelection(models.Model):
                 if selection.value == vals['value']:
                     continue
                 if selection.field_id.store:
+                    # in order to keep the cache consistent, flush the
+                    # corresponding field, and invalidate it from cache
+                    model = self.env[selection.field_id.model]
+                    fname = selection.field_id.name
+                    model.invalidate_cache([fname])
                     # replace the value by the new one in the field's corresponding column
-                    query = 'UPDATE "{table}" SET "{field}"=%s WHERE "{field}"=%s'.format(
-                        table=self.env[selection.field_id.model]._table,
-                        field=selection.field_id.name,
-                    )
+                    query = f'UPDATE "{model._table}" SET "{fname}"=%s WHERE "{fname}"=%s'
                     self.env.cr.execute(query, [vals['value'], selection.value])
 
         result = super().write(vals)
@@ -1660,6 +1662,7 @@ class IrModelRelation(models.Model):
         """ Reflect the table of a many2many field for the given model, to make
             it possible to delete it later when the module is uninstalled.
         """
+        self.invalidate_cache()
         cr = self._cr
         query = """ SELECT 1 FROM ir_model_relation r, ir_module_module m
                     WHERE r.module=m.id AND r.name=%s AND m.name=%s """
@@ -1674,7 +1677,6 @@ class IrModelRelation(models.Model):
                                 (SELECT id FROM ir_module_module WHERE name=%s),
                                 (SELECT id FROM ir_model WHERE model=%s)) """
             cr.execute(query, (table, self.env.uid, self.env.uid, module, model._name))
-            self.invalidate_cache()
 
 
 class IrModelAccess(models.Model):

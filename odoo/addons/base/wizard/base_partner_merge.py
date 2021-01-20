@@ -111,7 +111,8 @@ class MergePartnerAutomatic(models.TransientModel):
         Partner = self.env['res.partner']
         relations = self._get_fk_on('res_partner')
 
-        self.flush()
+        # this guarantees cache consistency
+        self.invalidate_cache()
 
         for table, column in relations:
             if 'base_partner_merge_' in table:  # ignore two tables
@@ -173,8 +174,6 @@ class MergePartnerAutomatic(models.TransientModel):
                     # keeping record with nonexistent partner_id is useless, better delete it
                     query = 'DELETE FROM "%(table)s" WHERE "%(column)s" IN %%s' % query_dic
                     self._cr.execute(query, (tuple(src_partners.ids),))
-
-        self.invalidate_cache()
 
     @api.model
     def _update_reference_fields(self, src_partners, dst_partner):
