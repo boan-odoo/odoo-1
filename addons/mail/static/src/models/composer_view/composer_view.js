@@ -263,6 +263,12 @@ registerModel({
             }
         },
         /**
+         * @param {KeyboardEvent} ev
+         */
+        onPaste(ev) {
+            this.composer.getLinkPreview(ev.clipboardData.getData('text'));
+        },
+        /**
          * Open the full composer modal.
          */
         async openFullComposer() {

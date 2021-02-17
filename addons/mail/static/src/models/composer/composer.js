@@ -2,7 +2,9 @@
 
 import { registerModel } from '@mail/model/model_core';
 import { attr, many, one } from '@mail/model/model_field';
-import { clear, replace, unlink } from '@mail/model/model_field_command';
+import { clear, insert, replace, unlink } from '@mail/model/model_field_command';
+
+import { urlRegexp } from '@mail/js/utils';
 
 registerModel({
     name: 'Composer',
@@ -117,6 +119,31 @@ registerModel({
                 textInputCursorStart: clear(),
                 textInputSelectionDirection: clear(),
             });
+        },
+        /**
+         * Try to fetch link preview when urls are inserted inside the composer.
+         */
+        getLinkPreview(pastedText) {
+            const urls = pastedText.match(urlRegexp) || false;
+            if (!urls) {
+                return;
+            }
+            // Add attachment for urls that are not already in attachment
+            const existingUrls = this.attachments.map(att => att.url);
+            const filteredUrls = urls.filter(url => !existingUrls.includes(url));
+            for (const url of filteredUrls) {
+                this.performRPClinkPreview(url);
+            }
+        },
+        async performRPClinkPreview(url) {
+            const attachmentData = await this.env.services.rpc({
+                route: '/mail/link_preview',
+                params: { url, channel_id: this.activeThread.id },
+            }, { shadow: true });
+            if (!attachmentData) {
+                return;
+            }
+            this.update({ attachments: insert(attachmentData) });
         },
     },
     fields: {

@@ -27,6 +27,9 @@ registerModel({
             if ('name' in data) {
                 data2.name = data.name;
             }
+            if ('description' in data) {
+                data2.description = data.description;
+            }
             // relation
             if ('res_id' in data && 'res_model' in data) {
                 data2.originThread = insert({
@@ -36,6 +39,9 @@ registerModel({
             }
             if ('originThread' in data) {
                 data2.originThread = data.originThread;
+            }
+            if ('url' in data) {
+                data2.url = data.url;
             }
             return data2;
         },
@@ -173,6 +179,17 @@ registerModel({
          * @private
          * @returns {boolean}
          */
+        _computeIsLinkPreview() {
+            const mimetype = [
+                'application/o-linkpreview-with-thumbnail',
+                'application/o-linkpreview',
+            ];
+            return mimetype.includes(this.mimetype);
+        },
+        /**
+         * @private
+         * @returns {boolean}
+         */
         _computeIsPdf() {
             return this.mimetype === 'application/pdf';
         },
@@ -189,6 +206,7 @@ registerModel({
                 'image/svg+xml',
                 'image/tiff',
                 'image/x-icon',
+                'image/o-linkpreview-image',
             ];
             return imageMimetypes.includes(this.mimetype);
         },
@@ -289,6 +307,7 @@ registerModel({
         defaultSource: attr({
             compute: '_computeDefaultSource',
         }),
+        description: attr(),
         /**
          * States the OWL ref of the "dialog" window.
          */
@@ -318,6 +337,12 @@ registerModel({
          */
         isImage: attr({
             compute: '_computeIsImage',
+        }),
+        /**
+         * Determines if the attachement has link preview informations.
+         */
+        isLinkPreview: attr({
+            compute: '_computeIsLinkPreview',
         }),
         is_main: attr(),
         /**

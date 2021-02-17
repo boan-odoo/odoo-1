@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+import requests
 
-from odoo import models
+from lxml import html
+from odoo import models, api
 from odoo.exceptions import AccessError
 from odoo.http import request
+from odoo.tools import image_process
+
 
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
@@ -49,14 +53,16 @@ class IrAttachment(models.Model):
 
     def _attachment_format(self, commands=False):
         safari = request and request.httprequest.user_agent and request.httprequest.user_agent.browser == 'safari'
-        res_list = []
+        attachments = []
         for attachment in self:
             res = {
                 'checksum': attachment.checksum,
+                'description': attachment.description,
                 'id': attachment.id,
                 'filename': attachment.name,
                 'name': attachment.name,
                 'mimetype': 'application/octet-stream' if safari and attachment.mimetype and 'video' in attachment.mimetype else attachment.mimetype,
+                'url': attachment.url,
             }
             if commands:
                 res['originThread'] = [('insert', {
@@ -68,5 +74,81 @@ class IrAttachment(models.Model):
                     'res_id': attachment.res_id,
                     'res_model': attachment.res_model,
                 })
-            res_list.append(res)
-        return res_list
+            attachments.append(res)
+        return attachments
+
+    @api.model
+    def _get_data_from_url(self, url):
+        """
+        This will create attachment data based on what we can read from the URL.
+        If the URL is an HTML page, this will parse the OpenGraph meta data.
+        If the URL is an image, this will create an image attachment.
+        """
+        try:
+            page = requests.get(url, timeout=1)
+        except requests.exceptions.RequestException:
+            return False
+
+        if page.status_code != requests.codes.ok:
+            return False
+
+        image_mimetype = [
+            'image/bmp',
+            'image/gif',
+            'image/jpeg',
+            'image/png',
+            'image/tiff',
+            'image/x-icon',
+        ]
+        if page.headers['Content-Type'] in image_mimetype:
+            return self._get_data_from_url_image(url)
+        elif 'text/html' in page.headers['Content-Type']:
+            return self._get_data_from_url_html(url, page.content)
+        return False
+
+    def _get_data_from_url_image(self, url):
+        image = self._get_image_from_url(url)
+        data = {
+            'url': url,
+            'name': url,
+            'description': False,
+            'raw': image,
+            'mimetype': 'image/o-linkpreview-image',
+        }
+        return data
+
+    def _get_image_from_url(self, image_url):
+        request_image = False
+        image = False
+        try:
+            request_image = requests.get(image_url, timeout=1)
+        except requests.exceptions.RequestException:
+            request_image = False
+        if request_image and request_image.status_code != requests.codes.ok:
+            return False
+        if (request_image):
+            image = image_process(
+                request_image.content,
+                size=(300, 300),
+                verify_resolution=True
+            )
+        return image
+
+    def _get_data_from_url_html(self, url, content):
+        tree = html.fromstring(content)
+        title = tree.xpath('//meta[@property="og:title"]/@content')
+        if title:
+            image_url = tree.xpath('//meta[@property="og:image"]/@content')
+            image = False
+            if image_url:
+                image = self._get_image_from_url(image_url[0])
+            description = tree.xpath('//meta[@property="og:description"]/@content')
+            data = {
+                'url': url,
+                'name': title[0] if title else url,
+                'raw': image if image else False,
+                'description': description[0] if description else False,
+                'mimetype': 'application/o-linkpreview-with-thumbnail' if image else 'application/o-linkpreview',
+            }
+            return data
+        return False

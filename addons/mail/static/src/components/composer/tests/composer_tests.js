@@ -1914,6 +1914,29 @@ QUnit.test('send button on mail.channel should have "Send" as label', async func
     );
 });
 
+QUnit.test('Composer should ask for a link preview when a URL is pasted', async function(assert) {
+    assert.expect(1);
+
+    this.data['mail.channel'].records.push({
+        id: 20,
+    });
+    const { createComposerComponent } = await this.start();
+    const thread = this.messaging.models['Thread'].findFromIdentifyingData({
+        id: 20,
+        model: 'mail.channel',
+    });
+    await createComposerComponent(thread.composer);
+
+    await afterNextRender(() => {
+        document.querySelector(`.o_ComposerTextInput_textarea`).focus();
+        const ev = new ClipboardEvent('paste', { clipboardData: new DataTransfer() });
+        ev.clipboardData.setData('text', 'my text https://tenor.com/view/gato-gif-18532922');
+        document.querySelector(`.o_ComposerTextInput_textarea`).dispatchEvent(ev);
+    });
+
+    assert.containsOnce(document.body, '.o_AttachmentLinkPreview', 'Composer should have an attachment link preview');
+});
+
 });
 });
 });

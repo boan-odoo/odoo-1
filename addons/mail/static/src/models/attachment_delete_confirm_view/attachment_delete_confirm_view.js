@@ -37,6 +37,9 @@ registerModel({
             if (this.dialogOwner && this.dialogOwner.attachmentImageOwnerAsAttachmentDeleteConfirm) {
                 return replace(this.dialogOwner.attachmentImageOwnerAsAttachmentDeleteConfirm.attachment);
             }
+            if (this.dialogOwner && this.dialogOwner.attachmentLinkPreviewOwnerAsAttachmentDeleteConfirm) {
+                return replace(this.dialogOwner.attachmentLinkPreviewOwnerAsAttachmentDeleteConfirm.attachment);
+            }
             return clear();
         },
         /**

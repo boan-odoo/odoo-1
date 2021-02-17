@@ -9,6 +9,7 @@ registerModel({
     identifyingFields: [[
         'attachmentCardOwnerAsAttachmentDeleteConfirm',
         'attachmentImageOwnerAsAttachmentDeleteConfirm',
+        'attachmentLinkPreviewOwnerAsAttachmentDeleteConfirm',
         'attachmentListOwnerAsAttachmentView',
         'followerOwnerAsSubtypeList',
         'messageActionListOwnerAsDeleteConfirm',
@@ -30,6 +31,9 @@ registerModel({
                 return insertAndReplace();
             }
             if (this.attachmentImageOwnerAsAttachmentDeleteConfirm) {
+                return insertAndReplace();
+            }
+            if (this.attachmentLinkPreviewOwnerAsAttachmentDeleteConfirm) {
                 return insertAndReplace();
             }
             return clear();
@@ -162,6 +166,10 @@ registerModel({
             isCausal: true,
         }),
         attachmentImageOwnerAsAttachmentDeleteConfirm: one('AttachmentImage', {
+            inverse: 'attachmentDeleteConfirmDialog',
+            readonly: true,
+        }),
+        attachmentLinkPreviewOwnerAsAttachmentDeleteConfirm: one('AttachmentLinkPreviewView', {
             inverse: 'attachmentDeleteConfirmDialog',
             readonly: true,
         }),
