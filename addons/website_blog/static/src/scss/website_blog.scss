@@ -66,19 +66,14 @@ $o-wblog-loader-size: 50px;
         background-color: rgba(black, 0.005);
     }
 
-    .o_wblog_read_with_sidebar {
-        max-width: map-get($container-max-widths, md) + $o-wblog-sidebar-width;
-    }
-
     // This option class is assigned to the post's content using the "Customize"
-    // menu. The aim is to be able to write simple articles on the fly,
-    // achieving a good design without being forced to use snippets.
+    // menu. The aim is to be able to write simple articles on the fly.
     .o_wblog_read_text {
         font-size: 18px;
         line-height: 28px;
         font-weight: 300;
 
-        p, ul, ol {
+        ul, ol {
             margin-bottom: 1.55em;
         }
 
@@ -126,6 +121,12 @@ $o-wblog-loader-size: 50px;
         }
         a.oe_mail_expand {
             font-weight: bold;
+        }
+    }
+
+    #o_wblog_post_sidebar {
+        .custom-select {
+            max-width: 240px;
         }
     }
 
