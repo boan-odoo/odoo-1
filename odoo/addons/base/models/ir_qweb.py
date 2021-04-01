@@ -374,17 +374,23 @@ import token
 import tokenize
 import io
 import textwrap
+import werkzeug
+import math
+import fnmatch
 
 from markupsafe import Markup, escape
 from collections.abc import Sized, Mapping
 from itertools import count, chain
 from lxml import etree
 from psycopg2.extensions import TransactionRollbackError
+from dateutil.relativedelta import relativedelta
 
 from odoo import api, models, tools
-from odoo.tools import pycompat, frozendict, SUPPORTED_DEBUGGER
-from odoo.tools.safe_eval import check_values, assert_valid_codeobj, _BUILTINS, to_opcodes, _EXPR_OPCODES, _BLACKLIST
+from odoo.tools import config, safe_eval, pycompat, frozendict, SUPPORTED_DEBUGGER, lazy
+from odoo.tools.safe_eval import assert_valid_codeobj, _BUILTINS, to_opcodes, _EXPR_OPCODES, _BLACKLIST
+from odoo.tools.json import scriptsafe as json_scriptsafe
 from odoo.tools.misc import get_lang
+from odoo.tools.image import image_data_uri
 from odoo.http import request
 from odoo.modules.module import get_resource_path
 from odoo.tools.profiler import QwebTracker
@@ -435,6 +441,28 @@ SPECIAL_DIRECTIVES = {'t-translation', 't-ignore', 't-title'}
 # The slot will be replaced by the `t-call` tag content of the caller.
 T_CALL_SLOT = '0'
 
+
+def keep_query(*keep_params, **additional_params):
+    """
+    Generate a query string keeping the current request querystring's parameters specified
+    in ``keep_params`` and also adds the parameters specified in ``additional_params``.
+
+    Multiple values query string params will be merged into a single one with comma seperated
+    values.
+
+    The ``keep_params`` arguments can use wildcards too, eg:
+
+        keep_query('search', 'shop_*', page=4)
+    """
+    if not keep_params and not additional_params:
+        keep_params = ('*',)
+    params = additional_params.copy()
+    qs_keys = list(request.httprequest.args) if request else []
+    for keep_param in keep_params:
+        for param in fnmatch.filter(qs_keys, keep_param):
+            if param not in additional_params and param in qs_keys:
+                params[param] = request.httprequest.args.getlist(param)
+    return werkzeug.urls.url_encode(params)
 
 def indent_code(code, level):
     """Indent the code to respect the python syntax."""
@@ -518,11 +546,12 @@ class IrQWeb(models.AbstractModel):
         compile_options = dict(self.env.context, dev_mode='qweb' in tools.config['dev_mode'])
         compile_options.update(options)
 
-        if values and T_CALL_SLOT in values:
+        values = self._prepare_values(values or {}, options)
+        if T_CALL_SLOT in values:
             raise ValueError('values[0] should be unset when call the _render method and only set into the template.')
 
         render_template = self._compile(template, compile_options)
-        rendering = render_template(self, values or {})
+        rendering = render_template(self, values)
         result = ''.join(rendering)
 
         return Markup(result)
@@ -618,7 +647,8 @@ class IrQWeb(models.AbstractModel):
         def render_template(self, values):
             try:
                 log = {'last_path_node': None}
-                values = self._prepare_values(values, options)
+                values['xmlid'] = options['ref_xml'] # for retro compatibility
+                values['viewid'] = options['ref'] # for retro compatibility
                 yield from compiled_fn(self, options, values, log)
             except (QWebException, TransactionRollbackError) as e:
                 raise
@@ -729,12 +759,41 @@ class IrQWeb(models.AbstractModel):
         :param values: template values to be used for rendering
         :param options: frozen dict of compilation parameters.
         """
-        check_values(values)
+        safe_eval.check_values(values)
+
         values['true'] = True
         values['false'] = False
-        if 'request' not in values:
+        if not options.get('minimal_qcontext'):
+            values.update(self._prepare_environment_values())
+        elif 'request' not in values:
             values['request'] = request
+
         return values
+
+    def _prepare_environment_values(self):
+        """ Prepare and return the environement context that will sent to the
+        compiled and evaluated function. This environement is added to the
+        send context values.
+        """
+        return dict(
+            user_id=lazy(lambda: self.env["res.users"].browse(self.env.user.id)),
+            res_company=lazy(self.env.company.sudo),
+            env=self.env,
+            keep_query=keep_query,
+            request=request,  # might be unbound if we're not in an httprequest context
+            debug=request.session.debug if request else '',
+            test_mode_enabled=bool(config['test_enable'] or config['test_file']),
+            json=json_scriptsafe,
+            quote_plus=werkzeug.urls.url_quote_plus,
+            time=safe_eval.time,
+            datetime=safe_eval.datetime,
+            relativedelta=relativedelta,
+            to_text=pycompat.to_text,
+            image_data_uri=image_data_uri,
+            # specific 'math' functions to ease rounding in templates and lessen controller marshmalling
+            floor=math.floor,
+            ceil=math.ceil,
+        )
 
     def _prepare_globals(self):
         """ Prepare the global context that will sent to eval the qweb
@@ -2220,6 +2279,13 @@ def render(template_name, values, load, **options):
             super().__init__()
             self.context = {}
 
-    renderer = object.__new__(MockIrQWeb)
-    renderer.env = MockEnv()
-    return renderer._render(template_name, values, load=load, **options)
+        def __call__(self, cr=None, user=None, context=None, su=None):
+            """ Return an mocked environment based and update the sent context.
+                Allow to use `ir_qweb.with_context` with sand boxed qweb.
+            """
+            env = MockEnv()
+            env.context.update(self.context if context is None else context)
+            return env
+
+    renderer = MockIrQWeb(MockEnv(), tuple(), tuple())
+    return renderer._render(template_name, values, load=load, minimal_qcontext=True, **options)

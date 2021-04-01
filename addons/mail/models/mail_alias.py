@@ -267,4 +267,4 @@ Kind Regards,</p>"""
         return template._render({
             'body': body,
             'message': message_dict
-        }, engine='ir.qweb', minimal_qcontext=True)
+        }, minimal_qcontext=True)

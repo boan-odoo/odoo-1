@@ -227,7 +227,9 @@ class Http(models.AbstractModel):
         # If the company of the website is not in the allowed companies of the user, set the main
         # company of the user.
         website_company_id = request.website._get_cached('company_id')
-        if website_company_id in request.env.user.company_ids.ids:
+        if request.env.user.id == request.website._get_cached('user_id'):
+            context['allowed_company_ids'] = [website_company_id]
+        elif website_company_id in request.env.user.company_ids.ids:
             context['allowed_company_ids'] = [website_company_id]
         else:
             context['allowed_company_ids'] = request.env.user.company_id.ids
@@ -390,7 +392,7 @@ class Http(models.AbstractModel):
                         lambda v: line in v.arch
                     )
                     values['view'] = values['view'] and values['view'][0]
-        # Needed to show reset template on translated pages (`_prepare_qcontext` will set it for main lang)
+        # Needed to show reset template on translated pages (`_prepare_environment_values` will set it for main lang)
         values['editable'] = request.uid and request.website.is_publisher()
         return values
 

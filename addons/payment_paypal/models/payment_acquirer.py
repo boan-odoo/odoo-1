@@ -55,7 +55,7 @@ class PaymentAcquirer(models.Model):
             'payment_paypal.mail_template_paypal_invite_user_to_configure', raise_if_not_found=False
         )
         if template:
-            render_template = template._render({'acquirer': self}, engine='ir.qweb')
+            render_template = template._render({'acquirer': self})
             mail_body = self.env['mail.render.mixin']._replace_local_links(render_template)
             mail_values = {
                 'body_html': mail_body,

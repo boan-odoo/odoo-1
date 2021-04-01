@@ -451,7 +451,6 @@ class MailActivity(models.Model):
                     model_description=model_description,
                     access_link=self.env['mail.thread']._notify_get_action_link('view', model=activity.res_model, res_id=activity.res_id),
                 ),
-                engine='ir.qweb',
                 minimal_qcontext=True
             )
             record = self.env[activity.res_model].browse(activity.res_id)

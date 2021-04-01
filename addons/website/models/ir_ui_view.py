@@ -105,14 +105,6 @@ class View(models.Model):
 
             pages = view.page_ids
 
-            # Disable cache of page if we guess some dynamic content (form with csrf, ...)
-            if vals.get('arch'):
-                to_invalidate = pages.filtered(
-                    lambda p: p.cache_time and not p._can_be_cached(vals['arch'])
-                )
-                to_invalidate and _logger.info('Disable cache for page %s', to_invalidate)
-                to_invalidate.cache_time = 0
-
             # No need of COW if the view is already specific
             if view.website_id:
                 super(View, view).write(vals)
@@ -407,7 +399,7 @@ class View(models.Model):
                 return False
         return True
 
-    def _render(self, values=None, engine='ir.qweb', minimal_qcontext=False, options=None):
+    def _render(self, values=None, minimal_qcontext=False, options=None):
         """ Render the template. If website is enabled on request, then extend rendering context with website values. """
         self._handle_visibility(do_raise=True)
         new_context = dict(self._context)
@@ -430,46 +422,7 @@ class View(models.Model):
 
         if self._context != new_context:
             self = self.with_context(new_context)
-        return super(View, self)._render(values, engine=engine, minimal_qcontext=minimal_qcontext, options=options)
-
-    @api.model
-    def _prepare_qcontext(self):
-        """ Returns the qcontext : rendering context with website specific value (required
-            to render website layout template)
-        """
-        qcontext = super(View, self)._prepare_qcontext()
-
-        if request and getattr(request, 'is_frontend', False):
-            Website = self.env['website']
-            editable = request.website.is_publisher()
-            translatable = editable and self._context.get('lang') != request.env['ir.http']._get_default_lang().code
-            editable = not translatable and editable
-
-            cur = Website.get_current_website()
-            if self.env.user.has_group('website.group_website_publisher') and self.env.user.has_group('website.group_multi_website'):
-                qcontext['multi_website_websites_current'] = cur.name
-                qcontext['multi_website_websites'] = [
-                    {'website_id': website.id, 'name': website.name, 'domain': website.domain}
-                    for website in Website.search([]) if website != cur
-                ]
-
-                cur_company = self.env.company
-                qcontext['multi_website_companies_current'] = {'company_id': cur_company.id, 'name': cur_company.name}
-                qcontext['multi_website_companies'] = [
-                    {'company_id': comp.id, 'name': comp.name}
-                    for comp in self.env.user.company_ids if comp != cur_company
-                ]
-
-            qcontext.update(dict(
-                main_object=self,
-                website=request.website,
-                is_view_active=request.website.is_view_active,
-                res_company=request.website.company_id.sudo(),
-                translatable=translatable,
-                editable=editable,
-            ))
-
-        return qcontext
+        return super(View, self)._render(values, minimal_qcontext=minimal_qcontext, options=options)
 
     @api.model
     def get_default_lang_code(self):

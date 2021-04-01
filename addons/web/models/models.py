@@ -226,10 +226,8 @@ class Base(models.AbstractModel):
     def qweb_render_view(self, view_id, domain):
         assert view_id
         return self.env['ir.qweb']._render(
-            view_id, {
-            **self.env['ir.ui.view']._prepare_qcontext(),
-            **self._qweb_prepare_qcontext(view_id, domain),
-        })
+            view_id,
+            self._qweb_prepare_qcontext(view_id, domain))
 
     def _qweb_prepare_qcontext(self, view_id, domain):
         """

@@ -46,7 +46,7 @@ class Page(models.Model):
 
     def _compute_homepage(self):
         for page in self:
-            page.is_homepage = page == self.env['website'].get_current_website().homepage_id
+            page.is_homepage = page.id == self.env['website'].get_current_website()._get_cached('homepage_id')
 
     def _set_homepage(self):
         for page in self:

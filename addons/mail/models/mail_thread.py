@@ -965,7 +965,7 @@ class MailThread(models.AbstractModel):
                 _logger.info('Routing mail from %s to %s with Message-Id %s: direct write to catchall, bounce', email_from, email_to, message_id)
                 body = self.env.ref('mail.mail_bounce_catchall')._render({
                     'message': message,
-                }, engine='ir.qweb')
+                })
                 self._routing_create_bounce_email(email_from, body, message, references=message_id, reply_to=self.env.company.email)
                 return []
 
@@ -1920,7 +1920,7 @@ class MailThread(models.AbstractModel):
             return
         for record in self:
             values['object'] = record
-            rendered_template = views._render(values, engine='ir.qweb', minimal_qcontext=True)
+            rendered_template = views._render(values, minimal_qcontext=True)
             if message_log:
                 return record._message_log(body=rendered_template, **kwargs)
             else:
@@ -2291,7 +2291,7 @@ class MailThread(models.AbstractModel):
             # {actions, button_access, has_button_access, recipients}
 
             if base_template:
-                mail_body = base_template._render(render_values, engine='ir.qweb', minimal_qcontext=True)
+                mail_body = base_template._render(render_values, minimal_qcontext=True)
             else:
                 mail_body = message.body
             mail_body = self.env['mail.render.mixin']._replace_local_links(mail_body)
@@ -2841,7 +2841,7 @@ class MailThread(models.AbstractModel):
                 'model_description': model_description,
                 'access_link': record._notify_get_action_link('view'),
             }
-            assignation_msg = view._render(values, engine='ir.qweb', minimal_qcontext=True)
+            assignation_msg = view._render(values, minimal_qcontext=True)
             assignation_msg = self.env['mail.render.mixin']._replace_local_links(assignation_msg)
             record.message_notify(
                 subject=_('You have been assigned to %s', record.display_name),

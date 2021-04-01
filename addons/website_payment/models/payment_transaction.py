@@ -31,7 +31,7 @@ class PaymentTransaction(models.Model):
                 'is_internal_notification': is_internal_notification,
                 'tx': self,
                 'comment': comment,
-            }, engine='ir.qweb', minimal_qcontext=True)
+            }, minimal_qcontext=True)
             self.env.ref('website_payment.mail_template_donation').send_mail(
                 self.id,
                 email_layout_xmlid="mail.mail_notification_light",

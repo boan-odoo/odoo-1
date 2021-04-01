@@ -9,7 +9,7 @@ from odoo.addons.base.models.assetsbundle import AssetsBundle
 from odoo.addons.http_routing.models.ir_http import url_for
 from odoo.osv import expression
 from odoo.addons.website.models import ir_http
-from odoo.tools import html_escape as escape
+from odoo.tools import lazy
 
 re_background_image = re.compile(r"(background-image\s*:\s*url\(\s*['\"]?\s*)([^)'\"]+)")
 
@@ -46,6 +46,43 @@ class IrQWeb(models.AbstractModel):
         'script': 'src',
         'img':    'src',
     }
+
+    def _prepare_environment_values(self):
+        """ Returns the qcontext : rendering context with website specific value (required
+            to render website layout template)
+        """
+        qcontext = super()._prepare_environment_values()
+
+        if request and getattr(request, 'is_frontend', False):
+            Website = self.env['website']
+            editable = lazy(request.website.is_publisher)
+            translatable = lazy(lambda: editable and self._context.get('lang') != request.env['ir.http']._get_default_lang().code)
+
+            if self.env.user.has_group('website.group_website_publisher') and self.env.user.has_group('website.group_multi_website'):
+                cur = lazy(Website.get_current_website)
+                qcontext['multi_website_websites_current'] = lazy(lambda: cur.name)
+                qcontext['multi_website_websites'] = lazy(lambda: [
+                    {'website_id': website.id, 'name': website.name, 'domain': website.domain}
+                    for website in Website.search([]) if website != cur
+                ])
+
+                cur_company = self.env.company
+                qcontext['multi_website_companies_current'] = lazy(lambda: {'company_id': cur_company.id, 'name': cur_company.name})
+                qcontext['multi_website_companies'] = lazy(lambda: [
+                    {'company_id': comp.id, 'name': comp.name}
+                    for comp in self.env.user.company_ids if comp != cur_company
+                ])
+
+            qcontext.update(
+                main_object=self,
+                website=request.website,
+                is_view_active=request.website.is_view_active,
+                res_company=lazy(request.website.company_id.sudo),
+                translatable=translatable,
+                editable=lazy(lambda: editable and not translatable),
+            )
+
+        return qcontext
 
     def _get_asset_bundle(self, xmlid, files, env=None, css=True, js=True):
         return AssetsBundleMultiWebsite(xmlid, files, env=env)

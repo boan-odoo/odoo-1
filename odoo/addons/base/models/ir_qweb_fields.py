@@ -763,4 +763,4 @@ class QwebView(models.AbstractModel):
             _logger.warning("%s.%s must be a 'ir.ui.view', got %r.", record, field_name, view._name)
             return ''
 
-        return view._render(options.get('values', {}), engine='ir.qweb')
+        return view._render(options.get('values', {}))

@@ -348,6 +348,8 @@ class QwebTracker():
                         directive_info[key] = repr(attrib[key])
             elif directive == 'foreach':
                 directive_info['t-as'] = repr(attrib['t-as'])
+            elif directive == 'groups' and 'groups' in attrib and not directive_info.get('t-groups'):
+                directive_info['t-groups'] = repr(attrib['groups'])
             elif directive == 'att':
                 for key in attrib:
                     if key.startswith('t-att-') or key.startswith('t-attf-'):

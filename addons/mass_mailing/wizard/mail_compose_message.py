@@ -45,7 +45,7 @@ class MailComposeMessage(models.TransientModel):
             for res_id in res_ids:
                 mail_values = res[res_id]
                 if mail_values.get('body_html') and mass_mail_layout:
-                    mail_values['body_html'] = mass_mail_layout._render({'body': mail_values['body_html']}, engine='ir.qweb', minimal_qcontext=True)
+                    mail_values['body_html'] = mass_mail_layout._render({'body': mail_values['body_html']}, minimal_qcontext=True)
 
                 trace_vals = {
                     'model': self.model,

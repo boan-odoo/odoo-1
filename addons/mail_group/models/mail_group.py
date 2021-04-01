@@ -449,7 +449,7 @@ class MailGroup(models.Model):
                     'unsub_url':  f'{base_url}/groups?unsubscribe&group_id={self.id}&token={access_token}&email={email_url_encoded}',
                 }
                 template = self.env.ref('mail_group.mail_group_footer')
-                footer = template._render(template_values, engine='ir.qweb', minimal_qcontext=True)
+                footer = template._render(template_values, minimal_qcontext=True)
                 member_body = tools.append_content_to_html(body, footer, plaintext=False)
 
                 mail_values.append({
@@ -496,7 +496,7 @@ class MailGroup(models.Model):
                 body = template._render({
                     'moderator': moderator,
                     'group': group,
-                    }, engine='ir.qweb', minimal_qcontext=True)
+                    }, minimal_qcontext=True)
                 email_from = moderator.company_id.catchall_formatted or moderator.company_id.email_formatted
                 MailThread.message_notify(
                     partner_ids=moderator.partner_id.ids,

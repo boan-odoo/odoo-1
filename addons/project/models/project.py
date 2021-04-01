@@ -1855,7 +1855,7 @@ class Task(models.Model):
             }
             for user in users:
                 values.update(assignee_name=user.sudo().name)
-                assignation_msg = view._render(values, engine='ir.qweb', minimal_qcontext=True)
+                assignation_msg = view._render(values, minimal_qcontext=True)
                 assignation_msg = self.env['mail.render.mixin']._replace_local_links(assignation_msg)
                 task.message_notify(
                     subject=_('You have been assigned to %s', task.display_name),

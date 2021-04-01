@@ -247,7 +247,7 @@ class TestQWebNS(TransactionCase):
             """ % tempate
         })
 
-        rendering = view1._render(values, engine='ir.qweb')
+        rendering = view1._render(values)
 
         self.assertEqual(etree.fromstring(rendering), etree.fromstring(expected_result % values))
 
@@ -292,7 +292,7 @@ class TestQWebNS(TransactionCase):
             """ % tempate
         })
 
-        rendering = view1._render(values, engine='ir.qweb')
+        rendering = view1._render(values)
 
         self.assertEqual(etree.fromstring(rendering), etree.fromstring(expected_result % values))
 

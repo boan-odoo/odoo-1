@@ -192,7 +192,7 @@ class MailRenderMixin(models.AbstractModel):
             if add_context:
                 template_ctx.update(**add_context)
 
-            html = template._render(template_ctx, engine='ir.qweb', minimal_qcontext=True)
+            html = template._render(template_ctx, minimal_qcontext=True)
             html = self.env['mail.render.mixin']._replace_local_links(html)
         return html
 
@@ -333,7 +333,7 @@ class MailRenderMixin(models.AbstractModel):
         for record in self.env[model].browse(res_ids):
             variables['object'] = record
             try:
-                render_result = view._render(variables, engine='ir.qweb', minimal_qcontext=True, options=options)
+                render_result = view._render(variables, minimal_qcontext=True, options=options)
             except Exception as e:
                 _logger.info("Failed to render template : %s (%d)", template_src, view.id, exc_info=True)
                 raise UserError(_("Failed to render template : %(xml_id)s (%(view_id)d)",

@@ -318,7 +318,7 @@ class MailTemplate(models.Model):
                     # tools
                     'is_html_empty': is_html_empty,
                 }
-                body = template._render(template_ctx, engine='ir.qweb', minimal_qcontext=True)
+                body = template._render(template_ctx, minimal_qcontext=True)
                 values['body_html'] = self.env['mail.render.mixin']._replace_local_links(body)
         mail = self.env['mail.mail'].sudo().create(values)
 
