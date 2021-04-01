@@ -518,8 +518,7 @@ class Web_Editor(http.Controller):
         xmlid = args[0]
         values = len_args > 1 and args[1] or {}
 
-        View = request.env['ir.ui.view']
-        return View.render_public_asset(xmlid, {k: values[k] for k in values if k in trusted_value_keys})
+        return request.env['ir.qweb']._render(xmlid, {k: values[k] for k in values if k in trusted_value_keys})
 
     @http.route('/web_editor/modify_image/<model("ir.attachment"):attachment>', type="json", auth="user", website=True)
     def modify_image(self, attachment, res_model=None, res_id=None, name=None, data=None, original_id=None, mimetype=None):
