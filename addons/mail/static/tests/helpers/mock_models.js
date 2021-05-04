@@ -108,7 +108,6 @@ export class MockModels {
                     email: { type: 'char' },
                     id: { type: 'integer' },
                     is_active: { type: 'boolean' },
-                    is_editable: { type: 'boolean' },
                     name: { type: 'char' },
                     partner_id: { type: 'integer' },
                     res_id: { type: 'many2one_reference' },

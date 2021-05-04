@@ -93,7 +93,6 @@ QUnit.test('hover following button', async function (assert) {
     this.data['mail.followers'].records.push({
         id: 1,
         is_active: true,
-        is_editable: true,
         partner_id: this.data.currentPartnerId,
         res_id: 100,
         res_model: 'res.partner',
@@ -161,7 +160,6 @@ QUnit.test('click on "follow" button', async function (assert) {
     this.data['mail.followers'].records.push({
         id: 1,
         is_active: true,
-        is_editable: true,
         partner_id: this.data.currentPartnerId,
         res_id: 100,
         res_model: 'res.partner',
@@ -215,7 +213,6 @@ QUnit.test('click on "unfollow" button', async function (assert) {
     this.data['mail.followers'].records.push({
         id: 1,
         is_active: true,
-        is_editable: true,
         partner_id: this.data.currentPartnerId,
         res_id: 100,
         res_model: 'res.partner',

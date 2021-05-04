@@ -45,6 +45,7 @@ QUnit.test('base rendering not editable', async function (assert) {
     await this.start();
 
     const thread = this.messaging.models['Thread'].create({
+        hasWriteAccess: false,
         id: 100,
         model: 'res.partner',
     });
@@ -56,7 +57,6 @@ QUnit.test('base rendering not editable', async function (assert) {
         followedThread: link(thread),
         id: 2,
         isActive: true,
-        isEditable: false,
     });
     await this.createFollowerComponent(follower);
     assert.containsOnce(
@@ -91,6 +91,7 @@ QUnit.test('base rendering editable', async function (assert) {
 
     await this.start();
     const thread = this.messaging.models['Thread'].create({
+        hasWriteAccess: true,
         id: 100,
         model: 'res.partner',
     });
@@ -102,7 +103,6 @@ QUnit.test('base rendering editable', async function (assert) {
         followedThread: link(thread),
         id: 2,
         isActive: true,
-        isEditable: true,
     });
     await this.createFollowerComponent(follower);
     assert.containsOnce(
@@ -173,7 +173,6 @@ QUnit.test('click on partner follower details', async function (assert) {
         followedThread: link(thread),
         id: 2,
         isActive: true,
-        isEditable: true,
         partner: insert({
             email: "bla@bla.bla",
             id: this.messaging.currentPartner.id,
@@ -207,7 +206,6 @@ QUnit.test('click on edit follower', async function (assert) {
     this.data['mail.followers'].records.push({
         id: 2,
         is_active: true,
-        is_editable: true,
         partner_id: this.data.currentPartnerId,
         res_id: 100,
         res_model: 'res.partner',
@@ -279,7 +277,6 @@ QUnit.test('edit follower and close subtype dialog', async function (assert) {
         followedThread: link(thread),
         id: 2,
         isActive: true,
-        isEditable: true,
         partner: insert({
             email: "bla@bla.bla",
             id: this.messaging.currentPartner.id,

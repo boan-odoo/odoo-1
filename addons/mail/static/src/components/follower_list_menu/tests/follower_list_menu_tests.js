@@ -27,11 +27,13 @@ QUnit.module('follower_list_menu_tests.js', {
         };
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const res = await start(Object.assign({}, params, {
                 data: this.data,
             }));
+            const { env, widget } = res;
             this.env = env;
             this.widget = widget;
+            return res;
         };
     },
     afterEach() {
@@ -83,6 +85,7 @@ QUnit.test('base rendering editable', async function (assert) {
     const thread = this.messaging.models['Thread'].create({
         id: 100,
         model: 'res.partner',
+        hasWriteAccess: true,
     });
     await this.createFollowerListMenuComponent(thread);
 
@@ -154,7 +157,6 @@ QUnit.test('click on "add followers" button', async function (assert) {
         email: "bla@bla.bla",
         id: 1,
         is_active: true,
-        is_editable: true,
         name: "François Perusse",
         res_id: 100,
         res_model: 'res.partner',
@@ -163,6 +165,7 @@ QUnit.test('click on "add followers" button', async function (assert) {
         env: { bus },
     });
     const thread = this.messaging.models['Thread'].create({
+        hasWriteAccess: true,
         id: 100,
         model: 'res.partner',
     });
@@ -256,7 +259,6 @@ QUnit.test('click on remove follower', async function (assert) {
         followedThread: link(thread),
         id: 2,
         isActive: true,
-        isEditable: true,
         partner: insert({
             email: "bla@bla.bla",
             id: this.messaging.currentPartner.id,
@@ -290,6 +292,163 @@ QUnit.test('click on remove follower', async function (assert) {
         document.body,
         '.o_Follower',
         "should no longer have follower component"
+    );
+});
+
+QUnit.test('Hide "Add follower" and subtypes edition/removal buttons except own user on read only record', async function (assert) {
+    assert.expect(5);
+
+    this.data['res.partner'].records.push({ id: 100, display_name: 'Partner1'});
+    this.data['mail.followers'].records.push(
+        {
+            id: 1,
+            name: "Jean Michang",
+            is_active: true,
+            partner_id: this.data.currentPartnerId,
+            res_id: 100,
+            res_model: 'res.partner',
+        }, {
+            id: 2,
+            name: "Eden Hazard",
+            is_active: true,
+            partner_id: 11,
+            res_id: 100,
+            res_model: 'res.partner',
+        },
+    );
+    const { createChatterContainerComponent } = await this.start({
+        async mockRPC(route, args) {
+            if (route === '/mail/thread/data') {
+                // mimic user with no write access
+                const res = await this._super(...arguments);
+                res['hasWriteAccess'] = false;
+                return res;
+            }
+            return this._super(...arguments);
+        },
+    });
+    await createChatterContainerComponent({
+        threadId: 100,
+        threadModel: 'res.partner',
+    });
+
+    await afterNextRender(() => {
+        document.querySelector('.o_FollowerListMenu_buttonFollowers').click();
+    });
+    assert.containsNone(
+        document.body,
+        '.o_FollowerListMenu_addFollowersButton',
+        "'Add followers' button should not be displayed for a readonly record",
+    );
+    const followersList = document.querySelectorAll('.o_Follower');
+    assert.containsOnce(
+        followersList[0],
+        '.o_Follower_editButton',
+        "should display edit button for a follower related to current user",
+    );
+    assert.containsOnce(
+        followersList[0],
+        '.o_Follower_removeButton',
+        "should display remove button for a follower related to current user",
+    );
+    assert.containsNone(
+        followersList[1],
+        '.o_Follower_editButton',
+        "should not display edit button for other followers on a readonly record",
+    );
+    assert.containsNone(
+        followersList[1],
+        '.o_Follower_removeButton',
+        "should not display remove button for others on a readonly record",
+    );
+});
+
+QUnit.test('Show "Add follower" and subtypes edition/removal buttons on all followers if user has write access', async function (assert) {
+    assert.expect(5);
+
+    this.data['res.partner'].records.push({ id: 100, display_name: 'Partner1'});
+    this.data['mail.followers'].records.push(
+        {
+            id: 1,
+            name: "Jean Michang",
+            is_active: true,
+            partner_id: this.data.currentPartnerId,
+            res_id: 100,
+            res_model: 'res.partner',
+        }, {
+            id: 2,
+            name: "Eden Hazard",
+            is_active: true,
+            partner_id: 11,
+            res_id: 100,
+            res_model: 'res.partner',
+        },
+    );
+    const { createChatterContainerComponent } = await this.start({
+        async mockRPC(route, args) {
+            if (route === '/mail/thread/data') {
+                // mimic user with write access
+                const res = await this._super(...arguments);
+                res['hasWriteAccess'] = true;
+                return res;
+            }
+            return this._super(...arguments);
+        },
+    });
+    await createChatterContainerComponent({
+        threadId: 100,
+        threadModel: 'res.partner',
+    });
+
+    await afterNextRender(() => {
+        document.querySelector('.o_FollowerListMenu_buttonFollowers').click();
+    });
+    assert.containsOnce(
+        document.body,
+        '.o_FollowerListMenu_addFollowersButton',
+        "'Add followers' button should be displayed for the writable record",
+    );
+    const followersList = document.querySelectorAll('.o_Follower');
+    assert.containsOnce(
+        followersList[0],
+        '.o_Follower_editButton',
+        "should display edit button for a follower related to current user",
+    );
+    assert.containsOnce(
+        followersList[0],
+        '.o_Follower_removeButton',
+        "should display remove button for a follower related to current user",
+    );
+    assert.containsOnce(
+        followersList[1],
+        '.o_Follower_editButton',
+        "should display edit button for other followers also on the writable record",
+    );
+    assert.containsOnce(
+        followersList[1],
+        '.o_Follower_removeButton',
+        "should display remove button for other followers also on the writable record",
+    );
+});
+
+QUnit.test('Show "No Followers" dropdown-item if there are no followers and user dose not have write access', async function (assert) {
+    assert.expect(1);
+
+    await this.start();
+    const thread = this.messaging.models['Thread'].create({
+        id: 100,
+        model: 'res.partner',
+        hasWriteAccess: false,
+    });
+
+    await this.createFollowerListMenuComponent(thread);
+    await afterNextRender(() => {
+        document.querySelector('.o_FollowerListMenu_buttonFollowers').click();
+    });
+    assert.containsOnce(
+        document.body,
+        '.o_FollowerListMenu_noFollowers.disabled',
+        "should display 'No Followers' dropdown-item",
     );
 });
 

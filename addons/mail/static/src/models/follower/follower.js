@@ -20,9 +20,6 @@ registerModel({
             if ('is_active' in data) {
                 data2.isActive = data.is_active;
             }
-            if ('is_editable' in data) {
-                data2.isEditable = data.is_editable;
-            }
             if ('partner_id' in data) {
                 if (!data.partner_id) {
                     data2.partner = unlinkAll();
@@ -134,6 +131,13 @@ registerModel({
             }
             this.closeSubtypes();
         },
+        /**
+         * @private
+         * @returns {boolean}
+         */
+        _computeIsEditable() {
+            return this.messaging.currentPartner === this.partner ? true : this.followedThread.hasWriteAccess;
+        },
     },
     fields: {
         followedThread: one('Thread', {
@@ -150,7 +154,11 @@ registerModel({
         isActive: attr({
             default: true,
         }),
+        /**
+         * States whether the follower's subtypes are editable by current user.
+         */
         isEditable: attr({
+            compute: '_computeIsEditable',
             default: false,
         }),
         partner: one('Partner', {
