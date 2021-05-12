@@ -888,6 +888,7 @@ class Task(models.Model):
     _inherit = ['portal.mixin', 'mail.thread.cc', 'mail.activity.mixin', 'rating.mixin']
     _mail_post_access = 'read'
     _order = "priority desc, sequence, id desc"
+    _primary_email = 'email_from'
     _check_company_auto = True
 
     @api.model

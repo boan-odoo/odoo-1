@@ -73,6 +73,7 @@ class MailThread(models.AbstractModel):
     _description = 'Email Thread'
     _mail_flat_thread = True  # flatten the discussion history
     _mail_post_access = 'write'  # access required on the document to post on it
+    _primary_email = None  # Must be set for the models that can be created by alias
     _Attachment = namedtuple('Attachment', ('fname', 'content', 'info'))
 
     message_is_follower = fields.Boolean(
@@ -1005,6 +1006,63 @@ class MailThread(models.AbstractModel):
             (email_from, email_to, message_id)
         )
 
+    def _ignore_incoming_email(self, message, message_dict, routes):
+        """This method returns True is the incoming email should be ignored.
+
+        The goal of this method is to prevent loops which can occur if an auto-replier
+        send email to Odoo.
+
+        It also detects common headers set by the auto-repliers / mailing lists.
+        """
+
+        # Detect if the email has been sent by an auto-replier or by a mailing list
+        for header in ('X-Autoreply', 'X-Autorespond', 'Feedback-ID', 'List-Id', 'List-Unsubscribe'):
+            if header in message:
+                _logger.info('Email sent by an auto-replier (%s), ignoring it.', header)
+                return True
+
+        if 'Auto-Submitted' in message and message['Auto-Submitted'].lower() != 'no':
+            _logger.info('Email sent by an auto-replier (Auto-Submitted), ignoring it.')
+            return True
+
+        if 'Precedence' in message and message['Precedence'].lower() in ('bulk', 'auto_reply', 'list'):
+            _logger.info('Email sent by an auto-replier (Precedence), ignoring it.')
+            return True
+
+        # Detect the email address sent to many emails
+        get_param = self.env['ir.config_parameter'].sudo().get_param
+        INCOMING_LIMIT_PERIOD = int(get_param('mail.incoming.limit.period', 60))
+        INCOMING_LIMIT_ALIAS = int(get_param('mail.incoming.limit.alias', 5))
+
+        create_date_limit = datetime.datetime.now() - datetime.timedelta(minutes=INCOMING_LIMIT_PERIOD)
+
+        for model, thread_id, *__ in routes or []:
+            if thread_id:
+                # Reply to an existing thread
+                continue
+
+            # Creation of a record by an alias
+            model = self.env[model]
+            primary_email = getattr(model, '_primary_email', None)
+            if not primary_email or primary_email not in model._fields:
+                _logger.info('Primary email missing on %s', model._name)
+                continue
+
+            email_from = message_dict.get('email_from')
+            if not email_from:
+                continue
+
+            mail_incoming_messages_count = model.sudo().search_count([
+                ('create_date', '>', create_date_limit),
+                (primary_email, 'ilike', tools.email_normalize(email_from)),
+            ])
+
+            if mail_incoming_messages_count >= INCOMING_LIMIT_ALIAS:
+                _logger.info('This email address created too many <%s>.', model)
+                return True
+
+        return False
+
     @api.model
     def _message_route_process(self, message, message_dict, routes):
         self = self.with_context(attachments_mime_plainxml=True) # import XML attachments as text
@@ -1119,8 +1177,9 @@ class MailThread(models.AbstractModel):
 
         # find possible routes for the message
         routes = self.message_route(message, msg_dict, model, thread_id, custom_values)
-        thread_id = self._message_route_process(message, msg_dict, routes)
-        return thread_id
+        if not self._ignore_incoming_email(message, msg_dict, routes):
+            thread_id = self._message_route_process(message, msg_dict, routes)
+            return thread_id
 
     @api.model
     def message_new(self, msg_dict, custom_values=None):
@@ -1149,6 +1208,10 @@ class MailThread(models.AbstractModel):
         name_field = self._rec_name or 'name'
         if name_field in fields and not data.get('name'):
             data[name_field] = msg_dict.get('subject', '')
+
+        if self._primary_email and self._primary_email in self._fields and msg_dict.get('email_from'):
+            data[self._primary_email] = msg_dict['email_from']
+
         return self.create(data)
 
     def message_update(self, msg_dict, update_vals=None):

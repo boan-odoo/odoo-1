@@ -1263,6 +1263,65 @@ class TestMailgateway(TestMailCommon):
         self.assertEqual(record.name, 'Spammy')
         self.assertEqual(record._name, 'mail.test.gateway')
 
+    # --------------------------------------------------
+    # Emails loop detection
+    # --------------------------------------------------
+
+    @mute_logger('odoo.addons.mail.models.mail_thread', 'odoo.addons.mail.models.mail_mail')
+    def test_email_loop_alias(self):
+        self.env['ir.config_parameter'].sudo().set_param('mail.incoming.limit.period', 30)
+        self.env['ir.config_parameter'].sudo().set_param('mail.incoming.limit.alias', 5)
+
+        alias = self.env['mail.alias'].create({
+            'alias_name': 'test',
+            'alias_user_id': False,
+            'alias_model_id': self.env['ir.model']._get('mail.test.container').id,
+            'alias_contact': 'everyone',
+        })
+
+        for i in range(5):
+            self.format_and_process(
+                MAIL_TEMPLATE,
+                self.email_from,
+                f'{self.alias.alias_name}@{self.alias_domain}',
+                subject=f'Test alias loop {i}',
+                target_model=alias.alias_model_id.model,
+            )
+
+        records = self.env['mail.test.gateway'].search([('name', 'ilike', 'Test alias loop %')])
+        self.assertEqual(len(records), 5, 'Should have created 5 <mail.test.gateway>')
+
+        self.assertEqual(set(records.mapped('email_from')), {self.email_from})
+
+        self.format_and_process(
+            MAIL_TEMPLATE,
+            self.email_from,
+            f'{self.alias.alias_name}@{self.alias_domain}',
+            subject='Test alias loop X',
+            target_model=alias.alias_model_id.model,
+        )
+
+        new_record = self.env['mail.test.gateway'].search([('name', '=', 'Test alias loop X')])
+        self.assertFalse(
+            new_record,
+            msg='The loop should have been detected and the record should not have been created')
+
+        # Same email but different format
+        self.email_from = self.email_from.upper()
+
+        self.format_and_process(
+            MAIL_TEMPLATE,
+            self.email_from,
+            f'{self.alias.alias_name}@{self.alias_domain}',
+            subject='Test alias loop Y',
+            target_model=alias.alias_model_id.model,
+        )
+
+        new_record = self.env['mail.test.gateway'].search([('name', '=', 'Test alias loop Y')])
+        self.assertFalse(
+            new_record,
+            msg='The loop should have been detected and the record should not have been created')
+
 
 class TestMailThreadCC(TestMailCommon):
 
