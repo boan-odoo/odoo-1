@@ -343,6 +343,7 @@ class AccountReconcileModel(models.Model):
                 'tax_repartition_line_id': tax_res['tax_repartition_line_id'],
                 'tax_ids': [(6, 0, tax_res['tax_ids'])],
                 'tax_tag_ids': [(6, 0, tax_res['tag_ids'])],
+                'group_tax_id': tax_res['group'].id if tax_res['group'] else False,
                 'currency_id': False,
                 'reconcile_model_id': self.id,
             })
@@ -356,10 +357,11 @@ class AccountReconcileModel(models.Model):
             })
 
         base_line_dict['tax_tag_ids'] = [(6, 0, res['base_tags'])]
+        base_line_dict['balance_with_taxes'] = res['total_included']
         return new_aml_dicts
 
     def _get_write_off_move_lines_dict(self, st_line, residual_balance, partner_id):
-        ''' Get move.lines dict (to be passed to the create()) corresponding to the reconciliation model's write-off lines.
+        ''' Get move.lines dict corresponding to the reconciliation model's write-off lines.
         :param st_line:             An account.bank.statement.line record.(possibly empty, if performing manual reconciliation)
         :param residual_balance:    The residual balance of the statement line.
         :return: A list of dict representing move.lines to be created corresponding to the write-off lines.
@@ -437,6 +439,16 @@ class AccountReconcileModel(models.Model):
                 if not line.force_tax_included:
                     for tax_line in tax_vals_list:
                         residual_balance -= tax_line['balance']
+
+        return lines_vals_list
+
+    @api.model
+    def _convert_to_amls_create_list(self, lines_vals_list):
+        amls_fields = self.env['account.move.line']._fields
+        for line_vals in lines_vals_list:
+            for field_name in list(line_vals.keys()):
+                if field_name not in amls_fields:
+                    line_vals.pop(field_name, None)
 
         return lines_vals_list
 
@@ -888,7 +900,8 @@ class AccountReconcileModel(models.Model):
                         if not st_line.partner_id and partner:
                             st_line.partner_id = partner
 
-                        st_line.reconcile(lines_vals_list + writeoff_vals_list, allow_partial=True)
+                        amls_vals_list = self._convert_to_amls_create_list(lines_vals_list + writeoff_vals_list,)
+                        st_line.reconcile(amls_vals_list, allow_partial=True)
 
                         rslt['status'] = 'reconciled'
                         rslt['reconciled_lines'] = st_line.line_ids
@@ -1094,7 +1107,8 @@ class AccountReconcileModel(models.Model):
             if not st_line.partner_id and partner:
                 st_line.partner_id = partner
 
-            st_line.reconcile(writeoff_vals_list)
+            amls_vals_list = self._convert_to_amls_create_list(writeoff_vals_list)
+            st_line.reconcile(amls_vals_list)
             rslt['status'] = 'reconciled'
             rslt['reconciled_lines'] = st_line.line_ids
 

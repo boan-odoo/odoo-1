@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import math
+import re
 
 from odoo import api, fields, models, _
 from odoo.tools import float_is_zero
@@ -712,11 +713,18 @@ class AccountBankStatementLine(models.Model):
             amount_currency = amounts[company_currency.id]
             currency_id = company_currency.id
 
+        if counterpart_vals.get('partner_id'):
+            partner_id = counterpart_vals['partner_id']
+        elif move_line and move_line.partner_id:
+            partner_id = move_line.partner_id.id
+        else:
+            partner_id = self.partner_id.id
+
         return {
             **counterpart_vals,
             'name': counterpart_vals.get('name', move_line.name if move_line else ''),
             'move_id': self.move_id.id,
-            'partner_id': self.partner_id.id or (move_line.partner_id.id if move_line else False),
+            'partner_id': partner_id,
             'currency_id': currency_id,
             'account_id': counterpart_vals.get('account_id', move_line.account_id.id if move_line else False),
             'debit': balance if balance > 0.0 else 0.0,
@@ -1065,12 +1073,14 @@ class AccountBankStatementLine(models.Model):
         to_browse_ids = []
         to_process_vals = []
         for vals in lines_vals_list:
+
             # Don't modify the params directly.
             vals = dict(vals)
 
-            if 'id' in vals:
+            to_browse_id = vals.pop('id', None)
+            if to_browse_id:
                 # Existing account.move.line.
-                to_browse_ids.append(vals.pop('id'))
+                to_browse_ids.append(to_browse_id)
                 to_process_vals.append(vals)
                 if any(x in vals for x in ('balance', 'amount_residual', 'amount_residual_currency')):
                     partial_rec_needed = False
@@ -1187,7 +1197,7 @@ class AccountBankStatementLine(models.Model):
         :param to_check:        Mark the current statement line as "to_check" (see field for more details).
         :param allow_partial:   In case of matching a line having an higher amount, allow creating a partial instead
                                 of an open balance on the statement line.
-        '''
+    '''
         self.ensure_one()
         liquidity_lines, suspense_lines, other_lines = self._seek_for_lines()
 
@@ -1248,6 +1258,33 @@ class AccountBankStatementLine(models.Model):
     # -------------------------------------------------------------------------
     # BUSINESS METHODS
     # -------------------------------------------------------------------------
+
+    def _retrieve_partner(self):
+        self.ensure_one()
+
+        if self.partner_id:
+            return self.partner_id
+
+        if self.account_number:
+            account_number_nums = re.sub(r'\W+', '', self.account_number)
+            if account_number_nums:
+                domain = [('sanitized_acc_number', 'ilike', account_number_nums)]
+                for extra_domain in ([('company_id', '=', self.company_id.id)], []):
+                    bank_account = self.env['res.partner.bank'].search(extra_domain + domain, limit=1)
+                    if bank_account:
+                        return bank_account.partner_id
+
+        if self.partner_name:
+            domain = [
+                ('parent_id', '=', False),
+                ('name', 'ilike', self.partner_name),
+            ]
+            for extra_domain in ([('company_id', '=', self.company_id.id)], []):
+                partner = self.env['res.partner'].search(extra_domain + domain, limit=1)
+                if partner:
+                    return partner
+
+        return self.env['res.partner']
 
     def _find_or_create_bank_account(self):
         bank_account = self.env['res.partner.bank'].search([

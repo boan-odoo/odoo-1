@@ -38,7 +38,7 @@ class TestTaxTotals(AccountTestInvoicingCommon):
 
     def assertTaxTotals(self, document, expected_values):
         main_keys_to_ignore = {'formatted_amount_total', 'formatted_amount_untaxed'}
-        group_keys_to_ignore = {'group_key', 'formatted_tax_group_amount', 'formatted_tax_group_base_amount'}
+        group_keys_to_ignore = {'formatted_tax_group_amount', 'formatted_tax_group_base_amount'}
         subtotals_keys_to_ignore = {'formatted_amount'}
 
         to_compare = json.loads(document.tax_totals_json)
