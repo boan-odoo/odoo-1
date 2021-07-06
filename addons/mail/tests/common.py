@@ -42,7 +42,6 @@ class MockEmail(common.BaseCase):
     def mock_mail_gateway(self, mail_unlink_sent=False, sim_error=None):
         build_email_origin = IrMailServer.build_email
         mail_create_origin = MailMail.create
-        mail_unlink_origin = MailMail.unlink
         self.mail_unlink_sent = mail_unlink_sent
         self._init_mail_mock()
 
@@ -75,17 +74,14 @@ class MockEmail(common.BaseCase):
             self._new_mails += res.sudo()
             return res
 
-        def _mail_mail_unlink(model, *args, **kwargs):
-            if self.mail_unlink_sent:
-                return mail_unlink_origin(model, *args, **kwargs)
-            return True
-
         with patch.object(IrMailServer, 'connect', autospec=True, wraps=IrMailServer, side_effect=_ir_mail_server_connect) as ir_mail_server_connect_mock, \
                 patch.object(IrMailServer, 'build_email', autospec=True, wraps=IrMailServer, side_effect=_ir_mail_server_build_email) as ir_mail_server_build_email_mock, \
                 patch.object(IrMailServer, 'send_email', autospec=True, wraps=IrMailServer, side_effect=_ir_mail_server_send_email) as ir_mail_server_send_email_mock, \
-                patch.object(MailMail, 'create', autospec=True, wraps=MailMail, side_effect=_mail_mail_create) as _mail_mail_create_mock, \
-                patch.object(MailMail, 'unlink', autospec=True, wraps=MailMail, side_effect=_mail_mail_unlink) as mail_mail_unlink_mock:
+                patch.object(MailMail, 'create', autospec=True, wraps=MailMail, side_effect=_mail_mail_create) as _mail_mail_create_mock:
             yield
+
+        if mail_unlink_sent:
+            self.env['mail.mail'].sudo()._gc_mail_mail()
 
     def _init_mail_mock(self):
         self._mails = []
