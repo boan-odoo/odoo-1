@@ -719,7 +719,7 @@ class SaleOrder(models.Model):
 
         return self.env['sale.order.line'].browse(invoiceable_line_ids + down_payment_line_ids)
 
-    def _create_invoices(self, grouped=False, final=False, date=None):
+    def _create_invoices(self, grouped=False, final=False):
         """
         Create the invoice associated to the SO.
         :param grouped: if True, invoices are grouped by SO id. If False, invoices are grouped by
@@ -739,8 +739,6 @@ class SaleOrder(models.Model):
         invoice_item_sequence = 0 # Incremental sequencing to keep the lines order on the invoice.
         for order in self:
             order = order.with_company(order.company_id)
-            current_section_vals = None
-            down_payments = order.env['sale.order.line']
 
             invoice_vals = order._prepare_invoice()
             invoiceable_lines = order._get_invoiceable_lines(final)
