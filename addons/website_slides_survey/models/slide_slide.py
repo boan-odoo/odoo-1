@@ -46,6 +46,12 @@ class Slide(models.Model):
         ('check_certification_preview', "CHECK(slide_category != 'certification' OR is_preview = False)", "A slide of type certification cannot be previewed."),
     ]
 
+    def _compute_member_actions(self):
+        slide_survey = self.filtered(lambda slide: slide.slide_type == 'certification')
+        slide_survey.can_be_undone = False
+        slide_survey.can_be_skipped = False
+        super(Slide, self - slide_survey)._compute_member_actions()
+
     @api.depends('slide_category')
     def _compute_is_preview(self):
         for slide in self:

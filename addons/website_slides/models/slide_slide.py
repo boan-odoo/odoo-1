@@ -45,9 +45,15 @@ class SlidePartnerRelation(models.Model):
         return res
 
     def write(self, values):
+        slides_completed_change = None
+        if 'completed' in values:
+            slides_completed_change = self.filtered(lambda spr: spr.completed != values['completed'])
+
         res = super(SlidePartnerRelation, self).write(values)
-        if values.get('completed'):
-            self._set_completed_callback()
+
+        if slides_completed_change:
+            slides_completed_change._set_completed_callback()
+
         return res
 
     def _set_completed_callback(self):
@@ -123,6 +129,8 @@ class Slide(models.Model):
     quiz_third_attempt_reward = fields.Integer("Reward: third attempt", default=5,)
     quiz_fourth_attempt_reward = fields.Integer("Reward: every attempt after the third try", default=2)
     # content
+    can_be_undone = fields.Boolean('Can Be Undone', compute='_compute_member_actions')
+    can_be_skipped = fields.Boolean('Can Be Skipped', compute='_compute_member_actions')
     slide_category = fields.Selection([
         ('infographic', 'Image'),
         ('article', 'Article'),
@@ -248,6 +256,18 @@ class Slide(models.Model):
                     current_category = slide
                 elif slide.category_id != current_category:
                     slide.category_id = current_category.id
+
+    @api.depends('slide_type', 'question_ids', 'channel_id.is_member')
+    @api.depends_context('uid')
+    def _compute_member_actions(self):
+        """Determine if the slide can be marked as (un)completed."""
+        for slide in self:
+            slide.can_be_undone = slide.channel_id.is_member
+            slide.can_be_skipped = (
+                slide.channel_id.is_member
+                and slide.slide_type != 'quiz'
+                and not slide.question_ids
+            )
 
     @api.depends('question_ids')
     def _compute_questions_count(self):
@@ -846,16 +866,48 @@ class Slide(models.Model):
             'vote': 0,
             'completed': True} for new_slide in new_slides])
 
+        self.mapped('channel_id').invalidate_cache(['completed', 'completion'])
+
         return True
 
-    def _action_set_quiz_done(self):
+    def action_set_uncompleted(self):
         if any(not slide.channel_id.is_member for slide in self):
-            raise UserError(_('You cannot mark a slide quiz as completed if you are not among its members.'))
+            raise UserError(_('You cannot mark a slide as uncompleted if you are not among its members.'))
+
+        if any(not slide.can_be_undone for slide in self):
+            raise UserError(_('Those slides can not be undone.'))
+
+        target_partner = self.env.user.partner_id
+
+        # Remove the Karma point gained
+        self._action_set_quiz_done(completed=False)
+
+        self.env['slide.slide.partner'].sudo().search([
+            ('slide_id', 'in', self.ids),
+            ('partner_id', '=', target_partner.id)
+        ]).completed = False
+
+        self.mapped('channel_id').invalidate_cache(['completed', 'completion'])
+
+        return True
+
+    def _action_set_quiz_done(self, completed=True):
+        """Add or remove karma point related to the quiz.
+
+        :param completed: True if the quiz will be marked as completed (karma will be increased)
+        """
+        if any(not slide.channel_id.is_member for slide in self):
+            raise UserError(
+                _('You cannot mark a slide quiz as completed if you are not among its members.') if completed
+                else _('You cannot mark a slide quiz as not completed if you are not among its members.')
+            )
 
         points = 0
         for slide in self:
             user_membership_sudo = slide.user_membership_id.sudo()
-            if not user_membership_sudo or user_membership_sudo.completed or not user_membership_sudo.quiz_attempts_count:
+            if not user_membership_sudo \
+               or user_membership_sudo.completed == completed \
+               or not user_membership_sudo.quiz_attempts_count:
                 continue
 
             gains = [slide.quiz_first_attempt_reward,
@@ -863,6 +915,9 @@ class Slide(models.Model):
                      slide.quiz_third_attempt_reward,
                      slide.quiz_fourth_attempt_reward]
             points += gains[user_membership_sudo.quiz_attempts_count - 1] if user_membership_sudo.quiz_attempts_count <= len(gains) else gains[-1]
+
+        if not completed:
+            points *= -1
 
         return self.env.user.sudo().add_karma(points)
 

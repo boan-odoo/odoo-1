@@ -9,6 +9,7 @@
 
     import session from 'web.session';
     import { Quiz } from '@website_slides/js/slides_course_quiz';
+    import { SlideCoursePage } from '@website_slides/js/slides_course_page';
     import Dialog from 'web.Dialog';
     import '@website_slides/js/slides_course_join';
 
@@ -18,9 +19,15 @@
      * @private
      * @param {Array<Object>} slideList List of dict reprensenting a slide
      * @param {Object} matcher (see https://underscorejs.org/#matcher)
+     * @param {boolean} returnAll: return all slides matching the criteria instead
+     *     of just the first one (we might have 2 slides with the same slide ID,
+     *     because of "isQuiz" set to True / False)
      */
-    var findSlide = function (slideList, matcher) {
-        var slideMatch = _.matcher(matcher);
+    const findSlide = function (slideList, matcher, returnAll) {
+        const slideMatch = _.matcher(matcher);
+        if (returnAll) {
+            return _.filter(slideList, slideMatch);
+        }
         return _.find(slideList, slideMatch);
     };
 
@@ -234,7 +241,7 @@
      */
     var Sidebar = publicWidget.Widget.extend({
         events: {
-            "click .o_wslides_fs_sidebar_list_item": '_onClickTab',
+            'click .o_wslides_fs_sidebar_list_item .o_wslides_fs_slide_name': '_onClickTab',
         },
         init: function (parent, slideList, defaultSlide) {
             var result = this._super.apply(this, arguments);
@@ -278,27 +285,6 @@
                 this.set('slideEntry', this.slideEntries[currentIndex-1]);
             }
         },
-        /**
-         * Greens up the bullet when the slide is completed
-         *
-         * @public
-         * @param {Integer} slideId
-         */
-        setSlideCompleted: function (slideId) {
-            var $elem = this.$('.fa-circle-thin[data-slide-id="'+slideId+'"]');
-            $elem.removeClass('fa-circle-thin').addClass('fa-check text-success o_wslides_slide_completed');
-        },
-        /**
-         * Updates the progressbar whenever a lesson is completed
-         *
-         * @public
-         * @param {*} channelCompletion
-         */
-        updateProgressbar: function (channelCompletion) {
-            var completion = Math.min(100, channelCompletion);
-            this.$('.progress-bar').css('width', completion + "%" );
-            this.$('.o_wslides_progress_percentage').text(completion);
-        },
 
         //--------------------------------------------------------------------------
         // Private
@@ -341,7 +327,7 @@
          */
         _onClickTab: function (ev) {
             ev.stopPropagation();
-            var $elem = $(ev.currentTarget);
+            const $elem = $(ev.currentTarget).parents('.o_wslides_fs_sidebar_list_item');
             if ($elem.data('canAccess') === 'True') {
                 var isQuiz = $elem.data('isQuiz');
                 var slideID = parseInt($elem.data('id'));
@@ -486,16 +472,14 @@
      *
      * This widget is rendered sever side, and attached to the existing DOM.
      */
-    var Fullscreen = publicWidget.Widget.extend({
-        events: {
-            "click .o_wslides_fs_toggle_sidebar": '_onClickToggleSidebar',
-        },
-        custom_events: {
+    var Fullscreen = SlideCoursePage.extend({
+        events: _.extend({}, SlideCoursePage.prototype.events, {
+            'click .o_wslides_fs_toggle_sidebar': '_onClickToggleSidebar',
+        }),
+        custom_events: _.extend({}, SlideCoursePage.prototype.custom_events, {
             'change_slide': '_onChangeSlideRequest',
-            'slide_to_complete': '_onSlideToComplete',
-            'slide_completed': '_onSlideCompleted',
             'slide_go_next': '_onSlideGoToNext',
-        },
+        }),
         /**
         * @override
         * @param {Object} el
@@ -578,12 +562,6 @@
                 return this._fetchHtmlContent();
             }
             return Promise.resolve();
-        },
-        _markAsCompleted: function (slideId, completion) {
-            var slide = findSlide(this.slides, {id: slideId});
-            slide.completed = true;
-            this.sidebar.setSlideCompleted(slide.id);
-            this.sidebar.updateProgressbar(completion);
         },
         /**
          * Extend the slide data list to add informations about rendering method, and other
@@ -686,29 +664,6 @@
             }
             return Promise.resolve();
         },
-        /**
-         * Once the completion conditions are filled,
-         * rpc call to set the the relation between the slide and the user as "completed"
-         *
-         * @private
-         * @param {Integer} slideId: the id of slide to set as completed
-         */
-        _setCompleted: function (slideId){
-            var self = this;
-            var slide = findSlide(this.slides, {id: slideId});
-            if (!slide.completed) {  // no useless RPC call
-                return this._rpc({
-                    route: '/slides/slide/set_completed',
-                    params: {
-                        slide_id: slide.id,
-                    }
-                }).then(function (data){
-                    self._markAsCompleted(slideId, data.channel_completion);
-                    return Promise.resolve();
-                });
-            }
-            return Promise.resolve();
-        },
         //--------------------------------------------------------------------------
         // Handlers
         //--------------------------------------------------------------------------
@@ -737,9 +692,9 @@
                 if (slide._autoSetDone && !session.is_website_user) {  // no useless RPC call
                     if (slide.category === 'document') {
                         // only set the slide as completed after iFrame is loaded to avoid concurrent execution with 'embedUrl' controller
-                        self.el.querySelector('iframe.o_wslides_iframe_viewer').addEventListener('load', () => self._setCompleted(slide.id));
+                        self.el.querySelector('iframe.o_wslides_iframe_viewer').addEventListener('load', () => self._setCompleted(slide));
                     } else {
-                           return self._setCompleted(slide.id);
+                           return self._setCompleted(slide);
                     }
                 }
             });
@@ -760,25 +715,25 @@
             this.shareButton._onChangeSlide(newSlide);
         },
         /**
-         * Triggered when subwidget has mark the slide as done, and the UI need to be adapted.
-         *
-         * @private
+         * After a slide has been marked as completed / uncompleted, update the state
+         * of this widget and reload the slide if needed (e.g. to re-show the questions
+         * of a quiz).
          */
-        _onSlideCompleted: function (ev) {
-            var slide = ev.data.slide;
-            var completion = ev.data.completion;
-            this._markAsCompleted(slide.id, completion);
-        },
-        /**
-         * Triggered when sub widget business is done and that slide
-         * can now be marked as done.
-         *
-         * @private
-         */
-        _onSlideToComplete: function (ev) {
-            if (!session.is_website_user) {  // no useless RPC call
-                var slideId = ev.data.id;
-                this._setCompleted(slideId);
+        _setCompleted: async function (slide, completed = true) {
+            await this._super(...arguments);
+
+            const fsSlides = findSlide(this.slides, {id: slide.id}, true);
+            fsSlides.forEach(slide => slide.completed = completed);
+
+            const currentSlide = this.get('slide');
+            if (currentSlide.id === slide.id) {
+                currentSlide.completed = completed;
+                this.set('slide', currentSlide);
+
+                if ((currentSlide.isQuiz || currentSlide.type === 'quiz') && !completed) {
+                    // Reload the quiz
+                    this._renderSlide();
+                }
             }
         },
         /**

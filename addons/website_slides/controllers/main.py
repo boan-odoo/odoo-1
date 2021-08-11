@@ -69,8 +69,15 @@ class WebsiteSlides(WebsiteProfile):
         # quiz use their specific mechanism to be marked as done
         if slide.slide_category == 'quiz' or slide.question_ids:
             raise werkzeug.exceptions.Forbidden(_("Slide with questions must be marked as done when submitting all good answers "))
-        if slide.website_published and slide.channel_id.is_member:
-            slide.action_set_completed()
+        if not slide.can_be_skipped:
+            raise werkzeug.exceptions.Forbidden(_("This slide can not be marked as completed."))
+        slide.action_set_completed()
+        return True
+
+    def _set_uncompleted_slide(self, slide):
+        if not slide.can_be_undone:
+            raise werkzeug.exceptions.Forbidden(_("This slide can not be marked as uncompleted."))
+        slide.action_set_uncompleted()
         return True
 
     def _get_slide_detail(self, slide):
@@ -700,7 +707,11 @@ class WebsiteSlides(WebsiteProfile):
     def slide_view(self, slide, **kwargs):
         if not slide.channel_id.can_access_from_current_website() or not slide.active:
             raise werkzeug.exceptions.NotFound()
-        self._set_viewed_slide(slide)
+
+        if slide.can_be_skipped and slide.channel_id.channel_type == 'training':
+            self._set_completed_slide(slide)
+        else:
+            self._set_viewed_slide(slide)
 
         values = self._get_slide_detail(slide)
         # quiz-specific: update with karma and quiz information
@@ -794,9 +805,31 @@ class WebsiteSlides(WebsiteProfile):
         fetch_res = self._fetch_slide(slide_id)
         if fetch_res.get('error'):
             return fetch_res
-        self._set_completed_slide(fetch_res['slide'])
+
+        slide = fetch_res['slide']
+        if not slide.channel_id.is_member:
+            return {'channel_completion': 0}
+
+        self._set_completed_slide(slide)
         return {
             'channel_completion': fetch_res['slide'].channel_id.completion
+        }
+
+    @http.route('/slides/slide/<model("slide.slide"):slide>/set_uncompleted', website=True, type='http', auth='user')
+    def slide_set_uncompleted_and_reload(self, slide):
+        self._set_uncompleted_slide(slide)
+        return request.redirect(f'/slides/slide/{slug(slide)}')
+
+    @http.route('/slides/slide/set_uncompleted', website=True, type='json', auth='public')
+    def slide_set_uncompleted(self, slide_id):
+        if request.website.is_public_user():
+            return {'error': 'public_user'}
+        fetch_res = self._fetch_slide(slide_id)
+        if fetch_res.get('error'):
+            return fetch_res
+        self._set_uncompleted_slide(fetch_res['slide'])
+        return {
+            'channel_completion': fetch_res['slide'].channel_id.completion,
         }
 
     @http.route('/slides/slide/like', type='json', auth="public", website=True)
