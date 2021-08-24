@@ -3,20 +3,28 @@ import functools
 import hashlib
 import json
 import logging
+import psycopg2
 import queue
 import socket
 import struct
 import threading
 import time
+import traceback
 from collections import defaultdict
-from contextlib import suppress
+from contextlib import closing, suppress
 from enum import IntEnum
 from itertools import count
 from sys import float_info
-from werkzeug.exceptions import BadRequest, HTTPException
 
-import odoo.service.server as servermod
-from odoo.http import Response
+import werkzeug
+from werkzeug.exceptions import BadRequest, HTTPException, NotFound
+
+from odoo import api, evented, registry
+from .http import Response, SessionExpiredException, _generate_routing_rules
+from .service import model as service_model
+from .service import security
+from .service import server as servermod
+from .tools.misc import ustr
 
 _logger = logging.getLogger(__name__)
 
@@ -49,6 +57,11 @@ class InvalidCloseCodeException(WebsocketException):
         super().__init__(f"Invalid close code: {code}")
 
 
+class InvalidDatabaseException(WebsocketException):
+    """ When raised: the database probably does not exists anymore, the database is
+    corrupted or the database version doesn't match the server version."""
+
+
 class InvalidStateException(WebsocketException):
     """ Raised when an operation is forbidden in the current state """
 
@@ -56,6 +69,9 @@ class InvalidStateException(WebsocketException):
 class ProtocolError(WebsocketException):
     """ Raised when a frame format doesn't match expectations """
 
+
+class InvalidWebsocketRequest(WebsocketException):
+    """ Raised when a websocket request is invalid (format, wrong args) """
 
 # ------------------------------------------------------
 # WEBSOCKET
@@ -439,9 +455,91 @@ class TimeoutManager(threading.Thread):
         self._exit = True
         self._event.set()
 
+
 # ------------------------------------------------------
 # WEBSOCKET SERVING
 # ------------------------------------------------------
+
+_ws_request_stack = werkzeug.LocalStack()
+ws_request = _ws_request_stack()
+
+
+class WebsocketRequest:
+    def __init__(self, websocket, session, db, httprequest, message):
+        self.httprequest = httprequest
+        self.session = session
+        self.ws = websocket
+        self.db = db
+        self.message = message
+        self.client_uid = None
+        self.path = None
+        self.kwargs = None
+
+    def __enter__(self):
+        _ws_request_stack.push(self)
+        return self
+
+    def __exit__(self, *args):
+        _ws_request_stack.pop()
+
+    def dispatch(self):
+        try:
+            self._process_message()
+        except json.JSONDecodeError:
+            raise InvalidWebsocketRequest('Invalid JSON data')
+        try:
+            self.registry = registry(self.db)
+            self.registry.check_signaling()
+        except (AttributeError, psycopg2.OperationalError, psycopg2.ProgrammingError) as exc:
+            raise InvalidDatabaseException() from exc
+
+        with closing(self.registry.cursor()) as cr:
+            self.env = api.Environment(cr, self.session.uid, self.session.context)
+            endpoint, _ = self.ws_routing_adapter(self.registry._init_modules).match(self.path)
+            self._authenticate(endpoint)
+            return service_model.retrying(functools.partial(endpoint, **self.kwargs), self.env)
+
+    def update_env(self, user=None, context=None, su=None):
+        self.env = self.env(None, user, context, su)
+
+    def _process_message(self):
+        """ Extract required information from an incoming websocket message """
+        self.message = json.loads(self.message)
+        self.path = self.message.get('path')
+        self.kwargs = self.message.get('kwargs', {})
+        self.client_uid = self.message.get('client_uid')
+        if self.path is None:
+            raise InvalidWebsocketRequest('Path key is missing from request')
+
+    def _authenticate(self, endpoint):
+        if self.session.uid is not None:
+            if not security.check_session(self.session, self.env):
+                raise SessionExpiredException("Session expired")
+        getattr(self, f"_auth_method_{endpoint.routing['auth']}")()
+
+    def _auth_method_user(self):
+        if self.env.uid is None:
+            raise SessionExpiredException("Session expired")
+
+    def _auth_method_public(self):
+        if self.env.uid is None:
+            public_user = self.env.ref('base.public_user')
+            self.update_env(user=public_user.id)
+
+    @classmethod
+    def ws_routing_adapter(cls, modules):
+        if not hasattr(cls, '_ws_routing_adapter'):
+            routing_map = werkzeug.routing.Map(strict_slashes=False, converters=None)
+            for url, endpoint in _generate_routing_rules(modules, False):
+                if endpoint.routing['type'] == 'websocket':
+                    rule = werkzeug.routing.Rule(
+                        url, endpoint=endpoint, methods=endpoint.routing['methods'])
+                    rule.merge_slashes = False
+                    routing_map.add(rule)
+                    # server_name is used for http redirect, since we are using the
+                    # websockets, we can let it empty.
+            cls._ws_routing_adapter = routing_map.bind('')
+        return cls._ws_routing_adapter
 
 
 class WebsocketConnectionHandler:
@@ -453,9 +551,34 @@ class WebsocketConnectionHandler:
     }
 
     @classmethod
-    def get_handshake_response(cls, headers):
-        """ :return: Response indicating the server performed a connection upgrade :raise:
-            BadRequest :raise: UpgradeRequired
+    def open_connection(cls, request):
+        """ Open a websocket connection if the handshake is successfull
+        :return: Response indicating the server performed a connection upgrade
+        :raise: UpgradeRequired if there is no intersection between the versions the client
+        supports and those we support
+        :raise: BadRequest if the handshake data is incorrect
+        """
+        headers = {key.lower(): value for key, value in request.httprequest.headers}
+        response = cls._get_handshake_response(headers)
+        threading.current_thread().type = 'websocket'
+        if evented:
+            socket = request.httprequest.environ['socket']
+        else:
+            # Originally added by socketserver:
+            # https://github.com/python/cpython/blob/main/Lib/socketserver.py#L693
+            # Overridden by Odoo which also sets the underlying socket on current thread:
+            # https://github.com/odoo/odoo/blob/master/odoo/service/server.py#L180
+            socket = threading.current_thread()._args[0]
+        response.call_on_close(functools.partial(
+            cls._serve_forever, Websocket(socket), request.session, request.db, request.httprequest
+        ))
+        return response
+
+    @classmethod
+    def _get_handshake_response(cls, headers):
+        """ :return: Response indicating the server performed a connection upgrade
+            :raise: BadRequest
+            :raise: UpgradeRequired
         """
         cls._ensure_handshake_validity(headers)
         # sha-1 is used as it is required by https://datatracker.ietf.org/doc/html/rfc6455#page-7
@@ -492,3 +615,31 @@ class WebsocketConnectionHandler:
 
         if headers['sec-websocket-version'] not in cls.SUPPORTED_VERSIONS:
             raise UpgradeRequired()
+
+    @classmethod
+    def _serve_forever(cls, websocket, session, db, httprequest):
+        """ Process incoming messages and dispatch them to the appropriate endpoints, each
+        response is then sent through the socket
+        """
+        PartialWsRequest = functools.partial(WebsocketRequest, websocket, session, db, httprequest)
+        for message in websocket.get_messages():
+            with PartialWsRequest(message) as req:
+                try:
+                    response = req.dispatch()
+                    if response:
+                        websocket.send(response)
+                except Exception as exc:
+                    _logger.error("Exception occurred during websocket request handling", exc_info=True)
+                    websocket.send(cls._serialize_exception(exc, req.client_uid))
+
+    @classmethod
+    def _serialize_exception(cls, exc, client_uid):
+        name = type(exc).__name__
+        module = type(exc).__module__
+
+        return {
+            'name': f'{module}.{name}' if module else name,
+            'debug': traceback.format_exc(),
+            'message': ustr(exc),
+            'client_uid': client_uid,
+        }
