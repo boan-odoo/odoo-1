@@ -1,7 +1,5 @@
 /** @odoo-module **/
 
-import BusService from 'bus.BusService';
-
 import {
     afterEach,
     afterNextRender,
@@ -12,6 +10,8 @@ import {
 
 import Bus from 'web.Bus';
 import { makeTestPromise, file } from 'web.test_utils';
+import { makeFakeNotificationService } from '@web/../tests/helpers/mock_services';
+import { makeFakeBusService } from '@bus/../tests/test_utils';
 
 const { createFile, inputFiles } = file;
 
@@ -3205,19 +3205,17 @@ QUnit.test('reply to message from inbox (message linked to document)', async fun
             return this._super(...arguments);
         },
         services: {
-            notification: {
-                notify(notification) {
-                    assert.ok(
-                        true,
-                        "should display a notification after posting reply"
-                    );
-                    assert.strictEqual(
-                        notification.message,
-                        "Message posted on \"Refactoring\"",
-                        "notification should tell that message has been posted to the record 'Refactoring'"
-                    );
-                }
-            }
+            notification: makeFakeNotificationService(notification => {
+                assert.ok(
+                    true,
+                    "should display a notification after posting reply"
+                );
+                assert.strictEqual(
+                    notification,
+                    "Message posted on &quot;Refactoring&quot;",
+                    "notification should tell that message has been posted to the record 'Refactoring'"
+                );
+            }),
         },
     });
     assert.strictEqual(
@@ -3644,12 +3642,11 @@ QUnit.test('receive new chat message: out of odoo focus (notification, channel)'
     await this.start({
         env: { bus },
         services: {
-            bus_service: BusService.extend({
+            bus_service: makeFakeBusService({
                 _beep() {}, // Do nothing
-                _poll() {}, // Do nothing
+                send() {}, // Do nothing
                 _registerWindowUnload() {}, // Do nothing
                 isOdooFocused: () => false,
-                updateOption() {},
             }),
         },
     });
@@ -3686,12 +3683,11 @@ QUnit.test('receive new chat message: out of odoo focus (notification, chat)', a
     await this.start({
         env: { bus },
         services: {
-            bus_service: BusService.extend({
+            bus_service: makeFakeBusService({
                 _beep() {}, // Do nothing
-                _poll() {}, // Do nothing
+                send() {}, // Do nothing
                 _registerWindowUnload() {}, // Do nothing
                 isOdooFocused: () => false,
-                updateOption() {},
             }),
         },
     });
@@ -3741,12 +3737,11 @@ QUnit.test('receive new chat messages: out of odoo focus (tab title)', async fun
     await this.start({
         env: { bus },
         services: {
-            bus_service: BusService.extend({
+            bus_service: makeFakeBusService({
                 _beep() {}, // Do nothing
-                _poll() {}, // Do nothing
+                send() {}, // Do nothing
                 _registerWindowUnload() {}, // Do nothing
                 isOdooFocused: () => false,
-                updateOption() {},
             }),
         },
     });
@@ -4003,21 +3998,19 @@ QUnit.test('warning on send with shortcut when attempting to post message with s
             return res;
         },
         services: {
-            notification: {
-                notify(params) {
+            notification: makeFakeNotificationService((notification, { type }) => {
                     assert.strictEqual(
-                        params.message,
+                        notification,
                         "Please wait while the file is uploading.",
                         "notification content should be about the uploading file"
                     );
                     assert.strictEqual(
-                        params.type,
+                        type,
                         'warning',
                         "notification should be a warning"
                     );
                     assert.step('notification');
-                }
-            }
+            }),
         },
     });
     const file = await createFile({
