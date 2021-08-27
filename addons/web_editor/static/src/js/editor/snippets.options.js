@@ -1490,6 +1490,7 @@ const ColorpickerUserValueWidget = SelectUserValueWidget.extend({
         if (this._value) {
             if (ColorpickerWidget.isCSSColor(this._value)) {
                 this.colorPreviewEl.style.backgroundColor = this._value;
+                this.colorPreviewEl.style.backgroundImage = 'none';
             } else if (!weUtils.isColorGradient(this._value)) {
                 this.colorPreviewEl.classList.add(`bg-${this._value}`);
             } else {
@@ -3187,9 +3188,16 @@ const SnippetOptionWidget = Widget.extend({
             const styles = getComputedStyle(this.$target[0]);
             bgImageParts = backgroundImageCssToParts(styles['background-image']);
             delete bgImageParts.gradient;
-            const combined = backgroundImagePartsToCss(bgImageParts);
             this.$target[0].style.setProperty('background-image', '');
-            applyCSS.call(this, 'background-image', combined, styles);
+            const ccStyles = getComputedStyle(this.$target[0]);
+            if (!widgetValue || widgetValue === 'false') {
+                // If no background-color is being set and there is an image,
+                // combine it with the current color combination's gradient.
+                const styleBgImageParts = backgroundImageCssToParts(ccStyles['background-image']);
+                bgImageParts.gradient = styleBgImageParts.gradient;
+            }
+            const combined = backgroundImagePartsToCss(bgImageParts);
+            applyCSS.call(this, 'background-image', combined, ccStyles);
         }
 
         // Only allow to use a color name as a className if we know about the
@@ -3599,18 +3607,6 @@ const SnippetOptionWidget = Widget.extend({
                 const _restoreTransitions = () => this.$target[0].classList.remove('o_we_force_no_transition');
 
                 const styles = window.getComputedStyle(this.$target[0]);
-
-                if (params.withGradients && params.cssProperty === 'background-color') {
-                    // Check if there is a gradient, in that case this is the
-                    // value to be returned, we normally not allow color and
-                    // gradient at the same time (the option would remove one
-                    // if editing the other).
-                    const parts = backgroundImageCssToParts(styles['background-image']);
-                    if (parts.gradient) {
-                        return parts.gradient;
-                    }
-                }
-
                 const cssProps = weUtils.CSS_SHORTHANDS[params.cssProperty] || [params.cssProperty];
                 const cssValues = cssProps.map(cssProp => {
                     let value = styles[cssProp].trim();
@@ -3635,11 +3631,23 @@ const SnippetOptionWidget = Widget.extend({
 
                 _restoreTransitions();
 
-                const value = cssValues.join(' ');
+                let value = cssValues.join(' ');
+                if (params.withGradients && params.cssProperty === 'background-color') {
+                    // Check if there is a gradient, in that case this is the
+                    // value to be returned, we normally do not allow color and
+                    // gradient at the same time (the option would remove one
+                    // if editing the other).
+                    const parts = backgroundImageCssToParts(styles['background-image']);
+                    const hasTextGradientStyle = styles['-webkit-background-clip'] === 'text';
+                    if (parts.gradient && !hasTextGradientStyle) {
+                        value = parts.gradient;
+                    }
+                }
 
                 if (params.cssProperty === 'background-color' && params.withCombinations) {
                     if (usedCC) {
-                        const ccValue = weUtils.getCSSVariableValue(`o-cc${usedCC}-bg`).trim();
+                        const ccValue = weUtils.getCSSVariableValue(`o-cc${usedCC}-bg-gradient`).trim().replaceAll("'", '')
+                            || weUtils.getCSSVariableValue(`o-cc${usedCC}-bg`).trim();
                         if (weUtils.areCssValuesEqual(value, ccValue)) {
                             // Prevent to consider that a color is used as CC
                             // override in case that color is the same as the
@@ -6049,14 +6057,28 @@ registry.BackgroundImage = SnippetOptionWidget.extend({
      */
     _setBackground(backgroundURL) {
         const parts = backgroundImageCssToParts(this.$target.css('background-image'));
+        let wasDefaultGradient = false;
         if (backgroundURL) {
             parts.url = `url('${backgroundURL}')`;
             this.$target.addClass('oe_img_bg o_bg_img_center');
         } else {
             delete parts.url;
             this.$target.removeClass('oe_img_bg o_bg_img_center');
+            if (parts.gradient) {
+                // If gradient is the default one then remove it.
+                this.$target.css('background-image', '');
+                const defaultParts = backgroundImageCssToParts(this.$target.css('background-image'));
+                if (parts.gradient && defaultParts.gradient && weUtils.areCssValuesEqual(parts.gradient, defaultParts.gradient)) {
+                    delete parts.gradient;
+                    wasDefaultGradient = true;
+                }
+            }
         }
-        const combined = backgroundImagePartsToCss(parts);
+        let combined = backgroundImagePartsToCss(parts);
+        if (combined === 'none' && wasDefaultGradient) {
+            // Do not hide default gradient.
+            combined = '';
+        }
         this.$target.css('background-image', combined);
     },
 });
