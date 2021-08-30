@@ -1,0 +1,175 @@
+/** @odoo-module **/
+
+import { Define } from '@mail/define';
+
+export default Define`
+    {Record/insert}
+        [Record/traits]
+            Test
+        [Test/name]
+            edit follower and close subtype dialog
+        [Test/model]
+            FollowerComponent
+        [Test/assertions]
+            6
+        [Test/scenario]
+            :testEnv
+                {Record/insert}
+                    [Record/traits]
+                        Env
+            @testEnv
+            .{Record/insert}
+                [Record/traits]
+                    res.partner
+                [res.partner/id]
+                    100
+            @testEnv
+            .{Record/insert}
+                [Record/traits]
+                    Server
+                [Server/data]
+                    @record
+                    .{Test/data}
+                [Server/mockRPC]
+                    {Record/insert}
+                        [Record/traits]
+                            Function
+                        [Function/in]
+                            route
+                            args
+                            original
+                        [Function/out]
+                            {if}
+                                @route
+                                .{String/includes}
+                                    /mail/read_subscription_data
+                            .{then}
+                                {Test/step}
+                                    fetch_subtypes
+                                {Record/insert}
+                                    [Record/traits]
+                                        Collection
+                                    [default]
+                                        true
+                                    [followed]
+                                        true
+                                    [internal]
+                                        false
+                                    [id]
+                                        1
+                                    [name]
+                                        Dummy test
+                                    [res_model]
+                                        res.partner
+                            .{else}
+                                @original
+            :thread
+                @testEnv
+                .{Record/insert}
+                    [Record/traits]
+                        Thread
+                    [Thread/id]
+                        100
+                    [Thread/model]
+                        res.partner
+            :follower
+                @testEnv
+                .{Record/insert}
+                    [Record/traits]
+                        Follower
+                    [Follower/followedThread]
+                        @thread
+                    [Follower/id]
+                        2
+                    [Follower/isActive]
+                        true
+                    [Follower/isEditable]
+                        true
+                    [Follower/partner]
+                        @testEnv
+                        .{Record/insert}
+                            [Record/traits]
+                                Partner
+                            [Partner/email]
+                                bla@bla.bla
+                            [Partner/id]
+                                @testEnv
+                                .{Env/currentPartner}
+                                .{Partner/id}
+                            [Partner/name]
+                                François Perusse
+            @testEnv
+            .{Record/insert}
+                []
+                    [Record/traits]
+                        DialogManagerComponent
+                []
+                    [Record/traits]
+                        FollowerComponent
+                    [FollowerComponent/follower]
+                        @follower
+            {Test/assert}
+                []
+                    @follower
+                    .{Follower/followerComponents}
+                    .{Collection/length}
+                    .{=}
+                        1
+                []
+                    should have follower component
+            {Test/assert}
+                []
+                    @follower
+                    .{Follower/followerComponents}
+                    .{Collection/first}
+                    .{FollowerComponent/editButton}
+                []
+                    should display an edit button
+
+            @testEnv
+            .{Component/afterNextRender}
+                @testEnv
+                .{UI/click}
+                    @follower
+                    .{Follower/followerComponents}
+                    .{Collection/first}
+                    .{FollowerComponent/editButton}
+            {Test/verifySteps}
+                []
+                    fetch_subtypes
+                []
+                    clicking on edit follower should fetch subtypes
+            {Test/assert}
+                []
+                    @testEnv
+                    .{Record/all}
+                        [Record/traits]
+                            FollowerSubtypeListComponent
+                    .{Collection/length}
+                    .{=}
+                        1
+                []
+                    dialog allowing to edit follower subtypes should have been created
+
+            @testEnv
+            .{Component/afterNextRender}
+                @testEnv
+                .{UI/click}
+                    @testEnv
+                    .{Record/all}
+                        [Record/traits]
+                            FollowerSubtypeListComponent
+                    .{Collection/first}
+                    .{FollowerSubtypeListComponent/closeButton}
+            {Test/assert}
+                []
+                    @testEnv
+                    .{Record/all}
+                        [Record/traits]
+                            FollowerSubtypeListComponent
+                    .{Collection/length}
+                    .{=}
+                        0
+                []
+                    follower subtype dialog should be closed after clicking on close button
+`;

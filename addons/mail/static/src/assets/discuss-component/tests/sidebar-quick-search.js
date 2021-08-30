@@ -1,0 +1,180 @@
+/** @odoo-module **/
+
+import { Define } from '@mail/define';
+
+export default Define`
+    {Record/insert}
+        [Record/traits]
+            Test
+        [Test/name]
+            sidebar quick search
+        [Test/model]
+            DiscussComponent
+        [Test/assertions]
+            6
+        [Test/scenario]
+            :testEnv
+                {Record/insert}
+                    [Record/traits]
+                        Env
+            @testEnv
+            .{Record/insert}
+                {Dev/comment}
+                    feature enables at 20 or more channels
+                {foreach}
+                    {Record/insert}
+                        [Record/traits]
+                            Range
+                        [start]
+                            1
+                        [end]
+                            21
+                .{as}
+                    i
+                .{do}
+                    {entry}
+                        [Record/traits]
+                            mail.channel
+                        [mail.channel/id]
+                            @id
+                        [mail.channel/name]
+                            channel
+                            .{+}
+                                @id
+            @testEnv
+            .{Record/insert}
+                [Record/traits]
+                    Server
+                [Server/data]
+                    @record
+                    .{Test/data}
+            @testEnv
+            .{Record/insert}
+                [Record/traits]
+                    DiscussComponent
+            {Test/assert}
+                []
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/itemChannel}
+                    .{Collection/length}
+                    .{=}
+                        20
+                []
+                    should have 20 channel items
+            {Test/assert}
+                []
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/quickSearch}
+                []
+                    should have quick search in sidebar
+
+            @testEnv
+            .{Component/afterNextRender}
+                @testEnv
+                .{Record/update}
+                    [0]
+                        @testEnv
+                        .{Discuss/discussSidebarComponents}
+                        .{Collection/first}
+                        .{DiscussSidebarComponent/quickSearch}
+                    [1]
+                        [web.Element/value]
+                            1
+                @testEnv
+                .{UI/input}
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/quickSearch}
+            {Test/assert}
+                []
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/itemChannel}
+                    .{Collection/length}
+                    .{=}
+                        11
+                []
+                    should have filtered to 11 channel items
+
+            @testEnv
+            .{Component/afterNextRender}
+                @testEnv
+                .{Record/update}
+                    [0]
+                        @testEnv
+                        .{Discuss/discussSidebarComponents}
+                        .{Collection/first}
+                        .{DiscussSidebarComponent/quickSearch}
+                    [1]
+                        [web.Element/value]
+                            12
+                @testEnv
+                .{UI/input}
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/quickSearch}
+            {Test/assert}
+                []
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/itemChannel}
+                    .{Collection/length}
+                    .{=}
+                        1
+                []
+                    should have filtered to a single channel item
+            {Test/assert}
+                []
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/itemChannel}
+                    .{Collection/first}
+                    .{=}
+                        @testEnv
+                        .{Record/findById}
+                            [Thread/id]
+                                12
+                            [Thread/model]
+                                mail.channel
+                []
+                    should have filtered to a single channel item with Id 12
+
+            @testEnv
+            .{Component/afterNextRender}
+                @testEnv
+                .{Record/update}
+                    [0]
+                        @testEnv
+                        .{Discuss/discussSidebarComponents}
+                        .{Collection/first}
+                        .{DiscussSidebarComponent/quickSearch}
+                    [1]
+                        [web.Element/value]
+                            123
+                @testEnv
+                .{UI/input}
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/quickSearch}
+            {Test/assert}
+                []
+                    @testEnv
+                    .{Discuss/discussSidebarComponents}
+                    .{Collection/first}
+                    .{DiscussSidebarComponent/itemChannel}
+                    .{Collection/length}
+                    .{=}
+                        0
+                []
+                    should have filtered to no channel item
+`;

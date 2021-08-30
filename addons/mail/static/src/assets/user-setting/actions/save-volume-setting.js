@@ -1,0 +1,62 @@
+/** @odoo-module **/
+
+import { Define } from '@mail/define';
+
+export default Define`
+    {Record/insert}
+        [Record/traits]
+            Action
+        [Action/name]
+            UserSetting/saveVolumeSetting
+        [Action/params]
+            guestId
+                [type]
+                    Integer
+            partnerId
+                [type]
+                    Integer
+            volume
+                [type]
+                    Float
+            record
+                [type]
+                    UserSetting
+        [Action/behavior]
+            {UserSetting/_debounce}
+                [0]
+                    @env
+                    .{Env/owlEnv}
+                    .{Dict/get}
+                        services
+                    .{Dict/get}
+                        rpc
+                    .{Function/call}
+                        [0]
+                            [model]
+                                res.users.settings
+                            [method]
+                                set_volume_setting
+                            [args]
+                                [0]
+                                    {Record/insert}
+                                        [Record/traits]
+                                            Collection
+                                        {Env/currentUser}
+                                        .{User/resUsersSettingsId}
+                                [partnerId]
+                                    @partnerId
+                                [volume]
+                                    @volume
+                            [kwargs]
+                                [guest_id]
+                                    @guestId
+                        [1]
+                            [shadow]
+                                true
+                [1]
+                    5000
+                [2]
+                    sound_
+                    .{+}
+                        @partnerId
+`;

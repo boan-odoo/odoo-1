@@ -1,0 +1,121 @@
+/** @odoo-module **/
+
+import { Define } from '@mail/define';
+
+export default Define`
+    {Dev/comment}
+        Attempts a connection recovery by closing and restarting the call
+        from the receiving end.
+    {Record/insert}
+        [Record/traits]
+            Action
+        [Action/name]
+            Rtc/_recoverConnection
+        [Action/params]
+            token
+                [type]
+                    String
+            delay
+                [type]
+                    Integer
+                [default]
+                    0
+                [description]
+                    delay in ms
+            reason
+                [type]
+                    String
+            record
+                [type]
+                    Rtc
+        [Action/behavior]
+            {if}
+                @record
+                .{Rtc/_fallBackTimeouts}
+                .{Collection/at}
+                    @token
+            .{then}
+                {break}
+            {Record/update}
+                [0]
+                    @record
+                    .{Rtc/_fallBackTimeouts}
+                [1]
+                    {entry}
+                        [key]
+                            @token
+                        [value]
+                            {Browser/setTimeout}
+                                [0]
+                                    {Collection/removeAt}
+                                        [0]
+                                            @record
+                                            .{Rtc/_fallBackTimeouts}
+                                        [1]
+                                            @token
+                                    :peerConnection
+                                        @record
+                                        .{Rtc/_peerConnections}
+                                        .{Collection/at}
+                                            @token
+                                    {if}
+                                        @peerConnection
+                                        .{isFalsy}
+                                        .{|}
+                                            @record
+                                            .{Rtc/channel}
+                                            .{isFalsy}
+                                    .{then}
+                                        {break}
+                                    {if}
+                                        {Set/has}
+                                            [0]
+                                                @record
+                                                .{Rtc/_outGoingCallTokens}
+                                            [1]
+                                                @token
+                                    .{then}
+                                        {break}
+                                    {if}
+                                        @peerConnection
+                                        .{RTCPeerConnection/iceConnectionState}
+                                        .{=}
+                                            connected
+                                    .{then}
+                                        {break}
+                                    {Rtc/_addLogEntry}
+                                        [0]
+                                            @record
+                                        [1]
+                                            @token
+                                        [2]
+                                            calling back to recover 
+                                            .{+}
+                                                @peerConnection
+                                                .{Dict/get}
+                                                    iceConnectionState
+                                            .{+}
+                                                connection, reason: 
+                                            .{+}
+                                                @reason
+                                    {Rtc/_notifyPeers}
+                                        [0]
+                                            @record
+                                        [1]
+                                            @token
+                                        [2]
+                                            [event]
+                                                disconnect
+                                    {Rtc/_removePeer}
+                                        [0]
+                                            @record
+                                        [1]
+                                            @token
+                                    {Rtc/_callPeer}
+                                        [0]
+                                            @record
+                                        [1]
+                                            @token
+                            [1]
+                                @delay
+`;

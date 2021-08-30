@@ -1,0 +1,100 @@
+/** @odoo-module **/
+
+import { Define } from '@mail/define';
+
+export default Define`
+    {Record/insert}
+        [Record/traits]
+            Test
+        [Test/name]
+            upload document is available
+        [Test/model]
+            ActivityComponent
+        [Test/assertions]
+            3
+        [Test/scenario]
+            :testEnv
+                {Record/insert}
+                    [Record/traits]
+                        Env
+            @testEnv
+            .{Record/insert}
+                [Record/traits]
+                    Server
+                [Server/data]
+                    @record
+                    .{Test/data}
+            :today
+                {Record/insert}
+                    [Record/traits]
+                        Date
+            :tomorrow
+                {Record/insert}
+                    [Record/traits]
+                        Date
+                .{Date/setDate}
+                    @today
+                    .{Date/getDate}
+                    .{+}
+                        1
+            @testEnv
+            .{Record/insert}
+                []
+                    [Record/traits]
+                        res.partner
+                    [res.partner/activity_ids]
+                        12
+                    [res.partner/id]
+                        100
+                []
+                    [Record/traits]
+                        mail.activity
+                    [mail.activity/activity_category]
+                        upload_file
+                    [mail.activity/activity_type_id]
+                        28
+                    [mail.activity/can_write]
+                        true
+                    [mail.activity/id]
+                        12
+                    [mail.activity/res_id]
+                        100
+                    [mail.activity/res_model]
+                        res.partner
+            :chatterContainerComponent
+                @testEnv
+                .{Record/insert}
+                    [Record/traits]
+                        ChatterContainerComponent
+                    [ChatterContainerComponent/threadId]
+                        100
+                    [ChatterContainerComponent/threadModel]
+                        res.partner
+            {Test/assert}
+                []
+                    @activity
+                    .{Activity/activityComponents}
+                    .{Collection/length}
+                    .{=}
+                        1
+                []
+                    should have activity component
+            {Test/assert}
+                []
+                    @activity
+                    .{Activity/activityComponents}
+                    .{Collection/first}
+                    .{ActivityComponent/uploadButton}
+                []
+                    should have activity upload button
+            {Test/assert}
+                []
+                    @chatterContainerComponent
+                    .{ChatterContainerComponent/chatter}
+                    .{Chatter/activityBoxView}
+                    .{ActivityBoxView/activityViews}
+                    .{Collection/first}
+                    .{ActivityView/fileUploader}
+                []
+                    should have a file uploader
+`;
