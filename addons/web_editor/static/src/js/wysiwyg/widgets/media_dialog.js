@@ -75,7 +75,7 @@ var MediaDialog = Dialog.extend({
             this.activeWidget = this[this.tabs[options.activeTab]];
         } else if (this.imageWidget && $media.is('img')) {
             this.activeWidget = this.imageWidget;
-        } else if (this.documentWidget && $media.is('a.o_image')) {
+        } else if (this.documentWidget && $media.is('a')) {
             this.activeWidget = this.documentWidget;
         } else if (this.videoWidget && $media.is('.media_iframe_video, .o_bg_video_iframe')) {
             this.activeWidget = this.videoWidget;
