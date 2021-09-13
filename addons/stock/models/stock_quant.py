@@ -543,11 +543,17 @@ The correction could unreserve some operations with problematics products.""") %
                             GROUP BY product_id, company_id, location_id, lot_id, package_id, owner_id, in_date
                             HAVING count(id) > 1
                         ),
+                        dupes_update AS (
+                            SELECT dupes.*
+                            FROM stock_quant 
+                            JOIN dupes ON (stock_quant.id = dupes.to_update_quant_id OR stock_quant.id = Any(dupes.to_delete_quant_ids))
+                            FOR UPDATE OF stock_quant SKIP LOCKED
+                        ),
                         _up AS (
                             UPDATE stock_quant q
                                 SET quantity = d.quantity,
                                     reserved_quantity = d.reserved_quantity
-                            FROM dupes d
+                            FROM dupes_update d
                             WHERE d.to_update_quant_id = q.id
                         )
                    DELETE FROM stock_quant WHERE id in (SELECT unnest(to_delete_quant_ids) from dupes)
@@ -555,6 +561,7 @@ The correction could unreserve some operations with problematics products.""") %
         try:
             with self.env.cr.savepoint():
                 self.env.cr.execute(query)
+                self.invalidate_cache()
         except Error as e:
             _logger.info('an error occured while merging quants: %s', e.pgerror)
 

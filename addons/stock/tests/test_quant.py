@@ -699,3 +699,24 @@ class StockQuant(SavepointCase):
             inventory._action_done()
             quant = self.env['stock.quant'].search([('product_id', '=', self.product.id), ('location_id', '=', self.stock_location.id), ('quantity', '>', 0)])
             self.assertEqual(quant.in_date, tomorrow)
+
+    def test_merge_quant(self):
+        """ Check that duplicated quants are correctly updated.
+        """
+        vals = {
+            'product_id': self.product.id,
+            'product_uom_id': self.env.ref('uom.product_uom_unit').id,
+            'location_id': self.stock_location.id,
+            'quantity': 1,
+        }
+        self.env['stock.quant'].create(vals)
+        self.env['stock.quant'].create(vals)
+        self.assertEqual(len(self.env['stock.quant']._gather(self.product, self.stock_location)), 2.0)
+        self.assertEqual(self.env['stock.quant']._get_available_quantity(self.product, self.stock_location), 2.0)
+        self.env['stock.quant']._quant_tasks()
+        quant = self.env['stock.quant'].search([
+            ('location_id', '=', self.stock_location.id),
+            ('product_id', '=', self.product.id)
+        ])
+        self.assertEqual(len(quant), 1)
+        self.assertEqual(quant.quantity, 2)
