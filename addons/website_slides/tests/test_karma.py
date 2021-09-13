@@ -76,20 +76,13 @@ class TestKarmaGain(common.SlidesCase):
         computed_karma += self.channel_2.karma_gen_channel_finish
         self.assertEqual(user.karma, computed_karma)
 
-        # Vote for a slide
+        # Vote for a slide: Karma should not move
         slide_user = self.slide.with_user(user)
         slide_user.action_like()
-        computed_karma += self.channel.karma_gen_slide_vote
-        self.assertEqual(user.karma, computed_karma)
-        slide_user.action_like()  # re-like something already liked should not add karma again
         self.assertEqual(user.karma, computed_karma)
         slide_user.action_dislike()
-        computed_karma -= self.channel.karma_gen_slide_vote
         self.assertEqual(user.karma, computed_karma)
         slide_user.action_dislike()
-        computed_karma -= self.channel.karma_gen_slide_vote
-        self.assertEqual(user.karma, computed_karma)
-        slide_user.action_dislike()  # dislike again something already disliked should not remove karma again
         self.assertEqual(user.karma, computed_karma)
 
         # Leave the finished course
