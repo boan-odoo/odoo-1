@@ -80,8 +80,8 @@
                     data-toggle="modal" data-target="#ratingpopupcomposer">
                     <i t-if="icon" t-att-class="icon"/>
                     <span t-attf-class="#{_text_classes} o_rating_popup_composer_text">
-                        <t t-if="default_message_id">Modify your review</t>
-                        <t t-else="">Write a review</t>
+                        <t t-if="default_message_id">Edit review</t>
+                        <t t-else="">Add a review</t>
                     </span>
                 </button>
                 <div class="o_rating_popup_composer_modal"/>

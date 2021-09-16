@@ -94,7 +94,7 @@ const RatingPopupComposer = publicWidget.Widget.extend({
             // Change the text of the button
             this.$('.o_rating_popup_composer_text').text(
                 this.options.default_message_id ?
-                _t('Modify your review') : _t('Add a review')
+                _t('Edit review') : _t('Add a review')
             );
         });
     },
