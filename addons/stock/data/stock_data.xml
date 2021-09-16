@@ -259,4 +259,12 @@ if move_line_to_recompute_ids:
         <function model="res.company" name="create_missing_scrap_location"/>
         <function model="res.company" name="create_missing_scrap_sequence"/>
     </data>
+
+    <!-- Stock Quant -->
+    <data noupdate="1">
+        <record id="skip_quant_tasks" model="ir.config_parameter">
+            <field name="key">stock.skip_quant_tasks</field>
+            <field name="value">True</field>
+        </record>
+    </data>
 </odoo>

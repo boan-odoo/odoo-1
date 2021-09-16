@@ -2,6 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from psycopg2 import OperationalError, Error
+from ast import literal_eval
 
 from odoo import api, fields, models, _
 from odoo.exceptions import RedirectWarning, UserError, ValidationError
@@ -632,7 +633,8 @@ The correction could unreserve some operations with problematics products.""") %
         :param domain: List for the domain, empty by default.
         :param extend: If True, enables form, graph and pivot views. False by default.
         """
-        self._quant_tasks()
+        if not literal_eval(self.env['ir.config_parameter'].sudo().get_param('stock.skip_quant_tasks')):
+            self._quant_tasks()
         ctx = dict(self.env.context or {})
         ctx.pop('group_by', None)
         action = {
