@@ -364,6 +364,27 @@ function _getColorClass(el, colorNames, prefix) {
     const prefixedColorNames = _computeColorClasses(colorNames, prefix);
     return el.classList.value.split(' ').filter(cl => prefixedColorNames.includes(cl)).join(' ');
 }
+/**
+ * @param {element} el
+ * @returns {string} texts included in el, excluding images
+ */
+function _getNonImageText(el) {
+    const tag = el.nodeName.toUpperCase();
+    if (tag === '#TEXT') {
+        return el.textContent;
+    }
+    if (['IMG', 'SVG'].includes(tag)) {
+        return '';
+    }
+    const texts = [];
+    for (const childNode of el.childNodes) {
+        const text = _getNonImageText(childNode);
+        if (text) {
+            texts.push(text);
+        }
+    }
+    return texts.join('');
+}
 
 return {
     CSS_SHORTHANDS: CSS_SHORTHANDS,
@@ -384,5 +405,6 @@ return {
     backgroundImagePartsToCss: _backgroundImagePartsToCss,
     generateHTMLId: _generateHTMLId,
     getColorClass: _getColorClass,
+    getNonImageText: _getNonImageText,
 };
 });
