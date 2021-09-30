@@ -31,11 +31,11 @@
 </template>
 
 <template id="registration_event_question" name="Registration Event Question">
-    <label t-esc="question.title"/>
+    <label t-out="question.title"/>
     <t t-if="question.question_type == 'simple_choice'">
         <select t-attf-name="question_answer-#{registration_index}-#{question.id}" class="custom-select" required="true">
             <t t-foreach="question.answer_ids" t-as="answer">
-                <option t-esc="answer.name" t-att-value="answer.id"/>
+                <option t-out="answer.name" t-att-value="answer.id"/>
             </t>
         </select>
     </t>
