@@ -15,11 +15,11 @@
                         </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="bg-danger" attrs="{'invisible': [('active', '=', True)]}"/>
-                    <group>
+                    <group name="payment_token_general_information">
                         <field name="name"/>
                         <field name="partner_id" />
                     </group>
-                    <group>
+                    <group ame="payment_token_acquirer_information">
                         <field name="acquirer_id"/>
                         <field name="acquirer_ref"/>
                         <field name="company_id" groups="base.group_multi_company"/>

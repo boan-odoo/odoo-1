@@ -3,8 +3,14 @@
 
     <template id="verified_token_checkmark" inherit_id="payment.verified_token_checkmark">
         <xpath expr="//t[@name='payment_test_hook']" position="replace">
+            <field name="state" invisible="1"/>
             <t t-if="token.provider=='test'">
                 <span class="badge badge-warning">Test Token</span>
+
+                <span t-if="token.state=='pending'" class="badge badge-warning">Pending</span>
+                <span t-elif="token.state=='done'" class="badge badge-success">Confirmed</span>
+                <span t-elif="token.state=='cancel'" class="badge badge-danger">Canceled</span>
+                <span t-else="" class="badge badge-danger">Error</span>
             </t>
         </xpath>
     </template>
