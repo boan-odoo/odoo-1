@@ -14,6 +14,31 @@ $o-kanban-large-record-width: 400px;
     }
 }
 
+.o_slide_attendee_kanban {
+    .ribbon {
+        &::before, &::after {
+            display: none;
+        }
+        span {
+            background-color: $o-brand-odoo;
+            padding: 5px;
+            font-size: small;
+            z-index: 0;
+        }
+    }
+
+    .ribbon-top-right {
+        margin-top: -9px;
+        span {
+            left: 12px;
+            right: 30px;
+            height: 25px;
+            top: 18px;
+        }
+    }
+}
+
+
 table.o_section_list_view tr.o_data_row.o_is_section {
     font-weight: bold;
     background-color: #DDD;

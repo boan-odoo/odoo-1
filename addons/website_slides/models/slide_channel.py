@@ -33,6 +33,7 @@ class ChannelUsersRelation(models.Model):
     channel_visibility = fields.Selection(related='channel_id.visibility')
     channel_enroll = fields.Selection(related='channel_id.enroll')
     channel_website_id = fields.Many2one('website', string='Website', related='channel_id.website_id')
+    active = fields.Boolean(default=True, help="Set active to false to hide the Record without removing it.")
 
     def _recompute_completion(self):
         read_group_res = self.env['slide.slide.partner'].sudo().read_group(
@@ -586,13 +587,14 @@ class Channel(models.Model):
         """
         to_join = self._filter_add_members(target_partners, **member_values)
         if to_join:
-            existing = self.env['slide.channel.partner'].sudo().search([
+            existing = self.env['slide.channel.partner'].with_context(active_test=False).sudo().search([
                 ('channel_id', 'in', self.ids),
                 ('partner_id', 'in', target_partners.ids)
             ])
             existing_map = dict((cid, list()) for cid in self.ids)
             for item in existing:
                 existing_map[item.channel_id.id].append(item.partner_id.id)
+            existing.filtered(lambda ext: not ext.active).write({'active': True})
 
             to_create_values = [
                 dict(channel_id=channel.id, partner_id=partner.id, **member_values)
@@ -681,7 +683,7 @@ class Channel(models.Model):
         self.message_unsubscribe(partner_ids=partner_ids)
 
         if removed_channel_partner_domain:
-            self.env['slide.channel.partner'].sudo().search(removed_channel_partner_domain).unlink()
+            self.env['slide.channel.partner'].sudo().search(removed_channel_partner_domain).action_archive()
 
     def action_view_slides(self):
         action = self.env["ir.actions.actions"]._for_xml_id("website_slides.slide_slide_action")

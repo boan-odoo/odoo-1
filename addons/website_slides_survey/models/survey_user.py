@@ -25,6 +25,24 @@ class SurveyUserInput(models.Model):
             self._check_for_failed_attempt()
         return res
 
+    def get_failed_attempts(self):
+        if self:
+            user_inputs = self.search([
+                ('id', 'in', self.ids),
+                ('state', '=', 'done'),
+                ('scoring_success', '=', False),
+                ('slide_partner_id', '!=', False)
+            ])
+
+            if user_inputs:
+                user_inputs_attempts = []
+                for user_input in user_inputs:
+                    has_attempt = user_input.survey_id._has_attempts_left(user_input.partner_id, user_input.email, user_input.invite_token)
+                    if not has_attempt:
+                        user_inputs_attempts.append(user_input)
+                return user_inputs_attempts
+        return []
+
     def _check_for_failed_attempt(self):
         """ If the user fails his last attempt at a course certification,
         we remove him from the members of the course (and he has to enroll again).
