@@ -82,7 +82,11 @@ class StripeController(http.Controller):
         event = json.loads(request.httprequest.data)
         _logger.info("notification received from Stripe with data:\n%s", pprint.pformat(event))
         try:
-            if event['type'] == 'checkout.session.completed':
+            if event['type'] in [
+                'checkout.session.completed',
+                'checkout.session.async_payment_succeeded',
+                'checkout.session.async_payment_failed',
+            ]:
                 checkout_session = event['data']['object']
 
                 # Check the integrity of the event
