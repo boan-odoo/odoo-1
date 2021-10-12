@@ -357,16 +357,16 @@
                 </h4>
                 <t t-if="slide.website_published">
                     <div class="row">
-                        <div class="col-12 col-lg-6">
-                            <h5 class="mt16">Share on Social Networks</h5>
-                            <t t-call="website_slides.slide_share_social">
-                                <t t-set="record" t-value="slide"/>
-                            </t>
-                        </div>
-                        <div class="col-12 col-lg-6">
+                        <div class="col-12">
                             <t t-call="website_slides.slide_share_link">
                                 <t t-set="record" t-value="slide"/>
                                 <t t-set="website_url" t-value="slide.website_url"/>
+                            </t>
+                        </div>
+                        <div class="col-12">
+                            <h5 class="mt16">Share on Social Media</h5>
+                            <t t-call="website_slides.slide_share_social">
+                                <t t-set="record" t-value="slide"/>
                             </t>
                         </div>
                     </div>
@@ -529,10 +529,10 @@
 <!-- Slide sub-template: share: send by email -->
 <template id='slide_social_email' name="Share by Email">
     <h5 class="mt-4">Share by mail</h5>
-    <div t-if="not is_public_user" class="form-inline">
+    <div t-if="not is_public_user">
         <form class="form-group oe_slide_js_share_email" role="form">
             <div class="input-group">
-                <input type="email" class="form-control" placeholder="your-friend@domain.com"/>
+                <input type="text" class="form-control" placeholder="your-friend1@domain.com, your-friend2@domain.com"/>
                 <span class="input-group-append">
                     <button class="btn btn-primary" type="button"
                         data-loading-text="Sending..."
@@ -542,6 +542,8 @@
                     </button>
                 </span>
             </div>
+            <div class="alert alert-info d-none" role="alert"><strong>Sharing is caring!</strong> Your email(s) have been sent. </div>
+            <div class="alert alert-warning d-none" role="alert">Please enter valid email(s)</div>
             <span class="form-text text-muted d-block w-100">Send presentation through email</span>
         </form>
     </div>
