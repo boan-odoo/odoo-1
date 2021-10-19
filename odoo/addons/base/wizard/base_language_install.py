@@ -9,56 +9,37 @@ class BaseLanguageInstall(models.TransientModel):
     _description = "Install Language"
 
     @api.model
-    def _default_language(self):
+    def _default_lang_ids(self):
         """ Display the selected language when using the 'Update Terms' action
             from the language list view
         """
         if self._context.get('active_model') == 'res.lang':
-            lang = self.env['res.lang'].browse(self._context.get('active_id'))
-            return lang.code
+            return self.env['res.lang'].browse(self._context.get('active_ids') or [self._context.get('active_id')])
         return False
-
-    @api.model
-    def _get_languages(self):
-        return [[code, name] for code, _, name, *_ in self.env['res.lang'].get_available()]
-
-    lang = fields.Selection(_get_languages, string='Language', required=True,
-                            default=_default_language)
+    # add a context on the field itself, to be sure even inactive langs are displayed
+    lang_ids = fields.Many2many('res.lang', 'res_lang_install_rel', 'language_wizard_id', 'lang_id', 'Languages', default=_default_lang_ids, context={'active_test': False})
     overwrite = fields.Boolean('Overwrite Existing Terms',
                                default=True,
                                help="If you check this box, your customized translations will be overwritten and replaced by the official ones.")
-    state = fields.Selection([('init', 'init'), ('done', 'done')],
-                             string='Status', readonly=True, default='init')
 
     def lang_install(self):
         self.ensure_one()
         mods = self.env['ir.module.module'].search([('state', '=', 'installed')])
-        self.env['res.lang']._activate_lang(self.lang)
-        mods._update_translations(self.lang, self.overwrite)
-        self.state = 'done'
+        lang_ids = self.with_context(active_test=False).lang_ids
+        lang_ids.active = True
+        mods._update_translations(lang_ids.mapped('code'), self.overwrite)
         self.env.cr.execute('ANALYZE ir_translation')
 
+        message = _("The languages that you selected have been successfully installed. Users can choose their favorite language in their preferences.")
         return {
-            'name': _('Language Pack'),
-            'view_mode': 'form',
-            'view_id': False,
-            'res_model': 'base.language.install',
-            'domain': [],
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
             'context': dict(self._context, active_ids=self.ids),
-            'type': 'ir.actions.act_window',
             'target': 'new',
-            'res_id': self.id,
-        }
-
-    def reload(self):
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-        }
-
-    def switch_lang(self):
-        self.env.user.lang = self.lang
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload_context',
+            'params': {
+                'message': message,
+                'type': 'success',
+                'sticky': False,
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
         }

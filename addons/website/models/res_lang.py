@@ -24,3 +24,17 @@ class Lang(models.Model):
             return super().get_available()
         # Return the website-available ones in this case
         return request.website.language_ids.get_sorted()
+
+    def action_activate_langs(self):
+        """
+        Open wizard to install language(s), so user can select the website(s)
+        to translate in that language.
+        """
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Add languages'),
+            'view_mode': 'form',
+            'res_model': 'base.language.install',
+            'views': [[False, 'form']],
+            'target': 'new',
+        }
