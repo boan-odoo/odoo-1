@@ -3450,5 +3450,12 @@ X[]
                     '<font><span>g</span>h</font>i</p>',
             });
         });
+        it('should apply a color to a slice of text containing a span', async () => {
+            await testEditor(BasicEditor, {
+                contentBefore: '<p>a[b<span>c</span>d]e</p>',
+                stepFunction: editor => editor.execCommand('applyColor', 'rgb(255, 0, 0)', 'color'),
+                contentAfter: '<p>a<font style="color: rgb(255, 0, 0);">[b<span>c</span>d]</font>e</p>',
+            });
+        });
     });
 });
