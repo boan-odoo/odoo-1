@@ -264,9 +264,11 @@
                     <field name="authorized_transaction_ids" invisible="1"/>
                     <button name="payment_action_capture" type="object" data-hotkey="shift+g"
                             string="Capture Transaction" class="oe_highlight"
+                            groups="sales_team.group_sale_salesman"
                             attrs="{'invisible': [('authorized_transaction_ids', '=', [])]}"/>
                     <button name="payment_action_void" type="object"
                             string="Void Transaction" data-hotkey="shift+v"
+                            groups="sales_team.group_sale_salesman"
                             confirm="Are you sure you want to void the authorized transaction? This action can't be undone."
                             attrs="{'invisible': [('authorized_transaction_ids', '=', [])]}"/>
                     <button name="%(sale.action_view_sale_advance_payment_inv)d" string="Create Invoice"

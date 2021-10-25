@@ -1,6 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
 
 
 class AccountMove(models.Model):
@@ -26,10 +27,18 @@ class AccountMove(models.Model):
         return self.with_context(active_test=False).transaction_ids._get_last()
 
     def payment_action_capture(self):
-        self.authorized_transaction_ids._send_capture_request()
+        if not (self.env.user.has_group('account.group_account_invoice')
+            and self.check_access_rights('write') and self.check_access_rule('write') is None):
+            raise AccessError(_("You don't have the permission to capture a transaction."))
+
+        self.authorized_transaction_ids.sudo()._send_capture_request()
 
     def payment_action_void(self):
-        self.authorized_transaction_ids._send_void_request()
+        if not (self.env.user.has_group('account.group_account_invoice')
+            and self.check_access_rights('write') and self.check_access_rule('write') is None):
+            raise AccessError(_("You don't have the permission to void a transaction."))
+
+        self.authorized_transaction_ids.sudo()._send_void_request()
 
     def action_view_payment_transactions(self):
         action = self.env['ir.actions.act_window']._for_xml_id('payment.action_payment_transaction')

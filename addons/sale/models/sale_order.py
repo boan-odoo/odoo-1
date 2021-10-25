@@ -1055,10 +1055,18 @@ class SaleOrder(models.Model):
                 line.qty_to_invoice = 0
 
     def payment_action_capture(self):
-        self.authorized_transaction_ids._send_capture_request()
+        if not (self.env.user.has_group('sales_team.group_sale_salesman')
+            and self.check_access_rights('write') and self.check_access_rule('write') is None):
+            raise AccessError(_("You don't have the permission to capture a transaction."))
+
+        self.authorized_transaction_ids.sudo()._send_capture_request()
 
     def payment_action_void(self):
-        self.authorized_transaction_ids._send_void_request()
+        if not (self.env.user.has_group('sales_team.group_sale_salesman')
+            and self.check_access_rights('write') and self.check_access_rule('write') is None):
+            raise AccessError(_("You don't have the permission to void a transaction."))
+
+        self.authorized_transaction_ids.sudo()._send_void_request()
 
     def get_portal_last_transaction(self):
         self.ensure_one()
