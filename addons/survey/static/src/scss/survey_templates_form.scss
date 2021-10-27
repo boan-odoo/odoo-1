@@ -121,14 +121,14 @@ _::-webkit-full-page-media, _:future, :root .o_survey_wrap {
         i {
             top: 0px;
             font-size: large;
-            &.fa-check-circle,&.fa-check-square {
+            &.fa-check-circle {
                 display: none;
             }
         }
 
         &.o_survey_selected i {
             display: none;
-            &.fa-check-circle,&.fa-check-square {
+            &.fa-check-circle {
                 display: inline;
             }
         }
@@ -432,14 +432,11 @@ _::-webkit-full-page-media, _:future, :root .o_survey_wrap {
         color: white; // not bootstrap to customize for survey_print only
         font-weight: bold; // not bootstrap to customize for survey_print only
 
-        &.bg-success, &.bg-danger {
-            opacity: 0.6;
-        }
         &.o_survey_selected {
             background-color: $gray-600;
             opacity: 1;
         }
-        i.fa-square-o, i.fa-circle-thin {
+        i.fa-circle-thin {
             display: none;
         }
     }
@@ -451,9 +448,11 @@ _::-webkit-full-page-media, _:future, :root .o_survey_wrap {
             border: 0;
             color: $white !important;
             font-weight: $font-weight-bold;
+            height: 2rem;
         }
+
         .o_survey_question_skipped {
-            opacity: 0.6;
+            background-color: darken($warning, 10%);
         }
     }
 

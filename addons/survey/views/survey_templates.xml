@@ -444,8 +444,13 @@
                                t-att-name='question.id'
                                t-att-checked="answer_line and answer_line.suggested_answer_id.id == label.id and 'checked' or None"
                                t-att-data-selection-key="letters[item_idx] if useKeySelection else ''"/>
-                        <i class="fa fa-check-circle float-right mt-1 position-relative"></i>
-                        <i class="fa fa-circle-thin float-right mt-1 position-relative"></i>
+                        <t t-if="answer_selected">
+                            <i t-attf-class="float-right mt-1 position-relative d-inline fa #{'fa-check-circle' if is_correct or not has_correct_answer else 'fa-times-circle'}"/>
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-check-circle float-right mt-1 position-relative"></i>
+                            <i class="fa fa-circle-thin float-right mt-1 position-relative"></i>
+                        </t>
                         <t t-call="survey.question_suggested_value_image"/>
                     </label>
                 </t>
@@ -506,8 +511,13 @@
                                t-att-checked="'checked' if answer_line else None"
                                t-att-data-selection-key="letters[item_idx] if useKeySelection else ''"/>
                         <span class="ml-2" t-field='label.value'/>
-                        <i class="fa fa-check-square float-right mt-1 position-relative"></i>
-                        <i class="fa fa-square-o float-right mt-1 position-relative"></i>
+                        <t t-if="answer_selected">
+                            <i t-attf-class="float-right mt-1 position-relative d-inline fa #{'fa-check-circle' if is_correct or not has_correct_answer else 'fa-times-circle'}"/>
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-check-circle float-right mt-1 position-relative"></i>
+                            <i class="fa fa-circle-thin float-right mt-1 position-relative"></i>
+                        </t>
                         <t t-call="survey.question_suggested_value_image"/>
                     </label>
                 </t>
@@ -524,8 +534,8 @@
                                t-att-checked="comment_line and 'checked' or None"
                                t-att-data-selection-key="letters[item_idx] if useKeySelection else ''"/>
                         <span class="ml-2" t-field="question.comments_message" />
-                        <i class="fa fa-check-square float-right mt-1 position-relative"></i>
-                        <i class="fa fa-square-o float-right mt-1 position-relative"></i>
+                        <i class="fa fa-check-circle float-right mt-1 position-relative"></i>
+                        <i class="fa fa-circle-thin float-right mt-1 position-relative"></i>
                     </label>
                 </div>
                 <div t-attf-class="o_survey_comment_container mt-3 py-0 px-1 #{'d-none' if not comment_line else ''}">
