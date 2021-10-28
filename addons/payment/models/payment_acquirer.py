@@ -221,6 +221,31 @@ class PaymentAcquirer(models.Model):
             if any(not 0 <= fee < 100 for fee in (acquirer.fees_dom_var, acquirer.fees_int_var)):
                 raise ValidationError(_("Variable fees must always be positive and below 100%."))
 
+    #=== ONCHANGE METHODS ===#
+
+    @api.onchange('state', 'allow_tokenization')
+    def _onchange_state_allow_tokenization(self):
+        tokens = self.env['payment.token'].search([('acquirer_id', 'in', self.ids)])
+        if not tokens:
+            return
+
+        tokens_sub = [token.get_linked_records_info() for token in tokens]
+        if tokens_sub:
+            message = _(
+                "Please note that %s \"Payment Tokens\" linked to this acquirer will be archived. "
+                "This means that %s active subscriptions will need new payment methods.",
+                len(tokens), len(tokens_sub)
+            )
+        else:
+            message = _(
+                "Please note that %s \"Payment Tokens\" linked to this acquirer will be archived.",
+                len(tokens)
+            )
+        return {'warning': {
+            'title': _("Warning"),
+            'message': message,
+        }}
+
     #=== CRUD METHODS ===#
 
     @api.model_create_multi
@@ -230,8 +255,18 @@ class PaymentAcquirer(models.Model):
         return acquirers
 
     def write(self, values):
-        result = super().write(values)
         self._check_required_if_provider()
+
+        if any(field in ['state', 'allow_tokenization'] for field in values):
+            for acquirer in self:
+                if acquirer.state != values.get('state', acquirer.state) or (
+                    acquirer.allow_tokenization and not values.get('allow_tokenization', True)
+                ):
+                    self.env['payment.token'].search([
+                        ('acquirer_id', 'in', self.ids),
+                    ]).write({'active':False})
+
+        result = super().write(values)
         return result
 
     def _check_required_if_provider(self):
