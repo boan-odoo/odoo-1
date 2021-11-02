@@ -36,6 +36,7 @@
                            <div id="number_of_days">
                                <field name="number_of_days" class="oe_inline"/> days
                            </div>
+                            <div style="color: red">ADD SEQUENCE: automatically used on the record: increment the value</div>
                         </group>
                         <group>
                             <field name="company_id" options="{'no_create': True}" groups="base.group_multi_company"/>
@@ -43,7 +44,8 @@
                     </group>
                     <notebook name="main_book">
                         <page string="Lines" name="order_lines">
-                        <field name="sale_order_template_line_ids" widget="section_and_note_one2many">
+                        <field name="sale_order_template_line_ids" widget="section_and_note_one2many"
+                               context="{'default_sale_order_template_id': active_id}">
                             <form string="Quotation Template Lines">
                                 <!--
                                     We need the sequence field to be here for new lines to be added at the correct position.
