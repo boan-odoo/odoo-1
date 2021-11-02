@@ -115,6 +115,64 @@ class StripeController(http.Controller):
 
                 # Handle the feedback data crafted with Stripe API objects as a regular feedback
                 request.env['payment.transaction'].sudo()._handle_feedback_data('stripe', data)
+            elif event['type'] == 'charge.refunded': # handle refunds issued from Stripe
+                charge = event['data']['object']
+
+                # Check the source and integrity of the event
+                data = {'reference': charge['description']}
+                tx_sudo = request.env['payment.transaction'].sudo()._get_tx_from_feedback_data(
+                    'stripe', data
+                )
+                self._verify_notification_signature(tx_sudo)
+                # Get all refunds for this charge
+                refunds = charge['refunds']['data']
+                has_more = charge['refunds']['has_more']
+                while has_more:
+                    more_refunds = tx_sudo.acquirer_id._stripe_make_request(
+                        # The url provided by Stripe begin by /v1/, but it's already included in
+                        # _stripe_make_request()
+                        charge['refunds']['url'][4:],
+                        payload={'starting_after': refunds[-1].get('id')},
+                        method='GET',
+                    )
+                    refunds += more_refunds['data']
+                    has_more = more_refunds['has_more']
+
+                # Process refunds we aren't aware of
+                for refund in filter(lambda r: r['metadata'] == {}, refunds):
+                    # _stripe_get_refund_tx() creates the transaction if it doesn't exist
+                    refund_tx = request.env['payment.transaction'].sudo()._stripe_get_refund_tx(
+                        tx_sudo, refund
+                    )
+                    # Update the reference on Stripe
+                    refund = tx_sudo.acquirer_id._stripe_make_request(
+                        f'refunds/{refund.get("id")}',
+                        payload={'metadata[reference]': refund_tx.reference},
+                        method='POST'
+                    )
+                    _logger.info(
+                        "received refund response:\n%s", pprint.pformat(refund)
+                    )
+                    # We don't handle feedback data here because Stripe will send back
+                    # immediately a 'charge.refund.updated', with the reference of the
+                    # transaction that we just set, and it may result in a DB cursor error
+                    # trying to write on the same transaction at the same time.
+            elif event['type'] == 'charge.refund.updated': # handle update of all refunds
+                refund = event['data']['object']
+
+                refund.update(
+                    reference=refund['metadata']['reference']
+                )
+                # Check the source and integrity of the event
+                tx_sudo = request.env['payment.transaction'].sudo()._get_tx_from_feedback_data(
+                    'stripe', refund
+                )
+                self._verify_notification_signature(tx_sudo)
+                request.env['payment.transaction'].sudo()._handle_feedback_data('stripe', refund)
+            else:
+                _logger.exception(
+                    "Stripe: received unsupported webhook notification (type: %s)", event['type']
+                )
         except ValidationError:  # Acknowledge the notification to avoid getting spammed
             _logger.exception("unable to handle the notification data; skipping to acknowledge")
         return ''

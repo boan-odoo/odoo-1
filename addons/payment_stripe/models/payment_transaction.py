@@ -82,6 +82,7 @@ class PaymentTransaction(models.Model):
         common_session_values = {
             **pmt_values,
             'client_reference_id': self.reference,
+            'metadata[reference]': self.reference,
             # Assign a customer to the session so that Stripe automatically attaches the payment
             # method to it in a validation flow. In checkout flow, a customer is automatically
             # created if not provided but we still do it here to avoid requiring the customer to
@@ -109,6 +110,7 @@ class PaymentTransaction(models.Model):
                     ),
                     'line_items[0][quantity]': 1,
                     'payment_intent_data[description]': self.reference,
+                    'payment_intent_data[metadata][reference]': self.reference,
                     'payment_intent_data[setup_future_usage]': future_usage,
                 }
             )
@@ -174,6 +176,77 @@ class PaymentTransaction(models.Model):
         )
         self._handle_feedback_data('stripe', feedback_data)
 
+    def _send_refund_request(self, amount_to_refund=None, create_refund_transaction=True):
+        """ Override of payment to send a refund request to Stripe.
+
+        Note: self.ensure_one()
+
+        :param float amount_to_refund: The amount to refund
+        :param bool create_refund_transaction: Whether a refund transaction should be created or not
+        :return: The refund transaction if any
+        :rtype: recordset of `payment.transaction`
+        """
+        if self.provider != 'stripe':
+            return super()._send_refund_request(
+                amount_to_refund=amount_to_refund,
+                create_refund_transaction=create_refund_transaction
+            )
+        refund_tx = super()._send_refund_request(
+            amount_to_refund=amount_to_refund, create_refund_transaction=True
+        )
+
+        # Make the refund request to stripe
+        refund_data = self.acquirer_id._stripe_make_request(
+            'refunds', payload={
+                'charge': self.acquirer_reference,
+                'amount': payment_utils.to_minor_currency_units(
+                    -refund_tx.amount,  # The amount is negative for refund transactions
+                    refund_tx.currency_id,
+                ),
+                'metadata[reference]': refund_tx.reference,
+            },
+        )
+
+        _logger.info("entering _handle_feedback_data with data:\n%s", pprint.pformat(refund_data))
+        refund_data.update(
+            reference=refund_tx.reference
+        )
+        self._handle_feedback_data('stripe', refund_data)
+
+        return refund_tx
+
+    def _stripe_get_refund_tx(self, source_tx, data):
+        """ Get a refund transaction based on Stripe data or create a new one if not found.
+
+        The data should be a refund object. See https://stripe.com/docs/api/refunds/object
+
+        :param recordset source_tx: The source transaction for which a refund is initiated, as a
+                                    `payment.transaction` recordset
+        :param dict data: The feedback data sent by the provider
+        :return: The created refund transaction
+        :rtype: recordset of `payment.transaction`
+        :raise: ValidationError if inconsistent data were received
+        """
+        refund_acquirer_reference = data.get('id')
+        amount_to_refund = data.get('amount')
+        if not amount_to_refund:
+            raise ValidationError(
+                "Stripe: " + _("Received refund data with missing transaction values")
+            )
+
+        tx = self.search([
+            ('acquirer_reference', '=', refund_acquirer_reference),
+            ('provider', '=', 'stripe'),
+        ])
+        if not tx:
+            converted_amount = payment_utils.to_major_currency_units(
+                amount_to_refund, source_tx.currency_id
+            )
+            tx = source_tx._create_refund_transaction(
+                amount_to_refund=converted_amount, acquirer_reference=refund_acquirer_reference
+            )
+        return tx
+
     def _stripe_create_payment_intent(self):
         """ Create and return a PaymentIntent.
 
@@ -195,6 +268,7 @@ class PaymentTransaction(models.Model):
                 'off_session': True,
                 'payment_method': self.token_id.stripe_payment_method,
                 'description': self.reference,
+                'metadata[reference]': self.reference,
             },
             offline=self.operation == 'offline',
         )
@@ -252,12 +326,21 @@ class PaymentTransaction(models.Model):
         if self.provider != 'stripe':
             return
 
-        if 'charge' in data:
-            self.acquirer_reference = data['charge']['id']
+        if self.operation == 'refund':
+            self.acquirer_reference = data.get('id')
+        elif 'charge' in data:
+            charge = data.get('charge', {})
+            self.acquirer_reference = charge.get('id') if isinstance(charge, dict) else charge
+
+        if 'payment_intent' in data:
+            payment_intent = data.get('payment_intent', {})
+            self.stripe_payment_intent = payment_intent.get('id') if isinstance(payment_intent, dict) else payment_intent
 
         # Handle the intent status
         if self.operation == 'validation':
             intent_status = data.get('setup_intent', {}).get('status')
+        elif self.operation == 'refund':
+            intent_status = data.get('status')
         else:  # 'online_redirect', 'online_token', 'offline'
             intent_status = data.get('payment_intent', {}).get('status')
         if not intent_status:
@@ -273,8 +356,17 @@ class PaymentTransaction(models.Model):
             if self.tokenize:
                 self._stripe_tokenize_from_feedback_data(data)
             self._set_done()
+            if self.operation == 'refund':
+                self.env.ref('payment.cron_post_process_payment_tx')._trigger()
         elif intent_status in INTENT_STATUS_MAPPING['cancel']:
             self._set_canceled()
+        elif intent_status in INTENT_STATUS_MAPPING['error']:
+            if self.operation == 'refund' and self.state != 'error':
+                self._set_error(
+                    "Stripe: " + _("Impossible to process the refund. Invalid payment method on "
+                    "the refund recipient side. Note that accounting data were not automatically "
+                    "updated to reflect this processing error.")
+                )
         else:  # Classify unknown intent statuses as `error` tx state
             _logger.warning(
                 "received invalid payment status (%s) for transaction with reference %s",

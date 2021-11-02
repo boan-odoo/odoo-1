@@ -18,7 +18,8 @@ PAYMENT_METHOD_TYPES = [
 # See https://stripe.com/docs/payments/intents#intent-statuses for the exhaustive list of status.
 INTENT_STATUS_MAPPING = {
     'draft': ('requires_payment_method', 'requires_confirmation', 'requires_action'),
-    'pending': ('processing',),
+    'pending': ('processing', 'pending'),
     'done': ('succeeded',),
     'cancel': ('canceled',),
+    'error':('failed',),
 }
