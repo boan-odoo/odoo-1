@@ -209,8 +209,6 @@ class TestComposerInternals(TestMailComposer):
         }).create({
             'body': '<p>Test Body</p>',
         })
-        # currently onchange necessary
-        composer._onchange_template_id_wrapper()
 
         # values coming from template
         self.assertEqual(len(composer.attachment_ids), 4)
