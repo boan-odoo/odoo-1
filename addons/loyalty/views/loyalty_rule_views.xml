@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="loyalty_rule_view_form" model="ir.ui.view">
+        <field name="name">loyalty.rule.view.form</field>
+        <field name="model">loyalty.rule</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="product_ids" widget="many2many_tags"/>
+                            <field name="product_category_id"/>
+                            <!-- TODO: product tags -->
+                        </group>
+                        <group>
+                            <label for="reward_point_amount"/>
+                            <div class="row m-0">
+                                <field name="reward_point_amount" class="oe_inline"/>
+                                <field name="reward_point_name" class="oe_inline"/>
+                            </div>
+                            <!-- Align to the right -->
+                            <label for="reward_point_mode" string=""/>
+                            <field name="reward_point_mode" widget="radio" nolabel="1"/>
+                        </group>
+                        <group>
+                            <field name="minimum_qty"/>
+                            <label for="minimum_amount"/>
+                            <div class="row m-0">
+                                <field name="minimum_amount" class="oe_inline"/>
+                                <span> tax </span><field name="minimum_amount_tax_mode" class="oe_inline col-lg-3"/>
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="loyalty_rule_view_kanban" model="ir.ui.view">
+        <field name="name">loyalty.rule.view.kanban</field>
+        <field name="model">loyalty.rule</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="currency_id"/>
+                <field name="product_ids"/>
+                <field name="product_category_id"/>
+                <field name="reward_point_amount"/>
+                <field name="reward_point_name"/>
+                <field name="reward_point_mode"/>
+                <field name="minimum_qty"/>
+                <field name="minimum_amount"/>
+                <field name="minimum_amount_tax_mode"/>
+                <templates>
+                    <div t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="row">
+                                <div class="col-6">
+                                    <field name="product_ids" widget="many2many_tags"/>
+                                    <field name="product_category_id"/>
+                                </div>
+                                <div class="col-6">
+                                    <label for="reward_point_amount"/>
+                                    <div class="row m-0">
+                                        <field name="reward_point_amount" class="oe_inline"/>
+                                        <field name="reward_point_name" class="oe_inline"/>
+                                    </div>
+                                    <field name="reward_point_mode" widget="radio" readonly="1" nolabel="1"/>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">
+                                    <field name="minimum_qty"/>
+                                    <label for="minimum_amount"/>
+                                    <div class="row m-0">
+                                        <field name="minimum_amount" class="oe_inline"/>
+                                        <field name="minimum_amount_tax_mode" class="oe_inline"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

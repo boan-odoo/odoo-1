@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="loyalty_program_view_form" model="ir.ui.view">
+        <field name="name">loyalty.program.view.form</field>
+        <field name="model">loyalty.program</field>
+        <field name="arch" type="xml">
+            <form string="Coupons &amp; Loyalty">
+                <header>
+                    <!-- Generate coupon button -->
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Program Name"/>
+                        <h1>
+                            <field name="name" placeholder="10% discount on laptops"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="program_type" widget="radio"/>
+                            <span colspan="2">Visible in Portal <field name="portal_visible" class="oe_inline"/> as <field name="portal_point_name" class="oe_inline"/></span>
+                        </group>
+                        <group>
+                            <field name="applies_on" widget="radio"/>
+                            <field name="trigger" widget="radio"/>
+                            <field name="code"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Triggers" name="triggers">
+                            <field name="rule_ids" mode="kanban" nolabel="1" add-label="Add a new rule" class="o_loyalty_kanban_inline"/>
+                        </page>
+                        <page string="Rewards" name="rewards">
+                            <field name="reward_ids" mode="kanban" nolabel="1" add-label="Add a new reward" class="o_loyalty_kanban_inline"/>
+                        </page>
+                        <page string="Communications" name="communications">
+                            <field name="communication_plan_ids" mode="tree" editable="bottom"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="loyalty_program_view_tree" model="ir.ui.view">
+        <field name="name">loyalty.program.view.tree</field>
+        <field name="model">loyalty.program</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="loyalty_program_action" model="ir.actions.act_window">
+        <field name="name">Coupons &amp; Loyalty</field>
+        <field name="res_model">loyalty.program</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>
