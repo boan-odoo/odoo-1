@@ -71,6 +71,7 @@ Odoo Web Editor widget.
 
             'web_editor/static/src/js/wysiwyg/fonts.js',
             'web_editor/static/src/js/base.js',
+            'web_editor/static/src/js/editor/perspective_utils.js',
             'web_editor/static/src/js/editor/image_processing.js',
             'web_editor/static/src/js/editor/custom_colors.js',
 
@@ -133,6 +134,7 @@ Odoo Web Editor widget.
         'web.qunit_suite_tests': [
             ('include', 'web_editor.assets_wysiwyg'),
 
+            'web_editor/static/tests/perspective_tests.js',
             'web_editor/static/tests/**/*',
         ],
     },
