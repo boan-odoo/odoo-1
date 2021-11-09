@@ -13,14 +13,16 @@
         'views/loyalty_reward_views.xml',
         'views/loyalty_rule_views.xml',
         'wizard/loyalty_generate_wizard_views.xml',
+        'report/coupon_report_templates.xml',
+        'report/coupon_report.xml',
     ],
     'demo': [
     ],
-    'installable': True,
     'assets': {
         'web.assets_backend': [
             'loyalty/static/src/scss/loyalty.scss',
         ],
     },
+    'installable': True,
     'license': 'LGPL-3',
 }

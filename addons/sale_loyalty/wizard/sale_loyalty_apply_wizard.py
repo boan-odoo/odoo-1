@@ -139,6 +139,7 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
                     raise ValidationError(status['error'])
                 if not coupon:
                     coupon = status.get('coupon', False)
+                already_applied_programs |= program
             if line.reward_id:
                 if not coupon:
                     raise ValidationError(_('Coupon/Loyalty card not found for reward %s.', line.reward_id.display_name))

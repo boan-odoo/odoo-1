@@ -54,8 +54,8 @@ class SaleOrder(models.Model):
 
     def action_confirm(self):
         #TODO: do we drop coupon state?
-        self.generated_coupon_ids.write({'state': 'new'})
-        self.applied_coupon_ids.write({'state': 'used'})
+        # self.generated_coupon_ids.write({'state': 'new'})
+        # self.applied_coupon_ids.write({'state': 'used'})
         # Add/remove the points to our coupons
         for coupon, changes in self._get_point_changes():
             coupon.points += changes
@@ -65,19 +65,19 @@ class SaleOrder(models.Model):
     def action_cancel(self):
         res = super(SaleOrder, self).action_cancel()
         #TODO: do we drop coupon state?
-        self.generated_coupon_ids.write({'state': 'expired'})
-        self.applied_coupon_ids.write({'state': 'new'})
+        # self.generated_coupon_ids.write({'state': 'expired'})
+        # self.applied_coupon_ids.write({'state': 'new'})
         # Add/remove the points to our coupons
         for coupon, changes in self._get_point_changes():
             coupon.points -= changes
-        self.applied_coupon_ids.sales_order_id = False
+        # self.applied_coupon_ids.sales_order_id = False
         self._check_update_applied_rewards()
         return res
 
     def action_draft(self):
         res = super(SaleOrder, self).action_draft()
         #TODO: do we drop coupon state?
-        self.generated_coupon_ids.write({'state': 'reserved'})
+        # self.generated_coupon_ids.write({'state': 'reserved'})
         return res
 
     def _get_reward_lines(self):
@@ -85,7 +85,6 @@ class SaleOrder(models.Model):
         return self.order_line.filtered(lambda line: line.reward_id)
 
     def _is_global_discount_already_applied(self):
-        # TODO: do we still need such function
         return any(reward.reward_type == 'discount' and\
                    reward.discount_applicability == 'order' and\
                    reward.discount_mode == 'percent'\
@@ -114,8 +113,7 @@ class SaleOrder(models.Model):
         }]
 
     def _get_paid_order_lines(self):
-        """ Returns the sale order lines that are not reward lines.
-            It will also return reward lines being free product lines. """
+        """ Returns the sale order lines that are not reward lines. """
         return self.order_line.filtered(lambda x: not x.is_reward_line)
 
     def _get_base_order_lines(self, program):
@@ -230,8 +228,11 @@ class SaleOrder(models.Model):
         return reward_dict.values()
 
     def _send_reward_coupon_mail(self):
-        coupons = self._get_reward_coupons()
-        coupons._send_creation_communication()
+        coupons = self.env['loyalty.card']
+        for order in self:
+            coupons |= order._get_reward_coupons()
+        if coupons:
+            coupons._send_creation_communication()
 
     def _get_applicable_programs(self):
         """
@@ -264,7 +265,6 @@ class SaleOrder(models.Model):
         return program_points
 
 
-    # TODO: maybe make this optionally blocking; if a program is not applicable anymore return either raise an error or return some message
     def _check_update_applied_rewards(self, block=False):
         """
         Check all applied rewards and programs.
@@ -336,7 +336,14 @@ class SaleOrder(models.Model):
                             if not set(value_line.tax_id.ids).symmetric_difference(values_taxes):
                                 value_lines_to_remove -= value_line
                                 # case 1
-                                line_updates.append((Command.UPDATE, value_line.id, values))
+                                if values['product_uom_qty'] and values['price_unit']:
+                                    line_updates.append((Command.UPDATE, value_line.id, values))
+                                else:
+                                    if line.reward_id.reward_type == 'shipping':
+                                        values.update(price_unit=0)
+                                        line_updates.append((Command.UPDATE, value_line.id, values))
+                                    else:
+                                        line_updates.append((Command.DELETE, value_line.id))
                                 break
                         else:
                             # case 2

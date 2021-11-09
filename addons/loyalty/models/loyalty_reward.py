@@ -26,7 +26,6 @@ class LoyaltyReward(models.Model):
 
     reward_type = fields.Selection([
         ('product', 'Free Product'),
-        ('shipping', 'Free Shipping'),
         ('discount', 'Discount')],
         default='discount', required=True,
         compute='_compute_from_program_type', readonly=False, store=True,
@@ -111,8 +110,6 @@ class LoyaltyReward(models.Model):
                         reward_string += reward.discount_product_ids.name
                     else:
                         reward_string += _('specific products')
-            elif reward.reward_type == 'shipping':
-                reward_string = _('Free Shipping')
             result.append((reward.id, reward_string))
         return result
 

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="loyalty_reward_view_form_inherit_loyalty_delivery" model="ir.ui.view">
+        <field name="name">loyalty.reward.view.form.inherit.loyalty.delivery</field>
+        <field name="model">loyalty.reward</field>
+        <field name="inherit_id" ref="loyalty.loyalty_reward_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@id='product_group']" position="after">
+                <group id="shipping" attrs="{'invisible': [('reward_type', '!=', 'shipping')]}">
+                    <field name="discount_max_amount"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="loyalty_reward_view_kanban_inherit_loyalty_delivery" model="ir.ui.view">
+        <field name="name">loyalty.reward.view.kanban.inherit.loyalty.delivery</field>
+        <field name="model">loyalty.reward</field>
+        <field name="inherit_id" ref="loyalty.loyalty_reward_view_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@id='discount_checkbox']" position="after">
+                <div id="shipping_checkbox" class="custom-control custom-radio o_radio_item">
+                    <input t-if="record.reward_type.raw_value == 'shipping'" checked="1" type="radio" id="shipping" class="custom-control-input o_radio_input"/>
+                    <input t-else="" type="radio" id="shipping" class="custom-control-input o_radio_input"/>
+                    <span class="custom-control-label o_form_label">Free Shipping</span>
+                </div>
+            </xpath>
+            <xpath expr="//div[@id='product_group']" position="after">
+                <div t-if="record.reward_type.raw_value == 'shipping'" class="col-lg-6 o_group" id="shipping_group">
+                    <!-- Field discount_max_amount -->
+                    <div class="row">
+                        <div class="col-4 o_td_label">
+                            <span class="o_form_label">Max Discount</span>
+                        </div>
+                        <div class="col-8">
+                            <field name="discount_max_amount"/>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

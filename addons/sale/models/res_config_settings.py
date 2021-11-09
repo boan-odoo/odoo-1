@@ -38,7 +38,7 @@ class ResConfigSettings(models.TransientModel):
     module_delivery_easypost = fields.Boolean("Easypost Connector")
 
     module_product_email_template = fields.Boolean("Specific Email")
-    module_sale_coupon = fields.Boolean("Coupons & Promotions")
+    module_sale_loyalty = fields.Boolean("Coupons & Loyalty")
     module_sale_amazon = fields.Boolean("Amazon Sync")
 
     automatic_invoice = fields.Boolean(
