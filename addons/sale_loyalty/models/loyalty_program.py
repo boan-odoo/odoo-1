@@ -4,7 +4,6 @@
 from odoo import _, api, fields, models
 from babel.dates import format_datetime
 
-#TODO: Most of this file's functions are unused
 class LoyaltyProgram(models.Model):
     _inherit = 'loyalty.program'
 
@@ -12,9 +11,14 @@ class LoyaltyProgram(models.Model):
 
     # The api.depends is handled in `def modified` of `sale_coupon/models/sale_order.py`
     def _compute_order_count(self):
-        #TODO: optimize using read_group
+        # An order should count only once PER program but may appear in multiple programs
+        read_group_res = self.env['sale.order.line'].read_group(
+            [('reward_id', 'in', self.reward_ids)], ['reward_id:array_agg'], ['order_id'])
+        for group in read_group_res:
+            group['reward_id'] = set(group['reward_id'])
         for program in self:
-            program.order_count = self.env['sale.order.line'].search_count([('product_id', 'in', program.reward_ids.discount_line_product_id.id)])
+            program_rewards = set(program.reward_ids.ids)
+            program.order_count = sum(1 for group in read_group_res if group['reward_id'] & program_rewards)
 
     # The api.depends is handled in `def modified` of `sale_coupon/models/sale_order.py`
     def _compute_total_order_count(self):

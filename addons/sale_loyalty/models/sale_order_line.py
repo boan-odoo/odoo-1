@@ -8,29 +8,21 @@ from odoo import api, fields, models
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
-    # TODO: try to drop this field as it is the same as line.reward_id
     is_reward_line = fields.Boolean('Is a program reward line', compute='_compute_is_reward_line')
-    # TODO: will we use this?
-    is_free_product = fields.Boolean(compute='_compute_is_reward_line')
     # TODO: maybe contraint on both null or both non null
-    reward_id = fields.Many2one('loyalty.reward', ondelete='cascade', readonly=True)
-    coupon_id = fields.Many2one('loyalty.card', ondelete='cascade', readonly=True)
+    reward_id = fields.Many2one('loyalty.reward', ondelete='restrict', readonly=True)
+    coupon_id = fields.Many2one('loyalty.card', ondelete='restrict', readonly=True)
     # This will be used to delete multiple lines related to the same reward
     # While we can fetch other lines using the reward and coupon_id this means we will delete
     # All rewards if an order has multiple rewards of the same type with the same coupon
     # (example: loyalty card with free product)
     reward_identifier_code = fields.Char()
-    points_cost = fields.Float()
+    points_cost = fields.Float(help='How much point this reward cost on the loyalty card.')
 
     @api.depends('reward_id')
     def _compute_is_reward_line(self):
         for line in self:
-            if line.reward_id:
-                line.is_reward_line = True
-                line.is_free_product = (line.reward_id.reward_type == 'product')
-            else:
-                line.is_reward_line = False
-                line.is_free_product = False
+            line.is_reward_line = bool(line.reward_id)
 
     def _is_not_sellable_line(self):
         return self.is_reward_line or super()._is_not_sellable_line()
@@ -83,12 +75,11 @@ class SaleOrderLine(models.Model):
         if 'product_id' in fnames:
             Program = self.env['loyalty.program'].sudo()
             field_order_count = Program._fields['order_count']
-            # field_total_order_count = Program._fields['total_order_count']
+            field_total_order_count = Program._fields['total_order_count']
             programs = self.env.cache.get_records(Program, field_order_count)
-            # programs |= self.env.cache.get_records(Program, field_total_order_count)
+            programs |= self.env.cache.get_records(Program, field_total_order_count)
             if programs:
                 products = self.filtered('is_reward_line').mapped('product_id')
                 for program in programs:
                     if program.reward_ids.discount_line_product_id & products:
-                        # self.env.cache.invalidate([(field_order_count, program.ids), (field_total_order_count, program.ids)])
-                        self.env.cache.invalidate([(field_order_count, program.ids)])
+                        self.env.cache.invalidate([(field_order_count, program.ids), (field_total_order_count, program.ids)])

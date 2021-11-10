@@ -55,25 +55,31 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
             if not coupon or not coupon.program_id.active:
                 raise ValidationError(_('This code is invalid (%s).', self.promo_code))
             program = coupon.program_id
-        # When using a promo code we can assume the program is applicable to the order except for 'current' programs
-        #  -> coupon should never apply to current programs
-        #  -> future program's coupons don't care about program triggers
-        #  -> current & future (should probably not use code but) code should be usable as long for a reward if possible
+        if program and program.applies_on == 'both':
+            # Fetch loyalty card if it exists
+            coupon = self.env['loyalty.card'].search(
+                [('partner_id', '=', self.order_id.partner_id.id), ('program_id', '=', program.id)], limit=1)
+        # Using a promotional code or a coupon code will behave differently
+        #  -> current program: giving coupon code acts as if the program's code was given, check applicability + apply reward
+        #  -> future program: giving coupon code means apply reward, no need to verify for program applicability
+        #  -> current & future program: (should probably not use code but) code should be usable as long as program rules are applicable
         if not program:
             raise ValidationError(_('This code is invalid (%s).', self.promo_code))
-        points = coupon.points
-        if program.applies_on == 'current':
+        points = coupon.points or 0
+        if program.applies_on in ('current', 'both') or not coupon:
             program_points = self.order_id._program_check_compute_points(program)
-            if 'error' in program_points:
+            if 'error' in program_points and (program.applies_on == 'current' or not coupon):
                 raise ValidationError(program_points['error'])
-            points += program_points['points']
-        if program.applies_on != 'both' and not any(reward.required_points <= points for reward in program.reward_ids):
+            else:
+                points += program_points.get('points', 0)
+        if (program.applies_on == 'current' or (program.applies_on == 'future' and coupon))\
+            and not any(reward.required_points <= points for reward in program.reward_ids):
             raise ValidationError(_('No reward can be claimed with this coupon.'))
         self.write({'line_ids': [(Command.CREATE, 0, {
             'program_id': program.id,
             'coupon_id': coupon.id,
             # Use reward directly if there is only one and the program is not current&future
-            'reward_id': program.reward_ids.id if len(program.reward_ids) == 1 and not program.applies_on == 'both'\
+            'reward_id': program.reward_ids.id if coupon and len(program.reward_ids) == 1 and not program.applies_on == 'both'\
                         else False,
             'points': points,
         })]})
@@ -83,7 +89,6 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
 
     def action_make_auto(self):
         self.ensure_one()
-        # TODO: maybe this step can be ran automatically at the start of the wizard
         # This function will create a new wizard line for every 'automatic' programs that are applicable
         #  OR if they apply to current&future AND enough points are available for a reward
         # Automatic programs using future mean you create a coupon for a future order
@@ -105,9 +110,7 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
             ('partner_id', '=', self.order_id.partner_id.id),
             ('program_id', 'in', tuple(k.id for k in newly_applicable_program_points.keys()\
                 if k.applies_on == 'both'))])
-        coupons_per_program = dict()
-        for coupon in coupons:
-            coupons_per_program[coupon.program_id] = coupon
+        coupons_per_program = {c.program_id: c for c in coupons}
         line_ids_update_vals = []
         for program, points in newly_applicable_program_points.items():
             coupon = coupons_per_program.get(program, self.env['loyalty.card'])
@@ -135,7 +138,9 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
             program = line.program_id
             coupon = line.coupon_id
             already_applied = bool(program in already_applied_programs)
-            if not already_applied:
+            # Apply program if not applied already, prevent applying program if program is type future and coupon exists
+            #  ^ it means that we only want the reward.
+            if not already_applied and not (program.applies_on == 'future' and coupon):
                 status = order._try_apply_program(program, line.coupon_id)
                 # In some cases it does not matter if the program is not applicable
                 if 'error' in status and (program.applies_on != 'both' or line.coupon_id):

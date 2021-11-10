@@ -97,8 +97,9 @@ class SaleOrder(models.Model):
             raise ValidationError(_('The specified reward is not of type free product'))
         additional_points = kwargs.get('additional_points', 0)
         program = reward.program_id
-        product = product or reward._get_reward_products()[:1]
-        if not product:
+        reward_products = reward._get_reward_products()
+        product = product or reward_products[:1]
+        if not product or not product in reward_products:
             raise ValidationError(_('No applicable product was found for your reward.'))
         taxes = self.fiscal_position_id.map_tax(reward.reward_product_id.taxes_id.filtered(lambda t: t.company_id == self.company_id))
         return [{
@@ -142,6 +143,8 @@ class SaleOrder(models.Model):
             concerned_lines = self._get_cheapest_line()
         elif reward.discount_applicability == 'specific':
             concerned_lines = self._get_paid_order_lines().filtered(lambda l: l.product_id in reward.discount_product_ids)
+        if not concerned_lines:
+            raise ValidationError(_('No lines found to apply discount.'))
         # NOTE: should this be converted using the currency?
         max_discount = reward.discount_max_amount or float('inf')
         if reward.discount_applicability != 'cheapest':
@@ -236,21 +239,15 @@ class SaleOrder(models.Model):
 
     def _get_applicable_programs_points(self, domain=None):
         """
-        Returns a dict with the points per program for each program that is applicable
+        Returns a dict with the points per program for each (automatic) program that is applicable
         """
         self.ensure_one()
         if not domain:
-            domain = [('company_id', 'in', (self.company_id.id, False))]
+            domain = [('trigger', '=', 'auto'), ('company_id', 'in', (self.company_id.id, False))]
         # No other way than to test all programs to the order
-        programs = self.env['loyalty.program'].search(domain, order="id")
+        programs = self.env['loyalty.program'].search(domain)
         program_points = dict()
-        order_products = self.order_line.product_id
         for program in programs:
-            # Try to prefilter as much as possible
-            if len(program.rule_ids) == 1:
-                if not order_products.filtered_domain(program.rule_ids._get_valid_product_domain()) or\
-                    self.amount_total < program.rule_ids.minimum_amount:
-                    continue
             status = self._program_check_compute_points(program)
             if 'points' in status:
                 program_points[program] = status['points']
@@ -335,7 +332,8 @@ class SaleOrder(models.Model):
                 # Not adding concerned_lines since it is implicit
                 lines_to_remove |= line
             else:
-                values_list = self._get_reward_line_values(line.reward_id, line.coupon_id, additional_points=additional_points)
+                values_list = self._get_reward_line_values(
+                    line.reward_id, line.coupon_id, additional_points=additional_points, product=line.product_id)
                 for values in values_list:
                     # We do not want to update the identifier
                     values.pop('reward_identifier_code')
@@ -574,7 +572,7 @@ class SaleOrder(models.Model):
                     points += rule.reward_point_amount
                 elif rule.reward_point_mode == 'money':
                     # Compute amount paid for rule
-                    # NOTE: this does not account for discounts -> 1 point per $ * 100$ - 30% will result in 100$
+                    # NOTE: this does not account for discounts -> 1 point per $ * (100$ - 30%) will result in 100 points
                     amount_paid = sum(max(0, line.price_total) for line in order_lines if line.product_id in rule_products)
                     points += (rule.reward_point_amount * amount_paid) // 1
                 elif rule.reward_point_mode == 'unit':
@@ -655,16 +653,18 @@ class SaleOrder(models.Model):
                         for x, coupon in enumerate(new_coupons):
                             self._add_points_for_coupon(coupon, x)
                         coupons |= new_coupons
-                coupon = self.env['loyalty.card'].sudo().create({
-                    'program_id': program.id,
-                    'partner_id': self.partner_id.id,
-                    'shared_code': True if program.code else False,
-                    'code': program.code or self.env['loyalty.card']._generate_code(),
-                    'points': 0, #NOTE: use `_get_real_points_for_coupon` to get the points for this order
-                    'order_id': self.id if program.applies_on == 'future' else False,
-                })
-                coupons |= coupon
-        self._add_points_for_coupon(coupon, points)
+                if points:
+                    coupon = self.env['loyalty.card'].sudo().create({
+                        'program_id': program.id,
+                        'partner_id': self.partner_id.id,
+                        'shared_code': True if program.code else False,
+                        'code': program.code or self.env['loyalty.card']._generate_code(),
+                        'points': 0, #NOTE: use `_get_real_points_for_coupon` to get the points for this order
+                        'order_id': self.id if program.applies_on == 'future' else False,
+                    })
+                    coupons |= coupon
+        if coupon and points:
+            self._add_points_for_coupon(coupon, points)
         return {'coupon': coupons}
 
     def _try_apply_code(self, code):

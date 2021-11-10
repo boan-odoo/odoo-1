@@ -10,6 +10,7 @@ from odoo.exceptions import ValidationError
 
 class LoyaltyCard(models.Model):
     _name = 'loyalty.card'
+    _inherit = ['mail.thread']
     _description = 'loyalty Coupon'
     _rec_name = 'code'
 
@@ -27,7 +28,7 @@ class LoyaltyCard(models.Model):
     # Reserved for this partner if non-empty
     partner_id = fields.Many2one('res.partner')
     # TODO: constraint >= 0
-    points = fields.Float()
+    points = fields.Float(tracking=True)
     point_name = fields.Char(related='program_id.portal_point_name', readonly=True)
 
     code = fields.Char(default=_generate_code, required=True, readonly=True, index=True)

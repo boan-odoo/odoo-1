@@ -20,9 +20,11 @@ class LoyaltyProgram(models.Model):
     company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env.company)
     currency_id = fields.Many2one('res.currency', 'Currency', compute='_compute_currency_id', readonly=False, store=True, required=True)
 
-    rule_ids = fields.One2many('loyalty.rule', 'program_id', 'Triggers', )#default=lambda self: self.env['loyalty.rule'].new())
+    total_order_count = fields.Integer("Total Order Count", compute="_compute_total_order_count")
+
+    rule_ids = fields.One2many('loyalty.rule', 'program_id', 'Triggers', default=lambda self: self.env['loyalty.rule'].new())
     rule_partner_domain = fields.Char('Partner Domain')
-    reward_ids = fields.One2many('loyalty.reward', 'program_id', 'Rewards', )#default=lambda self: self.env['loyalty.reward'].new())
+    reward_ids = fields.One2many('loyalty.reward', 'program_id', 'Rewards', default=lambda self: self.env['loyalty.reward'].new())
     communication_plan_ids = fields.One2many('loyalty.mail', 'program_id')
     coupon_ids = fields.One2many('loyalty.card', 'program_id')
     coupon_count = fields.Integer(compute='_compute_coupon_count')
@@ -75,6 +77,9 @@ class LoyaltyProgram(models.Model):
     def _constrains_reward_ids(self):
         if any(not program.reward_ids for program in self):
             raise ValidationError(_('A program must have at least one reward.'))
+
+    def _compute_total_order_count(self):
+        self.total_order_count = 0
 
     @api.depends('company_id')
     def _compute_currency_id(self):
@@ -197,14 +202,14 @@ class LoyaltyProgram(models.Model):
         Returns a dict containing the products that match per rule of the program
         '''
         self.ensure_one()
-        rule_qties = dict()
+        rule_products = dict()
         for rule in self.rule_ids:
             domain = rule._get_valid_product_domain()
             if domain:
-                rule_qties[rule] = products.filtered_domain(domain)
+                rule_products[rule] = products.filtered_domain(domain)
             else:
-                rule_qties[rule] = products
-        return rule_qties
+                rule_products[rule] = products
+        return rule_products
 
     def _is_valid_partner(self, partner_id):
         self.ensure_one()
