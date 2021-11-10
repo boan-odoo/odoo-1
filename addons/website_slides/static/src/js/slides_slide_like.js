@@ -52,10 +52,10 @@ var SlideLikeWidget = publicWidget.Widget.extend({
                 self.$el.find('span.o_wslides_js_slide_like_down span').text(data.dislikes);
             } else {
                 if (data.error === 'public_user') {
-                    var message = _t('Please <a href="/web/login?redirect=%s">login</a> to vote this lesson');
+                    var message = _t('Please <a href="/web/login?redirect=%s">login</a> to vote for this lesson');
                     var signupAllowed = data.error_signup_allowed || false;
                     if (signupAllowed) {
-                        message = _t('Please <a href="/web/signup?redirect=%s">create an account</a> to vote this lesson');
+                        message = _t('Please <a href="/web/login?redirect=%s">login</a> or <a href="/web/signup?redirect=%s">create an account</a> to vote for this lesson');
                     }
                     self._popoverAlert(self.$el, _.str.sprintf(message, (document.URL)));
                 } else if (data.error === 'vote_done') {

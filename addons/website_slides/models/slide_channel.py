@@ -249,6 +249,7 @@ class Channel(models.Model):
     can_review = fields.Boolean('Can Review', compute='_compute_action_rights', compute_sudo=False)
     can_comment = fields.Boolean('Can Comment', compute='_compute_action_rights', compute_sudo=False)
     can_vote = fields.Boolean('Can Vote', compute='_compute_action_rights', compute_sudo=False)
+    can_view_full_statistics = fields.Boolean('Can See Full Statistics', compute='_compute_can_view_full_statistics', compute_sudo=False)
 
     @api.depends('slide_ids.is_published')
     def _compute_slide_last_update(self):
@@ -356,6 +357,15 @@ class Channel(models.Model):
             completed, completed_slides_count = mapped_data.get(record.id, (False, 0))
             record.completed = completed
             record.completion = 100.0 if completed else round(100.0 * completed_slides_count / (record.total_slides or 1))
+
+    @api.depends('user_id')
+    @api.depends_context('uid')
+    def _compute_can_view_full_statistics(self):
+        for record in self:
+            record.can_view_full_statistics = (record.user_id == self.env.user or self.env.is_superuser()
+                                               or self.user_has_groups('website_slides.group_website_slides_manager,'
+                                                                       'website_slides.group_website_slides_officer,'
+                                                                       'sales_team.group_sale_salesman'))
 
     @api.depends('upload_group_ids', 'user_id')
     @api.depends_context('uid')

@@ -59,6 +59,7 @@ class WebsiteSlides(WebsiteProfile):
             viewed_slides = request.session.setdefault('viewed_slides', list())
             if slide.id not in viewed_slides:
                 if tools.sql.increment_field_skiplock(slide, 'public_views'):
+                    slide.sudo()._compute_total()  # immediate impact on shown views counts
                     viewed_slides.append(slide.id)
                     request.session['viewed_slides'] = viewed_slides
         else:
