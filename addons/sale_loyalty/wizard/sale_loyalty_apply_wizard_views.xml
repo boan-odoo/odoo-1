@@ -12,8 +12,8 @@
                         <button type="object" name="action_make_auto" string="Automatic promotions"/>
                     </group>
                     <group>
-                        <field name="line_ids" create="false" edit="true">
-                            <tree>
+                        <field name="line_ids">
+                            <tree create="false" edit="true">
                                 <field name="program_id" readonly="1"/>
                                 <field name="coupon_id" readonly="1"/>
                                 <field name="require_reward" invisible="1"/>

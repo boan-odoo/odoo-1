@@ -35,6 +35,9 @@ class LoyaltyRule(models.Model):
 
     reward_point_amount = fields.Integer(default=1, string="Reward",
         compute='_compute_from_program_type', readonly=False, store=True,)
+    # Only used for program_id.applies_on == 'future'
+    reward_point_trigger_multi = fields.Boolean(string='Split per unit', default=False,
+        help="Whether to separate reward coupons per matched unit, only applies to 'future' programs and trigger mode per money spent or unit paid..")
     reward_point_name = fields.Char(related='program_id.portal_point_name', readonly=True)
     reward_point_mode = fields.Selection(selection=_get_reward_point_mode_selection, required=True, default='order',
         compute='_compute_from_program_type', readonly=False, store=True)
@@ -63,7 +66,7 @@ class LoyaltyRule(models.Model):
         if self.product_ids:
             domain = [('id', 'in', self.product_ids.ids)]
         if self.product_category_id:
-            domain = expression.AND([domain, [('categ_id', 'child_of', self.product_category_id)]])
+            domain = expression.AND([domain, [('categ_id', 'child_of', self.product_category_id.id)]])
         if self.product_domain and self.product_domain != '[]':
             domain = expression.AND([domain, ast.literal_eval(self.product_domain)])
         return domain

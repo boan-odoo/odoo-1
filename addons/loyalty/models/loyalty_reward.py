@@ -32,7 +32,7 @@ class LoyaltyReward(models.Model):
     )
 
     # Discount rewards
-    # TODO: > 0
+    # TODO: > 0 constraint
     discount = fields.Float('Discount')
     discount_mode = fields.Selection(selection=_get_discount_mode_select, required=True, default='percent',
         compute='_compute_from_program_type', readonly=False, store=True)

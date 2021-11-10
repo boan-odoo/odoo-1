@@ -3,6 +3,7 @@
 
 from collections import defaultdict
 import random
+from uuid import uuid4
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -10,21 +11,16 @@ from odoo.exceptions import ValidationError
 class LoyaltyCard(models.Model):
     _name = 'loyalty.card'
     _description = 'loyalty Coupon'
+    _rec_name = 'code'
 
     # This model does not only represent coupons but also wallets and loyalty cards
 
     @api.model
     def _generate_code(self):
-        """Generate a 20 char long pseudo-random string of digits for barcode
-        generation.
-
-        A decimal serialisation is longer than a hexadecimal one *but* it
-        generates a more compact barcode (Code128C rather than Code128A).
-
-        Generate 8 bytes (64 bits) barcodes as 16 bytes barcodes are not
-        compatible with all scanners.
-         """
-        return str(random.getrandbits(64))
+        """
+        Barcode identifiable codes.
+        """
+        return '044' + str(uuid4())[4:-8][3:]
 
     # TODO: contraint unique (program_id, partner_id) ?
     program_id = fields.Many2one('loyalty.program')
@@ -43,7 +39,7 @@ class LoyaltyCard(models.Model):
     state = fields.Selection([
         ('reserved', 'Pending'),
         ('new', 'Valid'),
-        ('sent', 'Sent'), # Are more susceptible to have a partner_id
+        ('sent', 'Sent'),
         ('used', 'Used'),
         ('expired', 'Expired'),
         ('cancel', 'Cancelled')],

@@ -115,7 +115,9 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
             line_ids_update_vals.append((Command.CREATE, 0, {
                 'program_id': program.id,
                 'coupon_id': coupon.id,
-                'reward_id': program.reward_ids.id if len(program.reward_ids) == 1 and program.reward_ids.required_points <= points\
+                'reward_id': program.reward_ids.id if len(program.reward_ids) == 1 and\
+                                                        (program.applies_on == 'current' or coupon) and\
+                                                        program.reward_ids.required_points <= points\
                                 else False,
                 'points': points,
             }))
@@ -128,6 +130,7 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
         self.ensure_one()
         order = self.order_id
         already_applied_programs = order._get_applied_programs()
+        # TODO: look into _keep_only_most_interesting_auto_applied_global_discount_program
         for line in self.line_ids:
             program = line.program_id
             coupon = line.coupon_id

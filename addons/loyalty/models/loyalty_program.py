@@ -200,7 +200,7 @@ class LoyaltyProgram(models.Model):
         rule_qties = dict()
         for rule in self.rule_ids:
             domain = rule._get_valid_product_domain()
-            if len(domain):
+            if domain:
                 rule_qties[rule] = products.filtered_domain(domain)
             else:
                 rule_qties[rule] = products

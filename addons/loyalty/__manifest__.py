@@ -7,6 +7,8 @@
     'version': '1.0',
     'depends': ['product'],
     'data': [
+        'data/loyalty_data.xml',
+        'data/mail_template_data.xml',
         'security/ir.model.access.csv',
         'views/loyalty_mail_views.xml',
         'views/loyalty_program_views.xml',
@@ -17,6 +19,7 @@
         'report/coupon_report.xml',
     ],
     'demo': [
+        # 'data/loyalty_demo.xml',
     ],
     'assets': {
         'web.assets_backend': [
