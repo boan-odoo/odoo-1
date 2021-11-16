@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from dateutil.relativedelta import relativedelta
+
 from odoo import _, http, fields
 from odoo.exceptions import AccessError
 from odoo.http import request
 from odoo.osv import expression
 from odoo.tools import float_round, float_repr
+from odoo.tools.misc import format_date
 
 
 class LunchController(http.Controller):
@@ -15,22 +18,28 @@ class LunchController(http.Controller):
         user = request.env['res.users'].browse(user_id) if user_id else request.env.user
 
         infos = self._make_infos(user, order=False)
+        today = fields.Date.context_today(user)
 
-        lines = self._get_current_lines(user)
+        lines = self._get_current_lines(user, include_future=True)
         if lines:
+            translated_states = dict(request.env['lunch.order']._fields['state']._description_selection(request.env))
             lines = [{'id': line.id,
                       'product': (line.product_id.id, line.product_id.name, float_repr(float_round(line.product_id.price, 2), 2)),
                       'toppings': [(topping.name, float_repr(float_round(topping.price, 2), 2))
                                    for topping in line.topping_ids_1 | line.topping_ids_2 | line.topping_ids_3],
                       'quantity': line.quantity,
                       'price': line.price,
-                      'state': line.state, # Only used for _get_state
-                      'note': line.note} for line in lines]
-            raw_state, state = self._get_state(lines)
+                      'raw_state': line.state,
+                      'state': translated_states[line.state],
+                      'date': format_date(request.env, line.date),
+                      'is_future': line.date > today,
+                      'note': line.note} for line in lines.sorted('date')]
+            current_lines = list(filter(lambda l: not l['is_future'], lines))
+            raw_state = self._get_state(lines)
             infos.update({
-                'total': float_repr(float_round(sum(line['price'] for line in lines), 2), 2),
+                'total': float_repr(float_round(sum(line['price'] for line in current_lines), 2), 2),
                 'raw_state': raw_state,
-                'state': state,
+                'state': translated_states[raw_state] if raw_state else False,
                 'lines': lines,
             })
         return infos
@@ -40,7 +49,8 @@ class LunchController(http.Controller):
         self._check_user_impersonification(user_id)
         user = request.env['res.users'].browse(user_id) if user_id else request.env.user
 
-        lines = self._get_current_lines(user)
+        lines = self._get_current_lines(user, include_future=True)
+        lines = lines.filtered_domain([('state', 'not in', ['sent', 'confirmed'])])
         lines.action_cancel()
         lines.unlink()
 
@@ -49,7 +59,7 @@ class LunchController(http.Controller):
         self._check_user_impersonification(user_id)
         user = request.env['res.users'].browse(user_id) if user_id else request.env.user
 
-        lines = self._get_current_lines(user)
+        lines = self._get_current_lines(user, include_future=True)
         if lines:
             lines = lines.filtered(lambda line: line.state == 'new')
 
@@ -123,10 +133,13 @@ class LunchController(http.Controller):
         if (user_id and request.env.uid != user_id and not request.env.user.has_group('lunch.group_lunch_manager')):
             raise AccessError(_('You are trying to impersonate another user, but this can only be done by a lunch manager'))
 
-    def _get_current_lines(self, user):
-        return request.env['lunch.order'].search(
-            [('user_id', '=', user.id), ('date', '=', fields.Date.context_today(user)), ('state', '!=', 'cancelled')]
-            )
+    def _get_current_lines(self, user, include_future=False):
+        today = fields.Date.context_today(user)
+        date_domain = [('date', '=', today)]
+        if include_future:
+            date_domain = expression.OR([date_domain, [('date', '=', today + relativedelta(days=1))]])
+        domain = expression.AND([[('user_id', '=', user.id), ('state', '!=', 'cancelled')], date_domain])
+        return request.env['lunch.order'].search(domain)
 
     def _get_state(self, lines):
         """
@@ -134,10 +147,7 @@ class LunchController(http.Controller):
 
             eg: [confirmed, confirmed, new] will return ('new', 'To Order')
         """
-        states_to_int = {'new': 0, 'ordered': 1, 'confirmed': 2, 'cancelled': 3}
-        int_to_states = ['new', 'ordered', 'confirmed', 'cancelled']
-        translated_states = dict(request.env['lunch.order']._fields['state']._description_selection(request.env))
+        states_to_int = {'new': 0, 'ordered': 1, 'sent': 2, 'confirmed': 3, 'cancelled': 4}
+        int_to_states = ['new', 'ordered', 'sent', 'confirmed', 'cancelled']
 
-        state = int_to_states[min(states_to_int[line['state']] for line in lines)]
-
-        return (state, translated_states[state])
+        return int_to_states[min(states_to_int[line['raw_state']] for line in lines)]
