@@ -311,7 +311,7 @@ class Channel(models.Model):
             members_to_create = []
             if channel.public == 'groups':
                 invalid_partners = partners.filtered(lambda partner: channel.group_public_id not in partner.user_ids.groups_id)
-                if invalid_partners:
+                if invalid_partners or guests:
                     raise UserError(_(
                         'Channel "%(channel_name)s" only accepts members of group "%(group_name)s". Forbidden for: %(partner_names)s',
                         channel_name=channel.name,

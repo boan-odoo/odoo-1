@@ -82,6 +82,8 @@ class DiscussController(http.Controller):
             if not channel_sudo.env.user._is_public():
                 channel_sudo.add_members([channel_sudo.env.user.partner_id.id])
             else:
+                if channel_sudo.public == 'groups':
+                    raise NotFound()
                 guest = channel_sudo.env['mail.guest']._get_guest_from_request(request)
                 if guest:
                     channel_sudo = channel_sudo.with_context(guest=guest)
