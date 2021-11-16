@@ -8,7 +8,9 @@ from odoo import api, fields, models
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
-    is_reward_line = fields.Boolean('Is a program reward line', compute='_compute_is_reward_line')
+    #NOTE: stored for legacy purpose
+    # TODO: try to remove stored
+    is_reward_line = fields.Boolean('Is a program reward line', compute='_compute_is_reward_line', store=True)
     # TODO: maybe contraint on both null or both non null
     reward_id = fields.Many2one('loyalty.reward', ondelete='restrict', readonly=True)
     coupon_id = fields.Many2one('loyalty.card', ondelete='restrict', readonly=True)

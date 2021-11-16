@@ -57,15 +57,14 @@ class LoyaltyProgram(models.Model):
         compute='_compute_from_program_type', readonly=False, store=True)
     portal_point_name = fields.Char(default='Points', translate=True)
 
-    _sql_constraints = [
-        ('check_code_uniq', 'UNIQUE (code)',
-        'The promo code must be unique.')
-    ]
-
     @api.constrains('code')
     def _constrains_code(self):
+        mapped_codes = self.filtered('code').mapped('code')
+        # Program code must be unique
+        if len(mapped_codes) != set(mapped_codes) or self.env['loyalty.program'].search_count([('code', 'in', mapped_codes), ('id', 'not in', self.ids)]):
+            raise ValidationError(_('The promo code must be unique.'))
         # Prevent coupons and programs from sharing a code
-        if self.env['loyalty.card'].search_count([('code', 'in', self.mapped('code')), ('shared_code', '=', False)]):
+        if self.env['loyalty.card'].search_count([('code', 'in', mapped_codes), ('shared_code', '=', False)]):
             raise ValidationError(_('A coupon with the same code was found.'))
 
     @api.constrains('rule_ids')

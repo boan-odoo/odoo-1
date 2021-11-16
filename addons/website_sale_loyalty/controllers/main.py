@@ -12,27 +12,26 @@ class WebsiteSale(main.WebsiteSale):
     @http.route(['/shop/pricelist'])
     def pricelist(self, promo, **post):
         order = request.website.sale_get_order()
-        # TODO: This should auto apply the reward if applicable (only one reward) or show an interface with possible reward
         coupon_status = order._try_apply_code(promo)
-        # coupon_status = request.env['sale.coupon.apply.code'].sudo().apply_coupon(order, promo)
         if coupon_status.get('not_found'):
             return super(WebsiteSale, self).pricelist(promo, **post)
         elif coupon_status.get('error'):
             request.session['error_promo_code'] = coupon_status['error']
+        elif coupon_status:
+            #TODO: show interface to select reward
+            pass
         return request.redirect(post.get('r', '/shop/cart'))
 
     @http.route()
     def shop_payment(self, **post):
         order = request.website.sale_get_order()
-        # TODO: this should also apply all automatic programs
-        order._check_update_applied_rewards()
+        order._program_auto_apply()
         return super(WebsiteSale, self).shop_payment(**post)
 
     @http.route(['/shop/cart'], type='http', auth="public", website=True)
     def cart(self, **post):
         order = request.website.sale_get_order()
-        # TODO: this should also apply all automatic programs
-        order._check_update_applied_rewards()
+        order._program_auto_apply()
         return super(WebsiteSale, self).cart(**post)
 
     @http.route(['/coupon/<string:code>'], type='http', auth='public', website=True, sitemap=False)
