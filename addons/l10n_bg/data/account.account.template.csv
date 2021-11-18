@@ -8,7 +8,7 @@
 "l10n_bg_113","Резерви от последваща оценка на финансови инструменти","113","account.data_account_type_equity","l10n_bg.l10n_bg_chart_template","","False"
 "l10n_bg_114","Резерви от емисия на акции","114","account.data_account_type_equity","l10n_bg.l10n_bg_chart_template","","False"
 "l10n_bg_115","Резерви, свързани с капитал","115","account.data_account_type_equity","l10n_bg.l10n_bg_chart_template","","False"
-"l10n_bg_116","Обратно изкупени собствени акции","116","account.data_account_type_current_liability","l10n_bg.l10n_bg_chart_template","","False"
+"l10n_bg_116","Обратно изкупени собствени акции","116","account.data_account_type_current_liabilities","l10n_bg.l10n_bg_chart_template","","False"
 "l10n_bg_117","Резерви, формирани от печалбата","117","account.data_account_type_equity","l10n_bg.l10n_bg_chart_template","","False"
 "l10n_bg_119","Други резерви","119","account.data_account_type_equity","l10n_bg.l10n_bg_chart_template","","False"
 "l10n_bg_121","Непокрита загуба от минали години","121","account.data_account_type_equity","l10n_bg.l10n_bg_chart_template","","False"
