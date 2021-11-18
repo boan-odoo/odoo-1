@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 20% -->
+    <record id="l10n_bg_vat_20_1" model="account.tax.template">
+        <field name="sequence">1</field>
+        <field name="description">20% ДДС продажби</field>
+        <field name="name">20% ДДС продажби</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">20</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">sale</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_20"/>
+    </record>
+
+    <record id="l10n_bg_vat_20_2" model="account.tax.template">
+        <field name="sequence">2</field>
+        <field name="description">20% ДДС покупки</field>
+        <field name="name">20% ДДС покупки</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">20</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_20"/>
+    </record>
+
+    <record id="l10n_bg_vat_20_4" model="account.tax.template">
+        <field name="sequence">4</field>
+        <field name="description">20% ДДС удържане</field>
+        <field name="name">20% ДДС удържане</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">20</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_20"/>
+    </record>
+
+    <!-- 9% -->
+    <record id="l10n_bg_vat_9_1" model="account.tax.template">
+        <field name="sequence">5</field>
+        <field name="description">9% Туристически услуги</field>
+        <field name="name">9% Туристически услуги</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">9</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">sale</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_9"/>
+    </record>
+
+    <!-- 0% -->
+    <record id="l10n_bg_vat_0_1" model="account.tax.template">
+        <field name="sequence">6</field>
+        <field name="description">0% ВОД</field>
+        <field name="name">0% ВОД</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">0</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">sale</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_0"/>
+    </record>
+
+    <record id="l10n_bg_vat_0_2" model="account.tax.template">
+        <field name="sequence">7</field>
+        <field name="description">0% Износ извън ЕС</field>
+        <field name="name">0% Износ извън ЕС</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">0</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">sale</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_0"/>
+    </record>
+
+    <record id="l10n_bg_vat_0_3" model="account.tax.template">
+        <field name="sequence">8</field>
+        <field name="description">0% ВОП</field>
+        <field name="name">0% ВОП</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">0</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_0"/>
+    </record>
+
+    <record id="l10n_bg_vat_0_4" model="account.tax.template">
+        <field name="sequence">9</field>
+        <field name="description">0% Сделки без право на ДК</field>
+        <field name="name">0% Сделки без право на ДК</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">0</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_0"/>
+    </record>
+
+    <record id="l10n_bg_vat_0_5" model="account.tax.template">
+        <field name="sequence">10</field>
+        <field name="description">0% Внос извън ЕС</field>
+        <field name="name">0% Внос извън ЕС</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">0</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_0"/>
+    </record>
+</odoo>
