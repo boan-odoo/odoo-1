@@ -9,8 +9,12 @@
     'version': '1.0',
     'category': 'Accounting/Localizations/Account Charts',
     'author': 'Odoo S.A.',
-    'description': """ Base module for Bulgarian chart of accounting and localization """,
-    'depends': ['account'],
+    'description': """
+        Chart accounting and taxes for Bulgaria
+    """,
+    'depends': [
+        'account'
+    ],
     'data': [
         'data/account_chart_template_data.xml',
         'data/account.account.template.csv',
