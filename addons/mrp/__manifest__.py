@@ -67,6 +67,7 @@
             'mrp/static/src/scss/mrp_fields.scss',
             'mrp/static/src/scss/mrp_gantt.scss',
             'mrp/static/src/scss/mrp_document_kanban_view.scss',
+            'mrp/static/src/scss/mrp_production_form_view.scss',
             'mrp/static/src/js/mrp.js',
             'mrp/static/src/js/mrp_bom_report.js',
             'mrp/static/src/js/mrp_workorder_popover.js',
