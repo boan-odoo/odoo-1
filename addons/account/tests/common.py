@@ -3,9 +3,11 @@
 from odoo import fields
 from odoo.tests.common import TransactionCase, HttpCase, tagged, Form
 
+import json
 import time
 import base64
 from lxml import etree
+
 
 @tagged('post_install', '-at_install')
 class AccountTestInvoicingCommon(TransactionCase):
@@ -411,6 +413,35 @@ class AccountTestInvoicingCommon(TransactionCase):
         self.assertRecordValues(sort_lines(move.line_ids.sorted()), expected_lines_values)
         self.assertRecordValues(sort_lines(move.invoice_line_ids.sorted()), expected_lines_values[:len(move.invoice_line_ids)])
         self.assertRecordValues(move, [expected_move_values])
+
+    def assert_invoice_outstanding_to_reconcile_widget(self, invoice, expected_amounts):
+        """ Check the outstanding widget before the reconciliation.
+        :param invoice:             An invoice.
+        :param expected_amounts:    A map <move_id> -> <amount>
+        """
+        invoice.invalidate_cache(['invoice_outstanding_credits_debits_widget'])
+        widget_vals = json.loads(invoice.invoice_outstanding_credits_debits_widget)
+
+        if widget_vals:
+            current_amounts = {vals['move_id']: vals['amount'] for vals in widget_vals['content']}
+        else:
+            current_amounts = {}
+        self.assertDictEqual(current_amounts, expected_amounts)
+
+    def assert_invoice_outstanding_reconciled_widget(self, invoice, expected_amounts):
+        """ Check the outstanding widget after the reconciliation.
+        :param invoice:             An invoice.
+        :param expected_amounts:    A map <move_id> -> <amount>
+        """
+        invoice.invalidate_cache(['invoice_payments_widget'])
+        widget_vals = json.loads(invoice.invoice_payments_widget)
+
+        if widget_vals:
+            current_amounts = {vals['move_id']: vals['amount'] for vals in widget_vals['content']}
+        else:
+            current_amounts = {}
+        formatted_expected_amounts = {k: invoice.currency_id.round(v) for k, v in expected_amounts.items()}
+        self.assertDictEqual(current_amounts, formatted_expected_amounts)
 
     ####################################################
     # Xml Comparison
