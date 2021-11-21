@@ -34,6 +34,8 @@ const effectRegistry = registry.category("effects");
  *    Custom Component class to instantiate inside the Rainbow Man
  * @param {Object} [params.props]
  *    If params.Component is given, its props can be passed with this argument
+ * @param {Object} [params.notification_props]
+ *    If effects are disabled, the default notifications can receive props
  */
 function rainbowMan(env, params = {}) {
     let message = params.message;
@@ -61,7 +63,9 @@ function rainbowMan(env, params = {}) {
         };
         return { Component: RainbowMan, props };
     }
-    env.services.notification.add(message);
+    /** @type {import("../notifications/notification").NotificationProps} */
+    let props = params.notification_props || {};
+    env.services.notification.add(message, props);
 }
 effectRegistry.add("rainbow_man", rainbowMan);
 
