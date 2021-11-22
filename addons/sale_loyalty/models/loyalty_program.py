@@ -13,12 +13,10 @@ class LoyaltyProgram(models.Model):
     def _compute_order_count(self):
         # An order should count only once PER program but may appear in multiple programs
         read_group_res = self.env['sale.order.line'].read_group(
-            [('reward_id', 'in', self.reward_ids)], ['reward_id:array_agg'], ['order_id'])
-        for group in read_group_res:
-            group['reward_id'] = set(group['reward_id'])
+            [('reward_id', 'in', self.reward_ids.ids)], ['reward_id:array_agg'], ['order_id'])
         for program in self:
-            program_rewards = set(program.reward_ids.ids)
-            program.order_count = sum(1 for group in read_group_res if group['reward_id'] & program_rewards)
+            program_reward_ids = program.reward_ids.ids
+            program.order_count = len(1 for group in read_group_res if any(id in group['reward_id'] for id in program_reward_ids))
 
     # The api.depends is handled in `def modified` of `sale_coupon/models/sale_order.py`
     def _compute_total_order_count(self):

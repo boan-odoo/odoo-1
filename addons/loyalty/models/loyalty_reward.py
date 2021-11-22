@@ -74,19 +74,17 @@ class LoyaltyReward(models.Model):
                 rewards.write(default_values[program_type][self._name])
 
 
-    @api.depends('reward_product_id')
+    @api.depends('reward_product_id', 'reward_type')
     def _compute_is_multi_product(self):
         # TODO: when product tags are merged make this function depend and work with it
         #  The goal of this for now is to be able to design multi product flows while the tags are being developed
-        self.multi_product = False
+        for reward in self:
+            reward.multi_product = reward.reward_type == 'product' and len(reward._get_reward_products()) > 1
 
     def _get_reward_products(self):
         self.ensure_one()
-        if not self.multi_product:
-            return self.reward_product_id
-        else:
-            #TODO: use product tags for a search here
-            return self.env['product.product']
+        #TODO: use product tags for a search here
+        return self.reward_product_id
 
     def name_get(self):
         result = []

@@ -51,7 +51,6 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
             coupon = self.env['loyalty.card'].search(
                 [('partner_id', 'in', (False, self.order_id.partner_id.id)), ('code', '=', self.promo_code)],
                 order='partner_id, points desc', limit=1)
-            # TODO: validate coupon (expiration date etc)
             if coupon.expiration_date and coupon.expiration_date < fields.Date.today():
                 raise ValidationError(_('This coupon is expired.'))
             if not coupon or not coupon.program_id.active or not coupon.program_id.filtered_domain(base_domain):

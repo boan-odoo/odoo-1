@@ -23,11 +23,10 @@ class LoyaltyCard(models.Model):
         """
         return '044' + str(uuid4())[4:-8][3:]
 
-    # TODO: contraint unique (program_id, partner_id) ?
     program_id = fields.Many2one('loyalty.program')
     # Reserved for this partner if non-empty
     partner_id = fields.Many2one('res.partner')
-    # TODO: constraint >= 0
+    # TODO: constraint >= 0 (?) this might cause problem with pos -> offline orders
     points = fields.Float(tracking=True)
     point_name = fields.Char(related='program_id.portal_point_name', readonly=True)
 
@@ -35,23 +34,44 @@ class LoyaltyCard(models.Model):
     shared_code = fields.Boolean(default=False,
         help='Whether this coupon has a shared code (same code as other coupons), generally used for promotions.')
     expiration_date = fields.Date()
-    #TODO: May not be needed, as state is directly linked to the amount of points
-    # i.e. empty or not
-    state = fields.Selection([
-        ('reserved', 'Pending'),
-        ('new', 'Valid'),
-        ('sent', 'Sent'),
-        ('used', 'Used'),
-        ('expired', 'Expired'),
-        ('cancel', 'Cancelled')],
-        required=True, default='new'
-    )
 
     @api.constrains('code')
     def _contrains_code(self):
         # Prevent a coupon from having the same code a program
         if self.env['loyalty.program'].search_count([('code', 'in', self.filtered(lambda c: not c.shared_code).mapped('code'))]):
             raise ValidationError(_('A promotional program with the same code as one of your coupon already exists.'))
+
+    def _get_default_template(self):
+        self.ensure_one()
+        return False
+
+    def action_coupon_send(self):
+        """ Open a window to compose an email, with the default template returned by `_get_default_template`
+            message loaded by default
+        """
+        self.ensure_one()
+        default_template = self._get_default_template()
+        compose_form = self.env.ref('mail.email_compose_message_wizard_form', False)
+        ctx = dict(
+            default_model='loyalty.card',
+            default_res_id=self.id,
+            default_use_template=bool(default_template),
+            default_template_id=default_template and default_template.id,
+            default_composition_mode='comment',
+            default_email_layout_xmlid='mail.mail_notification_light',
+            mark_coupon_as_sent=True,
+            force_email=True,
+        )
+        return {
+            'name': _('Compose Email'),
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'mail.compose.message',
+            'views': [(compose_form.id, 'form')],
+            'view_id': compose_form.id,
+            'target': 'new',
+            'context': ctx,
+        }
 
     def _send_creation_communication(self):
         """
@@ -110,27 +130,6 @@ class LoyaltyCard(models.Model):
             points_changes = {coupon: (points_before[coupon], coupon.points) for coupon in self}
             self._send_points_reach_communication(points_changes)
         return res
-
-    #TODO: unused
-    def _check_coupon_code(self, order_date, partner_id, **kwards):
-        """
-        Checks the validity of this single coupon.
-        """
-        self.ensure_one()
-        message = {}
-        if self.state == 'used':
-            message = {'error': _('This coupon has already been used (%s).', self.code)}
-        elif self.state == 'reserved':
-            message = {'error': _('This coupon %s exists but the origin sales order is not validated yet.', self.code)}
-        elif self.state == 'cancel':
-            message = {'error': _('This coupon has been cancelled (%s).', self.code)}
-        elif self.state == 'expired' or (self.expiration_date and self.expiration_date < order_date):
-            message = {'error': _('This coupon is expired (%s).', self.code)}
-        elif not self.program_id.active:
-            message = {'error': _('The coupon program for %s is in draft or closed state', self.code)}
-        elif self.partner_id and self.partner_id.id != partner_id:
-            message = {'error': _('Invalid partner.')}
-        return message
 
     def init(self):
         # Code needs to be unique except if shared_code is true

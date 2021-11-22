@@ -13,19 +13,24 @@ Coupon & promotion programs can be edited in the Catalog menu of the Website app
     'depends': ['website_sale', 'website_links', 'sale_loyalty'],
     'data': [
         'security/ir.model.access.csv',
-        'views/coupon_share_views.xml',
+        'wizard/sale_coupon_share_views.xml',
+        'wizard/loyalty_generate_wizard_views.xml',
+        'views/loyalty_card_views.xml',
+        'views/loyalty_program_views.xml',
         'views/website_sale_templates.xml',
         'views/res_config_settings_views.xml',
-        'views/sale_coupon_coupon_views.xml',
-        'views/sale_coupon_program_views.xml',
     ],
-    'auto_install': ['website_sale', 'sale_coupon'],
+    'demo': [
+        'data/product_demo.xml',
+    ],
+    'auto_install': ['website_sale', 'sale_loyalty'],
     'assets': {
         'web.assets_frontend': [
-            'website_sale_coupon/static/src/js/coupon_toaster_widget.js',
+            'website_sale_loyalty/static/src/js/coupon_toaster_widget.js',
+            'website_sale_loyalty/static/src/js/website_sale_gift_card.js',
         ],
         'web.assets_tests': [
-            'website_sale_coupon/static/tests/**/*',
+            'website_sale_loyalty/static/tests/**/*',
         ],
     },
     'license': 'LGPL-3',

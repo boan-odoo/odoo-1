@@ -42,16 +42,20 @@ class LoyaltyGenerateWizard(models.TransientModel):
             if wizard.mode == 'selected':
                 wizard.coupon_qty = len(wizard._get_partners())
 
+    def _get_coupon_values(self, partner):
+        self.ensure_one()
+        return {
+            'program_id': self.program_id,
+            'points': self.points_granted,
+            'expiration_date': self.valid_until,
+            'partner_id': partner.id if self.mode == 'selected' else False,
+        }
+
     def generate_coupons(self):
         coupon_create_vals = []
         for wizard in self:
             customers = wizard._get_partners() or range(wizard.coupon_qty)
             for partner in customers:
-                coupon_create_vals.append({
-                    'program_id': wizard.program_id,
-                    'points': wizard.points_granted,
-                    'expiration_date': wizard.valid_until,
-                    'partner_id': partner.id if wizard.mode == 'selected' else False,
-                })
+                coupon_create_vals.append(wizard._get_coupon_values(partner))
         self.env['loyalty.card'].create(coupon_create_vals)
         return True

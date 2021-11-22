@@ -10,6 +10,7 @@
         'data/loyalty_data.xml',
         'data/mail_template_data.xml',
         'security/ir.model.access.csv',
+        'views/loyalty_card_views.xml',
         'views/loyalty_mail_views.xml',
         'views/loyalty_program_views.xml',
         'views/loyalty_reward_views.xml',

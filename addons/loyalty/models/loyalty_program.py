@@ -23,7 +23,6 @@ class LoyaltyProgram(models.Model):
     total_order_count = fields.Integer("Total Order Count", compute="_compute_total_order_count")
 
     rule_ids = fields.One2many('loyalty.rule', 'program_id', 'Triggers', default=lambda self: self.env['loyalty.rule'].new())
-    rule_partner_domain = fields.Char('Partner Domain')
     reward_ids = fields.One2many('loyalty.reward', 'program_id', 'Rewards', default=lambda self: self.env['loyalty.reward'].new())
     communication_plan_ids = fields.One2many('loyalty.mail', 'program_id')
     coupon_ids = fields.One2many('loyalty.card', 'program_id')
@@ -209,14 +208,6 @@ class LoyaltyProgram(models.Model):
             else:
                 rule_products[rule] = products
         return rule_products
-
-    def _is_valid_partner(self, partner_id):
-        self.ensure_one()
-        # Allow domain on partners using dev mode
-        if self.rule_partner_domain and self.rule_partner_domain != []:
-            domain = ast.literal_eval(self.rule_partner_domain)
-            return bool(partner_id.filtered_domain(domain))
-        return True
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_active(self):

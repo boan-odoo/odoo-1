@@ -13,8 +13,7 @@ from odoo.tools.misc import formatLang
 from odoo.osv import expression
 
 def _generate_random_reward_code():
-    # 8 bits seems enough as it is already unlikely that multiple same rewards are claimed on an order
-    return str(random.getrandbits(8))
+    return str(random.getrandbits(32))
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
@@ -23,13 +22,6 @@ class SaleOrder(models.Model):
     # Contains how much points should be given to a coupon upon validating the order
     coupon_point_ids = fields.One2many('sale.order.coupon.points', 'order_id', copy=False)
     reward_amount = fields.Float(compute='_compute_reward_total')
-    # TODO: Check if droppable
-    no_code_promo_program_ids = fields.Many2many('loyalty.program', string="Applied Immediate Promo Programs",
-        domain="[('trigger', '=', 'auto'), '|', ('company_id', '=', False), ('company_id', '=', company_id)]", copy=False)
-    # TODO: Check if droppable
-    code_promo_program_id = fields.Many2one('loyalty.program', string="Applied Promo Program",
-        domain="[('trigger', '=', 'with_code'), '|', ('company_id', '=', False), ('company_id', '=', company_id)]", copy=False)
-    promo_code = fields.Char(related='code_promo_program_id.code', help="Applied program code", readonly=False) #TODO: check why this is not readonly
 
     @api.depends('order_line')
     def _compute_reward_total(self):
@@ -142,8 +134,6 @@ class SaleOrder(models.Model):
             raise ValidationError(_('The specified reward is not of type discount'))
         # Used when checking if a reward is still applicable or recomputing a discount
         additional_points = kwargs.get('additional_points', 0)
-        consumable_points = (self._get_real_points_for_coupon(coupon) if reward.clear_wallet\
-                            else coupon.points) + additional_points
         # Figure out which lines are concerned by the discount
         if reward.discount_applicability == 'order':
             concerned_lines = self._get_paid_order_lines()
@@ -153,6 +143,7 @@ class SaleOrder(models.Model):
             concerned_lines = self._get_paid_order_lines().filtered(lambda l: l.product_id in reward.discount_product_ids)
         max_discount = reward.discount_max_amount or float('inf')
         if reward.discount_applicability != 'cheapest':
+            # TODO: price_subtotal correct here?
             concerned_lines_total = sum(concerned_lines.mapped('price_subtotal'))
         else:
             # Discount on cheapest product -> only applies to 1 qty
@@ -224,7 +215,7 @@ class SaleOrder(models.Model):
         if not reward_dict:
             raise ValidationError(_('There is nothing to discount.'))
         # We only assign the point cost to one line to avoid counting the cost multiple times
-        reward_dict[next(iter(reward_dict))]['points_cost'] = consumable_points
+        reward_dict[next(iter(reward_dict))]['points_cost'] = reward.required_points if not reward.clear_wallet else (self._get_real_points_for_coupon(coupon) + additional_points)
         return reward_dict.values()
 
     def _send_reward_coupon_mail(self):
@@ -605,7 +596,7 @@ class SaleOrder(models.Model):
                     # Updating reward_identified_code makes processed_rewards useless
                     values.pop('reward_identifier_code')
                 if len(concerned_lines) == 1 and len(values) == 1:
-                    concerned_lines.write(values[0])
+                    line_updates.append((Command.UPDATE, concerned_lines.id, values[0]))
                 else:
                     lines_to_remove = concerned_lines
                     for values in values_list:
@@ -639,7 +630,7 @@ class SaleOrder(models.Model):
         """
         Checks the program validity from the order lines aswell as computing the number of points to add.
 
-        Returns a dict containing the error message or the points that will be given with the keys 'points' and 'future_points'.
+        Returns a dict containing the error message or the points that will be given with the keys 'points'.
         """
         self.ensure_one()
         # The computing of points will be pretty naïve; if two rules contain the same product
@@ -653,8 +644,7 @@ class SaleOrder(models.Model):
         tax_amount = self.amount_tax - sum(line.price_tax for line in no_effect_lines) - sum(line.price_tax for line in discount_lines)
 
         # Check quantities
-        reward_lines = self._get_reward_lines()
-        order_lines = self.order_line.filtered(lambda line: line.product_id) - reward_lines
+        order_lines = self.order_line.filtered(lambda line: line.product_id and not line.reward_id)
         products = order_lines.product_id
         products_qties = dict.fromkeys(products, 0)
         for line in order_lines:
@@ -689,32 +679,38 @@ class SaleOrder(models.Model):
                     # Compute amount paid for rule
                     # NOTE: this does not account for discounts -> 1 point per $ * (100$ - 30%) will result in 100 points
                     amount_paid = sum(max(0, line.price_total) for line in order_lines if line.product_id in rule_products)
-                    points += (rule.reward_point_amount * amount_paid) // 1
+                    points += float_round(rule.reward_point_amount * amount_paid, precision_digits=2, rounding_method='DOWN')
                 elif rule.reward_point_mode == 'unit':
                     points += rule.reward_point_amount * ordered_rule_products_qty
             else:
                 if rule.reward_point_mode == 'unit':
+                    # TODO: we actually don't care about the rule, just the points
                     result[rule] = [rule.reward_point_amount for _ in range(ordered_rule_products_qty)]
                 elif rule.reward_point_mode == 'money':
                     rule_result = []
                     for line in self.order_line:
-                        if line.is_reward_line:
+                        if line.is_reward_line or line.product_id not in rule_products or not line.product_uom_qty:
                             continue
-                        points_per_unit = (rule.reward_point_amount * line.price_total / line.product_uom_qty) // 1
+                        # NOTE: Not using price_unit -> count taxes (rule is money SPENT)
+                        points_per_unit = float_round(
+                            (rule.reward_point_amount * line.price_total / line.product_uom_qty),
+                            precision_digits=2, rounding_method='DOWN')
                         if not points_per_unit:
                             continue
                         rule_result.extend(points_per_unit for _ in range(line.product_uom_qty))
                     result[rule] = rule_result
 
-
-        if not minimum_amount_matched:
-            return {'error': _(
-                'A minimum of %(amount)s %(currency)s should be purchased to get the reward',
-                amount=min(program.rule_ids.mapped('rule_minimum_amount')),
-                currency=program.currency_id.name,
-            )}
-        elif not product_qty_matched:
-            return {'error': _("You don't have the required product quantities on your sales order. If the reward is same product quantity, please make sure that all the products are recorded on the sales order (Example: You need to have 3 T-shirts on your sales order if the promotion is 'Buy 2, Get 1 Free'.")}
+        # NOTE: for programs that apply to current&futur orders we always allow the program to be 'applied' on the order
+        #  with 0 points so that `_get_claimable_rewards` returns the rewards associated with those programs
+        if program.applies_on != 'both':
+            if not minimum_amount_matched:
+                return {'error': _(
+                    'A minimum of %(amount)s %(currency)s should be purchased to get the reward',
+                    amount=min(program.rule_ids.mapped('rule_minimum_amount')),
+                    currency=program.currency_id.name,
+                )}
+            elif not product_qty_matched:
+                return {'error': _("You don't have the required product quantities on your sales order. If the reward is same product quantity, please make sure that all the products are recorded on the sales order (Example: You need to have 3 T-shirts on your sales order if the promotion is 'Buy 2, Get 1 Free'.")}
         result['points'] = points
         return result
 
@@ -733,8 +729,6 @@ class SaleOrder(models.Model):
         # Basic checks
         if not program.filtered_domain(self._get_program_domain):
             return {'error': _('The program is not available for this order.')}
-        elif not program._is_valid_partner(self.partner_id):
-            return {'error': _('The customer does not have access to this reward.')}
         # Check for applicability from the program's triggers/rules.
         # This step should also compute the amount of points to give for that program on that order.
         status = self._program_check_compute_points(program)
@@ -742,7 +736,7 @@ class SaleOrder(models.Model):
             return status
         # The program is applicable to this order, we now have to create (or fetch) a coupon that will
         #  store the points to be used on this order or future orders
-        points = status['points']
+        points = status.get('points', 0)
         # If coupon is already set we can assume the code was one of a coupon,
         #  in that case since we know the program is applicable to the order, we can just check if enough points
         #  are present for the reward, this only makes sense for future (or both) programs
@@ -753,6 +747,9 @@ class SaleOrder(models.Model):
                 # Programs with 'both' have to be nominative
                 coupon = self.env['loyalty.card'].search(
                     [('partner_id', '=', self.partner_id.id), ('program_id', '=', program.id)], limit=1)
+                # Do not apply 'both' type of programs if no point is given and no coupon exists
+                if not points:
+                    return {'error': _('No card found for this loyalty program and no points will be given with this order.')}
             if program.applies_on in ('future', 'current') or not coupon:
                 if points:
                     coupon = self.env['loyalty.card'].sudo().create({
@@ -780,7 +777,7 @@ class SaleOrder(models.Model):
                         for x, coupon in zip(rule_points, new_coupons):
                             self._add_points_for_coupon(coupon, x)
                         coupons |= new_coupons
-        if coupon and points:
+        if coupon:
             self._add_points_for_coupon(coupon, points)
         return {'coupon': coupons}
 

@@ -27,13 +27,14 @@ class LoyaltyRule(models.Model):
     currency_symbol = fields.Char(related='currency_id.symbol')
 
     # Only for dev mode
-    product_domain = fields.Char(default=[['sale_ok', '=', True]])
+    product_domain = fields.Char(default="[['sale_ok', '=', True]]")
 
     product_ids = fields.Many2many('product.product', string='Products')
     product_category_id = fields.Many2one('product.category', string='Categories')
     #TODO later: product tags
 
-    reward_point_amount = fields.Integer(default=1, string="Reward",
+    # TODO: > 0 contraint
+    reward_point_amount = fields.Float(default=1, string="Reward",
         compute='_compute_from_program_type', readonly=False, store=True,)
     # Only used for program_id.applies_on == 'future'
     reward_point_trigger_multi = fields.Boolean(string='Split per unit', default=False,
@@ -61,7 +62,6 @@ class LoyaltyRule(models.Model):
 
     def _get_valid_product_domain(self):
         self.ensure_one()
-        #NOTE: this method might be expensive to run a lot, maybe find a way to cache?
         domain = []
         if self.product_ids:
             domain = [('id', 'in', self.product_ids.ids)]

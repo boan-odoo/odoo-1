@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="ActivePrograms" owl="1">
+        <div class="active-programs">
+            <div t-if="currentOrder and renderParams.activePrograms">
+                <div class="title">Active Programs</div>
+                <t t-foreach="renderParams.activePrograms" t-as="program" t-key="program.id">
+                    <div>
+                        <t t-esc="program.name"/>
+                        <span t-if="program.code !== false">
+                            (<t t-esc="program.code"/>)
+                        </span>
+                    </div>
+                </t>
+            </div>
+            <div t-if="currentOrder and renderParams.activeRewards">
+                <div class="title">Active Rewards</div>
+                <t t-foreach="renderParams.activeRewards" t-as="reward" t-key="reward.name">
+                    <div>
+                        <t t-esc="reward.name"/>
+                        <span t-if="reward.code !== false">
+                            (<t t-esc="reward.code"/>)
+                        </span>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

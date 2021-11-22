@@ -10,9 +10,10 @@
     'data': [
         'security/ir.model.access.csv',
         'data/mail_template_data.xml',
-        'views/coupon_program_views.xml',
         'wizard/sale_loyalty_apply_wizard_views.xml',
+        'views/loyalty_program_views.xml',
         'views/sale_order_views.xml',
+        'views/templates.xml',
     ],
     'license': 'LGPL-3',
 }
