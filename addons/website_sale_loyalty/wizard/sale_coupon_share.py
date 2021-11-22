@@ -13,7 +13,7 @@ class SaleCouponShare(models.TransientModel):
 
     def _get_default_website_id(self):
         # program_website_id = self.program_website_id
-        program_website_id = self.env['coupon.program'].browse(self.env.context.get('default_program_id')).website_id
+        program_website_id = self.env['loyalty.program'].browse(self.env.context.get('default_program_id')).website_id
         if program_website_id:
             return program_website_id
         else:
@@ -22,10 +22,10 @@ class SaleCouponShare(models.TransientModel):
             return len(websites) == 1 and websites or Website
 
     website_id = fields.Many2one('website', required=True, default=_get_default_website_id)
-    coupon_id = fields.Many2one('coupon.coupon', domain="[('program_id', '=', program_id)]")
-    program_id = fields.Many2one('coupon.program', required=True, domain=[
-        '|', ('program_type', '=', 'coupon_program'),
-        ('promo_code_usage', '=', 'code_needed'),
+    coupon_id = fields.Many2one('loyalty.card', domain="[('program_id', '=', program_id)]")
+    program_id = fields.Many2one('loyalty.program', required=True, domain=[
+        '|', ('program_type', '=', 'coupons'),
+        ('trigger', '=', 'with_code'),
     ])
     program_website_id = fields.Many2one('website', string='Program Website', related='program_id.website_id')
 
@@ -46,7 +46,7 @@ class SaleCouponShare(models.TransientModel):
     @api.depends('coupon_id.code', 'program_id.promo_code')
     def _compute_promo_code(self):
         for record in self:
-            record.promo_code = record.coupon_id.code or record.program_id.promo_code
+            record.promo_code = record.coupon_id.code or record.program_id.code
 
     @api.depends('website_id', 'redirect')
     @api.depends_context('use_short_link')

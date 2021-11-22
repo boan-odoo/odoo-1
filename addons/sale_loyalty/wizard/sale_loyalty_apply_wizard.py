@@ -40,7 +40,9 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
         if not self.promo_code:
             raise ValidationError(_('Please input a code.'))
         # This function will check the promo code input and create a new line if applicable and consume the input
-        program = self.env['loyalty.program'].search([('code', '=', self.promo_code), ('trigger', '=', 'with_code')])
+        base_domain = self.order_id._get_program_domain()
+        domain = expression.AND([base_domain, [('code', '=', self.promo_code), ('trigger', '=', 'with_code')]])
+        program = self.env['loyalty.program'].search(domain)
         coupon = self.env['loyalty.card']
         if not program:
             # Ordering by partner id to use the first assigned to the partner in case multiple coupons have the same code
@@ -52,7 +54,7 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
             # TODO: validate coupon (expiration date etc)
             if coupon.expiration_date and coupon.expiration_date < fields.Date.today():
                 raise ValidationError(_('This coupon is expired.'))
-            if not coupon or not coupon.program_id.active:
+            if not coupon or not coupon.program_id.active or not coupon.program_id.filtered_domain(base_domain):
                 raise ValidationError(_('This code is invalid (%s).', self.promo_code))
             program = coupon.program_id
         if program and program.applies_on == 'both':
@@ -63,7 +65,7 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
         #  -> current program: giving coupon code acts as if the program's code was given, check applicability + apply reward
         #  -> future program: giving coupon code means apply reward, no need to verify for program applicability
         #  -> current & future program: (should probably not use code but) code should be usable as long as program rules are applicable
-        if not program:
+        if not program or not program.filtered_domain(base_domain):
             raise ValidationError(_('This code is invalid (%s).', self.promo_code))
         points = coupon.points or 0
         if program.applies_on in ('current', 'both') or not coupon:
@@ -94,12 +96,11 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
         # Automatic programs using future mean you create a coupon for a future order
         applied_programs = self.order_id._get_applied_programs()
         if applied_programs:
-            domain = ['|', ('id', 'not in', applied_programs.ids), ('applies_on', '=', 'both'),
-                ('trigger', '=', 'auto'), ('company_id', 'in', (self.order_id.company_id.id, False))]
+            domain = ['|', ('id', 'not in', applied_programs.ids), ('applies_on', '=', 'both'), ('trigger', '=', 'auto')]
         else:
             domain = None
         newly_applicable_program_points = self.order_id._get_applicable_programs_points(domain)
-        domain = expression.AND([domain,
+        domain = expression.AND([self.order_id._get_program_domain(), domain,
             [('id', 'not in', tuple(k.id for k in newly_applicable_program_points.keys())), ('applies_on', '=', 'both')]])
         # Programs that could be applicable if enough points exists on their card
         current_future_programs = self.env['loyalty.program'].search(domain)
@@ -114,7 +115,7 @@ class SaleLoyaltyApplyWizard(models.TransientModel):
         line_ids_update_vals = []
         for program, points in newly_applicable_program_points.items():
             coupon = coupons_per_program.get(program, self.env['loyalty.card'])
-            points += coupon.points
+            points += self.order_id._get_real_points_for_coupon(coupon)
             line_ids_update_vals.append((Command.CREATE, 0, {
                 'program_id': program.id,
                 'coupon_id': coupon.id,

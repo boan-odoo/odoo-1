@@ -1,28 +1,27 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
 from datetime import timedelta
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
+from odoo.osv import expression
 from odoo.http import request
 
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
+    def _get_program_domain(self):
+        res = super()._get_program_domain()
+        return expression.AND([res, [('website_id', 'in', (self.website_id.id, False))]])
+
     def _try_pending_coupon(self):
-        #TODO: redo this
         if not request:
             return
 
         pending_coupon_code = request.session.get('pending_coupon_code')
         if pending_coupon_code:
-            try:
-                self.env['sale.coupon.apply.code'].with_context(active_id=self.id).create({
-                    'coupon_code': pending_coupon_code
-                }).process_coupon()
-                request.session.pop('pending_coupon_code')
-            except UserError as e:
-                return e
+            return self._try_apply_code(pending_coupon_code)
         return True
 
     def _program_auto_apply(self):
@@ -52,29 +51,32 @@ class SaleOrder(models.Model):
         """
         super()._compute_website_order_line()
         for order in self:
-            # TODO: redo this
-
-            # TODO: potential performance bottleneck downstream
-            programs = order._get_applied_programs_with_rewards_on_current_order()
-            for program in programs:
-                program_lines = order.order_line.filtered(lambda line:
-                    line.product_id == program.discount_line_product_id)
-                if len(program_lines) > 1:
+            grouped_order_lines = defaultdict(lambda: self.env['sale.order.line'])
+            for line in order.order_line:
+                if line.reward_id and line.coupon_id:
+                    grouped_order_lines[(line.reward_id, line.coupon_id, line.reward_identified_code)] |= line
+            new_lines = self.env['sale.order.line']
+            lines_to_remove = self.env['sale.order.line']
+            for lines in grouped_order_lines.values():
+                if len(lines) > 1:
                     if self.env.user.has_group('sale.group_show_price_subtotal'):
-                        price_unit = sum(program_lines.mapped('price_subtotal'))
+                        price_unit = sum(lines.mapped('price_subtotal'))
                     else:
-                        price_unit = sum(program_lines.mapped('price_total'))
-                    # TODO: batch then flush
-                    order.website_order_line += self.env['sale.order.line'].new({
-                        'product_id': program_lines[0].product_id.id,
+                        price_unit = sum(lines.mapped('price_total'))
+                    new_lines += self.env['sale.order.line'].new({
+                        'product_id': lines[0].product_id.id,
                         'price_unit': price_unit,
-                        'name': program_lines[0].name,
+                        'name': lines[0].name,
                         'product_uom_qty': 1,
-                        'product_uom': program_lines[0].product_uom.id,
+                        'product_uom': lines[0].product_uom_id,
                         'order_id': order.id,
                         'is_reward_line': True,
                     })
-                    order.website_order_line -= program_lines
+                    lines_to_remove |= lines
+            if new_lines:
+                order.website_order_line += new_lines
+            if lines_to_remove:
+                order.website_order_line -= lines_to_remove
 
     def _compute_cart_info(self):
         super(SaleOrder, self)._compute_cart_info()
@@ -96,20 +98,3 @@ class SaleOrder(models.Model):
     def _get_free_shipping_lines(self):
         self.ensure_one()
         return self.order_line.filtered(lambda l: l.reward_id.reward_type == 'shipping')
-
-    @api.autovacuum
-    def _gc_abandoned_coupons(self, *args, **kwargs):
-        """Remove/free coupon from abandonned ecommerce order."""
-        ICP = self.env['ir.config_parameter']
-        validity = ICP.get_param('website_sale_coupon.abandonned_coupon_validity', 4)
-        validity = fields.Datetime.to_string(fields.datetime.now() - timedelta(days=int(validity)))
-        coupon_to_reset = self.env['coupon.coupon'].search([
-            ('state', '=', 'used'),
-            ('sales_order_id.state', '=', 'draft'),
-            ('sales_order_id.write_date', '<', validity),
-            ('sales_order_id.website_id', '!=', False),
-        ])
-        for coupon in coupon_to_reset:
-            coupon.sales_order_id.applied_coupon_ids -= coupon
-        coupon_to_reset.write({'state': 'new'})
-        coupon_to_reset.mapped('sales_order_id').recompute_coupon_lines()

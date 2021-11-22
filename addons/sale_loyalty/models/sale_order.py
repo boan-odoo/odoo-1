@@ -242,13 +242,22 @@ class SaleOrder(models.Model):
         applicable_with_points = self._get_applicable_program_points()
         return self.env.browse(k.id for k in applicable_with_points)
 
+    def _get_program_domain(self):
+        """
+        Returns the base domain that all programs have to comply to.
+        """
+        self.ensure_one()
+        return [('company_id', 'in', (self.company_id.id, False))]
+
     def _get_applicable_program_points(self, domain=None):
         """
         Returns a dict with the points per program for each (automatic) program that is applicable
         """
         self.ensure_one()
         if not domain:
-            domain = [('trigger', '=', 'auto'), ('company_id', 'in', (self.company_id.id, False))]
+            domain = [('trigger', '=', 'auto')]
+        # Make sure domain always complies with the order's domain rules
+        domain = expression.AND([self._get_program_domain(), domain])
         # No other way than to test all programs to the order
         programs = self.env['loyalty.program'].search(domain)
         program_points = dict()
@@ -474,7 +483,7 @@ class SaleOrder(models.Model):
 
         # Fetch all automatic programs that are not already applied
         already_applied_programs = self._get_points_programs()
-        domain = [('id', 'not in', already_applied_programs), ('trigger', '=', 'auto'), ('company_id', 'in', (False, self.company_id.id))]
+        domain = expression.AND([self._get_program_domain(), [('id', 'not in', already_applied_programs), ('trigger', '=', 'auto')]])
         automatic_programs = self.env['loyalty.program'].search(domain)
         all_new_coupons = self.env['loyalty.program']
         for program in automatic_programs:
@@ -515,10 +524,13 @@ class SaleOrder(models.Model):
         # Check that applied programs are still applicable and take actions if not
         points_program = self._get_points_programs()
         point_entry_per_program = defaultdict(lambda: self.env['sale.order.coupon.points'])
+        program_domain = self._get_program_domain()
         for pe in self.coupon_point_ids:
             point_entry_per_program[pe.coupon_id.program_id] |= pe
         for program in points_program:
-            status = self._program_check_compute_points(program)
+            # Only check points if program is still applicable to the order
+            status = self._program_check_compute_points(program) if program.filtered_domain(program_domain)\
+                    else {'error': 'error'}
             if block and 'error' in status:
                 return status
             if 'error' in status:
@@ -579,9 +591,11 @@ class SaleOrder(models.Model):
                                     line.points_cost
             points = self._get_real_points_for_coupon(line.coupon_id) + additional_points
             # This works for both points being negative and not having enough points for the reward
-            if points < line.reward_id.required_points:
-                if block:
+            if points < line.reward_id.required_points or not line.reward_id.program_id.filtered_domain(program_domain):
+                if block and points < line.reward_id.required_points:
                     return {'error': _('One of the rewards on the sales order can not be claimed due to a lack of points.')}
+                elif block:
+                    return {'error': _('One of the rewards on the sales order can not be claimed due to the program not being applicable to the order.')}
                 # Not adding concerned_lines since it is implicit
                 line_updates.append((Command.DELETE, line.id))
             else:
@@ -717,7 +731,9 @@ class SaleOrder(models.Model):
         """
         self.ensure_one()
         # Basic checks
-        if not program._is_valid_partner(self.partner_id):
+        if not program.filtered_domain(self._get_program_domain):
+            return {'error': _('The program is not available for this order.')}
+        elif not program._is_valid_partner(self.partner_id):
             return {'error': _('The customer does not have access to this reward.')}
         # Check for applicability from the program's triggers/rules.
         # This step should also compute the amount of points to give for that program on that order.
@@ -806,7 +822,9 @@ class SaleOrder(models.Model):
         """
         self.ensure_one()
 
-        program = self.env['loyalty.program'].search([('code', '=', code), ('trigger', '=', 'with_code')])
+        base_domain = self._get_program_domain()
+        domain = expression.AND([base_domain, [('code', '=', code), ('trigger', '=', 'with_code')]])
+        program = self.env['loyalty.program'].search(domain)
 
         if not program:
             # Fetches the coupon associated with the code, ordered by partner_id in order to fetch the first associated
@@ -819,6 +837,8 @@ class SaleOrder(models.Model):
             elif coupon.expiration_date and coupon.expiration_date < fields.Date.today():
                 return {'error': _('This coupon is expired')}
             program = coupon.program_id
+        if program and not program.filtered_domain(base_domain):
+            return {'error': _('This code is invalid (%s).', code)}
 
         points_programs = self.get_points_programs()
         if program in points_programs and not coupon:

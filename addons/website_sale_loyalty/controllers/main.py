@@ -44,9 +44,8 @@ class WebsiteSale(main.WebsiteSale):
         order = request.website.sale_get_order()
         if order:
             result = order._try_pending_coupon()
-            order.recompute_coupon_lines()
-            if isinstance(result, UserError):
-                url_query['coupon_error'] = result
+            if 'error' in result:
+                url_query['coupon_error'] = result['error']
             else:
                 url_query['notify_coupon'] = code
         else:
