@@ -105,6 +105,16 @@ class ProductProduct(models.Model):
     combination_indices = fields.Char(compute='_compute_combination_indices', store=True, index=True)
     is_product_variant = fields.Boolean(compute='_compute_is_product_variant')
 
+    # Allows for a custom description for each variant of the product.
+    description_sale = fields.Text('Sales Description', translate=True,
+                                   compute="_compute_description_sale",
+                                   inverse="_set_description_sale",
+                                   store=True,
+                                   help="A description of the Product that you want to "
+                                          "communicate to your customers. This description will be "
+                                          "copied to every Sales Order, Delivery Order and Customer"
+                                          " Invoice/Credit Note")
+
     standard_price = fields.Float(
         'Cost', company_dependent=True,
         digits='Product Price',
@@ -145,6 +155,21 @@ class ProductProduct(models.Model):
     image_256 = fields.Image("Image 256", compute='_compute_image_256')
     image_128 = fields.Image("Image 128", compute='_compute_image_128')
     can_image_1024_be_zoomed = fields.Boolean("Can Image 1024 be zoomed", compute='_compute_can_image_1024_be_zoomed')
+
+    @api.depends("product_tmpl_id.description_sale")
+    def _compute_description_sale(self):
+        for record in self:
+            record.description_sale = record.description_sale \
+                                      or record.product_tmpl_id.description_sale
+
+    def _set_description_sale(self):
+        for record in self:
+            if len(record.product_tmpl_id.product_variant_ids) == 1:
+                record.product_tmpl_id.description_sale = record.description_sale
+            elif record.description_sale:
+                # This is a failsafe for the template rendering, it only renders the
+                # description if the description of the template is not empty.
+                record.product_tmpl_id.description_sale = " "
 
     @api.depends('image_variant_1920', 'image_variant_1024')
     def _compute_can_image_variant_1024_be_zoomed(self):

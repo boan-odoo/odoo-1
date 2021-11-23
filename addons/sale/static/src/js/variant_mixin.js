@@ -466,11 +466,17 @@ var VariantMixin = {
         $price.text(self._priceToStr(combination.price));
         $default_price.text(self._priceToStr(combination.list_price));
 
+        $parent.find('[data-oe-model="product.product"]').attr('data-oe-id', combination.product_id);
+
         var isCombinationPossible = true;
         if (!_.isUndefined(combination.is_combination_possible)) {
             isCombinationPossible = combination.is_combination_possible;
         }
         this._toggleDisable($parent, isCombinationPossible);
+
+        if (combination.description_sale) {
+            $parent.find('#product_description_sale').text(combination.description_sale);
+        }
 
         if (combination.has_discounted_price) {
             $default_price
