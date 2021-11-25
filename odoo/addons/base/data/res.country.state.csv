@@ -1406,31 +1406,31 @@ state_ec_21,base.ec,Sucumbios,21
 state_ec_22,base.ec,Orellana,22
 state_ec_23,base.ec,Santo Domingo de los Tsachilas,23
 state_ec_24,base.ec,Santa Elena,24
-state_bg_1,base.bg,Blagoevgrad,1
-state_bg_2,base.bg,Burgas,2
-state_bg_3,base.bg,Dobrich,3
-state_bg_4,base.bg,Gabrovo,4
-state_bg_5,base.bg,Haskovo,5
-state_bg_6,base.bg,Kardzhali,6
-state_bg_7,base.bg,Kyustendil,7
-state_bg_8,base.bg,Lovech,8
-state_bg_9,base.bg,Montana,9
-state_bg_10,base.bg,Pazardzhik,10
-state_bg_11,base.bg,Pernik,11
-state_bg_12,base.bg,Pleven,12
-state_bg_13,base.bg,Plovdiv,13
-state_bg_14,base.bg,Razgrad,14
-state_bg_15,base.bg,Ruse,15
-state_bg_16,base.bg,Shumen,16
-state_bg_17,base.bg,Silistra,17
-state_bg_18,base.bg,Sliven,18
-state_bg_19,base.bg,Smolyan,19
-state_bg_20,base.bg,Sofia City,20
-state_bg_21,base.bg,Sofia,21
-state_bg_22,base.bg,Stara Zagora,22
-state_bg_23,base.bg,Targovishte,23
-state_bg_24,base.bg,Varna,24
-state_bg_25,base.bg,Veliko Tarnovo,25
-state_bg_26,base.bg,Vidin,26
-state_bg_27,base.bg,Vratsa,27
-state_bg_28,base.bg,Yambol,28
+state_bg_1,bg,Blagoevgrad,1
+state_bg_2,bg,Burgas,2
+state_bg_3,bg,Dobrich,3
+state_bg_4,bg,Gabrovo,4
+state_bg_5,bg,Haskovo,5
+state_bg_6,bg,Kardzhali,6
+state_bg_7,bg,Kyustendil,7
+state_bg_8,bg,Lovech,8
+state_bg_9,bg,Montana,9
+state_bg_10,bg,Pazardzhik,10
+state_bg_11,bg,Pernik,11
+state_bg_12,bg,Pleven,12
+state_bg_13,bg,Plovdiv,13
+state_bg_14,bg,Razgrad,14
+state_bg_15,bg,Ruse,15
+state_bg_16,bg,Shumen,16
+state_bg_17,bg,Silistra,17
+state_bg_18,bg,Sliven,18
+state_bg_19,bg,Smolyan,19
+state_bg_20,bg,Sofia City,20
+state_bg_21,bg,Sofia,21
+state_bg_22,bg,Stara Zagora,22
+state_bg_23,bg,Targovishte,23
+state_bg_24,bg,Varna,24
+state_bg_25,bg,Veliko Tarnovo,25
+state_bg_26,bg,Vidin,26
+state_bg_27,bg,Vratsa,27
+state_bg_28,bg,Yambol,28
