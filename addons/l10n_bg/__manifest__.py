@@ -21,6 +21,7 @@
         'data/l10n_bg_chart_data.xml',
         'data/account_tax_group_data.xml',
         'data/account_tax_template_data.xml',
+        'data/account.group.template.csv',
         'data/account_chart_template_configure_data.xml',
     ],
     'demo': [
