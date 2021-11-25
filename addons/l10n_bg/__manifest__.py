@@ -6,6 +6,7 @@
 # "Bulgaria - Accounting by BGO Software, Lumnus LTD, Prodax LTD" (LGPL-3)
 {
     'name': 'Bulgaria - Accounting',
+    'icon': '/l10n_bg/static/description/icon.png',
     'version': '1.0',
     'category': 'Accounting/Localizations/Account Charts',
     'author': 'Odoo S.A.',
