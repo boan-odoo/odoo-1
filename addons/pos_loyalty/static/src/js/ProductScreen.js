@@ -2,7 +2,7 @@
 
 import ProductScreen from 'point_of_sale.ProductScreen';
 import Registries from 'point_of_sale.Registries';
-import { useBarcodeReader } from 'point_of_sale.hooks';
+import { useBarcodeReader } from 'point_of_sale.custom_hooks';
 
 export const PosLoyaltyProductScreen = (ProductScreen) =>
     class extends ProductScreen {
@@ -63,7 +63,7 @@ export const PosLoyaltyProductScreen = (ProductScreen) =>
                 super._setValue(val);
             }
             if (!selectedLine) return;
-            if (selectedLine.is_reward_line && val === 'remove') {
+            if (selectedLine.is_reward_line && val === 'remove' && !selectedLine.manual_reward) {
                 const reward = this.env.pos.reward_by_id[selectedLine.reward_id];
                 const program = this.env.pos.program_by_id[reward.program_id];
                 const couponIdx = this.env.pos.couponCache.findIndex((c) => c.id === selectedLine.coupon_id);

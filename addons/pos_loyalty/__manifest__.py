@@ -20,14 +20,15 @@
     'installable': True,
     'assets': {
         'point_of_sale.assets': [
-            'pos_loyalty/static/src/css/coupon.css',
+            'pos_loyalty/static/src/css/Loyalty.scss',
             'pos_loyalty/static/src/js/ActivePrograms.js',
             'pos_loyalty/static/src/js/loyalty.js',
             'pos_loyalty/static/src/js/Orderline.js',
             'pos_loyalty/static/src/js/PaymentScreen.js',
             'pos_loyalty/static/src/js/ProductScreen.js',
-            'pos_loyalty/static/src/js/ControlButtons/PromoCodeButton.js',
+            'pos_loyalty/static/src/js/ControlButtons/GiftCardButton.js',
             'pos_loyalty/static/src/js/ControlButtons/ResetProgramsButton.js',
+            'pos_loyalty/static/src/js/ControlButtons/PromoCodeButton.js',
         ],
         'web.assets_tests': [
             'pos_loyalty/static/src/js/tours/**/*',

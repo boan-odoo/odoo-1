@@ -18,6 +18,9 @@ function _newRandomRewardCode() {
     return (Math.random() + 1).toString(36).substring(3);
 }
 
+//TODO: necessary?
+models.load_fields('pos.order.line', ['reward_id', 'coupon_id', 'reward_identified_code', 'is_reward_line', 'points_code']);
+
 models.load_models([
     {
         model: 'loyalty.program',
@@ -117,6 +120,7 @@ models.Orderline = models.Orderline.extend({
         result.coupon_id = this.coupon_id;
         result.reward_identifier_code = this.reward_identifier_code;
         result.points_cost = this.points_cost;
+        result.giftBarcode = this.giftBarcode;
         return result;
     },
     init_from_JSON: function (json) {
@@ -127,6 +131,7 @@ models.Orderline = models.Orderline.extend({
             this.coupon_id = json.coupon_id;
             this.reward_identifier_code = json.reward_identifier_code;
             this.points_cost = json.points_cost;
+            this.giftBarcode = json.giftBarcode;
             this.tax_ids = json.tax_ids[0][2];
         }
         _orderline_super.init_from_JSON.apply(this, [json]);
@@ -291,6 +296,11 @@ models.Order = models.Order.extend({
             }
             changesPerProgram[pe.program_id].push(pe);
         });
+        const lineBarcodes = this._get_regular_order_lines.reduce((line, agg) => {
+            if (line.giftBarcode) {
+                agg.push(line.giftBarcode);
+            }
+        }, []);
         this.pos.programs.forEach((program) => {
             // Future programs may split their points per unit paid (gift cards for example)
             const pointsAdded = this._points_for_program(program);
@@ -309,20 +319,21 @@ models.Order = models.Order.extend({
                 let visited = 0;
                 this.couponPointChanges = this.couponPointChanges.filter((pe) => {
                     const sameProgram = (pe.program_id == program.id)
-                    if (sameProgram || visited < toKeep) {
+                    // Remove any point change for a barcode that is not present in the lines aswell
+                    if (!sameProgram || visited < toKeep && (!pe.barcode || lineBarcodes.includes(pe.barcode))) {
                         visited += sameProgram;
                         return true;
                     }
                     return false;
                 });
-            }
-            else if (pointsAdded.length > oldChanges.length) {
+            } else if (pointsAdded.length > oldChanges.length) {
                 pointsAdded.splice(oldChanges.length).forEach((pa) => {
                     coupon = this._coupon_for_program(program);
                     this.couponPointChanges.push({
                         points: pa,
                         program_id: program.id,
                         coupon_id: coupon.id,
+                        barcode: false,
                     });
                 });
             }
@@ -443,16 +454,6 @@ models.Order = models.Order.extend({
                 return;
             }
             if (program.applies_on === 'future' && rule.reward_point_trigger_multi && rule.reward_point_mode !== 'order') {
-                // In this case we count the points per rule
-                if (rule.reward_point_mode === 'order') {
-                    points += rule.reward_point_amount
-                } else if (rule.reward_point_mode === 'money') {
-                    // NOTE: unlike in sale_loyalty this performs a round half-up instead of round down
-                    points += round_precision(rule.reward_point_amount * orderedProductPaid, 0.01);
-                } else if (rule.reward_point_mode === 'unit') {
-                    points += rule.reward_point_amount * orderedProductQty;
-                }
-            } else {
                 // In this case we add on to the global point count
                 if (rule.reward_point_mode === 'unit') {
                     splitPoints.concat(Array.apply(null, Array(orderedProductQty)).map(() => rule.reward_point_amount));
@@ -467,9 +468,23 @@ models.Order = models.Order.extend({
                         }
                     });
                 }
+            } else {
+                // In this case we count the points per rule
+                if (rule.reward_point_mode === 'order') {
+                    points += rule.reward_point_amount
+                } else if (rule.reward_point_mode === 'money') {
+                    // NOTE: unlike in sale_loyalty this performs a round half-up instead of round down
+                    points += round_precision(rule.reward_point_amount * orderedProductPaid, 0.01);
+                } else if (rule.reward_point_mode === 'unit') {
+                    points += rule.reward_point_amount * orderedProductQty;
+                }
             }
         });
-        return (points || splitPoints.length) ? [points, ...splitPoints] : [];
+        const res = points ? [points] : [];
+        if (splitPoints.length) {
+            res.concat(splitPoints);
+        }
+        return res;
     },
     _check_update_reward_lines: async function () {
         const processedRewards = {};
@@ -690,18 +705,16 @@ models.Order = models.Order.extend({
             }
         }
     },
-    activate_code: async function(code) {
+    __activate_code: async function(code) {
         const program = this.pos.programs.find((program) => program.promo_barcode === code || program.code === code);
         if (program) {
             if (program.id in this.codeActivatedPrograms) {
-                Gui.showNotification(_t('That promo code program has already been activated.'));
-                return;
+                return _t('That promo code program has already been activated.');
             }
             this._trigger_reward_update({activateProgram: program.id});
         } else {
             if (this.codeActivatedCoupons.includes(code)) {
-                Gui.showNotification('That coupon code has already been scanned and activated.');
-                return;
+                return _t('That coupon code has already been scanned and activated.');
             }
             const customer = this.get_client();
             const { successful, payload } = await this.pos.rpc({
@@ -719,8 +732,15 @@ models.Order = models.Order.extend({
                 this._trigger_reward_update({registerNewCoupon: new Coupon(
                     code, payload.coupon_id, payload.program_id, payload.coupon_partner_id, payload.points)});
             } else {
-                Gui.showNotification(payload.error_message);
+                return payload.error_message;
             }
+        }
+        return true;
+    },
+    activate_code: async function(code) {
+        const res = await this.__activate_code(code);
+        if (res !== true) {
+            Gui.showNotification(res);
         }
     }
 }); 

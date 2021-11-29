@@ -16,3 +16,6 @@ class PosOrderLine(models.Model):
         help="The coupon used to claim that reward.")
     reward_identifier_code = fields.Char() #TODO: needed?
     points_cost = fields.Float(help="How many point this reward cost on the coupon.")
+
+    def _is_not_sellable_line(self):
+        return super().is_not_sellable_line() or self.reward_id

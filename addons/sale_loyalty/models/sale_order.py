@@ -754,7 +754,7 @@ class SaleOrder(models.Model):
                 if points:
                     coupon = self.env['loyalty.card'].sudo().create({
                         'program_id': program.id,
-                        'partner_id': self.partner_id.id,
+                        'partner_id': self.partner_id.id if program.applies_on != 'future' else False,
                         'shared_code': True if program.code else False,
                         'code': program.code or self.env['loyalty.card']._generate_code(),
                         'points': 0, #NOTE: use `_get_real_points_for_coupon` to get the points for this order
@@ -769,7 +769,7 @@ class SaleOrder(models.Model):
                             continue
                         new_coupons = self.env['loyalty.card'].sudo().create([{
                             'program_id': program.id,
-                            'partner_id': self.partner_id.id,
+                            'partner_id': False,
                             'shared_code': False,
                             'points': 0,
                             'order_id': self.id,

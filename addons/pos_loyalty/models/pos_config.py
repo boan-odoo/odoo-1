@@ -20,6 +20,16 @@ class PosConfig(models.Model):
 
     use_gift_card = fields.Boolean('Gift Cards')
     gift_card_program_id = fields.Many2one('loyalty.program', "PoS Gift Card Program", domain=[('program_type', '=', 'gift_card')])
+    gift_card_settings = fields.Selection(
+        [
+            ("create_set", "Generate a new barcode and set a price"),
+            ("scan_set", "Scan an existing barcode and set a price"),
+            ("scan_use", "Scan an existing barcode with an existing price"),
+        ],
+        string="Gift Cards settings",
+        default="create_set",
+        help="Defines the way you want to set your gift cards.",
+    )
 
     # While we select all program types separately they will all behave the same
     all_program_ids = fields.Many2many('loyalty.program', '_compute_all_programs')
@@ -67,6 +77,13 @@ class PosConfig(models.Model):
                 raise UserError(_('Invalid gift card program. More than one reward.'))
             elif len(gc_program.rule_ids) > 1:
                 raise UserError(_('Invalid gift card program. More than one rule.'))
+            # TODO: check that reward type and rule mode make sense
+            rule = gc_program.rule_ids
+            if rule.reward_point_amount != 1 or rule.reward_point_mode != 'money':
+                raise UserError(_('Invalid gift card program rule. Use 1 point per currency spent.'))
+            reward = gc_program.reward_ids
+            if reward.reward_type != 'discount' or reward.discount_mode != 'per_point' or reward.discount != 1:
+                raise UserError(_('Invalid gift card program reward. Use 1 currency per point discount.'))
         return super().open_session_cb(check_coa)
 
     def use_coupon_code(self, code, creation_date, partner_id):
