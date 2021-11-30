@@ -9,10 +9,8 @@ class SaleOrderCouponPoints(models.Model):
 
     order_id = fields.Many2one('sale.order', required=True, ondelete='cascade')
     coupon_id = fields.Many2one('loyalty.card', required=True, ondelete='cascade')
-    #NOTE: should always be positive
-    points = fields.Integer(required=True)
+    points = fields.Float(required=True)
 
-    # Rule should never be triggered but is there as precaution
     _sql_constraints = [
         ('order_coupon_unique', 'UNIQUE (order_id, coupon_id)',
         'The coupon points entry already exists.')

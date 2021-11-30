@@ -12,7 +12,6 @@ class SaleCouponShare(models.TransientModel):
     _description = 'Create links that apply a coupon and redirect to a specific page'
 
     def _get_default_website_id(self):
-        # program_website_id = self.program_website_id
         program_website_id = self.env['loyalty.program'].browse(self.env.context.get('default_program_id')).website_id
         if program_website_id:
             return program_website_id
@@ -24,8 +23,9 @@ class SaleCouponShare(models.TransientModel):
     website_id = fields.Many2one('website', required=True, default=_get_default_website_id)
     coupon_id = fields.Many2one('loyalty.card', domain="[('program_id', '=', program_id)]")
     program_id = fields.Many2one('loyalty.program', required=True, domain=[
-        '|', ('program_type', '=', 'coupons'),
-        ('trigger', '=', 'with_code'),
+        '|', ('program_type', '=', 'coupons'), # All coupons programs
+        '|', ('trigger', '=', 'with_code'), # All programs that require a code
+             ('rule_ids.code', '!=', False), # All programs that can not trigger without a code
     ])
     program_website_id = fields.Many2one('website', string='Program Website', related='program_id.website_id')
 
@@ -35,7 +35,7 @@ class SaleCouponShare(models.TransientModel):
 
     @api.constrains('coupon_id', 'program_id')
     def _check_program(self):
-        if self.filtered(lambda record: not record.coupon_id and record.program_id.program_type == 'coupon_program'):
+        if self.filtered(lambda record: not record.coupon_id and record.program_id.program_type == 'coupons'):
             raise ValidationError(_("A coupon is needed for coupon programs."))
 
     @api.constrains('website_id', 'program_id')
@@ -43,10 +43,10 @@ class SaleCouponShare(models.TransientModel):
         if self.filtered(lambda record: record.program_website_id and record.program_website_id != record.website_id):
             raise ValidationError(_("The shared website should correspond to the website of the program."))
 
-    @api.depends('coupon_id.code', 'program_id.promo_code')
+    @api.depends('coupon_id.code', 'program_id.rule_ids.code')
     def _compute_promo_code(self):
         for record in self:
-            record.promo_code = record.coupon_id.code or record.program_id.code
+            record.promo_code = record.coupon_id.code or record.program_id.rule_ids.filtered('code')[:1].code
 
     @api.depends('website_id', 'redirect')
     @api.depends_context('use_short_link')

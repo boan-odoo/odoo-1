@@ -3,13 +3,14 @@
 
 from collections import defaultdict
 
+import itertools
+
 import random
 
 from odoo import api, fields, models, _
-from odoo.fields import Command
 from odoo.exceptions import ValidationError
+from odoo.fields import Command
 from odoo.tools.float_utils import float_round
-from odoo.tools.misc import formatLang
 from odoo.osv import expression
 
 def _generate_random_reward_code():
@@ -18,19 +19,30 @@ def _generate_random_reward_code():
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
-    generated_coupon_ids = fields.One2many('loyalty.card', 'order_id', string="Offered Coupons", copy=False)
     # Contains how much points should be given to a coupon upon validating the order
+    applied_coupon_ids = fields.Many2many('loyalty.card', string="Manually Applied Coupons", copy=False)
+    code_enabled_rule_ids = fields.Many2many('loyalty.rule', string="Manually Triggered Rules", copy=False)
     coupon_point_ids = fields.One2many('sale.order.coupon.points', 'order_id', copy=False)
     reward_amount = fields.Float(compute='_compute_reward_total')
 
     @api.depends('order_line')
     def _compute_reward_total(self):
         for order in self:
-            # TODO: this will be invalid since free product lines will now contain the product without
-            #  the price, displayed in website_sale
-            order.reward_amount = sum([line.price_subtotal for line in order._get_reward_lines()])
+            reward_amount = 0
+            for line in order.order_line:
+                if not line.reward_id:
+                    continue
+                if line.reward_id.reward_type != 'product':
+                    reward_amount += line.price_subtotal
+                else:
+                    # Free product are 'regular' product lines with a price_unit of 0
+                    reward_amount -= line.product_id.lst_price * line.product_uom_qty
+            order.reward_amount = reward_amount
 
     def _get_no_effect_on_threshold_lines(self):
+        """
+        Returns the lines that have no effect on the minimum amount to reach
+        """
         self.ensure_one()
         lines = self.env['sale.order.line']
         return lines
@@ -38,20 +50,17 @@ class SaleOrder(models.Model):
     @api.returns('self', lambda value: value.id)
     def copy(self, default=None):
         order = super(SaleOrder, self).copy(default)
-        reward_line = order._get_reward_lines()
-        if reward_line:
-            reward_line.unlink()
-            order._create_new_no_code_promo_reward_lines()
+        reward_lines = order.order_line.filtered('is_reward_line')
+        if reward_lines:
+            reward_lines.unlink()
         return order
 
     def action_confirm(self):
         for order in self:
-            status = order._check_update_applied_rewards(block=True)
-            if 'error' in status:
-                raise ValidationError(status['error'])
-        #TODO: do we drop coupon state?
-        # self.generated_coupon_ids.write({'state': 'new'})
-        # self.applied_coupon_ids.write({'state': 'used'})
+            all_coupons = order.applied_coupon_ids | order.coupon_point_ids.coupon_id | order.order_line.coupon_id
+            if any(order._get_real_points_for_coupon(coupon) < 0 for coupon in all_coupons):
+                raise ValidationError(_('One or more rewards on the sale order is invalid. Please check them.'))
+            order._update_programs_and_rewards()
 
         # Remove any coupon from 'current' program that don't claim any reward.
         # This is to avoid ghost coupons that are lost forever.
@@ -61,162 +70,35 @@ class SaleOrder(models.Model):
             lambda pe: pe.coupon_id.program_id.applies_on == 'current' and pe.coupon_id not in reward_coupons)\
             .coupon_id.sudo().unlink()
         # Add/remove the points to our coupons
-        for coupon, changes in self._get_point_changes().items():
-            coupon.points += changes
+        for coupon, change in self.filtered(lambda s: s.state != 'sale')._get_point_changes().items():
+            coupon.points += change
         self._send_reward_coupon_mail()
         return super(SaleOrder, self).action_confirm()
 
     def action_cancel(self):
+        previously_confirmed = self.filtered(lambda s: s.state in ('sale', 'done'))
         res = super(SaleOrder, self).action_cancel()
-        #TODO: do we drop coupon state?
-        # self.generated_coupon_ids.write({'state': 'expired'})
-        # self.applied_coupon_ids.write({'state': 'new'})
         # Add/remove the points to our coupons
-        for coupon, changes in self._get_point_changes().items():
+        for coupon, changes in previously_confirmed.filtered(lambda s: s.state not in ('sale', 'done'))._get_point_changes().items():
             coupon.points -= changes
-        # self.applied_coupon_ids.sales_order_id = False
-        self._check_update_applied_rewards()
+        # Remove any rewards
+        self.order_line.filtered(lambda l: l.is_reward_line).unlink()
+        self.coupon_point_ids.coupon_id.filtered(lambda c: not c.program_id.is_nominative and c.order_id in self).sudo().unlink()
+        self.coupon_point_ids.unlink()
         return res
 
-    def action_draft(self):
-        res = super(SaleOrder, self).action_draft()
-        #TODO: do we drop coupon state?
-        # self.generated_coupon_ids.write({'state': 'reserved'})
-        return res
-
-    def _get_reward_lines(self):
+    def action_open_reward_wizard(self):
         self.ensure_one()
-        return self.order_line.filtered(lambda line: line.reward_id)
-
-    def _is_global_discount_already_applied(self):
-        return any(reward.is_global_discount for reward in self.order_line.reward_id)
-
-    def _get_reward_values_product(self, reward, coupon, product=None, **kwargs):
-        self.ensure_one()
-        if not reward.reward_type == 'product':
-            raise ValidationError(_('The specified reward is not of type free product'))
-        additional_points = kwargs.get('additional_points', 0)
-        program = reward.program_id
-        reward_products = reward._get_reward_products()
-        product = product or reward_products[:1]
-        if not product or not product in reward_products:
-            raise ValidationError(_('No applicable product was found for your reward.'))
-        taxes = self.fiscal_position_id.map_tax(reward.reward_product_id.taxes_id.filtered(lambda t: t.company_id == self.company_id))
-        return [{
-            'product_id': product.id,
-            'price_unit': 0,
-            'product_uom_qty': reward.reward_product_qty,
-            'reward_id': reward.id,
-            'coupon_id': coupon.id,
-            'points_cost': reward.required_points if not reward.clear_wallet else (self._get_real_points_for_coupon(coupon) + additional_points),
-            'reward_identifier_code': _generate_random_reward_code(),
-            'name': product.display_name + '\n' + program.name,
-            'product_uom': product.uom_id.id,
-            'tax_id': [(4, tax.id, False) for tax in taxes]
-        }]
-
-    def _get_paid_order_lines(self):
-        """ Returns the sale order lines that are not reward lines. """
-        return self.order_line.filtered(lambda x: not x.is_reward_line)
-
-    def _get_base_order_lines(self, program):
-        """ Returns the sale order lines not linked to the given program.
-        """
-        return self.order_line.filtered(lambda x: not x._is_not_sellable_line() or (x.is_reward_line and x.product_id != program.discount_line_product_id))
-
-    def _get_cheapest_line(self):
-        # Unit prices tax included
-        return min(self.order_line.filtered(lambda x: not x._is_not_sellable_line() and x.price_reduce > 0), key=lambda x: x['price_reduce'])
-
-    def _get_reward_values_discount(self, reward, coupon, **kwargs):
-        self.ensure_one()
-        if not reward.reward_type == 'discount':
-            raise ValidationError(_('The specified reward is not of type discount'))
-        # Used when checking if a reward is still applicable or recomputing a discount
-        additional_points = kwargs.get('additional_points', 0)
-        # Figure out which lines are concerned by the discount
-        if reward.discount_applicability == 'order':
-            concerned_lines = self._get_paid_order_lines()
-        elif reward.discount_applicability == 'cheapest':
-            concerned_lines = self._get_cheapest_line()
-        elif reward.discount_applicability == 'specific':
-            concerned_lines = self._get_paid_order_lines().filtered(lambda l: l.product_id in reward.discount_product_ids)
-        max_discount = reward.discount_max_amount or float('inf')
-        if reward.discount_applicability != 'cheapest':
-            # TODO: price_subtotal correct here?
-            concerned_lines_total = sum(concerned_lines.mapped('price_subtotal'))
-        else:
-            # Discount on cheapest product -> only applies to 1 qty
-            concerned_lines_total = concerned_lines.price_reduce
-        if reward.discount_mode == 'per_point':
-            max_discount = min(max_discount, reward.discount * (self._get_real_points_for_coupon(coupon) + additional_points))
-        elif reward.discount_mode == 'per_order':
-            max_discount = min(max_discount, reward.discount)
-        elif reward.discount_mode == 'percent':
-            max_discount = min(max_discount, concerned_lines_total * (reward.discount / 100))
-        max_discount = reward.currency_id._convert(max_discount, self.currency_id, self.company_id, fields.Date.today())
-        if reward.discount_mode in ('per_point', 'per_order'):
-            # This is considered a fixed amount discount
-            discounted_amount = min(max_discount, concerned_lines_total)
-            product_taxes = reward.discount_line_product_id.taxes_id.filtered(lambda tax: tax.company_id == self.company_id)
-            taxes = self.fiscal_position_id.map_tax(product_taxes)
-            consumed_points = reward.required_points if not reward.clear_wallet else (self._get_real_points_for_coupon(coupon) + additional_points)
-            if not reward.clear_wallet and reward.discount_mode == 'per_point':
-                consumed_points = float_round(discounted_amount / reward.discount, precision_rounding=1, rounding_method='UP')
-            if not discounted_amount:
-                raise ValidationError(_('There is nothing to discount.'))
-            return [{
-                'name': _('Discount: %s', reward.program_id.name),
-                'product_id': reward.discount_line_product_id.id,
-                'price_unit': -discounted_amount,
-                'product_uom_qty': 1,
-                'product_uom': reward.discount_line_product_id.uom_id.id,
-                'reward_id': reward.id,
-                'coupon_id': coupon.id,
-                'points_cost': consumed_points,
-                'reward_identifier_code': _generate_random_reward_code(),
-                'tax_id': [(4, tax.id, False) for tax in taxes]
-            }]
-        # Discount per taxes
-        reward_dict = dict()
-        reward_code = _generate_random_reward_code()
-        # We need to limit how much we discount per line since this is a discount in %
-        # Since we already know how much we can discount and how much is to be paid, we can make a factor
-        # Imagine a discount of 50% with a max of 30$ on a 100$ order
-        #  You will have a factor of 0.6 so that 30$ = total * discount * factor
-        discount_factor = min(1, max_discount / (concerned_lines_total * (reward.discount / 100))) if concerned_lines_total else 1
-        discount_factor_display = float_round(discount_factor * 100, precision_digits=2)
-        for line in concerned_lines:
-            this_line_discount = (line.product_uom_qty * line.price_reduce * (reward.discount / 100)) * discount_factor
-            if this_line_discount:
-                if line.tax_id in reward_dict:
-                    reward_dict[line.tax_id]['price_unit'] -= this_line_discount
-                else:
-                    taxes = self.fiscal_position_id.map_tax(line.tax_id)
-
-                    reward_dict[line.tax_id] = {
-                        'name': _(
-                            'Discount: %(program)s - On product with the following taxes: %(taxes)s%(limited_suffix)s',
-                            program=reward.program_id.name,
-                            taxes=", ".join(taxes.mapped('name')),
-                            limited_suffix='' if discount_factor == 1 else\
-                                _(' limited to %s%% of the discount', discount_factor_display)
-                        ),
-                        'product_id': reward.discount_line_product_id.id,
-                        'price_unit': -this_line_discount,
-                        'product_uom_qty': 1.0,
-                        'product_uom': reward.discount_line_product_id.uom_id.id,
-                        'reward_id': reward.id,
-                        'coupon_id': coupon.id,
-                        'points_cost': 0,
-                        'reward_identifier_code': reward_code,
-                        'tax_id': [(4, tax.id, False) for tax in taxes],
-                    }
-        if not reward_dict:
-            raise ValidationError(_('There is nothing to discount.'))
-        # We only assign the point cost to one line to avoid counting the cost multiple times
-        reward_dict[next(iter(reward_dict))]['points_cost'] = reward.required_points if not reward.clear_wallet else (self._get_real_points_for_coupon(coupon) + additional_points)
-        return reward_dict.values()
+        self._update_programs_and_rewards()
+        claimable_rewards = self._get_claimable_rewards()
+        if len(claimable_rewards) == 1:
+            coupon = next(iter(claimable_rewards))
+            if len(claimable_rewards[coupon]) == 1:
+                self._apply_program_reward(claimable_rewards, coupon)
+                return True
+        elif not claimable_rewards:
+            return True
+        return self.env['ir.actions.actions']._for_xml_id('sale_loyalty.sale_loyalty_reward_wizard_action')
 
     def _send_reward_coupon_mail(self):
         coupons = self.env['loyalty.card']
@@ -225,20 +107,253 @@ class SaleOrder(models.Model):
         if coupons:
             coupons._send_creation_communication()
 
-    def _get_applicable_programs(self):
+    def _get_applied_global_discount_lines(self):
         """
-        This method is used to return the valid applicable programs on given order.
+        Returns the first line of the currently applied global discount or False
         """
         self.ensure_one()
-        applicable_with_points = self._get_applicable_program_points()
-        return self.env.browse(k.id for k in applicable_with_points)
+        return self.order_line.filtered(lambda l: l.reward_id.is_global_discount)
+
+    def _get_applied_global_discount(self):
+        """
+        Returns the currently applied global discount reward or False
+        """
+        return self._get_applied_global_discount_lines().reward_id
+
+    def _get_reward_values_product(self, reward, coupon, product=None, **kwargs):
+        """
+        Returns an array of dict containing the values required for the reward lines
+        """
+        self.ensure_one()
+        assert reward.reward_type == 'product'
+
+        reward_products = reward.reward_product_ids
+        product = product or reward_products[:1]
+        if not product or not product in reward_products:
+            return []
+        taxes = self.fiscal_position_id.map_tax(product.taxes_id.filtered(lambda t: t.company_id == self.company_id))
+        points = self._get_real_points_for_coupon(coupon)
+        claimable_count = float_round(points / reward.required_points, precision_rounding=1, rounding_method='DOWN') if not reward.clear_wallet else 1
+        cost = points if reward.clear_wallet else claimable_count * reward.required_points
+        return [{
+            'name': _("Free Product - %(product)s", product=product.name),
+            'product_id': product.id,
+            'price_unit': 0,
+            'product_uom_qty': reward.reward_product_qty * claimable_count,
+            'reward_id': reward.id,
+            'coupon_id': coupon.id,
+            'points_cost': cost,
+            'reward_identifier_code': _generate_random_reward_code(),
+            'product_uom': product.uom_id.id,
+            'tax_id': [(Command.CLEAR, 0, 0)] + [(Command.LINK, tax.id, False) for tax in taxes]
+        }]
+
+    def _discountable_order(self, reward):
+        """
+        Returns the discountable and discountable_per_tax for a discount that applies to the whole order
+        """
+        self.ensure_one()
+        assert reward.discount_applicability == 'order'
+
+        discountable = 0
+        discountable_per_tax = defaultdict(int)
+        for line in (self.order_line - self._get_no_effect_on_threshold_lines()):
+            # Ignore lines from this reward
+            if not line.product_uom_qty or not line.price_unit:
+                continue
+            line_discountable = line.price_unit * line.product_uom_qty * (1 - (line.discount or 0.0) / 100.0)
+            discountable += line.price_total
+            discountable_per_tax[line.tax_id] += line_discountable
+        return discountable, discountable_per_tax
+
+    def _cheapest_line(self):
+        self.ensure_one()
+        cheapest_line = False
+        for line in (self.order_line - self._get_no_effect_on_threshold_lines()):
+            if line.reward_id or not line.product_uom_qty or not line.price_unit:
+                continue
+            if not cheapest_line or cheapest_line.price_unit > line.price_unit:
+                cheapest_line = line
+        return cheapest_line
+
+    def _discountable_cheapest(self, reward):
+        """
+        Returns the discountable and discountable_per_tax for a discount that applies to the cheapest line
+        """
+        self.ensure_one()
+        assert reward.discount_applicability == 'cheapest'
+
+        cheapest_line = self._cheapest_line()
+        discountable = cheapest_line.price_unit * (1 - (cheapest_line.discount or 0) / 100)
+        return discountable, {cheapest_line.tax_id: discountable}
+
+    def _get_specific_discountable_lines(self, reward):
+        """
+        Returns all lines to which `reward` can apply
+        """
+        self.ensure_one()
+        assert reward.discount_applicability == 'specific'
+
+        discountable_lines = self.env['sale.order.line']
+        for line in (self.order_line - self._get_no_effect_on_threshold_lines()):
+            if not line.reward_id and line.product_id in reward.all_discount_product_ids:
+                discountable_lines |= line
+        return discountable_lines
+
+    def _discountable_specific(self, reward):
+        """
+        Special function to compute the discountable for 'specific' types of discount.
+        The goal of this function is to make sure that applying a 5$ discount on an order with a
+         5$ product and a 5% discount does not make the order go below 0.
+
+        Returns the discountable and discountable_per_tax for a discount that only applies to specific products.
+        """
+        self.ensure_one()
+        assert reward.discount_applicability == 'specific'
+
+        lines_to_discount = self.env['sale.order.line']
+        discount_lines = defaultdict(lambda: self.env['sale.order.line'])
+        order_lines = self.order_line - self._get_no_effect_on_threshold_lines()
+        remaining_amount_per_line = defaultdict(int)
+        for line in order_lines:
+            if not line.product_uom_qty or not line.price_unit:
+                continue
+            remaining_amount_per_line[line] = line.price_total
+            if not line.reward_id and line.product_id in reward.all_discount_product_ids:
+                lines_to_discount |= line
+            elif line.reward_id.reward_type == 'discount':
+                if line.reward_id == reward:
+                    continue
+                discount_lines[line.reward_identifier_code] |= line
+
+        cheapest_line = False
+        for lines in discount_lines.values():
+            line_reward = lines.reward_id
+            discounted_lines = order_lines
+            if line_reward.discount_applicability == 'cheapest':
+                cheapest_line = cheapest_line or self._cheapest_line()
+                discounted_lines = cheapest_line
+            elif line_reward.discount_applicability == 'specific':
+                discounted_lines = self._get_specific_discountable_lines(line_reward)
+            if not discounted_lines:
+                continue
+            common_lines = discounted_lines & lines_to_discount
+            if line_reward.discount_mode == 'percent':
+                for line in discounted_lines:
+                    remaining_amount_per_line[line] *= (1 - line_reward.discount/100)
+            else:
+                non_common_lines = discounted_lines - lines_to_discount
+                discounted_amount = abs(sum(lines.mapped('price_total')))
+                for line in itertools.chain(non_common_lines, common_lines):
+                    if discounted_amount == 0:
+                        break
+                    remaining = remaining_amount_per_line[line]
+                    consumed = min(remaining, discounted_amount)
+                    discounted_amount -= consumed
+                    remaining_amount_per_line[line] -= consumed
+
+        discountable = 0
+        discountable_per_tax = defaultdict(int)
+        for line in lines_to_discount:
+            discountable += remaining_amount_per_line[line]
+            line_discountable = line.price_unit * line.product_uom_qty * (1 - (line.discount or 0.0) / 100.0)
+            # line_discountable is the same as in a 'order' discount
+            #  but first multiplied by a factor for the taxes to apply
+            #  and then multiplied by another factor coming from the discountable
+            discountable_per_tax[line.tax_id] += line_discountable *\
+                (remaining_amount_per_line[line] / line.price_total)
+        return discountable, discountable_per_tax
+
+    def _get_reward_values_discount(self, reward, coupon, **kwargs):
+        self.ensure_one()
+        assert reward.reward_type == 'discount'
+
+        # Figure out which lines are concerned by the discount
+        # cheapest_line = self.env['sale.order.line']
+        discountable = 0
+        discountable_per_tax = defaultdict(int)
+        reward_applies_on = reward.discount_applicability
+        if reward_applies_on == 'order':
+            discountable, discountable_per_tax = self._discountable_order(reward)
+        elif reward_applies_on == 'specific':
+            discountable, discountable_per_tax = self._discountable_specific(reward)
+        elif reward_applies_on == 'cheapest':
+            discountable, discountable_per_tax = self._discountable_cheapest(reward)
+        # Discountable should never surpass the order's current total amount
+        discountable = min(self.amount_total, discountable)
+        if not discountable:
+            return []
+        max_discount = reward.currency_id._convert(reward.discount_max_amount, self.currency_id, self.company_id, fields.Date.today()) or float('inf')
+        if reward.discount_mode == 'per_point':
+            max_discount = min(max_discount,
+                reward.currency_id._convert(reward.discount * self._get_real_points_for_coupon(coupon),
+                    self.currency_id, self.company_id, fields.Date.today()))
+        elif reward.discount_mode == 'per_order':
+            max_discount = min(max_discount,
+                reward.currency_id._convert(reward.discount, self.currency_id, self.company_id, fields.Date.today()))
+        elif reward.discount_mode == 'percent':
+            max_discount = min(max_discount, discountable * (reward.discount / 100))
+        # Discount per taxes
+        reward_code = _generate_random_reward_code()
+        point_cost = reward.required_points if not reward.clear_wallet else self._get_real_points_for_coupon(coupon)
+        if reward.discount_mode == 'per_point' and not reward.clear_wallet:
+            # Calculate the actual point cost if the cost is per point
+            converted_discount = self.currency_id._convert(min(max_discount, discountable), reward.currency_id, self.company_id, fields.Date.today())
+            point_cost = converted_discount / reward.discount
+        # Gift cards and eWallets are considered gift cards and should not have any taxes
+        if reward.program_id.program_type in ('ewallet', 'gift_card'):
+            return [{
+                'name': reward.description,
+                'product_id': reward.discount_line_product_id.id,
+                'price_unit': -min(max_discount, discountable),
+                'product_uom_qty': 1.0,
+                'product_uom': reward.discount_line_product_id.uom_id.id,
+                'reward_id': reward.id,
+                'coupon_id': coupon.id,
+                'points_cost': point_cost,
+                'reward_identifier_code': reward_code,
+            }]
+        discount_factor = min(1, (max_discount / discountable)) if discountable else 1
+        mapped_taxes = {tax: self.fiscal_position_id.map_tax(tax) for tax in discountable_per_tax}
+        reward_dict = {tax: {
+            'name': _(
+                'Discount: %(desc)s%(tax_str)s',
+                desc=reward.description,
+                tax_str=_(' - On product with the following taxes: %(taxes)s', taxes=", ".join(mapped_taxes[tax].mapped('name'))),
+            ),
+            'product_id': reward.discount_line_product_id.id,
+            'price_unit': -(price * discount_factor),
+            'product_uom_qty': 1.0,
+            'product_uom': reward.discount_line_product_id.uom_id.id,
+            'reward_id': reward.id,
+            'coupon_id': coupon.id,
+            'points_cost': 0,
+            'reward_identifier_code': reward_code,
+            'tax_id': [(Command.CLEAR, 0, 0)] + [(Command.LINK, tax.id, False) for tax in mapped_taxes[tax]]
+        } for tax, price in discountable_per_tax.items()}
+        # We only assign the point cost to one line to avoid counting the cost multiple times
+        if reward_dict:
+            reward_dict[next(iter(reward_dict))]['points_cost'] = point_cost
+        # Returning .values() directly does not return a subscribable list
+        return list(reward_dict.values())
 
     def _get_program_domain(self):
         """
         Returns the base domain that all programs have to comply to.
         """
         self.ensure_one()
-        return [('company_id', 'in', (self.company_id.id, False))]
+        return [('active', '=', True),
+                ('company_id', 'in', (self.company_id.id, False)),
+                '|', ('date_to', '=', False), ('date_to', '<=', fields.Date.context_today(self))]
+
+    def _get_trigger_domain(self):
+        """
+        Returns the base domain that all triggers have to comply to.
+        """
+        self.ensure_one()
+        return [('active', '=', True),
+                ('company_id', 'in', (self.company_id.id, False)),
+                '|', ('program_id.date_to', '=', False), ('program_id.date_to', '<=', fields.Date.context_today(self))]
 
     def _get_applicable_program_points(self, domain=None):
         """
@@ -251,11 +366,8 @@ class SaleOrder(models.Model):
         domain = expression.AND([self._get_program_domain(), domain])
         # No other way than to test all programs to the order
         programs = self.env['loyalty.program'].search(domain)
-        program_points = dict()
-        for program in programs:
-            status = self._program_check_compute_points(program)
-            if 'points' in status:
-                program_points[program] = status['points']
+        all_status = self._program_check_compute_points(programs)
+        program_points = {p: status['points'][0] for p, status in all_status.items() if 'points' in status}
         return program_points
 
     def _get_points_programs(self):
@@ -294,10 +406,10 @@ class SaleOrder(models.Model):
         # on order. We would avoid having the invoice status 'to_invoice'
         # if the created invoice will only contain the promotion line
         super()._get_invoice_status()
-        for order in self.filtered(lambda order: order.invoice_status == 'to invoice'):
-            # TODO: check how this should be handled since free product are now product lines with price = 0
-            paid_lines = order._get_paid_order_lines()
-            if not any(line.invoice_status == 'to invoice' for line in paid_lines):
+        for order in self:
+            if order.invoice_status != 'to_invoice':
+                continue
+            if not any(not line.is_reward_line and line.invoice_status == 'to invoice' for line in order.order_line):
                 order.invoice_status = 'no'
 
     def _get_invoiceable_lines(self, final=False):
@@ -308,21 +420,19 @@ class SaleOrder(models.Model):
         which can result in invoices containing only promotion lines.
 
         To avoid those cases, we allow the invoicing of promotion lines
-        iff at least another 'basic' lines is also invoiceable.
+        if at least another 'basic' lines is also invoiceable.
         """
-        # TODO: check how this should be handled since free product are now product lines with price = 0
-        #  does it make sense to invoice a free product anyway?
         invoiceable_lines = super()._get_invoiceable_lines(final)
-        reward_lines = self._get_reward_lines()
-        if invoiceable_lines <= reward_lines:
-            return self.env['sale.order.line'].browse()
-        return invoiceable_lines
+        for line in invoiceable_lines:
+            if not line.is_reward_line:
+                return invoiceable_lines
+        return self.env['sale.order.line']
 
     def update_prices(self):
         """Recompute coupons/promotions after pricelist prices reset."""
         super().update_prices()
         if any(line.is_reward_line for line in self.order_line):
-            self._check_update_applied_rewards()
+            self._update_programs_and_rewards()
 
     def _get_point_changes(self):
         """
@@ -354,22 +464,24 @@ class SaleOrder(models.Model):
         points -= sum(self.order_line.filtered(lambda l: l.coupon_id == coupon).mapped('points_cost'))
         return points
 
-    def _add_points_for_coupon(self, coupon, points):
+    def _add_points_for_coupon(self, coupon_points):
         """
-        Updates (or creates) an entry in coupon_point_ids for the given coupon.
+        Updates (or creates) an entry in coupon_point_ids for the given coupons.
         """
         self.ensure_one()
-        # NOTE: sudo -> salesman don't have create rights, only read
-        point_entry = self.coupon_point_ids.filtered(lambda p: p.coupon_id == coupon).sudo()
-        if not point_entry:
-            point_entry = self.env['sale.order.coupon.points'].sudo().create({
-                'coupon_id': coupon.id,
-                'order_id': self.id,
-                'points': points,
+        if self.state in ('sale', 'done'):
+            for coupon, points in coupon_points.items():
+                coupon.sudo().points += points
+        for pe in self.coupon_point_ids.sudo():
+            if pe.coupon_id in coupon_points:
+                pe.points = coupon_points.pop(pe.coupon_id)
+        if coupon_points:
+            self.sudo().write({
+                'coupon_point_ids': [(0, 0, {
+                    'coupon_id': coupon.id,
+                    'points': points,
+                }) for coupon, points in coupon_points.items()]
             })
-            self.coupon_point_ids += point_entry
-        else:
-            point_entry.points += points
 
     def _remove_program_from_points(self, programs):
         self.coupon_point_ids.filtered(lambda p: p.coupon_id.program_id in programs).sudo().unlink()
@@ -383,18 +495,43 @@ class SaleOrder(models.Model):
         elif reward.reward_type == 'product':
             return self._get_reward_values_product(reward, coupon, **kwargs)
 
-    def __apply_program_reward(self, reward, coupon, **kwargs):
+    # NOTE: Utilitary methods to avoid back and forth creation and deletion of reward lines by using a order_line pool instead
+    def __add_lines_to_pool(self, reward_line_pool, free_shipping_pool, lines, invalidate_completely=False):
         self.ensure_one()
-        # TODO: How should we handle this?
-        #  Allow application of multiple discount but only create lines for the best one?
-        #  Remove the older discount?
-        if reward.is_global_discount and self._is_global_discount_already_applied():
-            return {'error': _('Global discounts are not cumulative.')}
-        elif reward.program_id.applies_on == 'future' and coupon in self.coupon_point_ids:
-            return {'error': _('The coupon can only be claimed on future orders.')}
-        elif self._get_real_points_for_coupon(coupon) < reward.required_points:
-            return {'error': _('The coupon does not have enough points for the selected reward.')}
-        return self._get_reward_line_values(reward, coupon, **kwargs)
+        update_dict = {
+            'points_cost': 0,
+            'price_unit': 0,
+        }
+        if invalidate_completely:
+            update_dict.update({
+                'coupon_id': False,
+                'reward_id': False,
+            })
+        for line in lines:
+            if line.reward_id.reward_type == 'shipping' and not invalidate_completely:
+                free_shipping_pool.append(line)
+            else:
+                reward_line_pool.append(line)
+        lines.write(update_dict)
+
+    def __add_reward_lines(self, reward_line_pool, free_shipping_pool, reward, vals_list):
+        # Add reward lines using the available reward lines from the pool
+        self.ensure_one()
+        while vals_list:
+            if reward.reward_type == 'discount' and not vals_list[-1]['price_unit']:
+                vals_list.pop(0)
+                continue
+            if reward.reward_type == 'shipping' and free_shipping_pool:
+                free_shipping_pool.pop(0).write(vals_list.pop(0))
+            else:
+                if reward_line_pool:
+                    reward_line_pool.pop(0).write(vals_list.pop(0))
+                else:
+                    line_update = [(Command.CREATE, False, vals) for vals in vals_list if reward.reward_type != 'discount' or vals['price_unit']]
+                    if line_update:
+                        # This will cause insertions
+                        self.write({'order_line': line_update})
+                    break
 
     def _apply_program_reward(self, reward, coupon, **kwargs):
         """
@@ -405,314 +542,330 @@ class SaleOrder(models.Model):
         The temporary points are used if the program is applicable to the current order.
 
         Returns a dict containing the error message or empty if everything went correctly.
+        NOTE: A call to `_update_programs_and_rewards` is expected to reorder the discounts.
         """
         self.ensure_one()
-        status = self.__apply_program_reward(reward, coupon, **kwargs)
-        if isinstance(status, dict):
-            return status
-        self.write({'order_line': [(Command.CREATE, False, value) for value in status]})
+        reward_line_pool = kwargs.get('reward_line_pool', [])
+        free_shipping_pool = kwargs.get('free_shipping_pool', [])
+        if reward.is_global_discount:
+            global_discount_reward_lines = self._get_applied_global_discount_lines()
+            global_discount_reward = global_discount_reward_lines.reward_id
+            if global_discount_reward and global_discount_reward != reward and global_discount_reward.discount >= reward.discount:
+                return {'error': _('A better global discount is already applied.')}
+            elif global_discount_reward and global_discount_reward != reward:
+                # Invalidate the old global discount as it may impact the new discount to apply
+                self.__add_lines_to_pool(reward_line_pool, free_shipping_pool, global_discount_reward_lines)
+        if reward.program_id.applies_on == 'future' and coupon in self.coupon_point_ids.coupon_id:
+            return {'error': _('The coupon can only be claimed on future orders.')}
+        elif self._get_real_points_for_coupon(coupon) < reward.required_points:
+            return {'error': _('The coupon does not have enough points for the selected reward.')}
+        reward_vals = self._get_reward_line_values(reward, coupon, **kwargs)
+        self.__add_reward_lines(reward_line_pool, free_shipping_pool, reward, reward_vals)
+        if reward_line_pool and 'reward_line_pool' not in kwargs:
+            self.order_line.write({'order_line': [(Command.DELETE, line.id) for line in reward_line_pool]})
         return {}
-
-    def _apply_program_reward_multi(self, reward, coupon, **kwargs):
-        """
-        Applies a reward as much as possible, effectively a call to `_apply_program_reward` as long as it does not error out.
-        """
-        self.ensure_one()
-        count = 0
-        order_line_update = []
-        while True:
-            status = self.__apply_program_reward(reward, coupon, **kwargs)
-            if isinstance(status, dict):
-                # means error
-                break
-            order_line_update.extend((Command.CREATE, False, value) for value in status)
-            count += 1
-        if order_line_update:
-            self.write({'order_line': order_line_update})
-        return count
 
     def _get_claimable_rewards(self, forced_coupons=None):
         """
         Fetch all rewards that are currently claimable from all concerned coupons,
          meaning coupons from applied programs and applied rewards or the coupons given as parameter.
 
-        Returns a dict containing the points and all the claimable rewards + amount of time per reward per program.
+        Returns a dict containing the all the claimable rewards grouped by coupon.
         Coupons that can not claim any reward are not contained in the result.
         """
         self.ensure_one()
-        all_coupons = forced_coupons or (self.coupon_point_ids.coupon_id | self.order_line.coupon_id)
-        result = {}
+        all_coupons = forced_coupons or (self.coupon_point_ids.coupon_id | self.order_line.coupon_id | self.applied_coupon_ids)
+        result = defaultdict(lambda: self.env['loyalty.reward'])
+        global_discount_reward = self._get_applied_global_discount()
         for coupon in all_coupons:
-            coupon_section = result.setdefault(coupon, {})
             points = self._get_real_points_for_coupon(coupon)
-            coupon_section['points'] = points
-            rewards_section = coupon.setdefault('rewards', [])
-            for reward in coupon.program_id.reward_id:
+            for reward in coupon.program_id.reward_ids:
+                if reward.is_global_discount and global_discount_reward and global_discount_reward.discount >= reward.discount:
+                    continue
                 if points >= reward.required_points:
-                    rewards_section.append((reward,
-                        1 if reward.clear_wallet else (points / reward.required_points) // 1))
-            if not rewards_section:
-                result.pop(coupon)
+                    result[coupon] |= reward
         return result
 
-    def _program_auto_apply(self):
+    def _update_programs_and_rewards(self):
         """
-        Check all non applied automatic programs for applicable rewards.
-        Any applicable program with a single reward (and single product for product rewards)
-         and enough points will be applied directly.
-        Any other applicable programs will still be applied for points which can be used later
-         will be added to the point count that can be used to compute which rewards can be claimed.
-        Any program applicable to the current order without a reward should have its coupons deleted upon
-         validating the order.
-        This also checks and updates previous rewards.
+        Updates applied programs's given points with the current state of the order.
+        Checks automatic programs for applicability.
+        Updates applied rewards using the new points and the current state of the order (for example with % discounts).
         """
-        #NOTE: equivalent to old `recompute_coupon_lines`
         self.ensure_one()
         if not self.order_line:
             return
-        self._check_update_applied_rewards()
-
-        # Fetch all automatic programs that are not already applied
-        already_applied_programs = self._get_points_programs()
-        domain = expression.AND([self._get_program_domain(), [('id', 'not in', already_applied_programs), ('trigger', '=', 'auto')]])
-        automatic_programs = self.env['loyalty.program'].search(domain)
-        all_new_coupons = self.env['loyalty.program']
-        for program in automatic_programs:
-            status = self._try_apply_program(program)
-            if 'error' in status:
-                continue
-            all_new_coupons |= status.get('coupon', self.env['loyalty.card'])
-        # Programs are now applied, we can check all coupon for rewards
-        for coupon in all_new_coupons:
-            program = coupon.program_id
-            # Skip all programs that do not apply to the current reward directly
-            #  In case of future program, a coupon will be created
-            #  In case of 'both' we do not want automatic rewards
-            if program.applies_to not in ('both', 'future') or\
-                len(program.reward_ids) != 1:
-                continue
-            reward = program.reward_ids
-            if reward.reward_type == 'product' and reward.multi_product:
-                continue
-            self._apply_program_reward_multi(reward, coupon)
-
-    def _check_update_applied_rewards(self, block=False):
-        """
-        Check all applied rewards and programs.
-
-        Make sure to abort the transaction if using blocking.
-
-        This method does multiple things.
-        1) It checks that all applied programs still are applicable.
-        2) Update the amount of points the order gives to the coupon.
-        3) Make sure that all rewards still have enough points to be applicable.
-        4) Update all rewards to make sure the right prices are used.
-
-        Returns a dict containing a possible error or empty.
-        """
-        self.ensure_one()
-
-        # Check that applied programs are still applicable and take actions if not
-        points_program = self._get_points_programs()
-        point_entry_per_program = defaultdict(lambda: self.env['sale.order.coupon.points'])
+        # Automatically load in eWallet coupons
+        ewallet_coupons = self.env['loyalty.card'].search(
+            [('partner_id', '=', self.partner_id.id), ('points', '>', 0), ('program_id.program_type', '=', 'ewallet')])
+        if ewallet_coupons:
+            self.applied_coupon_ids += ewallet_coupons
+        # Programs that are applied to the order and count points
+        points_programs = self._get_points_programs()
+        # Coupon programs that require the program's rules to match but do not count for points
+        coupon_programs = self.applied_coupon_ids.program_id
+        # Programs that are automatic and not yet applied
         program_domain = self._get_program_domain()
+        domain = expression.AND([program_domain, [('id', 'not in', points_programs.ids), ('trigger', '=', 'auto'), ('rule_ids.mode', '=', 'auto')]])
+        automatic_programs = self.env['loyalty.program'].search(domain).filtered(lambda p:
+            not p.limit_usage or p.total_order_count < p.max_usage)
+
+        # We try to avoid as many queries as possible by reusing reward lines
+        # NOTE: shipping lines require a special case see: https://github.com/odoo/odoo/commit/12a06dcfa678d5317d0a1e62c85e5a9508974aa2
+        free_shipping_pool = []
+        reward_line_pool = []
+
+        all_programs_to_check = points_programs | coupon_programs | automatic_programs
+        all_coupons = self.coupon_point_ids.coupon_id | self.applied_coupon_ids
+        # First basic check using the program_domain -> for example if a program gets archived mid quotation
+        domain_matching_programs = all_programs_to_check.filtered_domain(program_domain)
+        all_programs_status = {p: {'error': 'error'} for p in all_programs_to_check - domain_matching_programs}
+        all_programs_status.update(self._program_check_compute_points(domain_matching_programs))
+        # Delay any unlink to the end of the function since they cause a full cache invalidation
+        coupons_to_unlink = self.env['loyalty.card']
+        point_entries_to_unlink = self.env['sale.order.coupon.points']
+        # Update/group coupon_point_ids
+        point_ids_per_program = defaultdict(lambda: self.env['sale.order.coupon.points'])
         for pe in self.coupon_point_ids:
-            point_entry_per_program[pe.coupon_id.program_id] |= pe
-        for program in points_program:
-            # Only check points if program is still applicable to the order
-            status = self._program_check_compute_points(program) if program.filtered_domain(program_domain)\
-                    else {'error': 'error'}
-            if block and 'error' in status:
-                return status
-            if 'error' in status:
-                # Rewards if program applies to the current order, delete reward(s)
-                if program.apples_on == 'current':
-                    self.order_line.filtered(lambda l: l.reward_id in program.reward_ids).unlink()
-                # Delete coupon if program applies to current or future orders
-                if program.applies_on in ('current', 'future'):
-                    point_entry_per_program[program].coupon_id.unlink()
-                else:
-                    # ondelete cascade for coupon_id on point_entries
-                    point_entry_per_program[program].sudo().unlink()
-                point_entry_per_program.remove(program)
+            # Remove any point entry for a coupon that does not belong to the customer
+            if pe.coupon_id.partner_id and pe.coupon_id.partner_id != self.partner_id:
+                pe.points = 0
+                point_entries_to_unlink |= pe
             else:
-                # Adjust all coupons to new points
-                all_point_changes = [status['points']]
-                for rule, rule_points in status.items():
-                    if isinstance(rule, str):
-                        continue
-                    # Using trigger multi
-                    all_point_changes.extend(rule_points)
-                program_pes = point_entry_per_program[program]
-                # Update existing lines
-                for pe, points in zip(program_pes, all_point_changes):
+                point_ids_per_program[pe.coupon_id.program_id] |= pe
+
+        for program in points_programs:
+            status = all_programs_status[program]
+            program_point_entries = point_ids_per_program[program]
+            if 'error' in status:
+                # Program is not applicable anymore
+                coupons_from_order = program_point_entries.coupon_id.filtered(lambda c: c.order_id == self)
+                all_coupons -= coupons_from_order
+                # Invalidate those lines so that they don't impact anything further down the line
+                self.__add_lines_to_pool(
+                    reward_line_pool, free_shipping_pool,
+                    self.order_line.filtered(lambda l: l.coupon_id in coupons_from_order), invalidate_completely=True
+                )
+                # Delete coupon created by this order for this program if it is not nominative
+                if not program.is_nominative:
+                    coupons_to_unlink |= coupons_from_order
+                else:
+                    # Only remove the coupon_point_id
+                    point_entries_to_unlink |= program_point_entries
+                    point_entries_to_unlink.points = 0
+                # Remove the code activated rules
+                self.code_enabled_rule_ids -= program.rule_ids
+            else:
+                # Program stays applicable, update our points
+                all_point_changes = [p for p in status['points'] if p]
+                for pe, points in zip(program_point_entries, all_point_changes):
                     pe.points = points
-                if len(program_pes) < len(all_point_changes):
-                    new_coupon_points = all_point_changes[len(program_pes):]
-                    new_coupons = self.env['loyalty.card'].create([{
+                if len(program_point_entries) < len(all_point_changes):
+                    new_coupon_points = all_point_changes[len(program_point_entries):]
+                    # NOTE: Maybe we could batch the creation of coupons across multiple programs but this really only applies to gift cards.
+                    new_coupons = self.env['loyalty.card'].with_context(create_mail=False).create([{
                         'program_id': program.id,
-                        'partner_id': self.partner_id.id,
-                        'shared_code': False,
+                        'partner_id': False,
                         'points': 0,
                         'order_id': self.id,
                     } for _ in new_coupon_points])
-                    for x, coupon in zip(new_coupon_points, new_coupons):
-                        self._add_points_for_coupon(coupon, x)
-                elif len(program_pes) > len(all_point_changes):
-                    pes_to_unlink = program_pes[len(all_point_changes):]
-                    pes_to_unlink.coupon_id.sudo().unlink()
-                    pes_to_unlink.sudo().unlink()
-                point_entry_per_program[program].points = status['points']
+                    self._add_points_for_coupon({coupon: x for coupon, x in zip(new_coupons, new_coupon_points)})
+                elif len(program_point_entries) > len(all_point_changes):
+                    point_ids_to_unlink = program_point_entries[len(all_point_changes):]
+                    all_coupons -= point_ids_to_unlink.coupon_id
+                    coupons_to_unlink |= point_ids_to_unlink.coupon_id
+                    point_ids_to_unlink.points = 0
 
-        # Update reward lines, this is what handles a change in price and thus discount for example
-        processed_rewards = set()
-        line_updates = []
-        # In case of concurrent modification due to multiple application of reward
-        order_lines = self.order_line
-        for line in order_lines:
-            if not line.reward_id or not line.coupon_id or\
-                (line.reward_id, line.coupon_id, line.reward_identifier_code) in processed_rewards:
+        applied_coupon_per_program = defaultdict(lambda: self.env['loyalty.card'])
+        for coupon in self.applied_coupon_ids:
+            applied_coupon_per_program[coupon.program_id] |= coupon
+        for program in coupon_programs:
+            if program not in domain_matching_programs or\
+                (program.applies_on == 'current' and 'error' in all_programs_status[program]):
+                self.__add_lines_to_pool(
+                    reward_line_pool, free_shipping_pool,
+                    self.order_line.filtered(lambda l: l.coupon_id in applied_coupon_per_program[program]), invalidate_completely=True
+                )
+                self.applied_coupon_ids -= applied_coupon_per_program[program]
+                all_coupons -= applied_coupon_per_program[program]
+
+        self.__add_lines_to_pool(reward_line_pool, free_shipping_pool, self.order_line.filtered(lambda l: l.reward_id and l.coupon_id))
+        seen_rewards = set()
+        line_rewards = []
+        payment_rewards = [] # gift_card and ewallet are considered as payments and should always be applied last
+        for line in self.order_line:
+            if line.reward_identifier_code in seen_rewards or not line.reward_id or\
+                not line.coupon_id or (line.coupon_id.partner_id and line.coupon_id.partner_id != self.partner_id):
                 continue
-            processed_rewards.add((line.reward_id, line.coupon_id, line.reward_identifier_code))
-            concerned_lines = self.order_line.filtered(lambda l:\
-                l.reward_id == line.reward_id and\
-                l.coupon_id == line.coupon_id and\
-                l.reward_identifier_code == line.reward_identifier_code)
-            additional_points = sum(concerned_lines.mapped('points_cost')) if not line.points_cost else\
-                                    line.points_cost
-            points = self._get_real_points_for_coupon(line.coupon_id) + additional_points
-            # This works for both points being negative and not having enough points for the reward
-            if points < line.reward_id.required_points or not line.reward_id.program_id.filtered_domain(program_domain):
-                if block and points < line.reward_id.required_points:
-                    return {'error': _('One of the rewards on the sales order can not be claimed due to a lack of points.')}
-                elif block:
-                    return {'error': _('One of the rewards on the sales order can not be claimed due to the program not being applicable to the order.')}
-                # Not adding concerned_lines since it is implicit
-                line_updates.append((Command.DELETE, line.id))
+            seen_rewards.add(line.reward_identifier_code)
+            if line.reward_id.program_id.program_type not in ('gift_card', 'ewallet'):
+                line_rewards.append((line.reward_id, line.coupon_id, line.reward_identifier_code, line.product_id))
             else:
-                values_list = self._get_reward_line_values(
-                    line.reward_id, line.coupon_id, additional_points=additional_points, product=line.product_id)
-                for values in values_list:
-                    # Updating reward_identified_code makes processed_rewards useless
-                    values.pop('reward_identifier_code')
-                if len(concerned_lines) == 1 and len(values) == 1:
-                    line_updates.append((Command.UPDATE, concerned_lines.id, values[0]))
-                else:
-                    lines_to_remove = concerned_lines
-                    for values in values_list:
-                        values_taxes = set(v[1] for v in values.get('tax_id'))
-                        # 3 cases we want to handle
-                        # 1: a line already exists with the exact same taxes, update that line
-                        # 2: no line was found in the existing line, create a new line
-                        # 3: line not matching with anything in values_list, delete line
-                        for value_line in concerned_lines:
-                            if not set(value_line.tax_id.ids).symmetric_difference(values_taxes):
-                                lines_to_remove -= value_line
-                                # case 1
-                                if values['product_uom_qty'] and values['price_unit']:
-                                    line_updates.append((Command.UPDATE, value_line.id, values))
-                                else:
-                                    if line.reward_id.reward_type == 'shipping':
-                                        values.update(price_unit=0)
-                                        line_updates.append((Command.UPDATE, value_line.id, values))
-                                    else:
-                                        line_updates.append((Command.DELETE, value_line.id))
-                                break
-                        else:
-                            # case 2
-                            line_updates.append((Command.CREATE, 0, values))
-                    # case 3
-                    line_updates.extend((Command.DELETE, remove_line.id) for remove_line in lines_to_remove)
-        if line_updates:
-            self.write({'order_line': line_updates})
+                payment_rewards.append((line.reward_id, line.coupon_id, line.reward_identifier_code, line.product_id))
+        for reward_key in itertools.chain(line_rewards, payment_rewards):
+            coupon = reward_key[1]
+            reward = reward_key[0]
+            program = reward.program_id
+            points = self._get_real_points_for_coupon(coupon)
+            if coupon not in all_coupons or points < reward.required_points or program not in domain_matching_programs:
+                # Reward is not applicable anymore, the reward lines will simply be removed at the end of this function
+                continue
+            values_list = self._get_reward_line_values(reward, coupon, product=reward_key[3])
+            self.__add_reward_lines(reward_line_pool, free_shipping_pool, reward, values_list)
 
-    def _program_check_compute_points(self, program):
+        for program in automatic_programs:
+            program_status = all_programs_status[program]
+            if 'error' in program_status:
+                continue
+            self.__try_apply_program(program, False, program_status)
+
+        order_line_update = [(Command.DELETE, line.id) for line in reward_line_pool]
+        if order_line_update:
+            self.write({'order_line': order_line_update})
+        if coupons_to_unlink:
+            coupons_to_unlink.sudo().unlink()
+        if point_entries_to_unlink:
+            point_entries_to_unlink.sudo().unlink()
+
+    def _program_check_compute_points(self, programs):
         """
         Checks the program validity from the order lines aswell as computing the number of points to add.
 
         Returns a dict containing the error message or the points that will be given with the keys 'points'.
         """
         self.ensure_one()
-        # The computing of points will be pretty naïve; if two rules contain the same product
-        #  the amount of points they will give will be counted twice.
-        no_effect_lines = self._get_no_effect_on_threshold_lines()
-        program_reward_discount_product_ids = program.reward_ids.discount_line_product_id
 
-        # Do not count this program's discount lines for the amount to check.
-        discount_lines = self.order_line.filtered(lambda line: line.product_id in program_reward_discount_product_ids)
-        untaxed_amount = self.amount_untaxed - sum(line.price_subtotal for line in no_effect_lines) - sum(line.price_subtotal for line in discount_lines)
-        tax_amount = self.amount_tax - sum(line.price_tax for line in no_effect_lines) - sum(line.price_tax for line in discount_lines)
-
-        # Check quantities
+        # Prepare quantities
         order_lines = self.order_line.filtered(lambda line: line.product_id and not line.reward_id)
         products = order_lines.product_id
         products_qties = dict.fromkeys(products, 0)
         for line in order_lines:
             products_qties[line.product_id] += line.product_uom_qty
         # Contains the products that can be applied per rule
-        products_per_rule = program._get_valid_products(products)
+        products_per_rule = programs._get_valid_products(products)
 
-        # Used for error messages
-        minimum_amount_matched = False
-        product_qty_matched = False
-        points = 0
+        # Prepare amounts
+        no_effect_lines = self._get_no_effect_on_threshold_lines()
+        base_untaxed_amount = self.amount_untaxed - sum(line.price_subtotal for line in no_effect_lines)
+        base_tax_amount = self.amount_tax - sum(line.price_tax for line in no_effect_lines)
+        amounts_per_program = {p: {'untaxed': base_untaxed_amount, 'tax': base_tax_amount} for p in programs}
+        for line in self.order_line:
+            if not line.reward_id or line.reward_id.reward_type != 'discount':
+                continue
+            for program in programs:
+                # Do not consider the program's discount + automatic discount lines for the amount to check.
+                # NOTE: since rewards are not applied without manual input anymore, does it make sense to subtract
+                #  them from the amounts?
+                if line.reward_id.program_id.trigger == 'auto' or line.reward_id.program_id == program:
+                    amounts_per_program[program]['untaxed'] -= line.price_subtotal
+                    amounts_per_program[program]['tax'] -= line.price_tax
+
         result = {}
-        for rule in program.rule_ids:
-            rule_amount = rule._compute_amount(self.currency_id)
-            if rule.minimum_amount_tax_mode == 'incl' and rule_amount > (untaxed_amount + tax_amount) or rule_amount > untaxed_amount:
-                continue
-            minimum_amount_matched = True
-            rule_products = products_per_rule[rule]
-            ordered_rule_products_qty = sum(products_qties[product] for product in rule_products)
-            # if ordered_rule_products_qty < rule.minimum_qty and program.applies_on != 'both':
-            if ordered_rule_products_qty < rule.minimum_qty:
-                continue
-            product_qty_matched = True
-            if not rule.reward_point_amount:
-                continue
-            # Count all points separately if the order is for the future and the split option is enabled
-            if not (program.applies_on == 'future' and rule.reward_point_trigger_multi) or rule.reward_point_mode == 'order':
-                # All checks have been passed we can now compute the points to give
-                if rule.reward_point_mode == 'order':
-                    points += rule.reward_point_amount
-                elif rule.reward_point_mode == 'money':
-                    # Compute amount paid for rule
-                    # NOTE: this does not account for discounts -> 1 point per $ * (100$ - 30%) will result in 100 points
-                    amount_paid = sum(max(0, line.price_total) for line in order_lines if line.product_id in rule_products)
-                    points += float_round(rule.reward_point_amount * amount_paid, precision_digits=2, rounding_method='DOWN')
-                elif rule.reward_point_mode == 'unit':
-                    points += rule.reward_point_amount * ordered_rule_products_qty
-            else:
-                if rule.reward_point_mode == 'unit':
-                    # TODO: we actually don't care about the rule, just the points
-                    result[rule] = [rule.reward_point_amount for _ in range(ordered_rule_products_qty)]
-                elif rule.reward_point_mode == 'money':
-                    rule_result = []
-                    for line in self.order_line:
-                        if line.is_reward_line or line.product_id not in rule_products or not line.product_uom_qty:
-                            continue
-                        # NOTE: Not using price_unit -> count taxes (rule is money SPENT)
-                        points_per_unit = float_round(
-                            (rule.reward_point_amount * line.price_total / line.product_uom_qty),
-                            precision_digits=2, rounding_method='DOWN')
-                        if not points_per_unit:
-                            continue
-                        rule_result.extend(points_per_unit for _ in range(line.product_uom_qty))
-                    result[rule] = rule_result
+        for program in programs:
+            untaxed_amount = amounts_per_program[program]['untaxed']
+            tax_amount = amounts_per_program[program]['tax']
 
-        # NOTE: for programs that apply to current&futur orders we always allow the program to be 'applied' on the order
-        #  with 0 points so that `_get_claimable_rewards` returns the rewards associated with those programs
-        if program.applies_on != 'both':
-            if not minimum_amount_matched:
-                return {'error': _(
-                    'A minimum of %(amount)s %(currency)s should be purchased to get the reward',
-                    amount=min(program.rule_ids.mapped('rule_minimum_amount')),
-                    currency=program.currency_id.name,
-                )}
-            elif not product_qty_matched:
-                return {'error': _("You don't have the required product quantities on your sales order. If the reward is same product quantity, please make sure that all the products are recorded on the sales order (Example: You need to have 3 T-shirts on your sales order if the promotion is 'Buy 2, Get 1 Free'.")}
-        result['points'] = points
+            # Used for error messages
+            # By default False, but True if no rules and applies_on current -> misconfigured coupons program
+            code_matched = not bool(program.rule_ids) and program.applies_on == 'current' # Stays false if all triggers have code and none have been activated
+            minimum_amount_matched = code_matched
+            product_qty_matched = code_matched
+            points = 0
+            # Some rules may split their points per unit / money spent
+            #  (i.e. gift cards 2x50$ must result in two 50$ codes)
+            rule_points = []
+            program_result = result.setdefault(program, dict())
+            for rule in program.rule_ids:
+                if rule.mode == 'with_code' and rule not in self.code_enabled_rule_ids:
+                    continue
+                code_matched = True
+                rule_amount = rule._compute_amount(self.currency_id)
+                if rule_amount > (rule.minimum_amount_tax_mode == 'incl' and (untaxed_amount + tax_amount) or untaxed_amount):
+                    continue
+                minimum_amount_matched = True
+                rule_products = products_per_rule[rule]
+                ordered_rule_products_qty = sum(products_qties[product] for product in rule_products)
+                if ordered_rule_products_qty < rule.minimum_qty or not rule_products:
+                    continue
+                product_qty_matched = True
+                if not rule.reward_point_amount:
+                    continue
+                # Count all points separately if the order is for the future and the split option is enabled
+                if program.applies_on == 'future' and rule.reward_point_split and rule.reward_point_mode != 'order':
+                    if rule.reward_point_mode == 'unit':
+                        rule_points.extend(rule.reward_point_amount for _ in range(ordered_rule_products_qty))
+                    elif rule.reward_point_mode == 'money':
+                        for line in self.order_line:
+                            if line.is_reward_line or line.product_id not in rule_products or line.product_uom_qty <= 0:
+                                continue
+                            points_per_unit = float_round(
+                                (rule.reward_point_amount * line.price_total / line.product_uom_qty),
+                                precision_digits=2, rounding_method='DOWN')
+                            if not points_per_unit:
+                                continue
+                            rule_points.extend([points_per_unit] * int(line.product_uom_qty))
+                else:
+                    # All checks have been passed we can now compute the points to give
+                    if rule.reward_point_mode == 'order':
+                        points += rule.reward_point_amount
+                    elif rule.reward_point_mode == 'money':
+                        # Compute amount paid for rule
+                        # NOTE: this does not account for discounts -> 1 point per $ * (100$ - 30%) will result in 100 points
+                        amount_paid = sum(max(0, line.price_total) for line in order_lines if line.product_id in rule_products)
+                        points += float_round(rule.reward_point_amount * amount_paid, precision_digits=2, rounding_method='DOWN')
+                    elif rule.reward_point_mode == 'unit':
+                        points += rule.reward_point_amount * ordered_rule_products_qty
+            # NOTE: for programs that are nominative we always allow the program to be 'applied' on the order
+            #  with 0 points so that `_get_claimable_rewards` returns the rewards associated with those programs
+            if not program.is_nominative:
+                if not code_matched:
+                    program_result['error'] = _("This program requires a code to be applied.")
+                elif not minimum_amount_matched:
+                    program_result['error'] = _(
+                        'A minimum of %(amount)s %(currency)s should be purchased to get the reward',
+                        amount=min(program.rule_ids.mapped('minimum_amount')),
+                        currency=program.currency_id.name,
+                    )
+                elif not product_qty_matched:
+                    program_result['error'] = _("You don't have the required product quantities on your sales order.")
+            if 'error' not in program_result:
+                points_result = [points] + rule_points
+                program_result['points'] = points_result
         return result
+
+    def __try_apply_program(self, program, coupon, status):
+        self.ensure_one()
+        all_points = status['points']
+        points = all_points[0]
+        coupons = coupon or self.env['loyalty.card']
+        if coupon:
+            if program.is_nominative:
+                self._add_points_for_coupon({coupon: points})
+        elif not coupon:
+            # If the program only applies on the current order it does not make sense to fetch already existing coupons
+            if program.is_nominative:
+                coupon = self.env['loyalty.card'].search(
+                    [('partner_id', '=', self.partner_id.id), ('program_id', '=', program.id)], limit=1)
+                # Do not apply 'nominative' programs if no point is given and no coupon exists
+                if not points and not coupon:
+                    return {'error': _('No card found for this loyalty program and no points will be given with this order.')}
+                elif coupon:
+                    self._add_points_for_coupon({coupon: points})
+                coupons = coupon
+            if not coupon:
+                all_points = [p for p in all_points if p]
+                partner = False
+                # Loyalty programs and ewallets are nominative
+                if program.is_nominative:
+                    partner = self.partner_id.id
+                coupons = self.env['loyalty.card'].sudo().with_context(create_mail=False).create([{
+                    'program_id': program.id,
+                    'partner_id': partner,
+                    'points': 0,
+                    'order_id': self.id,
+                } for _ in all_points])
+                self._add_points_for_coupon({coupon: x for coupon, x in zip(coupons, all_points)})
+        return {'coupon': coupons}
 
     def _try_apply_program(self, program, coupon=None):
         """
@@ -727,131 +880,74 @@ class SaleOrder(models.Model):
         """
         self.ensure_one()
         # Basic checks
-        if not program.filtered_domain(self._get_program_domain):
+        if not program.filtered_domain(self._get_program_domain()):
             return {'error': _('The program is not available for this order.')}
+        elif program in self._get_applied_programs():
+            return {'error': _('This program is already applied to this order.')}
         # Check for applicability from the program's triggers/rules.
         # This step should also compute the amount of points to give for that program on that order.
-        status = self._program_check_compute_points(program)
+        status = self._program_check_compute_points(program)[program]
         if 'error' in status:
             return status
-        # The program is applicable to this order, we now have to create (or fetch) a coupon that will
-        #  store the points to be used on this order or future orders
-        points = status.get('points', 0)
-        # If coupon is already set we can assume the code was one of a coupon,
-        #  in that case since we know the program is applicable to the order, we can just check if enough points
-        #  are present for the reward, this only makes sense for future (or both) programs
-        coupons = coupon or self.env['loyalty.card']
-        if not coupon:
-            # If the program only applies on the current order it does not make sense to fetch already existing coupons
-            if program.applies_on == 'both':
-                # Programs with 'both' have to be nominative
-                coupon = self.env['loyalty.card'].search(
-                    [('partner_id', '=', self.partner_id.id), ('program_id', '=', program.id)], limit=1)
-                # Do not apply 'both' type of programs if no point is given and no coupon exists
-                if not points:
-                    return {'error': _('No card found for this loyalty program and no points will be given with this order.')}
-            if program.applies_on in ('future', 'current') or not coupon:
-                if points:
-                    coupon = self.env['loyalty.card'].sudo().create({
-                        'program_id': program.id,
-                        'partner_id': self.partner_id.id if program.applies_on != 'future' else False,
-                        'shared_code': True if program.code else False,
-                        'code': program.code or self.env['loyalty.card']._generate_code(),
-                        'points': 0, #NOTE: use `_get_real_points_for_coupon` to get the points for this order
-                        'order_id': self.id if program.applies_on == 'future' else False,
-                    })
-                    coupons |= coupon
-                # Special case where multiple coupons are generated for the order to be used in a future order
-                # (i.e. Gift Cards)
-                if program.applies_on == 'future':
-                    for rule, rule_points in status.items():
-                        if isinstance(rule, str):
-                            continue
-                        new_coupons = self.env['loyalty.card'].sudo().create([{
-                            'program_id': program.id,
-                            'partner_id': False,
-                            'shared_code': False,
-                            'points': 0,
-                            'order_id': self.id,
-                        } for _ in rule_points])
-                        for x, coupon in zip(rule_points, new_coupons):
-                            self._add_points_for_coupon(coupon, x)
-                        coupons |= new_coupons
-        if coupon:
-            self._add_points_for_coupon(coupon, points)
-        return {'coupon': coupons}
+        return self.__try_apply_program(program, coupon, status)
 
     def _try_apply_code(self, code):
         """
         Tries to apply a promotional code to the sales order.
 
-        If the code is one of a promotional program the following will happen:
-         - Program applies to current order:
-            The order is checked if compliant to the program's rules, if it is the case
-             the program is added to the applied programs (for points).
-            If enough points are given to claim a reward and there is only one reward available,
-             the reward is claimed as much as possible directly. Otherwise the result will contain
-             the claimable rewards similar to `_get_claimable_rewards`.
-         - Program applies to future orders:
-            The order is checked if compliant to the program's rules, if it is the case
-             the program creates a coupon that will be usable on the next order.
-         - Program applies to both:
-            The order is checked if compliant to the program's rules, if it is the case
-             the program is added to the applied programs (for points).
-            If a coupon already exists for that program for the order's partner, points are added
-             for that coupon, otherwise a new coupon is created.
-            No reward is applied automatically but the result will contain the claimable rewards
-             similar to `_get_claimable_rewards`.
-
-        If the code is one of a coupon the following will happen:
-         - Program applies to current order:
-            Same as if code was one of a promotional program.
-         - Program applies to future order:
-            The order must not comply to the program's rule to be able to claim a reward.
-            The result will contain the claimable rewards for that coupon.
-         - Program applies to both order:
-            Same as if code was one of a promotional program except no coupon will be created.
-
         Returns a dict with the following possible keys:
-         - 'not_found': Error message if nothing was found using the code or program is archived.
+         - 'not_found': Populated with True if the code did not yield any result.
          - 'error': Any error message that could occur.
-         OR The result of `_get_claimable_rewards`, it will be empty if the coupon was consumed completely.
+         OR The result of `_get_claimable_rewards` with the found or newly created coupon, it will be empty if the coupon was consumed completely.
         """
         self.ensure_one()
 
-        base_domain = self._get_program_domain()
-        domain = expression.AND([base_domain, [('code', '=', code), ('trigger', '=', 'with_code')]])
-        program = self.env['loyalty.program'].search(domain)
+        base_domain = self._get_trigger_domain()
+        domain = expression.AND([base_domain, [('mode', '=', 'with_code'), ('code', '=', code)]])
+        rule = self.env['loyalty.rule'].search(domain)
+        program = rule.program_id
+        coupon = False
 
+        if rule in self.code_enabled_rule_ids:
+            return {'error': _('This promo code is already applied.')}
+
+        # No trigger was found from the code, try to find a coupon
         if not program:
-            # Fetches the coupon associated with the code, ordered by partner_id in order to fetch the first associated
-            #  and then by points, for example 100 coupons with same code -> fetch the first with points
-            coupon = self.env['loyalty.card'].search(
-                [('partner_id', 'in', (False, self.partner_id.id)), ('code', '=', code)],
-                order='partner_id, points desc', limit=1)
+            coupon = self.env['loyalty.card'].search([('partner_id', 'in', (False, self.partner_id.id)), ('code', '=', code)])
             if not coupon or not coupon.program_id.active:
-                return {'error': _('This code is invalid (%s).', code)}
+                return {'error': _('This code is invalid (%s).', code), 'not_found': True}
             elif coupon.expiration_date and coupon.expiration_date < fields.Date.today():
-                return {'error': _('This coupon is expired')}
+                return {'error': _('This coupon is expired.')}
+            elif coupon.points < min(coupon.program_id.reward_ids.mapped('required_points')):
+                return {'error': _('This coupon has already been used.')}
             program = coupon.program_id
-        if program and not program.filtered_domain(base_domain):
-            return {'error': _('This code is invalid (%s).', code)}
 
-        points_programs = self.get_points_programs()
-        if program in points_programs and not coupon:
-            return {'error': _('This program is already applied to this order.')}
-        if program not in points_programs and (program.applies_to != 'future' or not coupon):
+        if not program or not program.active:
+            return {'error': _('This code is invalid (%s).', code), 'not_found': True}
+        elif (program.limit_usage and program.total_order_count >= program.max_usage) or\
+            (program.date_to and program.date_to <= fields.Date.context_today(self)):
+            return {'error': _('This code is expired (%s).', code)}
+
+        # Rule will count the next time the points are updated
+        if rule:
+            self.code_enabled_rule_ids |= rule
+        program_is_applied = program in self._get_points_programs()
+        # Condition that need to apply program (if not applied yet):
+        # current -> always
+        # future -> if no coupon
+        # nominative -> non blocking if card exists with points
+        if coupon:
+            self.applied_coupon_ids += coupon
+        if program_is_applied:
+            # Update the points for our programs, this will take the new trigger in account
+            self._update_programs_and_rewards()
+        elif program.applies_on != 'future' or not coupon:
             apply_result = self._try_apply_program(program, coupon)
-            if 'error' in apply_result and not program.applies_on == 'both':
+            if 'error' in apply_result and (not program.is_nominative or (program.is_nominative and not coupon)):
+                if rule:
+                    self.code_enabled_rule_ids -= rule
+                if coupon:
+                    self.applied_coupon_ids -= coupon
                 return apply_result
-            # Program is applies_on both but the program is not applicable and no coupon exists
-            if not coupon:
-                return {'error': _('The program associated to this code is not applicable to this order and no card was found.')}
             coupon = apply_result.get('coupon', self.env['loyalty.card'])
-        # Claim rewards if possible, coupon can be a recordset at this point (cf loyalty.rule.reward_point_trigger_multi)
-        if program.applies_to != 'both' and len(program.reward_ids) == 1 and\
-            not (program.reward_ids.reward_type == 'product' and program.reward_ids.multi_product):
-            for c in coupon:
-                self._apply_program_reward_multi(program.reward_ids, c)
-        # If no reward is claimable this should return an empty dict
         return self._get_claimable_rewards(coupon)

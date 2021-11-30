@@ -10,25 +10,32 @@
     'description': '',
     'depends': ['loyalty', 'point_of_sale'],
     'data': [
-        'data/security/ir.model.access.csv',
+        'security/ir.model.access.csv',
         'data/default_barcode_patterns.xml',
-        # 'data/mail_template_data.xml', TODO: adapt
+        # 'data/mail_template_data.xml',
+        'views/loyalty_card_views.xml',
+        'views/loyalty_mail_views.xml',
+        'views/pos_config_views.xml',
+        'views/pos_loyalty_menu_views.xml',
     ],
     'demo': [
-        # 'data/pos_loyalty_demo.xml', TODO: adapt
+        'data/pos_loyalty_demo.xml',
     ],
     'installable': True,
     'assets': {
         'point_of_sale.assets': [
             'pos_loyalty/static/src/css/Loyalty.scss',
-            'pos_loyalty/static/src/js/ActivePrograms.js',
-            'pos_loyalty/static/src/js/loyalty.js',
+            'pos_loyalty/static/src/js/Loyalty.js',
             'pos_loyalty/static/src/js/Orderline.js',
+            'pos_loyalty/static/src/js/OrderWidget.js',
             'pos_loyalty/static/src/js/PaymentScreen.js',
+            'pos_loyalty/static/src/js/PointsCounter.js',
             'pos_loyalty/static/src/js/ProductScreen.js',
             'pos_loyalty/static/src/js/ControlButtons/GiftCardButton.js',
             'pos_loyalty/static/src/js/ControlButtons/ResetProgramsButton.js',
             'pos_loyalty/static/src/js/ControlButtons/PromoCodeButton.js',
+            'pos_loyalty/static/src/js/ControlButtons/RewardButton.js',
+            'pos_loyalty/static/src/js/Popups/GiftCardPopup.js',
         ],
         'web.assets_tests': [
             'pos_loyalty/static/src/js/tours/**/*',

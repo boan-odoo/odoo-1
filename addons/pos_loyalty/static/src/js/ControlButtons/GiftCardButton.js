@@ -3,11 +3,11 @@
 import PosComponent from 'point_of_sale.PosComponent';
 import ProductScreen from 'point_of_sale.ProductScreen';
 import Registries from 'point_of_sale.Registries';
-import { useListener } from 'web.hooks';
+import { useListener } from "@web/core/utils/hooks";
 
 export class GiftCardButton extends PosComponent {
-    constructor() {
-        super(...arguments);
+    setup() {
+        super.setup()
         useListener('click', this.onClick);
     }
 

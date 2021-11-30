@@ -14,3 +14,6 @@ class LoyaltyCard(models.Model):
         if self.source_pos_order_id:
             return self.env.ref('pos_loyalty.mail_coupon_template', False)
         return super()._get_default_template()
+
+    def _get_mail_partner(self):
+        return super()._get_mail_partner() or self.source_pos_order_id.partner_id.id

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <t t-name="loyalty_program_helper">
+        <div class="row loyalty-templates-container">
+            <t t-foreach="Object.entries(templateData)" t-as="data">
+                <div class="col-3 loyalty-template" t-att-id="data[0]">
+                    <img class="w-100" src="https://image.shutterstock.com/image-illustration/blank-red-price-tag-isolated-260nw-255858688.jpg"/>
+                    <h2 class="text-center"><t t-out="data[1].title"/></h2>
+                    <p class="text-center" t-out="data.description"><t t-out="data[1].description"/></p>
+                </div>
+            </t>
+        </div>
+    </t>
+</odoo>

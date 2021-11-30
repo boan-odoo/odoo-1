@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from collections import defaultdict
-import random
 from uuid import uuid4
 
 from odoo import _, api, fields, models
@@ -24,22 +22,26 @@ class LoyaltyCard(models.Model):
         return '044' + str(uuid4())[4:-8][3:]
 
     program_id = fields.Many2one('loyalty.program')
+    company_id = fields.Many2one(related='program_id.company_id', store=True)
+    currency_id = fields.Many2one(related='program_id.currency_id')
     # Reserved for this partner if non-empty
     partner_id = fields.Many2one('res.partner')
-    # TODO: constraint >= 0 (?) this might cause problem with pos -> offline orders
     points = fields.Float(tracking=True)
     point_name = fields.Char(related='program_id.portal_point_name', readonly=True)
 
-    code = fields.Char(default=_generate_code, required=True, readonly=True, index=True)
-    shared_code = fields.Boolean(default=False,
-        help='Whether this coupon has a shared code (same code as other coupons), generally used for promotions.')
+    code = fields.Char(default=lambda self: self._generate_code(), required=True, readonly=True, index=True)
     expiration_date = fields.Date()
+
+    _sql_constraints = [
+        ('card_points_positive', 'CHECK (points >= 0)', 'A coupon/loyalty card may not have negative points.'),
+        ('card_code_unique', 'UNIQUE(code)', 'A coupon/loyalty card must have a unique code.')
+    ]
 
     @api.constrains('code')
     def _contrains_code(self):
         # Prevent a coupon from having the same code a program
-        if self.env['loyalty.program'].search_count([('code', 'in', self.filtered(lambda c: not c.shared_code).mapped('code'))]):
-            raise ValidationError(_('A promotional program with the same code as one of your coupon already exists.'))
+        if self.env['loyalty.rule'].search_count([('mode', '=', 'with_code'), ('code', 'in', self.mapped('code'))]):
+            raise ValidationError(_('A trigger with the same code as one of your coupon already exists.'))
 
     def _get_default_template(self):
         self.ensure_one()
@@ -73,6 +75,10 @@ class LoyaltyCard(models.Model):
             'context': ctx,
         }
 
+    def _get_mail_partner(self):
+        self.ensure_one()
+        return self.partner_id.id
+
     def _send_creation_communication(self):
         """
         Sends the 'At Creation' communication plan if it exist for the given coupons.
@@ -82,10 +88,10 @@ class LoyaltyCard(models.Model):
         for program in self.program_id:
             create_comm_per_program[program] = program.communication_plan_ids.filtered(lambda c: c.trigger == 'create')
         for coupon in self:
-            if not create_comm_per_program[coupon.program_id] or not coupon.partner_id:
+            if not create_comm_per_program[coupon.program_id]:
                 continue
             for comm in create_comm_per_program[coupon.program_id]:
-                comm.mail_template_id.send_mail(res_id=coupon.id)
+                comm.mail_template_id.send_mail(res_id=coupon.id, email_layout_xmlid='mail.mail_notification_light')
 
     def _send_points_reach_communication(self, points_changes):
         """
@@ -112,13 +118,13 @@ class LoyaltyCard(models.Model):
                     break
             if not this_milestone:
                 continue
-            this_milestone.mail_template_id.send_mail(res_id=coupon.id)
+            this_milestone.mail_template_id.send_mail(res_id=coupon.id, email_layout_xmlid='mail.mail_notification_light')
 
 
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
-        if not self.env.context.get('no_create_mail', False):
+        if self.env.context.get('create_mail', True):
             res._send_creation_communication()
         return res
 
@@ -130,11 +136,3 @@ class LoyaltyCard(models.Model):
             points_changes = {coupon: (points_before[coupon], coupon.points) for coupon in self}
             self._send_points_reach_communication(points_changes)
         return res
-
-    def init(self):
-        # Code needs to be unique except if shared_code is true
-        self.env.cr.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS promo_coupon_unique_code
-            ON %s (code)
-            WHERE shared_code is FALSE
-        """ % (self._table))

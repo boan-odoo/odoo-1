@@ -9,7 +9,7 @@ class LoyaltyReward(models.Model):
     is_global_discount = fields.Boolean(compute='_compute_is_global_discount')
 
     @api.depends('reward_type', 'discount_applicability', 'discount_mode')
-    def _compute_is_flobal_discount(self):
+    def _compute_is_global_discount(self):
         for reward in self:
             reward.is_global_discount = reward.reward_type == 'discount' and\
                                         reward.discount_applicability == 'order' and\

@@ -14,8 +14,17 @@ class PosOrderLine(models.Model):
     coupon_id = fields.Many2one(
         'loyalty.card', "Coupon", ondelete='restrict',
         help="The coupon used to claim that reward.")
-    reward_identifier_code = fields.Char() #TODO: needed?
+    reward_identifier_code = fields.Char(help="""
+        Technical field used to link multiple reward lines from the same reward together.
+    """)
     points_cost = fields.Float(help="How many point this reward cost on the coupon.")
+
+    def _order_line_fields(self, line, session_id=None):
+        res = super()._order_line_fields(line, session_id)
+        # coupon_id may be negative in case of new coupons, they will be added after validating the order.
+        if 'coupon_id' in res[2] and res[2]['coupon_id'] < 1:
+            res[2].pop('coupon_id')
+        return res
 
     def _is_not_sellable_line(self):
         return super().is_not_sellable_line() or self.reward_id

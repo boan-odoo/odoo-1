@@ -12,22 +12,25 @@
                         </group>
                         <group id="discount_group" attrs="{'invisible': [('reward_type', '!=', 'discount')]}">
                             <label for="discount"/>
-                            <div class="row m-0">
+                            <div class="o_row">
                                 <field name="discount" class="oe_inline col-2 text-center"/>
-                                <field name="discount_mode" class="oe_inline col-4 text-center"/>
-                                <span>on</span>
+                                <field name="discount_mode" class="oe_inline col-4 pr-2"/>
+                                <div>on</div>
                             </div>
                             <!-- Align right -->
+                            <field name="all_discount_product_ids" invisible="1"/>
                             <label for="discount_applicability" string=""/>
                             <field name="discount_applicability" nolabel="1" widget="radio"/>
                             <field name="discount_product_ids" widget="many2many_tags"
                                 attrs="{'invisible': [('discount_applicability', '!=', 'specific')]}"/>
+                            <field name="discount_product_tag_id" attrs="{'invisible': [('discount_applicability', '!=', 'specific')]}"/>
                             <field name="discount_max_amount"/>
                         </group>
                         <group id="product_group" attrs="{'invisible': [('reward_type', '!=', 'product')]}">
-                            <field name="reward_product_id" attrs="{'required': [('reward_type', '=', 'product')]}"/>
-                            <!-- TODO: product tag -->
                             <field name="multi_product" invisible="1"/>
+                            <field name="reward_product_ids" invisible="1"/>
+                            <field name="reward_product_id" attrs="{'required': [('reward_type', '=', 'product'), ('reward_product_ids', '=', [])]}"/>
+                            <field name="reward_product_tag_id" attrs="{'required': [('reward_type', '=', 'product'), ('reward_product_ids', '=', [])]}"/>
                             <label for="reward_product_qty"/>
                             <div class="row m-0">
                                 <field name="reward_product_qty" class="oe_inline"/>
@@ -37,6 +40,11 @@
                         <group>
                             <field name="required_points"/>
                             <field name="clear_wallet"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="description"/>
                         </group>
                     </group>
                 </sheet>
@@ -49,143 +57,23 @@
         <field name="model">loyalty.reward</field>
         <field name="arch" type="xml">
             <kanban>
+                <field name="description"/>
                 <field name="reward_type"/>
                 <field name="discount"/>
                 <field name="discount_mode"/>
                 <field name="discount_applicability"/>
-                <field name="discount_product_ids"/>
                 <field name="discount_max_amount"/>
-                <field name="reward_product_id"/>
-                <field name="reward_product_uom_id"/>
-                <field name="multi_product"/>
                 <field name="required_points"/>
                 <field name="point_name"/>
                 <field name="clear_wallet"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_global_click_edit">
-                            <!-- Try to mimic the visuals of the form view -->
-                            <div class="row m-0">
-                                <div class="col-lg-6 o_group">
-                                    <!-- Field reward_type -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span class="o_form_label">Reward</span>
-                                        </div>
-                                        <div class="col-8 o_field_radio o_vertical o_field_widget o_quick_editable o_required_modifier">
-                                            <div id="product_checkbox" class="custom-control custom-radio o_radio_item">
-                                                <input t-if="record.reward_type.raw_value == 'product'" checked="1" type="radio" id="product" class="custom-control-input o_radio_input"/>
-                                                <input t-else="" type="radio" id="product" class="custom-control-input o_radio_input"/>
-                                                <span class="custom-control-label o_form_label">Free Product</span>
-                                            </div>
-                                            <div id="discount_checkbox" class="custom-control custom-radio o_radio_item">
-                                                <input t-if="record.reward_type.raw_value == 'discount'" checked="1" type="radio" id="discount" class="custom-control-input o_radio_input"/>
-                                                <input t-else="" type="radio" id="discount" class="custom-control-input o_radio_input"/>
-                                                <span class="custom-control-label o_form_label">Discount</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div t-if="record.reward_type.raw_value == 'discount'" class="col-lg-6 o_group" id="discount_group">
-                                    <!-- Field discount -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span class="o_form_label">Discount</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="discount"/> <field name="discount_mode"/> on
-                                        </div>
-                                    </div>
-                                    <!-- Field discount_applicability -->
-                                    <div class="row">
-                                        <div class="col-4"/> <!-- No label -->
-                                        <div class="col-8 o_field_radio o_vertical o_field_widget o_quick_editable o_required_modifier">
-                                            <div id="order_checkbox" class="custom-control custom-radio o_radio_item">
-                                                <input t-if="record.discount_applicability.raw_value == 'order'" checked="1" type="radio" id="order" class="custom-control-input o_radio_input"/>
-                                                <input t-else="" type="radio" id="order" class="custom-control-input o_radio_input"/>
-                                                <span class="custom-control-label o_form_label">order</span>
-                                            </div>
-                                            <div id="cheapest_checkbox" class="custom-control custom-radio o_radio_item">
-                                                <input t-if="record.discount_applicability.raw_value == 'cheapest'" checked="1" type="radio" id="cheapest" class="custom-control-input o_radio_input"/>
-                                                <input t-else="" type="radio" id="cheapest" class="custom-control-input o_radio_input"/>
-                                                <span class="custom-control-label o_form_label">cheapest product</span>
-                                            </div>
-                                            <div id="specific_checkbox" class="custom-control custom-radio o_radio_item">
-                                                <input t-if="record.discount_applicability.raw_value == 'specific'" checked="1" type="radio" id="specific" class="custom-control-input o_radio_input"/>
-                                                <input t-else="" type="radio" id="specific" class="custom-control-input o_radio_input"/>
-                                                <span class="custom-control-label o_form_label">specific products</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Field discount_product_ids -->
-                                    <div t-if="record.discount_applicability.raw_value == 'specific'" class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span t-att-class="'o_form_label' + (record.discount_product_ids.raw_value.length ? '' : ' o_form_label_empty')">
-                                                Products
-                                            </span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="discount_product_ids" widget="many2many_tags"/>
-                                        </div>
-                                    </div>
-                                    <!-- Field discount_max_amount -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span class="o_form_label">Max Discount</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="discount_max_amount"/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div t-if="record.reward_type.raw_value == 'product'" class="col-lg-6 o_group" id="product_group">
-                                    <!-- Field reward_product_id -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span t-att-class="'o_form_label' + (record.reward_product_id.raw_value ? '' : ' o_form_label_empty')">Product</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="reward_product_id"/>
-                                        </div>
-                                    </div>
-                                    <!-- TODO: product tags -->
-                                    <!-- Field reward_product_qty -->
-                                    <div class="row">
-                                        <div class="col-4">
-                                            <span class="o_form_label o_td_label">Product Quantity</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="reward_product_qty"/>
-                                            <t t-if="multi_product">
-                                                <field name="reward_product_uom_id"/>
-                                            </t>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row m-0">
-                                <div class="col-lg-6 o_group">
-                                    <!-- Field required_points -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span class="o_form_label">Points Needed</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="required_points"/> <field name="point_name"/>
-                                        </div>
-                                    </div>
-                                    <!-- Field clear_wallet -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span class="o_form_label">Clear Wallet</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <input t-if="record.clear_wallet.raw_value" type="checkbox" id="clear_wallet" checked="1" disabled=""/>
-                                            <input t-else="" type="checkbox" id="clear_wallet" checked="1" disabled=""/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <field name="description"/>
+                            <t t-if="record.reward_type.raw_value === 'discount' &amp;&amp; record.discount_applicability.raw_value === 'specific'">
+                                <p>For Products: <field name="all_discount_product_ids" widget="many2many_tags"/></p>
+                            </t>
+                            <p class="m-0">With <field name="required_points"/> <field name="point_name"/><t t-if="record.clear_wallet.raw_value"> (or more)</t></p>
                         </div>
                     </t>
                 </templates>

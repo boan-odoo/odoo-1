@@ -6,27 +6,27 @@ import { useBarcodeReader } from 'point_of_sale.custom_hooks';
 
 export const PosLoyaltyProductScreen = (ProductScreen) =>
     class extends ProductScreen {
-        constructor() {
-            super(...arguments);
+        setup() {
+            super.setup();
             useBarcodeReader({
                 coupon: this._onCouponScan,
             });
         }
 
         _onCouponScan(code) {
-            this.currentOrder.activate_code(code.base_code);
+            this.currentOrder.activateCode(code.base_code);
         }
 
         async _updateSelectedOrderline(event) {
             const selectedLine = this.currentOrder.get_selected_orderline();
-            if (selectedLine && selectedLine.is_reward_line && !selectedLine.manual_reward && event.detail.key === 'Backspace') {
+            if (selectedLine && selectedLine.is_reward_line && !selectedLine.manual_reward &&
+                    (event.detail.key === 'Backspace' || event.detail.key === 'Delete')) {
                 const reward = this.env.pos.reward_by_id[selectedLine.reward_id];
-                const program = this.env.pos.program_by_id[reward.program_id];
                 const { confirmed } = await this.showPopup('ConfirmPopup', {
                     title: this.env._t('Deactivating program'),
                     body: _.str.sprintf(
-                        this.env._t('Are you sure you want to deactivate %s on this order?'),
-                        program.name
+                        this.env._t('Are you sure you want to remove %s from this order?'),
+                        reward.description
                     ),
                     cancelText: this.env._t('No'),
                     confirmText: this.env._t('Yes'),
@@ -63,25 +63,17 @@ export const PosLoyaltyProductScreen = (ProductScreen) =>
                 super._setValue(val);
             }
             if (!selectedLine) return;
-            if (selectedLine.is_reward_line && val === 'remove' && !selectedLine.manual_reward) {
-                const reward = this.env.pos.reward_by_id[selectedLine.reward_id];
-                const program = this.env.pos.program_by_id[reward.program_id];
-                const couponIdx = this.env.pos.couponCache.findIndex((c) => c.id === selectedLine.coupon_id);
-                const coupon = couponIdx != -1 ? this.env.pos.couponCache[couponIdx] : null;
-                if (coupon && coupon.id > 0 && this.currentOrder.codeActivatedCoupons.includes(coupon.code)) {
-                    this.env.pos.couponCache.splice(couponIdx, 1);
-                    delete this.currentOrder.codeActivatedCoupons[coupon.code];
-                } else if (program) {
-                    selectedLine.order.disabledPrograms.add(program.id);
-                    this.showNotification(
-                        `'${
-                            program.name
-                        }' program has been deactivated.`
-                    );
+            if (selectedLine.is_reward_line && val === 'remove') {
+                const coupon = this.env.pos.couponCache[selectedLine.coupon_id];
+                if (coupon && coupon.id > 0 && this.currentOrder.codeActivatedCoupons.find((c) => c.code === coupon.code)) {
+                    delete this.env.pos.couponCache[selectedLine.coupon_id];
+                    this.currentOrder.codeActivatedCoupons.splice(this.currentOrder.codeActivatedCoupons.findIndex((coupon) => {
+                        return coupon.id === selectedLine.coupon_id;
+                    }), 1);
                 }
             }
             if (!selectedLine.is_reward_line || (selectedLine.is_reward_line && val === 'remove')) {
-                selectedLine.order.trigger('update-rewards');
+                selectedLine.order._updateRewards();
             }
         }
     };

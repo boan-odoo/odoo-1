@@ -187,8 +187,8 @@
                             <field name="module_sale_loyalty" />
                         </div>
                         <div class="o_setting_right_pane">
-                            <label for="module_sale_coupon" string="Promotions, Coupons, Gift Card &amp; Loyalty Program"/>
-                            <div class="text-muted" id="website_sale_coupon">
+                            <label for="module_sale_loyalty" string="Promotions, Coupons, Gift Card &amp; Loyalty Program"/>
+                            <div class="text-muted" id="website_sale_loyalty">
                                 Manage promotion that will grant customers discounts or gifts
                             </div>
                         </div>

@@ -2,17 +2,17 @@
 
 import PosComponent from 'point_of_sale.PosComponent';
 import ProductScreen from 'point_of_sale.ProductScreen';
-import { useListener } from 'web.hooks';
 import Registries from 'point_of_sale.Registries';
+import { useListener } from "@web/core/utils/hooks";
 
 export class ResetProgramsButton extends PosComponent {
-    constructor() {
-        super(...arguments);
+    setup() {
+        super.setup();
         useListener('click', this.onClick);
     }
 
     async onClick() {
-        this.env.pos.get_order().reset_programs();
+        this.env.pos.get_order()._resetPrograms();
         this.trigger('close-popup');
     }
 }
@@ -26,4 +26,4 @@ ProductScreen.addControlButton({
     }
 });
 
-Registries.component.add(ResetProgramsButton);
+Registries.Component.add(ResetProgramsButton);

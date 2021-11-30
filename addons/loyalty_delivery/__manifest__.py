@@ -9,9 +9,6 @@
     'data': [
         'views/loyalty_reward_views.xml',
     ],
-    'demo': [
-        # TODO: add demo data
-    ],
     'assets': {
     },
     'installable': True,

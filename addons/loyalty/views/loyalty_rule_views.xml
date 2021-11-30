@@ -4,13 +4,14 @@
         <field name="name">loyalty.rule.view.form</field>
         <field name="model">loyalty.rule</field>
         <field name="arch" type="xml">
-            <form>
+            <form class="loyalty-rule-form">
                 <sheet>
                     <group>
                         <group>
+                            <field name="code"/>
                             <field name="product_ids" widget="many2many_tags"/>
                             <field name="product_category_id"/>
-                            <!-- TODO: product tags -->
+                            <field name="product_tag_id"/>
                         </group>
                         <group>
                             <label for="reward_point_amount"/>
@@ -25,10 +26,15 @@
                         <group>
                             <field name="minimum_qty"/>
                             <label for="minimum_amount"/>
-                            <div class="row m-0">
-                                <field name="minimum_amount" class="oe_inline"/>
-                                <span> tax </span><field name="minimum_amount_tax_mode" class="oe_inline col-lg-3"/>
+                            <div class="o_row">
+                                <field name="minimum_amount" class="oe_inline pr-2"/>
+                                <span>tax</span>
+                                <field name="minimum_amount_tax_mode" class="oe_inline"/>
                             </div>
+                        </group>
+                        <group>
+                            <field name="mode" widget="radio"/>
+                            <field name="code" attrs="{'invisible': [('mode', '!=', 'with_code')]}"/>
                         </group>
                     </group>
                 </sheet>
@@ -42,110 +48,51 @@
         <field name="arch" type="xml">
             <kanban>
                 <field name="currency_id"/>
-                <field name="currency_symbol"/>
                 <field name="product_ids"/>
                 <field name="product_category_id"/>
+                <field name="product_tag_id"/>
                 <field name="reward_point_amount"/>
+                <field name="reward_point_split"/>
                 <field name="reward_point_name"/>
                 <field name="reward_point_mode"/>
                 <field name="minimum_qty"/>
                 <field name="minimum_amount"/>
                 <field name="minimum_amount_tax_mode"/>
+                <field name="code"/>
                 <templates>
                     <t t-name="kanban-box">
-                        <div class="oe_kanban_global_click_edit">
-                            <!-- Try to mimic form view -->
-                            <div class="row m-0">
-                                <div class="col-lg-6 o_group">
-                                    <!-- Field product_ids -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span t-att-class="'o_form_label' + (record.product_ids.raw_value.length ? '' : ' o_form_label_empty')">
-                                                Products
-                                            </span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="product_ids" widget="many2many_tags"/>
-                                        </div>
-                                    </div>
-                                    <!-- Field product_category_id -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span t-att-class="'o_form_label' + (record.product_category_id.raw_value ? '' : ' o_form_label_empty')">
-                                                Category
-                                            </span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="product_category_id"/>
-                                        </div>
-                                    </div>
-                                    <!-- TODO: Field product tags -->
-                                    <!-- <div class="row">
-                                        <div class="col-4">
-                                            <span class="o_form_label">Category</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="product_category_id"/>
-                                        </div>
-                                    </div> -->
-                                </div>
-                                <div class="col-lg-6 o_group">
-                                    <!-- Field reward_point_amount -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span class="o_form_label">
-                                                Reward
-                                            </span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="reward_point_amount"/> <field name="reward_point_name"/>
-                                        </div>
-                                    </div>
-                                    <!-- Field reward_point_mode -->
-                                    <div class="row">
-                                        <div class="col-4"/> <!-- No label -->
-                                        <div class="col-8 o_field_radio o_vertical o_field_widget o_quick_editable o_required_modifier">
-                                            <div id="order_checkbox" class="custom-control custom-radio o_radio_item">
-                                                <input t-if="record.reward_point_mode.raw_value == 'order'" checked="1" type="radio" id="order" class="custom-control-input o_radio_input"/>
-                                                <input t-else="" type="radio" id="order" class="custom-control-input o_radio_input"/>
-                                                <span class="custom-control-label o_form_label">per order</span>
-                                            </div>
-                                            <div id="money_checkbox" class="custom-control custom-radio o_radio_item">
-                                                <input t-if="record.reward_point_mode.raw_value == 'money'" checked="1" type="radio" id="money" class="custom-control-input o_radio_input"/>
-                                                <input t-else="" type="radio" id="money" class="custom-control-input o_radio_input"/>
-                                                <span class="custom-control-label o_form_label">per <field name="currency_symbol"/> spent</span>
-                                            </div>
-                                            <div id="unit_checkbox" class="custom-control custom-radio o_radio_item">
-                                                <input t-if="record.reward_point_mode.raw_value == 'unit'" checked="1" type="radio" id="unit" class="custom-control-input o_radio_input"/>
-                                                <input t-else="" type="radio" id="unit" class="custom-control-input o_radio_input"/>
-                                                <span class="custom-control-label o_form_label">per unit paid</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row m-0">
-                                <div class="col-lg-6 o_group">
-                                    <!-- Field minimum_qty -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span class="o_form_label">Minimum Qty</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="minimum_qty"/>
-                                        </div>
-                                    </div>
-                                    <!-- Field minimum_amount + minimum_amount_tax_mode -->
-                                    <div class="row">
-                                        <div class="col-4 o_td_label">
-                                            <span class="o_form_label">Minimum Purchase</span>
-                                        </div>
-                                        <div class="col-8">
-                                            <field name="minimum_amount" widget="monetary"/> <field name="minimum_amount_tax_mode"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="oe_kanban_global_click_edit mx-0">
+                            <t t-if="record.product_ids.raw_value.length > 0">
+                                <div class="d-flex"><i class="fa fa-cube fa-fw" title="Products"/> <field name="product_ids" widget="many2many_tags" class="d-inline"/></div>
+                            </t>
+                            <t t-if="record.product_category_id.raw_value">
+                                <a><i class="fa fa-cubes fa-fw" title="Product Categories"/> <field name="product_category_id"/></a>
+                                <br/>
+                            </t>
+                            <t t-if="record.product_tag_id.raw_value">
+                                <a><i class="fa fa-tags fa-fw" title="Product Tags"/> <field name="product_tag_id"/></a>
+                                <br/>
+                            </t>
+                            <t t-if="record.product_ids.raw_value.length === 0 &amp;&amp; !record.product_category_id.raw_value &amp;&amp; !record.product_tag_id.raw_value">
+                                <a><i class="fa fa-cube fa-fw" title="Products"/> All Products</a>
+                                <br/>
+                            </t>
+                            <t t-if="record.code.raw_value">
+                                <a><i class="fa fa-pencil-square-o fa-fw" title="Code"/>With Code: <field name="code"/></a>
+                                <br/>
+                            </t>
+                            <a>
+                                <i class="fa fa-gift fa-fw"/> Reward <field name="reward_point_amount"/> <field name="reward_point_name"/> <field name="reward_point_mode"/>
+                                <t t-if="record.minimum_qty.raw_value || record.minimum_amount.raw_value">
+                                    <t t-set="qty" t-value="record.minimum_qty.raw_value"/>
+                                    <t t-set="amt" t-value="record.minimum_amount.raw_value"/>
+                                    <t t-set="tax_mode" t-value="record.minimum_amount_tax_mode.raw_value"/>
+                                    <br/>
+                                    <span class="pl-3">If<t t-if="qty"> minimum <field name="minimum_qty"/> PCE</t>
+                                        <t t-if="amt"><t t-if="qty">,</t> <field name="minimum_amount"/><t t-if="tax_mode === 'excl'"> (tax excluded)</t></t>
+                                    </span>
+                                </t>
+                            </a>
                         </div>
                     </t>
                 </templates>

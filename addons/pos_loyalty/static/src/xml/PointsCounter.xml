@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="PointsCounter" owl="1">
+        <t t-set="newPoints" t-value="get_points()"/>
+        <t t-if="newPoints.won || newPoints.spent">
+            <div class='loyalty-points'>
+                <div class='loyalty-points-title'>
+                    Points
+                </div>
+                <t t-if='newPoints.won'>
+                    <div class="loyalty-points-won">
+                        <span class='value'>+<t t-esc='newPoints.won'/></span>
+                    </div>
+                </t>
+                <t t-if='newPoints.spent'>
+                    <div class="loyalty-points-spent">
+                        <span class='value'>-<t t-esc='newPoints.spent'/></span>
+                    </div>
+                </t>
+                <div class='loyalty-points-total'>
+                    <span class='value'><t t-esc='newPoints.total'/></span>
+                </div>
+            </div>
+        </t>
+        <t t-else="">
+            <div></div>
+        </t>
+    </t>
+ </templates>

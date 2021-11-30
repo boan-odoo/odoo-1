@@ -4,37 +4,24 @@
 from odoo import _, api, fields, models
 from odoo.tools import unique
 
-import ast
-
 class LoyaltyProgram(models.Model):
     _inherit = 'loyalty.program'
 
     pos_config_ids = fields.Many2many('pos.config', string="Point of Sales", readonly=True)
     pos_order_count = fields.Integer("PoS Order Count", compute='_compute_pos_order_count')
 
-    promo_barcode = fields.Char("Barcode", compute='_compute_promo_barcode', store=True, readonly=False,
-        help="A technical field used as an alternative to the promo code. "
-        "This is automatically generated when the promo code is changed."
-    )
-
     def _compute_pos_order_count(self):
         read_group_res = self.env['pos.order.line'].read_group(
             [('reward_id', 'in', self.reward_ids.ids)], ['reward_id:array_agg'], ['order_id'])
         for program in self:
             program_reward_ids = program.reward_ids.ids
-            program.pos_order_count = len(1 for group in read_group_res if any(id in group['reward_id'] for id in program_reward_ids))
+            program.pos_order_count = sum(1 if any(id in group['reward_id'] for id in program_reward_ids) else 0 for group in read_group_res)
 
     @api.depends('pos_order_count')
     def _compute_total_order_count(self):
         super()._compute_total_order_count()
         for program in self:
             program.total_order_count += program.pos_order_count
-
-    @api.depends('code')
-    def _compute_promo_barcode(self):
-        gen_code = self.env['loyalty.card']._generate_code
-        for program in self:
-            program.promo_barcode = gen_code()
 
     def action_view_pos_orders(self):
         self.ensure_one()

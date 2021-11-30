@@ -9,20 +9,20 @@
                     <group>
                         <field name="program_id" invisible="1"/>
                         <field name="mode" widget="radio"/>
-                        <field name="customer_ids" widget="many2many_tags_avatar"/>
-                        <field name="customer_tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
-                        <br/>
+                        <field name="customer_ids" widget="many2many_tags_avatar" attrs="{'invisible': [('mode', '=', 'anonymous')]}"/>
+                        <field name="customer_tag_ids" widget="many2many_tags" attrs="{'invisible': [('mode', '=', 'anonymous')]}" options="{'color_field': 'color'}"/>
+                        <separator/>
                         <field name="coupon_qty" attrs="{'readonly': [('mode', '=', 'selected')]}"/>
                         <label for="points_granted"/>
-                        <div class="row">
+                        <span>
                             <field name="points_granted" class="oe_inline"/>
                             <field name="points_name" class="oe_inline"/>
-                        </div>
+                        </span>
                         <field name="valid_until"/>
                     </group>
                 </sheet>
                 <footer>
-                    <button name="generate_coupons" type="object" string="Generate Coupons" class="btn_primary" data-hotkey="q"/>
+                    <button name="generate_coupons" type="object" string="Generate Coupons" class="btn-primary" data-hotkey="q"/>
                     <button special="cancel" data-hotkey="z" string="Cancel"/>
                 </footer>
             </form>

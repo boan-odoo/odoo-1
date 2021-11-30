@@ -6,4 +6,4 @@ from . import loyalty_mail
 from . import loyalty_reward
 from . import loyalty_rule
 from . import loyalty_program
-from . import res_partner
+from . import product_product

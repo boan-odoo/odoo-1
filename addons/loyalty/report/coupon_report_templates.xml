@@ -13,36 +13,14 @@
                                 </h4>
                                 <t t-set="text">on your next order</t>
                                 <h4>Here is your reward from <t t-esc="o.program_id.company_id.name"/>.</h4>
-                                <t t-if="o.program_id.reward_type == 'discount'">
-                                    <t t-set="trans_text">off %s</t>
-                                    <t t-set="text" t-value="trans_text % text"/>
-                                    <h1 t-if="o.program_id.discount_type == 'fixed_amount'" style="font-size: 55px; color: #875A7B">
-                                        <strong><span t-field="o.program_id.discount_fixed_amount" t-options='{"widget": "monetary", "display_currency": o.program_id.currency_id}'/></strong>
-                                    </h1>
-                                    <h1 t-if="o.program_id.discount_type == 'percentage'" style="font-size: 55px; color: #875A7B">
-                                        <strong><span t-field="o.program_id.discount_percentage"/> %</strong>
-                                    </h1>
-                                    <t t-if="o.program_id.discount_apply_on == 'specific_products'">
-                                        <t t-if="len(o.program_id.discount_specific_product_ids) > 1">
-                                            <t t-set="text">off on some products*</t>
-                                            <t t-set="display_specific_products" t-value="True"/>
-                                        </t>
-                                        <t t-else="">
-                                            <t t-set="trans_text">off on %s</t>                                            
-                                            <t t-set="text" t-value="trans_text % o.program_id.discount_specific_product_ids.name"/>
-                                        </t>
+                                <t t-foreach="range(len(o.program_id.reward_ids))" t-as="reward_idx">
+                                    <t t-set="reward" t-value="o.program_id.reward_ids[reward_idx]"/>
+                                    <strong><t t-esc="reward.description"/></strong>
+                                    <br/>
+                                    <t t-if="reward_idx &lt; (len(o.program_id.reward_ids) - 1)">
+                                        <span class="text-center">OR</span>
+                                        <br/>
                                     </t>
-                                    <t t-if="o.program_id.discount_apply_on == 'cheapest_product'">
-                                        <t t-set="text">off on the cheapest product</t>
-                                    </t>
-                                </t>
-                                <t t-if="o.program_id.reward_type == 'product'">
-                                    <strong style="font-size: 55px; color: #875A7B">
-                                        <t t-esc="'get %s free %s' % (o.program_id.reward_product_quantity, o.program_id.reward_product_id.name)"/>
-                                    </strong>
-                                </t>
-                                <t t-if="o.program_id.reward_type == 'free_shipping'">
-                                    <strong style="font-size: 55px; color: #875A7B">get free shipping</strong>
                                 </t>
                                 <h1 class="font-weight-bold" style="font-size: 34px" t-esc="text"/>
                                 <br/>
@@ -53,19 +31,15 @@
                                 <h2 class="mt-4">
                                     <strong class="bg-light" t-esc="o.code"></strong>
                                 </h2>
-                                <h4 t-if="o.program_id.rule_min_quantity > 1">
+                                <t t-set="rule" t-value="o.program_id.rule_ids[:1]"/>
+                                <h4 t-if="rule.minimum_qty > 1">
                                     <span>Minimum purchase of</span>
-                                    <strong t-esc="o.program_id.rule_min_quantity"/> <span>products</span>
+                                    <strong t-esc="rule.minimum_qty"/> <span>products</span>
                                 </h4>
-                                <h4 t-if="o.program_id.rule_minimum_amount">
+                                <h4 t-if="rule.minimum_amount">
                                     <span>Valid for purchase above</span>
-                                    <strong t-esc="o.program_id.rule_minimum_amount" t-options="{'widget': 'monetary', 'display_currency': o.program_id.currency_id}"/>
+                                    <strong t-esc="rule.minimum_amount" t-options="{'widget': 'monetary', 'display_currency': rule.currency_id}"/>
                                 </h4>
-                                <p t-if="display_specific_products">
-                                    <small>
-                                        *Valid for following products: <t t-esc="', '.join(o.program_id.discount_specific_product_ids.mapped('name'))"/>
-                                    </small>
-                                </p>
                                 <br/>
                                 <div t-field="o.code" t-options="{'widget': 'barcode', 'width': 600, 'height': 100}"/>
                                 <br/><br/>
@@ -94,7 +68,7 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-set="o" t-value="o.with_context(lang=o.partner_id.lang or o.env.lang)"/>
-                <t t-call="coupon.report_coupon" t-lang="o.partner_id.lang or o.env.lang"/>
+                <t t-call="loyalty.report_coupon" t-lang="o.partner_id.lang or o.env.lang"/>
             </t>
         </t>
     </template>

@@ -13,25 +13,30 @@ class WebsiteSale(main.WebsiteSale):
     def pricelist(self, promo, **post):
         order = request.website.sale_get_order()
         coupon_status = order._try_apply_code(promo)
+        if 'error' not in coupon_status:
+            if len(coupon_status) == 1:
+                coupon, rewards = next(iter(coupon_status.items()))
+                if len(rewards) == 1 and not rewards.multi_product:
+                    order._apply_program_reward(rewards, coupon)
         if coupon_status.get('not_found'):
             return super(WebsiteSale, self).pricelist(promo, **post)
         elif coupon_status.get('error'):
             request.session['error_promo_code'] = coupon_status['error']
-        elif coupon_status:
-            #TODO: show interface to select reward
-            pass
+        if 'error' not in coupon_status:
+            request.session['successful_code'] = promo
         return request.redirect(post.get('r', '/shop/cart'))
 
     @http.route()
     def shop_payment(self, **post):
         order = request.website.sale_get_order()
-        order._program_auto_apply()
+        order._update_programs_and_rewards()
         return super(WebsiteSale, self).shop_payment(**post)
 
     @http.route(['/shop/cart'], type='http', auth="public", website=True)
     def cart(self, **post):
         order = request.website.sale_get_order()
-        order._program_auto_apply()
+        if order:
+            order._update_programs_and_rewards()
         return super(WebsiteSale, self).cart(**post)
 
     @http.route(['/coupon/<string:code>'], type='http', auth='public', website=True, sitemap=False)
@@ -44,7 +49,7 @@ class WebsiteSale(main.WebsiteSale):
         order = request.website.sale_get_order()
         if order:
             result = order._try_pending_coupon()
-            if 'error' in result:
+            if isinstance(result, dict) and 'error' in result:
                 url_query['coupon_error'] = result['error']
             else:
                 url_query['notify_coupon'] = code
@@ -52,6 +57,24 @@ class WebsiteSale(main.WebsiteSale):
             url_query['coupon_error'] = _("The coupon will be automatically applied when you add something in your cart.")
         redirect = url_parts.replace(query=url_encode(url_query))
         return request.redirect(redirect.to_url())
+
+    @http.route(['/shop/claimreward'], type='http', auth='public', website=True, sitemap=False)
+    def claim_reward(self, reward, **post):
+        order = request.website.sale_get_order()
+        coupon_id = False
+        try:
+            reward_id = request.env['loyalty.reward'].sudo().browse(int(reward))
+        except ValueError:
+            reward_id = request.env['loyalty.reward'].sudo()
+        claimable_rewards = order._get_claimable_rewards()
+        for coupon, rewards in claimable_rewards.items():
+            if reward_id in rewards:
+                coupon_id = coupon
+        redirect = post.get('r', '/shop/cart')
+        if not coupon_id or not reward_id.exists() or reward_id.multi_product:
+            return request.redirect(redirect + '?reward_error')
+        order._apply_program_reward(reward_id, coupon_id)
+        return request.redirect(redirect)
 
     # Override
     # Add in the rendering the free_shipping_line

@@ -14,7 +14,7 @@ class WebsiteSaleLoyaltyDelivery(WebsiteSaleDelivery):
         free_shipping_lines = None
 
         if order:
-            order._program_auto_apply()
+            order._update_programs_and_rewards()
             order.validate_taxes_on_sales_order()
             free_shipping_lines = order._get_free_shipping_lines()
 

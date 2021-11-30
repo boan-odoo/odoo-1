@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 from odoo.osv import expression
 
 class LoyaltyGenerateWizard(models.TransientModel):
@@ -13,7 +13,7 @@ class LoyaltyGenerateWizard(models.TransientModel):
     mode = fields.Selection([
         ('anonymous', 'Anonymous Customers'),
         ('selected', 'Selected Customers')],
-        string='For', required=True,
+        string='For', required=True, default='anonymous'
     )
 
     customer_ids = fields.Many2many('res.partner', string='Customers')
@@ -21,7 +21,7 @@ class LoyaltyGenerateWizard(models.TransientModel):
 
     coupon_qty = fields.Integer('Quantity',
         compute='_compute_coupon_qty', readonly=False, store=True)
-    points_granted = fields.Float('Grant', required=True)
+    points_granted = fields.Float('Grant', required=True, default=0)
     points_name = fields.Char(related='program_id.portal_point_name', readonly=True)
     valid_until = fields.Date()
 
@@ -36,16 +36,18 @@ class LoyaltyGenerateWizard(models.TransientModel):
             domain = expression.AND([domain, [('category_id', 'in', self.customer_tag_ids.ids)]])
         return self.env['res.partner'].search(domain)
 
-    @api.depends('customer_ids', 'customer_tag_ids')
+    @api.depends('customer_ids', 'customer_tag_ids', 'mode')
     def _compute_coupon_qty(self):
         for wizard in self:
             if wizard.mode == 'selected':
                 wizard.coupon_qty = len(wizard._get_partners())
+            else:
+                wizard.coupon_qty = wizard.coupon_qty or 0
 
     def _get_coupon_values(self, partner):
         self.ensure_one()
         return {
-            'program_id': self.program_id,
+            'program_id': self.program_id.id,
             'points': self.points_granted,
             'expiration_date': self.valid_until,
             'partner_id': partner.id if self.mode == 'selected' else False,

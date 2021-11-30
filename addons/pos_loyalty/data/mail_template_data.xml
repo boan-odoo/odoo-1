@@ -2,9 +2,9 @@
 <odoo>
    <data noupdate="1">
        <!-- TODO: make it work -->
-      <record id="pos_coupon.mail_coupon_template" model="mail.template">
+      <record id="pos_loyalty.mail_coupon_template" model="mail.template">
          <field name="name">[POS] Coupon: Send by Email</field>
-         <field name="model_id" ref="coupon.model_coupon_coupon"/>
+         <field name="model_id" ref="loyalty.model_loyalty_card"/>
          <field name="subject">Your reward coupon from {{ object.program_id.company_id.name }} </field>
          <field name="email_from">{{ object.program_id.company_id.email }}</field>
          <field name="partner_to">{{ object.source_pos_order_id.partner_id.id or object.partner_id.id }}</field>
@@ -94,7 +94,7 @@
     </td></tr>
 </tbody></table>
             </field>
-            <field name="report_template" ref="coupon.report_coupon_code"/>
+            <field name="report_template" ref="loyalty.report_coupon_code"/>
             <field name="report_name">Your Coupon Code</field>
             <field name="lang">{{ object.partner_id.lang }}</field>
             <field name="auto_delete" eval="True"/>

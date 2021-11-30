@@ -6,18 +6,18 @@ import { useBarcodeReader } from 'point_of_sale.custom_hooks';
 import Core from 'web.core';
 
 const _t = Core._t;
-const { useState } = owl.hooks;
+const { useState } = owl;
 
 export class GiftCardPopup extends AbstractAwaitablePopup {
-    constructor() {
-        super(...arguments);
+    setup() {
+        super.setup();
 
         this.confirmFunctions = {
             'create_set': this.generateBarcode.bind(this),
             'scan_set': this.scanAndUseGiftCard.bind(this),
             'scan_use': this.scanAndUseGiftCard.bind(this),
             'pay': this.payWithGiftCard.bind(this),
-            'showAmount': this.showRemainingAmount.bind(this),
+            'balance': this.showRemainingAmount.bind(this),
         };
 
         this.state = useState({
@@ -71,12 +71,13 @@ export class GiftCardPopup extends AbstractAwaitablePopup {
 
     _getGiftCardProduct() {
         const pos = this.env.pos;
-        const program = pos.config.program_by_id[pos.config.gift_card_program_id];
-        return pos.db.product_by_id[program.rules[0].valid_product_ids[0]];
+        const program = pos.program_by_id[pos.config.gift_card_program_id[0]];
+        return pos.db.product_by_id[[...program.rules[0].valid_product_ids][0]];
     }
-
+    
     addGiftCardProduct() {
-        const order = this.env.pos.get_order();
+        const pos = this.env.pos;
+        const order = pos.get_order();
         const product = this._getGiftCardProduct();
         order.add_product(product, {
             price: this.state.amountToSet,
@@ -84,18 +85,11 @@ export class GiftCardPopup extends AbstractAwaitablePopup {
             merge: false,
             giftBarcode: this.code || false,
         });
+    }
 
-        const program = pos.config.program_by_id[pos.config.gift_card_program_id];
-        const coupon = order._coupon_for_program(program);
-        if (this.code) {
-            coupon.code = this.code;
-        }
-        order.couponPointsChanges.push({
-            points: 0, // Will be changed to the right amount of point by `_compute_points_changes`
-            program_id: program.id,
-            coupon_id: coupon.id,
-            barcode: this.state.code,
-        });
+    async generateBarcode() {
+        this.addGiftCardProduct(false);
+        this.confirm();
     }
 
     scanAndUseGiftCard() {
@@ -114,9 +108,9 @@ export class GiftCardPopup extends AbstractAwaitablePopup {
         }
         // This should load and enable the coupon and automatic rewards since the gift_card program is supposed to only have one
         //  (as long as there are enough points).
-        const res = await this.env.pos.get_order().activate_code(this.code);
+        const res = await this.env.pos.get_order().activateCode(this.code);
         if (res !== true) {
-            this.error = res;
+            this.state.error = res;
         }
         this.confirm();
     }
@@ -124,21 +118,22 @@ export class GiftCardPopup extends AbstractAwaitablePopup {
     async showRemainingAmount() {
         this.state.amountToSet = 0;
         if (!this.code) {
-            this.error = _t('No gift card code set');
+            this.state.error = _t('No gift card code set');
             return;
         }
         const coupon = await this.rpc({
             model: 'loyalty.card',
             method: 'search_read',
             args: [
-                [['code', '=', this.code], ['program_id', '=', this.env.pos.gift_card_program_id]],
+                [['code', '=', this.code], ['program_id', '=', this.env.pos.config.gift_card_program_id[0]]],
                 ['points'],
             ],
         });
-        if (!coupon) {
+        if (!coupon || !coupon.length) {
             this.state.error = _t('No gift card found');
+        } else {
+            this.state.amountToSet = coupon[0].points;
         }
-        this.state.amountToSet = coupon.points;
     }
 }
 

@@ -9,7 +9,7 @@ class LoyaltyGenerateWizard(models.TransientModel):
     website_id = fields.Many2one('website', 'Website')
 
     def _get_coupon_values(self, partner):
-        res = super()._get_coupon_values()
+        res = super()._get_coupon_values(partner)
         if self.website_id:
             res.update(website_id=self.website_id.id)
         return res
