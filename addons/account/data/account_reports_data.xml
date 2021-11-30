@@ -89,6 +89,22 @@
             <field name="sequence">2</field>
         </record>
 
+        <record id="oco_test_line_financial_ref" model="account.report.line">
+            <field name="name">test line financial ref</field>
+            <field name="report_id" ref="test_report"/>
+            <!--TODO OCO pour les vrais cas comme ceci, on a un souci: la fonction est en enterprise: donc soit on la déclare qui retourne 0 en community, soit on l'ajoute là-bas...
+            Ou bien on la met aussi en community ? Ca fait quand même bcp, là ...
+            ==> Ou bien on s'en tape parce qu'ici c'est juste le string ?
+             -->
+            <field name="expression_ids" eval="[(5, 0, 0),
+                (0, 0, {'total': 'main', 'engine': 'domain', 'formula': &quot;[('account_id.user_type_id', '=', ref('account.data_account_type_revenue'))]&quot;, 'subformula': 'count_rows'}),
+                (0, 0, {'total': 'forty_two', 'engine': 'domain', 'formula': &quot;[('account_id.user_type_id', '=', ref('account.data_account_type_revenue'))]&quot;, 'subformula': 'sum'}),
+            ]"/>
+            <field name="unfoldable" eval="False"/>
+            <field name="column_values">main, forty_two</field>
+            <field name="sequence">2</field>
+        </record>
+
         <record id="oco_test_line_financial_group" model="account.report.line">
             <field name="name">test line financial groupby</field>
             <field name="code">FINANCIAL_GROUPBY</field>
