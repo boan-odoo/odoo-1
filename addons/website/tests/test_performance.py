@@ -47,9 +47,9 @@ class TestStandardPerformance(UtilPerf):
 
     def test_20_perf_sql_img_controller_bis(self):
         url = '/web/image/website/1/favicon'
-        self.assertEqual(self._get_url_hot_query(url), 4)
+        self.assertEqual(self._get_url_hot_query(url), 3)
         self.authenticate('portal', 'portal')
-        self.assertEqual(self._get_url_hot_query(url), 4)
+        self.assertEqual(self._get_url_hot_query(url), 3)
 
 
 class TestWebsitePerformance(UtilPerf):
