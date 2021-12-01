@@ -3206,6 +3206,22 @@ Fields:
 
         return fields
 
+    def _get_read_fields_name(self, fields):
+        stored_fields = set()
+        for name in fields:
+            field = self._fields.get(name)
+            if not field:
+                raise ValueError("Invalid field %r on model %r" % (name, self._name))
+            if field.store:
+                stored_fields.add(name)
+            elif field.compute:
+                # optimization: prefetch direct field dependencies
+                for dotname in self.pool.field_depends[field]:
+                    f = self._fields[dotname.split('.')[0]]
+                    if f.prefetch and (not f.groups or self.user_has_groups(f.groups)):
+                        stored_fields.add(f.name)
+        return stored_fields
+
     def read(self, fields=None, load='_classic_read'):
         """ read([fields])
 
@@ -3223,20 +3239,7 @@ Fields:
         fields = self.check_field_access_rights('read', fields)
 
         # fetch stored fields from the database to the cache
-        stored_fields = set()
-        for name in fields:
-            field = self._fields.get(name)
-            if not field:
-                raise ValueError("Invalid field %r on model %r" % (name, self._name))
-            if field.store:
-                stored_fields.add(name)
-            elif field.compute:
-                # optimization: prefetch direct field dependencies
-                for dotname in self.pool.field_depends[field]:
-                    f = self._fields[dotname.split('.')[0]]
-                    if f.prefetch and (not f.groups or self.user_has_groups(f.groups)):
-                        stored_fields.add(f.name)
-        self._read(stored_fields)
+        self._read(self._get_read_fields_name(fields))
 
         return self._read_format(fnames=fields, load=load)
 
@@ -3289,24 +3292,7 @@ Fields:
             fnames = [field.name]
         self._read(fnames)
 
-    def _read(self, fields):
-        """ Read the given fields of the records in ``self`` from the database,
-            and store them in cache. Access errors are also stored in cache.
-            Skip fields that are not stored.
-
-            :param field_names: list of column names of model ``self``; all those
-                fields are guaranteed to be read
-            :param inherited_field_names: list of column names from parent
-                models; some of those fields may not be read
-        """
-        if not self:
-            return
-        self.check_access_rights('read')
-
-        # if a read() follows a write(), we must flush updates, as read() will
-        # fetch from database and overwrites the cache (`test_update_with_id`)
-        self.flush(fields, self)
-
+    def _get_read_column_fields(self, fields):
         field_names = []
         inherited_field_names = []
         for name in fields:
@@ -3320,7 +3306,7 @@ Fields:
                 _logger.warning("%s.read() with unknown field '%s'", self._name, name)
 
         # determine the fields that are stored as columns in tables; ignore 'id'
-        fields_pre = [
+        return [
             field
             for field in (self._fields[name] for name in field_names + inherited_field_names)
             if field.name != 'id'
@@ -3328,38 +3314,20 @@ Fields:
             if not (field.inherited and callable(field.base_field.translate))
         ]
 
-        if fields_pre:
-            env = self.env
-            cr, user, context, su = env.args
+    def _qualify_field_query(self, fields, query):
+        # the query may involve several tables: we need fully-qualified names
+        def qualify(field):
+            col = field.name
+            res = self._inherits_join_calc(self._table, field.name, query)
+            if field.type == 'binary' and (self.env.context.get('bin_size') or self.env.context.get('bin_size_' + col)):
+                # PG 9.2 introduces conflicting pg_size_pretty(numeric) -> need ::cast
+                res = 'pg_size_pretty(length(%s)::bigint)' % res
+            return '%s as "%s"' % (res, col)
 
-            # make a query object for selecting ids, and apply security rules to it
-            query = Query(self.env.cr, self._table, self._table_query)
-            self._apply_ir_rules(query, 'read')
+        # selected fields are: 'id' followed by fields_pre
+        return [qualify(field) for field in [self._fields['id']] + fields]
 
-            # the query may involve several tables: we need fully-qualified names
-            def qualify(field):
-                col = field.name
-                res = self._inherits_join_calc(self._table, field.name, query)
-                if field.type == 'binary' and (context.get('bin_size') or context.get('bin_size_' + col)):
-                    # PG 9.2 introduces conflicting pg_size_pretty(numeric) -> need ::cast
-                    res = 'pg_size_pretty(length(%s)::bigint)' % res
-                return '%s as "%s"' % (res, col)
-
-            # selected fields are: 'id' followed by fields_pre
-            qual_names = [qualify(name) for name in [self._fields['id']] + fields_pre]
-
-            # determine the actual query to execute (last parameter is added below)
-            query.add_where('"%s".id IN %%s' % self._table)
-            query_str, params = query.select(*qual_names)
-
-            result = []
-            for sub_ids in cr.split_for_in_conditions(self.ids):
-                cr.execute(query_str, params + [sub_ids])
-                result += cr.fetchall()
-        else:
-            self.check_access_rule('read')
-            result = [(id_,) for id_ in self.ids]
-
+    def _process_result_read(self, result, fields_pre, fields):
         fetched = self.browse()
         if result:
             cols = zip(*result)
@@ -3368,7 +3336,7 @@ Fields:
 
             for field in fields_pre:
                 values = next(cols)
-                if context.get('lang') and not field.inherited and callable(field.translate):
+                if self.env.context.get('lang') and not field.inherited and callable(field.translate):
                     translate = field.get_trans_func(fetched)
                     values = list(values)
                     for index in range(len(ids)):
@@ -3379,8 +3347,10 @@ Fields:
 
             # determine the fields that must be processed now;
             # for the sake of simplicity, we ignore inherited fields
-            for name in field_names:
+            for name in fields:
                 field = self._fields[name]
+                if not field.store:
+                    continue
                 if not field.column_type:
                     field.read(fetched)
                 if field.deprecated:
@@ -3399,6 +3369,46 @@ Fields:
             forbidden = missing.exists()
             if forbidden:
                 raise self.env['ir.rule']._make_access_error('read', forbidden)
+
+    def _read(self, fields):
+        """ Read the given fields of the records in ``self`` from the database,
+            and store them in cache. Access errors are also stored in cache.
+            Skip fields that are not stored.
+
+            :param field_names: list of column names of model ``self``; all those
+                fields are guaranteed to be read
+            :param inherited_field_names: list of column names from parent
+                models; some of those fields may not be read
+        """
+        if not self:
+            return
+        self.check_access_rights('read')
+
+        # if a read() follows a write(), we must flush updates, as read() will
+        # fetch from database and overwrites the cache (`test_update_with_id`)
+        self.flush(fields, self)
+
+        fields_pre = self._get_read_column_fields(fields)
+
+        if fields_pre:
+
+            # make a query object for selecting ids, and apply security rules to it
+            query = Query(self.env.cr, self._table, self._table_query)
+            self._apply_ir_rules(query, 'read')
+
+            # determine the actual query to execute (last parameter is added below)
+            query.add_where('"%s".id IN %%s' % self._table)
+            query_str, params = query.select(*self._qualify_field_query(fields_pre, query))
+
+            result = []
+            for sub_ids in self.env.cr.split_for_in_conditions(self.ids):
+                self.env.cr.execute(query_str, params + [sub_ids])
+                result += self.env.cr.fetchall()
+        else:
+            self.check_access_rule('read')
+            result = [(id_,) for id_ in self.ids]
+
+        self._process_result_read(result, fields_pre, fields)
 
     def get_metadata(self):
         """Return some metadata about the given records.
