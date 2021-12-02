@@ -22,6 +22,7 @@ body.o_in_iframe {
 
     .note-editable {
         border: none;
+        overflow: visible;
     }
 
     #oe_snippets {
@@ -30,7 +31,6 @@ body.o_in_iframe {
 
     .iframe-editor-wrapper {
         flex: 1 1 auto;
-        overflow: auto;
     }
 
     .iframe-utils-zone {
