@@ -58,7 +58,15 @@ function factory(dependencies) {
          */
         download() {
             const downloadLink = document.createElement('a');
-            downloadLink.setAttribute('href', `/web/content/ir.attachment/${this.id}/datas?download=true`);
+            if (
+                this.messaging.currentGuest &&
+                this.originThread &&
+                this.originThread.model === 'mail.channel'
+            ) {
+                downloadLink.setAttribute('href', `/mail/channel/${this.originThread.id}/attachment/${this.id}?download=true`);
+            } else {
+                downloadLink.setAttribute('href', `/web/content/ir.attachment/${this.id}/datas?download=true`);
+            }
             // Adding 'download' attribute into a link prevents open a new tab or change the current location of the window.
             // This avoids interrupting the activity in the page such as rtc call.
             downloadLink.setAttribute('download','');
