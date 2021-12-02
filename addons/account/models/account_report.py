@@ -72,10 +72,21 @@ class AccountReport(models.Model):
 
         return super(AccountReport, self).write(vals)
 
+    @api.constrains('country_id')
     def validate_country_id(self):
         for record in self:
             if any(line.mapped('expression_ids.tag_ids.country_id') != record.country_id for line in record.line_ids):
                 raise ValidationError(_("The tags associated with a report's expressions should all belong to the same country as that report."))
+
+    @api.model
+    def _is_allowed_groupby_field(self, field_name):
+        # TODO OCO utiliser dans une contrainte sur les groupby
+        ''' Method used to filter the fields to be used in the group by filter.
+        :param field:   An ir.model.field record.
+        :return:        True if the field is allowed in the group by filter, False otherwise.
+        ''' #TODO OCO check doc
+        field = self.env['account.move.line']._fields.get(field_name)
+        return field.name not in ('one2many', 'many2many') and field.store
 
 
 class AccountReportLine(models.Model):
@@ -208,3 +219,13 @@ class AccountReportExpression(models.Model):
           'country_id': country_id,
         }
         return [(minus_tag_vals), (plus_tag_vals)]
+
+
+class AccountReportColumn(models.Model):
+    _name = 'account.report.column'
+    _order = 'sequence, id'
+
+    name = fields.Char(string="Name", required=True)
+    value = fields.Char(string="Value", required=True)
+    sequence = fields.Integer(string="Sequence", default=0, required=True)
+    # TODO OCO ajouter le type de données dedans
