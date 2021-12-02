@@ -2797,7 +2797,7 @@ class MailThread(models.AbstractModel):
         """ Hook to add custom behavior after having removed a reaction from a message. """
 
     # ------------------------------------------------------
-    # WRAPPERS AND TOOLS
+    # THREAD MESSAGE UPDATE
     # ------------------------------------------------------
 
     def message_change_thread(self, new_thread, new_parent_message=False):
@@ -2839,6 +2839,19 @@ class MailThread(models.AbstractModel):
         msg_vals["subtype_id"] = None
         msg_not_comment.write(msg_vals)
         return True
+
+    def _message_update_content(self, message, notify_thread=False, **update_vals):
+        """ Update message content.
+
+        Private method to use for tooling, do not expose to interface as editing
+        messages should be avoided at all costs (think of: notifications already
+        sent, ...).
+        """
+        message.write(update_vals)
+        if notify_thread:
+            # To check: model_description, signature, ...
+            self._notify_thread(message)
+        self._message_update_content_after_hook(message)
 
     # ------------------------------------------------------
     # CONTROLLERS

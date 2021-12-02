@@ -20,20 +20,26 @@ class Rating(http.Controller):
 
     @http.route('/rate/<string:token>/<int:rate>', type='http', auth="public", website=True)
     def action_open_rating(self, token, rate, **kwargs):
-        assert rate in (1, 3, 5), "Incorrect rating"
+        if rate not in (1, 3, 5):
+            raise ValueError(_("Incorrect rating"))
+
         rating = request.env['rating.rating'].sudo().search([('access_token', '=', token)])
         if not rating:
             return request.not_found()
-        rate_names = {
-            5: _("Satisfied"),
-            3: _("Okay"),
-            1: _("Dissatisfied")
-        }
-        rating.write({'rating': rate, 'consumed': True})
+
+        record_sudo = request.env[rating.res_model].sudo().browse(rating.res_id)
+        record_sudo.rating_apply(rate, token=token, subtype_xmlid='mail.mt_note')
+
         lang = rating.partner_id.lang or get_lang(request.env).code
         return request.env['ir.ui.view'].with_context(lang=lang)._render_template('rating.rating_external_page_submit', {
-            'rating': rating, 'token': token,
-            'rate_names': rate_names, 'rate': rate
+            'rating': rating,
+            'token': token,
+            'rate_names': {
+                5: _("Satisfied"),
+                3: _("Okay"),
+                1: _("Dissatisfied")
+            },
+            'rate': rate
         })
 
     @http.route(['/rate/<string:token>/submit_feedback'], type="http", auth="public", methods=['post'], website=True)
@@ -44,7 +50,7 @@ class Rating(http.Controller):
         if not rating:
             return request.not_found()
         record_sudo = request.env[rating.res_model].sudo().browse(rating.res_id)
-        record_sudo.rating_apply(rate, token=token, feedback=kwargs.get('feedback'))
+        record_sudo.rating_apply(rate, token=token, feedback=kwargs.get('feedback'), subtype_xmlid='mail.mt_comment')
         lang = rating.partner_id.lang or get_lang(request.env).code
         return request.env['ir.ui.view'].with_context(lang=lang)._render_template('rating.rating_external_page_view', {
             'web_base_url': rating.get_base_url(),

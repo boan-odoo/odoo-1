@@ -9,6 +9,7 @@ class MailThread(models.AbstractModel):
 
     @api.returns('mail.message', lambda value: value.id)
     def message_post(self, **kwargs):
+        rating_id = kwargs.pop('rating_id', False)
         rating_value = kwargs.pop('rating_value', False)
         rating_feedback = kwargs.pop('rating_feedback', False)
         message = super(MailThread, self).message_post(**kwargs)
@@ -25,4 +26,7 @@ class MailThread(models.AbstractModel):
                 'consumed': True,
                 'partner_id': self.env.user.partner_id.id,
             })
+        elif rating_id:
+            self.env['rating.rating'].sudo().browse(rating_id).write({'message_id': message.id})
+
         return message

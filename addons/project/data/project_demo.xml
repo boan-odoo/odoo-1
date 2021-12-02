@@ -898,18 +898,21 @@ Send it ASAP, its urgent.</field>
 
         <!-- Rating Demo Data -->
         <record id="rating_task_1" model="rating.rating">
+            <field name="access_token">AAAA</field>
             <field name="res_model_id" ref="project.model_project_task"/>
             <field name="rated_partner_id" ref="base.partner_root"/>
             <field name="partner_id" ref="base.partner_demo"/>
             <field name="res_id" ref="project.project_task_3"/>
         </record>
         <record id="rating_task_2" model="rating.rating">
+            <field name="access_token">BBBB</field>
             <field name="res_model_id" ref="project.model_project_task"/>
             <field name="rated_partner_id" ref="base.partner_demo"/>
             <field name="partner_id" ref="base.partner_demo"/>
             <field name="res_id" ref="project.project_task_8"/>
         </record>
         <record id="rating_task_5" model="rating.rating">
+            <field name="access_token">CCCC</field>
             <field name="res_model_id" ref="project.model_project_task"/>
             <field name="rated_partner_id" ref="base.partner_root"/>
             <field name="partner_id" ref="base.res_partner_4"/>
@@ -921,9 +924,9 @@ Send it ASAP, its urgent.</field>
             <field name="rating_template_id" ref="rating_project_request_email_template"/>
         </record>
 
-        <function model="project.task" name="rating_apply" eval="([ref('project.project_task_3')], 5, None, 'Good Job')"/>
-        <function model="project.task" name="rating_apply" eval="([ref('project.project_task_24')], 5, None, 'Great work')"/>
-        <function model="project.task" name="rating_apply" eval="([ref('project.project_task_8')], 1, None, 'Not as good as expected')"/>
+        <function model="project.task" name="rating_apply" eval="([ref('project.project_task_3')], 5, 'AAAA', None, 'Good Job')"/>
+        <function model="project.task" name="rating_apply" eval="([ref('project.project_task_24')], 5, 'CCCC', None, 'Great work')"/>
+        <function model="project.task" name="rating_apply" eval="([ref('project.project_task_8')], 1, 'BBBB', None, 'Not as good as expected')"/>
 
         <record id="project_milestone_1" model="project.milestone">
             <field name="is_reached" eval="True"/>
