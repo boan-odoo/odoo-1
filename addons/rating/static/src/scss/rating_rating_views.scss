@@ -1,8 +1,8 @@
-$o-kanban-large-record-width: 350px;
+$o-kanban-rating-large-record-width: 350px;
 
-.o_kanban_view.o_slide_rating_kanban {
+.o_kanban_view.o_rating_rating_kanban {
     .o_kanban_record {
-        width: $o-kanban-large-record-width
+        width: $o-kanban-rating-large-record-width
     }
 
     .o_slide_rating_kanban_left {

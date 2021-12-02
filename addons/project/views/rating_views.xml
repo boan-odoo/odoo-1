@@ -21,7 +21,7 @@
     <record id="rating_rating_view_form_project" model="ir.ui.view">
         <field name="name">rating.rating.form.project</field>
         <field name="model">rating.rating</field>
-        <field name="inherit_id" ref="rating.rating_rating_view_form"/>
+        <field name="inherit_id" ref="rating.rating_rating_view_form_text"/>
         <field name="mode">primary</field>
         <field name="arch" type="xml">
             <xpath expr="//form" position="attributes">
@@ -52,9 +52,6 @@
             <field name="feedback" position="attributes">
                 <attribute name="readonly">1</attribute>
             </field>
-            <div name="rating_image_container" position="replace">
-                <field name="rating_text" string="Rating" decoration-danger="rating_text == 'ko'" decoration-warning="rating_text == 'ok'" decoration-success="rating_text == 'top'" widget='badge'/>
-            </div>
             <field name="create_date" position="after">
                 <field name="partner_id" position="move"/>
             </field>

@@ -65,7 +65,6 @@ Featuring
     'application': True,
     'assets': {
         'web.assets_backend': [
-            'website_slides/static/src/scss/rating_rating_views.scss',
             'website_slides/static/src/scss/slide_views.scss',
             'website_slides/static/src/components/activity/activity.js',
             'website_slides/static/src/js/slide_category_one2many.js',
