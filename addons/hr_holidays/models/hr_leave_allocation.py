@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models
 from odoo.addons.resource.models.resource import HOURS_PER_DAY
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.exceptions import AccessError, UserError
 from odoo.tools.translate import _
 from odoo.tools.float_utils import float_round
 from odoo.tools.date_utils import get_timedelta
@@ -390,12 +390,12 @@ class HolidaysAllocation(models.Model):
             period_prorata = min(1, call_days / period_days) if period_days else 1
         return added_value * period_prorata
 
-    def _process_accrual_plans(self):
+    def _process_accrual_plans(self, until_date=False):
         """
         This method is part of the cron's process.
         The goal of this method is to retroactively apply accrual plan levels and progress from nextcall to today
         """
-        today = fields.Date.today()
+        until_date = until_date or fields.Date.today()
         first_allocation = _("""This allocation have already ran once, any modification won't be effective to the days allocated to the employee. If you need to change the configuration of the allocation, cancel and create a new one.""")
         for allocation in self:
             level_ids = allocation.accrual_plan_id.level_ids.sorted('sequence')
@@ -404,14 +404,16 @@ class HolidaysAllocation(models.Model):
             if not allocation.nextcall:
                 first_level = level_ids[0]
                 first_level_start_date = allocation.date_from + get_timedelta(first_level.start_count, first_level.start_type)
-                if today < first_level_start_date:
+                if until_date < first_level_start_date:
                     # Accrual plan is not configured properly or has not started
                     continue
                 allocation.lastcall = max(allocation.lastcall, first_level_start_date)
                 allocation.nextcall = first_level._get_next_date(allocation.lastcall)
-                allocation._message_log(body=first_allocation)
+                # Do not log the message on accrual simulations
+                if 'future_accrual_date' not in self.env.context:
+                    allocation._message_log(body=first_allocation)
             days_added_per_level = defaultdict(lambda: 0)
-            while allocation.nextcall <= today:
+            while allocation.nextcall <= until_date:
                 (current_level, current_level_idx) = allocation._get_current_accrual_plan_level_id(allocation.nextcall)
                 nextcall = current_level._get_next_date(allocation.nextcall)
                 # Since _get_previous_date returns the given date if it corresponds to a call date
@@ -455,6 +457,37 @@ class HolidaysAllocation(models.Model):
             '|', ('date_to', '=', False), ('date_to', '>', fields.Datetime.now()),
             '|', ('nextcall', '=', False), ('nextcall', '<=', today)])
         allocations._process_accrual_plans()
+        allocations._cancel_leaves()
+
+    def _cancel_leaves(self):
+        if not self:
+            return
+
+        max_date = max(self.mapped('nextcall') or [fields.Date.today()])
+        all_leaves = self.env['hr.leave'].search([
+            ('future_accrual', '=', True),
+            ('date_from', '>=', fields.Date.today()),
+            ('date_from', '<=', max_date),
+            ('holiday_allocation_id', 'in', self.ids),
+            ('state', '=', 'validate'),
+        ])
+
+        leaves_to_refuse = self.env['hr.leave']
+        for allocation in self:
+            accrual_leaves = all_leaves.filtered(lambda l: l.holiday_allocation_id == allocation and l.date_from.date() <= allocation.nextcall)
+            taken_leaves = allocation.taken_leave_ids.filtered(lambda l: l.state == 'validate' and l.date_from.date() <= allocation.nextcall)
+
+            # Refuse leaves until there are enough accrued days
+            hours_diff = sum(taken_leaves.mapped('number_of_days')) - allocation.number_of_days
+            if hours_diff:
+                for leave in accrual_leaves.sorted('date_from', reverse=True):
+                    hours_diff -= leave.number_of_days
+                    leaves_to_refuse |= leave
+
+                    if hours_diff <= 0:
+                        break
+
+        leaves_to_refuse.action_refuse()
 
     ####################################################
     # ORM Overrides methods

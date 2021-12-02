@@ -196,6 +196,8 @@ class HolidaysRequest(models.Model):
     can_reset = fields.Boolean('Can reset', compute='_compute_can_reset')
     can_approve = fields.Boolean('Can Approve', compute='_compute_can_approve')
     can_cancel = fields.Boolean('Can Cancel', compute='_compute_can_cancel')
+    future_accrual = fields.Boolean('Uses Future Accrual', compute='_compute_future_accrual', store=True) # TODO rename?
+    future_accrual_used = fields.Float(compute='_compute_future_accrual', store=True)
 
     attachment_ids = fields.One2many('ir.attachment', 'res_id', string="Attachments")
     # To display in form view
@@ -272,6 +274,7 @@ class HolidaysRequest(models.Model):
     # view
     is_hatched = fields.Boolean('Hatched', compute='_compute_is_hatched')
     is_striked = fields.Boolean('Striked', compute='_compute_is_hatched')
+    accrual_message = fields.Text(compute='_compute_accrual_message') # TODO keep? Shouldn't be needed with Phil's task
 
     _sql_constraints = [
         ('type_value',
@@ -289,6 +292,16 @@ class HolidaysRequest(models.Model):
         tools.create_index(self._cr, 'hr_leave_date_to_date_from_index',
                            self._table, ['date_to', 'date_from'])
         return res
+
+    @api.depends_context('lang')
+    @api.depends('holiday_status_id', 'date_from', 'future_accrual', 'future_accrual_used')
+    def _compute_accrual_message(self):
+        for leave in self:
+            message = False
+            if leave.future_accrual:
+                additional_leaves = leave.with_context(future_accrual_date=leave.date_from, employee_id=leave.employee_id.id).holiday_status_id.additional_leaves
+                message = _('%s accrual leaves available - %s used', additional_leaves, leave.future_accrual_used)
+            leave.accrual_message = message
 
     @api.depends('employee_id', 'employee_ids')
     def _compute_all_employees(self):
@@ -639,6 +652,18 @@ class HolidaysRequest(models.Model):
             holiday.supported_attachment_ids = holiday.attachment_ids
             holiday.supported_attachment_ids_count = len(holiday.attachment_ids.ids)
 
+    @api.depends('holiday_status_id', 'date_from', 'employee_id')
+    def _compute_future_accrual(self):
+        for holiday in self:
+            # TODO probably change that condition (cf check_holidays)
+            if not holiday.holiday_status_id.with_context(employee_id=holiday.employee_id.id).employee_accrual:
+                holiday.future_accrual = False
+                holiday.future_accrual_used = 0
+            else:
+                leave_type = holiday.with_context(future_accrual_date=holiday.date_from, employee_id=holiday.employee_id.id).holiday_status_id
+                holiday.future_accrual = float_compare(leave_type.additional_leaves, 0, 2) == 1 and float_compare(leave_type.virtual_remaining_leaves - holiday.number_of_days, 0, 2) == -1
+                holiday.future_accrual_used = holiday.future_accrual and holiday.number_of_days - leave_type.virtual_remaining_leaves or 0
+
     def _inverse_supported_attachment_ids(self):
         for holiday in self:
             holiday.sudo().attachment_ids = holiday.supported_attachment_ids
@@ -717,7 +742,11 @@ class HolidaysRequest(models.Model):
                 continue
             mapped_days = holiday.holiday_status_id.get_employees_days([holiday.employee_id.id], holiday.date_from)
             leave_days = mapped_days[holiday.employee_id.id][holiday.holiday_status_id.id]
-            if float_compare(leave_days['remaining_leaves'], 0, precision_digits=2) == -1 or float_compare(leave_days['virtual_remaining_leaves'], 0, precision_digits=2) == -1:
+
+            additional_leaves = 0
+            if holiday.holiday_status_id.employee_accrual:
+                additional_leaves = holiday.with_context(future_accrual_date=holiday.date_from, employee_id=holiday.employee_id.id).holiday_status_id.additional_leaves
+            if float_compare(leave_days['remaining_leaves'] + additional_leaves, 0, precision_digits=2) == -1 or float_compare(leave_days['virtual_remaining_leaves'] + additional_leaves, 0, precision_digits=2) == -1:
                 raise ValidationError(_('The number of remaining time off is not sufficient for this time off type.\n'
                                         'Please also check the time off waiting for validation.') + '\n- %s' % holiday.display_name)
 

@@ -244,7 +244,21 @@
                 </div>
                 <group>
                     <group name="col_left">
-                        <field name="holiday_status_id" force_save="1" domain="['|', ('requires_allocation', '=', 'no'), '&amp;', ('has_valid_allocation', '=', True), '&amp;', ('virtual_remaining_leaves', '&gt;', 0), ('max_leaves', '>', '0')]" context="{'employee_id':employee_id, 'default_date_from':date_from}" options="{'no_create': True, 'no_open': True, 'request_type':'leave'}" class="w-100"/>
+                        <field name="holiday_status_id" force_save="1"
+                            domain="['|',
+                                        ('requires_allocation', '=', 'no'),
+                                        '&amp;',
+                                            ('has_valid_allocation', '=', True),
+                                                '|',
+                                                    ('employee_accrual', '=', True),
+                                                '&amp;',
+                                                    ('virtual_remaining_leaves', '&gt;', 0),
+                                                    ('max_leaves', '>', '0')]"
+                            context="{'employee_id':employee_id, 'default_date_from':date_from, 'future_accrual_date': date_from}" options="{'no_create': True, 'no_open': True, 'request_type':'leave'}" class="w-100"/>
+                        <!-- TODO display number of future accrual next to time off type or something -->
+                        <field name="accrual_message" attrs="{'invisible': [('accrual_message', '=', False)]}"/>
+                        <!-- TODO make invisible -->
+                        <field name="future_accrual"/>
                         <label for="request_date_from" string="Dates" id="label_dates"/>
                         <div>
                             <field name="date_from" invisible="1" widget="daterange"/>
