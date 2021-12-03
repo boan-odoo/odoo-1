@@ -86,7 +86,7 @@ class AccountReport(models.Model):
         :return:        True if the field is allowed in the group by filter, False otherwise.
         ''' #TODO OCO check doc
         field = self.env['account.move.line']._fields.get(field_name)
-        return field.name not in ('one2many', 'many2many') and field.store
+        return field.name not in ('one2many', 'many2many') and field.store if field else False
 
 
 class AccountReportLine(models.Model):
