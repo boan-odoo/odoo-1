@@ -32,8 +32,27 @@ registerModel({
         /**
          * @param {MouseEvent} ev
          */
-        onLayoutSettingsDialogClosed(ev) {
-            this.toggleLayoutMenu();
+        onClickHideSidebar(ev) {
+            this.update({ hasSidebar: false });
+        },
+        /**
+         * @param {MouseEvent} ev
+         */
+        onClickShowSidebar(ev) {
+            this.update({ hasSidebar: true });
+        },
+        /**
+         * @param {MouseEvent} ev
+         */
+        onMouseLeave(ev) {
+            if (ev.relatedTarget && ev.relatedTarget.closest('.o_RtcController_popover')) {
+                // the overlay should not be hidden when the cursor leaves to enter the controller popover
+                return;
+            }
+            if (!this.exists()) {
+                return;
+            }
+            this.update({ showOverlay: false });
         },
         /**
          * @param {MouseEvent} ev
@@ -104,12 +123,21 @@ registerModel({
                 this.update({ isFullScreen: false });
             }
         },
-        toggleLayoutMenu() {
-            if (!this.rtcLayoutMenu) {
-                this.update({ rtcLayoutMenu: insertAndReplace() });
-                return;
+        /**
+         * @param {boolean} isSpotlight
+         */
+        setSpotlight(isSpotlight) {
+            if (!isSpotlight) {
+                this.update({ focusedRtcSession: unlink() });
+            } else if (!this.focusedRtcSession) {
+                // as we need a focus to have a spotlight layout, focus the first suitable session
+                for (const session of this.threadView.thread.rtcSessions) {
+                    if (!this.filterVideoGrid || (this.filterVideoGrid && session.videoStream)) {
+                        this.update({ focusedRtcSession: link(session) });
+                        break;
+                    }
+                }
             }
-            this.update({ rtcLayoutMenu: unlink() });
         },
         //----------------------------------------------------------------------
         // Private
@@ -128,10 +156,7 @@ registerModel({
          * @private
          */
         _computeIsControllerFloating() {
-            return (
-                this.isFullScreen ||
-                this.layout !== "tiled" && !this.threadView.compact
-            );
+            return Boolean(this.isFullScreen || this.focusedRtcSession && !this.threadView.compact);
         },
         /**
          * @private
@@ -143,35 +168,10 @@ registerModel({
             if (this.isFullScreen || this.threadView.compact) {
                 return false;
             }
+            if (this.mainParticipantCard) {
+                return false;
+            }
             return !this.threadView.thread.rtc || this.threadView.thread.videoCount === 0;
-        },
-        /**
-         * @private
-         */
-        _computeLayout() {
-            if (!this.threadView) {
-                return 'tiled';
-            }
-            if (this.isMinimized) {
-                return 'tiled';
-            }
-            if (!this.threadView.thread.rtc) {
-                return 'tiled';
-            }
-            if (!this.mainParticipantCard) {
-                return 'tiled';
-            }
-            if (
-                this.threadView.thread.rtcSessions.length +
-                this.threadView.thread.invitedPartners.length +
-                this.threadView.thread.invitedGuests.length < 2
-            ) {
-                return "tiled";
-            }
-            if (this.threadView.compact && this.messaging.userSetting.rtcLayout === 'sidebar') {
-                return 'spotlight';
-            }
-            return this.messaging.userSetting.rtcLayout;
         },
         /**
          * @private
@@ -184,17 +184,14 @@ registerModel({
          * @private
          */
         _computeMainParticipantCard() {
-            if (!this.messaging || !this.threadView) {
+            if (!this.messaging || !this.focusedRtcSession || !this.threadView || !this.focusedRtcSession) {
                 return unlink();
             }
-            if (this.messaging.focusedRtcSession && this.messaging.focusedRtcSession.channel === this.threadView.thread) {
-                return insert({
-                    relationalId: `rtc_session_${this.messaging.focusedRtcSession.localId}_${this.threadView.thread.localId}`,
-                    rtcSession: link(this.messaging.focusedRtcSession),
-                    channel: link(this.threadView.thread),
-                });
-            }
-            return unlink();
+            return insert({
+                relationalId: `rtc_session_${this.focusedRtcSession.localId}_${this.threadView.thread.localId}_main_card`,
+                rtcSession: link(this.focusedRtcSession),
+                channel: link(this.threadView.thread),
+            });
         },
         /**
          * @private
@@ -210,10 +207,16 @@ registerModel({
             if (!this.threadView) {
                 return clear();
             }
+            if (this.focusedRtcSession && !this.hasSidebar) {
+                return clear();
+            }
             const tileCards = [];
             const sessionPartners = new Set();
             const sessionGuests = new Set();
             for (const rtcSession of this.threadView.thread.rtcSessions) {
+                if (this.filterVideoGrid && !rtcSession.videoStream) {
+                    continue;
+                }
                 rtcSession.partner && sessionPartners.add(rtcSession.partner.id);
                 rtcSession.guest && sessionPartners.add(rtcSession.guest.id);
                 tileCards.push({
@@ -314,6 +317,16 @@ registerModel({
             default: false,
         }),
         /**
+         * The rtc session that is the focus/spotlight of the viewer.
+         */
+        focusedRtcSession: one('RtcSession'),
+        /**
+         * Determines if the viewer should have a sidebar.
+         */
+        hasSidebar: attr({
+            default: false,
+        }),
+        /**
          * Determines if the controller is an overlay or a bottom bar.
          */
         isControllerFloating: attr({
@@ -335,13 +348,6 @@ registerModel({
             compute: '_computeIsMinimized',
         }),
         /**
-         * Determines the layout use for the tiling of the participant cards.
-         */
-        layout: attr({
-            default: 'tiled',
-            compute: '_computeLayout',
-        }),
-        /**
          * Text content that is displayed on title of the layout settings dialog.
          */
         layoutSettingsTitle: attr({
@@ -353,6 +359,14 @@ registerModel({
         mainParticipantCard: one('RtcCallParticipantCard', {
             compute: '_computeMainParticipantCard',
             inverse: 'rtcCallViewerOfMainCard',
+            isCausal: true,
+        }),
+        /**
+         * All the participant cards of the call viewer (main card and tile cards).
+         * this is a technical inverse to distinguish from the other relation 'tileParticipantCards'.
+         */
+        participantCards: many('RtcCallParticipantCard', {
+            inverse: 'callViewer',
         }),
         /**
          * The model for the controller (buttons).
@@ -360,13 +374,6 @@ registerModel({
         rtcController: one('RtcController', {
             default: insertAndReplace(),
             readonly: true,
-            inverse: 'callViewer',
-            isCausal: true,
-        }),
-        /**
-         * The model for the menu to control the layout of the viewer.
-         */
-        rtcLayoutMenu: one('RtcLayoutMenu', {
             inverse: 'callViewer',
             isCausal: true,
         }),
@@ -396,6 +403,7 @@ registerModel({
         tileParticipantCards: many('RtcCallParticipantCard', {
             compute: '_computeTileParticipantCards',
             inverse: 'rtcCallViewerOfTile',
+            isCausal: true,
         }),
     },
     onChanges: [

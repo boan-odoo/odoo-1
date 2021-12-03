@@ -95,9 +95,25 @@ registerModel({
         },
     },
     recordMethods: {
+        /**
+         * Allows inbound traffic on the video transceiver of the given rtc session.
+         *
+         * @param {number} sessionId
+         */
+        allowVideoReceiverActivity(sessionId) {
+            this._setVideoTransceiverDirection(sessionId, this.videoTrack ? 'sendrecv' : 'recvonly');
+        },
         async deafen() {
             await this._setDeafState(true);
             this.messaging.soundEffects.deafen.play();
+        },
+        /**
+         * Disallows inbound traffic on the video transceiver of the given rtc session.
+         *
+         * @param {number} sessionId
+         */
+        disallowVideoReceiverActivity(sessionId) {
+            this._setVideoTransceiverDirection(sessionId, this.videoTrack ? 'sendonly' : 'inactive');
         },
         /**
          * Removes and disconnects all the peerConnections that are not current members of the call.
@@ -115,27 +131,6 @@ registerModel({
             if (this.channel && this.currentRtcSession && !currentSessionsTokens.has(this.currentRtcSession.peerToken)) {
                 // if the current RTC session is not in the channel sessions, this call is no longer valid.
                 this.channel.endCall();
-            }
-        },
-        /**
-         * @param {array} [allowedTokens] tokens of the peerConnections for which
-         * the incoming video traffic is allowed. If undefined, all traffic is
-         * allowed.
-         */
-        filterIncomingVideoTraffic(allowedTokens) {
-            const tokenSet = new Set(allowedTokens);
-            for (const [token, peerConnection] of Object.entries(this._peerConnections)) {
-                const fullDirection = this.videoTrack ? 'sendrecv' : 'recvonly';
-                const limitedDirection = this.videoTrack ? 'sendonly' : 'inactive';
-                const transceiver = this._getTransceiver(peerConnection, 'video');
-                if (!transceiver) {
-                    continue;
-                }
-                if (!tokenSet.size || tokenSet.has(token)) {
-                    transceiver.direction = fullDirection;
-                } else {
-                    transceiver.direction = limitedDirection;
-                }
             }
         },
         /**
@@ -892,6 +887,23 @@ registerModel({
             }
         },
         /**
+         * Sets the direction of the video transceiver of a given session.
+         *
+         * @private
+         * @param {number} sessionId
+         * @param {String} direction
+         */
+        _setVideoTransceiverDirection(sessionId, direction) {
+            const peerConnection = this._peerConnections[sessionId];
+            if (peerConnection) {
+                const transceiver = this._getTransceiver(peerConnection, 'video');
+                if (!transceiver) {
+                    return;
+                }
+                transceiver.direction = direction;
+            }
+        },
+        /**
          * @private
          * @param {Object} trackOptions
          */
@@ -1058,12 +1070,10 @@ registerModel({
         async _updateRemoteTrack(peerConnection, trackKind, { initTransceiver, token } = {}) {
             this._addLogEntry(token, `updating ${trackKind} transceiver`);
             const track = trackKind === 'audio' ? this.audioTrack : this.videoTrack;
-            const fullDirection = track ? 'sendrecv' : 'recvonly';
-            const limitedDirection = track ? 'sendonly' : 'inactive';
-            let transceiverDirection = fullDirection;
-            if (trackKind === 'video') {
-                const focusedToken = this.messaging.focusedRtcSession && this.messaging.focusedRtcSession.peerToken;
-                transceiverDirection = !focusedToken || focusedToken === token ? fullDirection : limitedDirection;
+            const rtcSession = this.messaging.models['RtcSession'].findFromIdentifyingData({ id: token });
+            let transceiverDirection = track ? 'sendrecv' : 'recvonly';
+            if (trackKind === 'video' && !rtcSession.callParticipantCards) {
+                transceiverDirection = track ? 'sendonly' : 'inactive';
             }
             let transceiver;
             if (initTransceiver) {

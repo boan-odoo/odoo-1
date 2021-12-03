@@ -138,24 +138,6 @@ registerModel({
             this.update({ isNotificationPermissionDefault: this._computeIsNotificationPermissionDefault() });
         },
         /**
-         * @param {String} sessionId
-         */
-        toggleFocusedRtcSession(sessionId) {
-            const rtcSession = this.messaging.models['RtcSession'].findFromIdentifyingData({
-                id: sessionId,
-            });
-            const focusedSessionId = this.focusedRtcSession && this.focusedRtcSession.id;
-            if (!sessionId || focusedSessionId === sessionId) {
-                this.update({ focusedRtcSession: unlink() });
-                return;
-            }
-            this.update({ focusedRtcSession: link(rtcSession) });
-            if (this.userSetting.rtcLayout !== 'tiled') {
-                return;
-            }
-            this.userSetting.update({ rtcLayout: 'sidebar' });
-        },
-        /**
          * @private
          * @returns {Object} browser
          */
@@ -213,12 +195,6 @@ registerModel({
                 this.soundEffects.incomingCall.stop();
             }
         },
-        /**
-         * @private
-         */
-        _onChangeFocusedRtcSession() {
-            this.rtc.filterIncomingVideoTraffic(this.focusedRtcSession && [this.focusedRtcSession.peerToken]);
-        },
     },
     fields: {
         /**
@@ -271,7 +247,6 @@ registerModel({
             isCausal: true,
             readonly: true,
         }),
-        focusedRtcSession: one('RtcSession'),
         /**
          * Mailbox History.
          */
@@ -389,10 +364,6 @@ registerModel({
         new OnChange({
             dependencies: ['ringingThreads'],
             methodName: '_onChangeRingingThreads',
-        }),
-        new OnChange({
-            dependencies: ['focusedRtcSession'],
-            methodName: '_onChangeFocusedRtcSession',
         }),
     ],
 });

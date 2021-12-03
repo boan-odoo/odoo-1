@@ -163,9 +163,6 @@ registerModel({
                 this._saveSettings();
             }
         },
-        toggleLayoutSettingsWindow() {
-            this.update({ isRtcLayoutSettingDialogOpen: !this.isRtcLayoutSettingDialogOpen });
-        },
         /**
          * toggles the display of the option window
          */
@@ -237,12 +234,6 @@ registerModel({
             required: true,
         }),
         /**
-         * true if the dialog for the call viewer layout is open
-         */
-        isRtcLayoutSettingDialogOpen: attr({
-            default: false,
-        }),
-        /**
          * Formatted string that represent the push to talk key with its modifiers.
          */
         pushToTalkKey: attr({
@@ -255,13 +246,6 @@ registerModel({
             default: insertAndReplace(),
             inverse: 'userSetting',
             isCausal: true,
-        }),
-        /**
-         * layout of the rtc session display chosen by the user
-         * possible values: tiled, spotlight, sidebar
-         */
-        rtcLayout: attr({
-            default: 'tiled',
         }),
         /**
          * true if the user wants to use push to talk (over voice activation)

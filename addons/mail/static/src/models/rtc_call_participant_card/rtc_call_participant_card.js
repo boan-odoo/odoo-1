@@ -3,6 +3,7 @@
 import { registerModel } from '@mail/model/model_core';
 import { attr, one } from '@mail/model/model_field';
 import { isEventHandled, markEventHandled } from '@mail/utils/utils';
+import { clear, link, unlink } from '@mail/model/model_field_command';
 
 registerModel({
     name: 'RtcCallParticipantCard',
@@ -21,9 +22,11 @@ registerModel({
             if (isEventHandled(ev, 'CallParticipantCard.clickVolumeAnchor')) {
                 return;
             }
-            if (!this.invitedPartner && !this.invitedGuest) {
-                if (!this.isMinimized) {
-                    this.messaging.toggleFocusedRtcSession(this.rtcSession.id);
+            if (this.rtcSession) {
+                if (this.callViewer.focusedRtcSession === this.rtcSession && this.rtcCallViewerOfMainCard) {
+                    this.callViewer.update({ focusedRtcSession: unlink() });
+                } else {
+                    this.callViewer.update({ focusedRtcSession: link(this.rtcSession) });
                 }
                 return;
             }
@@ -69,11 +72,22 @@ registerModel({
         },
         /**
          * @private
+         * @returns {mail.rtcCallViewer}
+         */
+        _computeCallViewer() {
+            const callViewer = this.rtcCallViewerOfMainCard || this.rtcCallViewerOfTile;
+            if (callViewer) {
+                return link(callViewer);
+            } else {
+                return clear();
+            }
+        },
+        /**
+         * @private
          * @returns {boolean}
          */
         _computeIsMinimized() {
-            const callViewer = this.rtcCallViewerOfMainCard || this.rtcCallViewerOfTile;
-            return Boolean(callViewer && callViewer.isMinimized);
+            return Boolean(this.callViewer && this.callViewer.isMinimized);
         },
         /**
          * @private
@@ -162,6 +176,13 @@ registerModel({
             required: true,
         }),
         /**
+         * The callViewer that displays this card.
+         */
+        callViewer: one('RtcCallViewer', {
+            compute: '_computeCallViewer',
+            inverse: 'participantCards',
+        }),
+        /**
          * The callViewer for which this card is the spotlight.
          */
         rtcCallViewerOfMainCard: one('RtcCallViewer', {
@@ -176,6 +197,8 @@ registerModel({
         /**
          * If set, this card represents a rtcSession.
          */
-        rtcSession: one('RtcSession'),
+        rtcSession: one('RtcSession', {
+            inverse: 'callParticipantCards',
+        }),
     },
 });

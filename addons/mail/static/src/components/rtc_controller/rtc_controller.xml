@@ -66,7 +66,7 @@
                                 <i class="oi oi-screen" t-att-class="{ 'oi-large': !rtcController.isSmall }"/>
                             </div>
                         </button>
-                        <Popover position="'top'">
+                        <Popover position="'top'" popoverClass="'o_RtcController_popover'">
                             <button class="o_RtcController_button"
                                 aria-label="More"
                                 title="More"

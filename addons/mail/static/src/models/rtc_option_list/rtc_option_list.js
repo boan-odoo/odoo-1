@@ -2,11 +2,20 @@
 
 import { registerModel } from '@mail/model/model_core';
 import { attr, one } from '@mail/model/model_field';
+import { unlink } from '@mail/model/model_field_command';
 
 registerModel({
     name: 'RtcOptionList',
     identifyingFields: ['rtcController'],
     recordMethods: {
+        onChangeVideoFilterCheckbox(ev) {
+            const filterVideoGrid = ev.target.checked;
+            const focusedRtcSession = this.rtcController.callViewer.focusedRtcSession;
+            if (filterVideoGrid && focusedRtcSession && !focusedRtcSession.videoStream) {
+                this.rtcController.callViewer.update({ focusedRtcSession: unlink() });
+            }
+            this.rtcController.callViewer.update({ filterVideoGrid });
+        },
         /**
          * Creates and download a file that contains the logs of the current RTC call.
          *
@@ -39,13 +48,6 @@ registerModel({
          */
         onClickDeactivateFullScreen(ev) {
             this.rtcController.callViewer.deactivateFullScreen();
-            this.component.trigger('o-popover-close');
-        },
-        /**
-         * @param {MouseEvent} ev
-         */
-        onClickLayout(ev) {
-            this.rtcController.callViewer.toggleLayoutMenu();
             this.component.trigger('o-popover-close');
         },
         /**
