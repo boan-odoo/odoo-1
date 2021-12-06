@@ -2160,7 +2160,7 @@ class MailThread(models.AbstractModel):
         """
         channel_ids = [r['id'] for r in recipients_data['channels']]
         if channel_ids:
-            message.write({'channel_ids': [(6, 0, channel_ids)]})
+            message.sudo().write({'channel_ids': [(6, 0, channel_ids)]})
 
         inbox_pids = [r['id'] for r in recipients_data['partners'] if r['notif'] == 'inbox']
         if inbox_pids:
