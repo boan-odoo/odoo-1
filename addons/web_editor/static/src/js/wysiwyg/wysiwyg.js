@@ -29,6 +29,7 @@ const isBlock = OdooEditorLib.isBlock;
 const rgbToHex = OdooEditorLib.rgbToHex;
 const preserveCursor = OdooEditorLib.preserveCursor;
 const closestElement = OdooEditorLib.closestElement;
+const setSelection = OdooEditorLib.setSelection;
 
 var id = 0;
 const faZoomClassRegex = RegExp('fa-[0-9]x');
@@ -935,9 +936,15 @@ const Wysiwyg = Widget.extend({
                 this.linkTools = undefined;
             }
         } else {
+            let link;
             const linkDialog = new weWidgets.LinkDialog(this, {
                 forceNewWindow: this.options.linkForceNewWindow,
                 wysiwyg: this,
+                onPostDestroy: () => {
+                    if (link) {
+                        link.focus();
+                    }
+                },
             }, this.$editable[0], {
                 needLabel: true,
             }, undefined, options.link);
@@ -957,11 +964,9 @@ const Wysiwyg = Widget.extend({
                 }
                 linkWidget.applyLinkToDom(data);
                 this.odooEditor.historyStep();
-                // At this point, the dialog is still open and prevents the
-                // focus in the editable, even though that is where the
-                // selection is. This waits so the dialog is destroyed when we
-                // set the focus.
-                setTimeout(() => this.odooEditor.document.getSelection().collapseToEnd(), 0);
+                link = linkWidget.$link[0];
+                this.odooEditor.setContenteditableLinks(linkWidget.$link[0]);
+                setSelection(link, 0, link, link.childNodes.length, false);
             });
             linkDialog.on('closed', this, function () {
                 // If the linkDialog content has been saved

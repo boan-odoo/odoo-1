@@ -103,6 +103,7 @@ var Dialog = Widget.extend({
         this.renderHeader = options.renderHeader;
         this.renderFooter = options.renderFooter;
         this.onForceClose = options.onForceClose;
+        this.onPostDestroy = options.onPostDestroy;
 
         core.bus.on('close_dialogs', this, this.destroy.bind(this));
     },
@@ -283,6 +284,9 @@ var Dialog = Widget.extend({
             }
             // Keep class modal-open (deleted by bootstrap hide fnct) on body to allow scrolling inside the modal
             $('body').addClass('modal-open');
+        }
+        if (this.onPostDestroy) {
+            this.onPostDestroy();
         }
     },
     /**
