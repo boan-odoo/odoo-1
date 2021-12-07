@@ -179,7 +179,7 @@ class Slide(models.Model):
     vimeo_id = fields.Char('Video Vimeo ID', compute='_compute_vimeo_id')
     # website
     website_id = fields.Many2one(related='channel_id.website_id', readonly=True)
-    date_published = fields.Datetime('Publish Date', readonly=True, tracking=False)
+    date_published = fields.Datetime('Publish Date', readonly=True, tracking=False, copy=False)
     likes = fields.Integer('Likes', compute='_compute_user_info', store=True, compute_sudo=False)
     dislikes = fields.Integer('Dislikes', compute='_compute_user_info', store=True, compute_sudo=False)
     user_vote = fields.Integer('User vote', compute='_compute_user_info', compute_sudo=False)
@@ -581,6 +581,14 @@ class Slide(models.Model):
             if slide.is_published and not slide.is_category:
                 slide._post_publication()
         return slides
+
+    def copy_data(self, default=None):
+        default = default or {}
+        if 'slide_resource_ids' not in default:
+            default['slide_resource_ids'] = [fields.Command.create(resource.copy_data()[0]) for resource in self.slide_resource_ids]
+        if 'question_ids' not in default:
+            default['question_ids'] = [fields.Command.create(question.copy_data()[0]) for question in self.question_ids]
+        return super().copy_data(default)
 
     def write(self, values):
         if values.get('is_category'):

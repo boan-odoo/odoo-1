@@ -45,6 +45,12 @@ class SlideQuestion(models.Model):
             question.attempts_avg = stats.get('attempts_count', 0) / stats.get('attempts_unique', 1) if stats else 0
             question.done_count = stats.get('done_count', 0) if stats else 0
 
+    def copy_data(self, default=None):
+        default = default or {}
+        if 'answer_ids' not in default:
+            default['answer_ids'] = [fields.Command.create(answer.copy_data()[0]) for answer in self.answer_ids]
+        return super().copy_data(default)
+
 
 class SlideAnswer(models.Model):
     _name = "slide.answer"
