@@ -226,6 +226,6 @@ class AccountReportColumn(models.Model):
     _order = 'sequence, id'
 
     name = fields.Char(string="Name", required=True)
-    value = fields.Char(string="Value", required=True)
+    expression_label = fields.Char(string="Expression Label", required=True)
     sequence = fields.Integer(string="Sequence", default=0, required=True)
     # TODO OCO ajouter le type de données dedans
