@@ -62,6 +62,8 @@
                     <t t-snippet="mass_mailing.s_masonry_block" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_masonry_block.svg"/>
                     <t t-snippet="mass_mailing.s_media_list" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_media_list.svg"/>
                     <t t-snippet="mass_mailing.s_showcase" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_showcase.svg"/>
+                    <t t-snippet="mass_mailing.s_blockquote" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_blockquote.svg"/>
+                    <t t-snippet="mass_mailing.s_text_highlight" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_text_highlight.svg"/>
                 </div>
             </div>
             <div id="email_designer_default_extra" class="o_panel">
@@ -82,9 +84,7 @@
                 <div class="o_panel_body" id="email_designer_inner_elements">
                     <t t-snippet="mass_mailing.s_alert" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_alert.svg"/>
                     <t t-snippet="mass_mailing.s_rating" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_rating.svg"/>
-                    <t t-snippet="mass_mailing.s_blockquote" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_blockquote.svg"/>
                     <t t-snippet="mass_mailing.s_hr" t-thumbnail="/web_editor/static/src/img/snippets_thumbs/s_hr.svg"/>
-                    <t t-snippet="mass_mailing.s_text_highlight" t-thumbnail="/mass_mailing/static/src/img/snippets_thumbs/s_text_highlight.svg"/>
                 </div>
             </div>
             <div id="email_designer_default_footer" class="o_panel">
