@@ -7,6 +7,7 @@ from odoo.osv import expression
 
 class AccountReport(models.Model):
     _name = 'account.report'
+    _description = "Accounting Report"
 
     #TODO OCO garder filter_ en préfixe ?? => Peut-être ... Ou pas ... On pourrait le garder juste sur les fonctions.
     name = fields.Char(string="Name", required=True)
@@ -31,7 +32,7 @@ class AccountReport(models.Model):
     # TODO OCO  ajouter un champ default_options ou default_filters ??? Genre avec un dict en str, qui permette de dire par exemple pour le tax report qu'il s'ouvre par défaut sur le mois passé ?
     # TODO OCO attention à la gestion des tax units => le filter_multi_company, en faire un champ sélection ? (3 choix: désactivé, avec le sélecteur ou tax unit)
     line_ids = fields.One2many(string="Lines", comodel_name='account.report.line', inverse_name='report_id')
-    columns = fields.Char(string="Columns") #TODO OCO le rendre requis ; je ne le fais pas tout de suite car nique l'installation à cause des financial reports~~
+    column_ids = fields.One2many(string="Columns", comodel_name='account.report.column', inverse_name='report_id')
     dynamic_lines_generator = fields.Char(string="Dynamic Lines Generator")
     # TODO OCO ajouter un genre de séquence pour dans le sélecteur de layout ===> 2.1 serait "2ème bloc, 1ère ligne", comme ça on garde les spérateurs (si besoin) => Ou bien une catégorie de rapport ??? => default = '0.0'
     root_report_id = fields.Many2one(string="Root Report", comodel_name='account.report') # TODO OCO DOC + il faudra créer le menuitem comme avec les financial reports
@@ -46,6 +47,7 @@ class AccountReport(models.Model):
     )
     filter_tax_exigible = fields.Boolean(string="Only Tax Exigible Lines", default=False, required=True)
     filter_unfold_all = fields.Boolean(string="Show 'Unfold All' Filter", default=False)
+    ir_filter_ids = fields.Many2many(string="Applicable filters", comodel_name='ir.filters', help="Filters that can be used to filter and group lines on this report. This uses saved filtes on journal items") #TODO OCO REDOC + domaine
 
     #TODO OCO réordonner les déclarations de champs (et décider d'un standard sur ce qu'on préfixe filter_)
 
@@ -72,12 +74,6 @@ class AccountReport(models.Model):
 
         return super(AccountReport, self).write(vals)
 
-    @api.constrains('country_id')
-    def validate_country_id(self):
-        for record in self:
-            if any(line.mapped('expression_ids.tag_ids.country_id') != record.country_id for line in record.line_ids):
-                raise ValidationError(_("The tags associated with a report's expressions should all belong to the same country as that report."))
-
     @api.model
     def _is_allowed_groupby_field(self, field_name):
         # TODO OCO utiliser dans une contrainte sur les groupby
@@ -91,6 +87,7 @@ class AccountReport(models.Model):
 
 class AccountReportLine(models.Model):
     _name = 'account.report.line'
+    _description = "Accounting Report Line"
     _order = 'sequence, id'
 
     name = fields.Char(string="Name", required=True)
@@ -99,7 +96,6 @@ class AccountReportLine(models.Model):
     groupby = fields.Char(string="Group By") # TODO OCO la valeur du group by doit être acceptée par le moteur de la formule (en cas de multi colonnes, par les moteurs de chaque formule de la ligne => ce sera marrant ...)
     #TODO OCO je ne mets pas de notion de ligne parente ? Ca voudrait dire qu'on fait le flatten ici. A voir.
     sequence = fields.Integer(string="Sequence", required=True)
-    column_values = fields.Char(string="Columns")#TODO OCO pas requis ? => Si pas set, prend les totaux de toutes les expressions, alors ? (et puis quand on a aucune expression, il faut voir)
     hierarchy_level = fields.Integer(string="Level", default=1, required=True)
     code = fields.Char(string="Code")
     unfoldable = fields.Boolean(string="Unfoldable", default=False)
@@ -114,6 +110,7 @@ class AccountReportLine(models.Model):
 
 class AccountReportExpression(models.Model):
     _name = 'account.report.expression' #TODO OCO ou rebaptiser line.cell pour éviter la confusion avec le champ formula ?
+    _description = "Accounting Report Expression"
 
     # TODO OCO repasser sur le phrasing
     report_line_id = fields.Many2one(string="Report Line", comodel_name='account.report.line', required=True, ondelete='cascade')
@@ -223,9 +220,11 @@ class AccountReportExpression(models.Model):
 
 class AccountReportColumn(models.Model):
     _name = 'account.report.column'
+    _description = "Accounting Report Column"
     _order = 'sequence, id'
 
     name = fields.Char(string="Name", required=True)
     expression_label = fields.Char(string="Expression Label", required=True)
     sequence = fields.Integer(string="Sequence", default=0, required=True)
+    report_id = fields.Many2one(string="Report", comodel_name='account.report')
     # TODO OCO ajouter le type de données dedans

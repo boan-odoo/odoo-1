@@ -4,9 +4,11 @@
       <field name="name">VAT Report</field>
       <field name="filter_multi_company">tax_units</field>
       <field name="filter_tax_exigible" eval="True"/>
-      <field name="columns">Balance</field> <!--TODO OCO  ajouter les données de la date-->
       <field name="root_report_id" ref="account.generic_tax_report"/>
       <field name="country_id" ref="base.be"/>
+      <field name="column_ids" eval="[(5, 0, 0),
+          (0, 0, {'name': 'Balance', 'expression_label': 'balance', 'sequence': 1}),
+      ]"/>
       <!--TODO OCO fiscal_position à voir-->
   </record>
 
@@ -30,10 +32,9 @@
         <field name="code">c00</field> <!--TODO OCO donc la formule devra faire c00.main-->
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '00'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '00'})
         ]"/>
         <!--TODO OCO le référencement du tag sur les taxes va faire chier ... :/ >> avec une foreign key, ça va être difficile ... >> ou bien on compte sur juste tag_name + country sur la taxe ? Plus de foreign key, du coup ? ==> OU BIEN on crée des xmlids pour chaque expression ... Maaaaais ... -->
-        <field name="column_values">main</field> <!--TODO OCO un peu dommage de devoir faire ça ... => compute éditable ? Ou bien directement un modèle account.report.column qui définit quel total va où pour le rapport-->
         <field name="hierarchy_level">6</field>
         <field name="sequence">3</field>
     </record>
@@ -43,9 +44,8 @@
         <field name="code">c01</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '01'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '01'})
         ]"/>
-        <field name="column_values">main</field>
         <field name="hierarchy_level">6</field><!--TODO OCO est-ce qu'on laisserait la ligne parente pour juste calculer ce champ ? Ce serait sans doute plus robuste (et plus clair/facile à configurer)-->
         <field name="sequence">4</field> <!--TODO OCO ce serait bien ce que truc s'auto-incrémente, franchement ... Ou bien on ne le set pas et il compte sur l'id quand il ne l'a pas ? (juste histoire de l'enlever des fichiers de data)-->
     </record>
@@ -55,9 +55,8 @@
         <field name="code">c02</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '02'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '02'})
         ]"/>
-        <field name="column_values">main</field>
         <field name="hierarchy_level">6</field>
         <field name="sequence">5</field>
     </record>
@@ -67,9 +66,8 @@
         <field name="code">c03</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '03'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '03'})
         ]"/>
-        <field name="column_values">main</field>
         <field name="hierarchy_level">6</field>
         <field name="sequence">6</field>
     </record>
@@ -79,9 +77,8 @@
         <field name="code">c44</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '44'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '44'})
         ]"/>
-        <field name="column_values">main</field>
         <field name="hierarchy_level">6</field>
         <field name="sequence">7</field>
     </record>
@@ -91,9 +88,8 @@
         <field name="code">c45</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '45'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '45'})
         ]"/>
-        <field name="column_values">main</field>
         <field name="hierarchy_level">6</field>
         <field name="sequence">8</field>
     </record>
@@ -103,10 +99,9 @@
         <field name="code">c46</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'aggregation', 'formula': 'c46L.main + c46T.main'})
+            (0, 0, {'total': 'balance', 'engine': 'aggregation', 'formula': 'c46L.main + c46T.main'})
         ]"/><!--TODO OCO dans le script qui convertira les tax reports, bien faire attention au fait qu'une formula vide (et donc pas 'None') implique la somme des enfants => convertir en aggregation-->
         <!--TODO OCO à discuter: l'obligation de faire .main, même quand un seul total est éligible-->
-        <field name="column_values">main</field>
         <field name="hierarchy_level">6</field>
         <field name="sequence">9</field>
     </record>
@@ -116,9 +111,8 @@
         <field name="code">c46L</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '46L'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '46L'})
         ]"/>
-        <field name="column_values">main</field>
         <field name="hierarchy_level">8</field>
         <field name="sequence">10</field>
     </record>
@@ -128,9 +122,8 @@
         <field name="code">c46T</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '46T'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '46T'})
         ]"/>
-        <field name="column_values">main</field>
         <field name="hierarchy_level">8</field>
         <field name="sequence">11</field>
     </record>
@@ -140,9 +133,8 @@
         <field name="code">c47</field>
         <field name="report_id" ref="tax_report_vat"/>
         <field name="expression_ids" eval="[(5, 0 , 0),
-            (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': '47'})
+            (0, 0, {'total': 'balance', 'engine': 'tax_tags', 'formula': '47'})
         ]"/>
-        <field name="column_values">main</field>
         <field name="hierarchy_level">6</field>
         <field name="sequence">12</field>
     </record>

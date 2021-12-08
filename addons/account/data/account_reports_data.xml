@@ -7,8 +7,13 @@
             <field name="name">Generic Tax report</field>
             <field name="filter_multi_company">tax_units</field>
             <field name="filter_tax_exigible" eval="True"/>
-            <field name="columns">NET, TAX</field> <!--TODO OCO chiant: en master on met NET + nom du mois et année ... On veut garder ça ?-->
             <field name="dynamic_lines_generator">_generic_tax_report_default_grouping</field> <!--TODO OCO pareil: ça, c'est à ajouter en enterprise. Le champ aussi ?-->
+            <field name="column_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'NET', 'expression_label': 'net', 'sequence': 1}),
+                (0, 0, {'name': 'TAX', 'expression_label': 'tax', 'sequence': 2}),
+            ]"/>
+            <!--TODO OCO les expression_label sur le rapport générique n'ont pas trop de sens ; il faudra en outre adapter le Python-->
+            <!--TODO OCO les colonnes, on les déclare à la wan ?-->
             <!--TODO OCO fiscal_position à voir-->
         </record>
 
@@ -16,19 +21,25 @@
             <field name="name">Group by: Account &gt; Tax </field>
             <field name="filter_multi_company">tax_units</field>
             <field name="filter_tax_exigible" eval="True"/>
-            <field name="columns">NET, TAX</field> <!--TODO OCO-->
             <field name="dynamic_lines_generator">_generic_tax_report_account_tax_grouping</field>
             <field name="root_report_id" ref="generic_tax_report"/>
             <field name="allow_showing_draft" eval="False"/>
+            <field name="column_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'NET', 'expression_label': 'net', 'sequence': 1}),
+                (0, 0, {'name': 'TAX', 'expression_label': 'tax', 'sequence': 2}),
+            ]"/>
         </record>
 
         <record id="generic_tax_report_tax_account" model="account.report">
             <field name="name">Group by: Tax &gt; Account </field>
             <field name="filter_multi_company">tax_units</field>
             <field name="filter_tax_exigible" eval="True"/>
-            <field name="columns">NET, TAX</field> <!--TODO OCO-->
             <field name="dynamic_lines_generator">_generic_tax_report_tax_account_grouping</field>
             <field name="root_report_id" ref="generic_tax_report"/>
+            <field name="column_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'NET', 'expression_label': 'net', 'sequence': 1}),
+                (0, 0, {'name': 'TAX', 'expression_label': 'tax', 'sequence': 2}),
+            ]"/>
         </record>
 
         <!--TODO OCO pour simplifier ce genre de déclaration, je ferais bien un modèle account.report.config qui permette de définir des valeurs par défaut avec un seul m2o (je pense notamment au rapport de taxes, c'est mieux)
@@ -51,8 +62,11 @@
             <field name="filter_tax_exigible" eval="True"/>
             <field name="filter_unfold_all" eval="True"/>
             <field name="root_report_id" ref="generic_tax_report"/>
-            <field name="columns">NET, TAX</field> <!--TODO OCO chiant: en master on met NET + nom du mois et année ... On veut garder ça ?-->
             <field name="dynamic_lines_generator">_generic_tax_report_default_grouping</field> <!--TODO OCO pareil: ça, c'est à ajouter en enterprise. Le champ aussi ?-->
+            <field name="column_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'MAIN', 'expression_label': 'main', 'sequence': 1}),
+                (0, 0, {'name': '42', 'expression_label': 'forty_two', 'sequence': 2}),
+            ]"/>
             <!--TODO OCO fiscal_position à voir-->
         </record>
 
@@ -69,7 +83,6 @@
                 (0, 0, {'total': 'forty_two', 'engine': 'custom', 'formula': 'test_oco_always_42'}),
             ]"/>
             <!--TODO OCO pour le control, on pourrait du coup mettre control_main, control_opt, ... EASY-->
-            <field name="column_values">main, forty_two</field>
             <field name="sequence">1</field>
         </record>
 
@@ -85,7 +98,6 @@
                 (0, 0, {'total': 'forty_two', 'engine': 'domain', 'formula': &quot;[('account_id.user_type_id.internal_group', '=', 'income')]&quot;, 'subformula': 'sum'}),
             ]"/>
             <field name="unfoldable" eval="False"/>
-            <field name="column_values">main, forty_two</field>
             <field name="sequence">2</field>
         </record>
 
@@ -101,7 +113,6 @@
                 (0, 0, {'total': 'forty_two', 'engine': 'domain', 'formula': &quot;[('account_id.user_type_id', '=', ref('account.data_account_type_revenue'))]&quot;, 'subformula': 'sum'}),
             ]"/>
             <field name="unfoldable" eval="False"/>
-            <field name="column_values">main, forty_two</field>
             <field name="sequence">2</field>
         </record>
 
@@ -114,7 +125,6 @@
             ]"/>
             <field name="unfoldable" eval="True"/>
             <field name="groupby">account_id</field>
-            <field name="column_values">forty_two, forty_two</field>
             <field name="sequence">2</field>
         </record>
 
@@ -134,7 +144,6 @@
                 (0, 0, {'total': 'forty_two', 'engine': 'custom', 'formula': 'test_oco_always_42'}),
             ]"/>
             <field name="unfoldable" eval="True"/>
-            <field name="column_values">main, forty_two</field>
             <field name="hierarchy_level">2</field>
             <field name="sequence">4</field>
         </record>
@@ -155,7 +164,6 @@
                 (0, 0, {'total': 'forty_two', 'engine': 'custom', 'formula': 'test_oco_always_42'}),
             ]"/>
             <field name="unfoldable" eval="False"/>
-            <field name="column_values">main, forty_two</field>
             <field name="hierarchy_level">2</field>
             <field name="sequence">6</field>
         </record>
@@ -168,7 +176,6 @@
                 (0, 0, {'total': 'main', 'engine': 'aggregation', 'formula': 'FINANCIAL_GROUPBY.forty_two + LINE_1.main'}),
             ]"/>
             <field name="unfoldable" eval="False"/>
-            <field name="column_values">main, main</field>
             <field name="hierarchy_level">1</field>
             <field name="sequence">7</field>
         </record>
@@ -180,7 +187,6 @@
                 (0, 0, {'total': 'main', 'engine': 'aggregation', 'formula': 'AGGREGATE.main + LINE_1.forty_two'}),
             ]"/>
             <field name="unfoldable" eval="False"/>
-            <field name="column_values">main, main</field> <!--TODO OCO permettre de laisser une colonne vide, ce serait bien-->
             <field name="hierarchy_level">1</field>
             <field name="sequence">8</field>
         </record>
@@ -193,7 +199,6 @@
                 (0, 0, {'total': 'main', 'engine': 'aggregation', 'formula': 'TEST_INNER.inner + LINE_1.forty_two'}),
                 (0, 0, {'total': 'inner', 'engine': 'domain', 'formula': &quot;[('account_id.code', 'like', '4%')]&quot;, 'subformula': 'sum'}),
             ]"/>
-            <field name="column_values">main, inner</field>
             <field name="hierarchy_level">1</field>
             <field name="sequence">9</field>
         </record>
