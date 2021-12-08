@@ -112,6 +112,7 @@ export async function makeTestEnv(config = {}) {
     });
 
     const env = makeEnv();
+    owl.Component.env = env;
     env.config = config.config || {};
     await startServices(env);
     // env.qweb.addTemplates(window.__ODOO_TEMPLATES__);

@@ -32,11 +32,19 @@
      * a widgetSymbol key in the environment, corresponding to the hook to call
      * (see ComponentWrapper).
      */
-    const originalTrigger = owl.Component.prototype.__trigger;
-    owl.Component.prototype.__trigger = function (component, evType, payload) {
+    owl.Component.prototype.trigger = function (evType, payload) {
         if (this.env[odoo.widgetSymbol]) {
             this.env[odoo.widgetSymbol](evType);
         }
-        originalTrigger.call(this, component, evType, payload);
+        if (!this.el) {
+            return;
+        }
+        const event = new CustomEvent(evType, { detail: payload, bubbles: true, cancelable: true });
+        event.originalComponent = this;
+        let el = this.el;
+        if (!(el instanceof EventTarget)){
+            el = el.parentElement;
+        }
+        el.dispatchEvent(event);
     };
 })();

@@ -94,7 +94,7 @@
      */
     function createAttrUpdater(attr) {
         return function (value) {
-            if (value !== false && value !== undefined) { // NXOWL to fix in owl
+            if (value !== false) {
                 setAttribute.call(this, attr, value === true ? "" : value);
             }
         };
@@ -1557,9 +1557,14 @@
      * This is why it is only done in 'dev' mode.
      */
     const validateProps = function (name, props, parent) {
+        return;
         const ComponentClass = (typeof name !== "string" ? name : parent.constructor.components[name]);
-        applyDefaultProps(props, ComponentClass);
         const propsDef = ComponentClass.props;
+        if ((!propsDef && !props)) {
+            return;
+        }
+        applyDefaultProps(props, ComponentClass);
+
         if (propsDef instanceof Array) {
             // list of strings (prop names)
             for (const propName of propsDef) {
@@ -1975,64 +1980,6 @@
         remove() {
             this.bdom.remove();
         }
-    }
-
-    // -----------------------------------------------------------------------------
-    //  hooks
-    // -----------------------------------------------------------------------------
-    function onWillStart(fn) {
-        const node = getCurrent();
-        node.willStart.push(fn);
-    }
-    function onWillUpdateProps(fn) {
-        const node = getCurrent();
-        node.willUpdateProps.push(fn);
-    }
-    function onMounted(fn) {
-        const node = getCurrent();
-        node.mounted.push(fn);
-    }
-    function onWillPatch(fn) {
-        const node = getCurrent();
-        node.willPatch.unshift(fn);
-    }
-    function onPatched(fn) {
-        const node = getCurrent();
-        node.patched.push(fn);
-    }
-    function onWillUnmount(fn) {
-        const node = getCurrent();
-        node.willUnmount.unshift(fn);
-    }
-    function onWillDestroy(fn) {
-        const node = getCurrent();
-        node.willDestroy.push(fn);
-    }
-    function onWillRender(fn) {
-        const node = getCurrent();
-        const renderFn = node.renderFn;
-        node.renderFn = () => {
-            fn();
-            return renderFn();
-        };
-    }
-    function onRendered(fn) {
-        const node = getCurrent();
-        const renderFn = node.renderFn;
-        node.renderFn = () => {
-            const result = renderFn();
-            fn();
-            return result;
-        };
-    }
-    function onError(callback) {
-        const node = getCurrent();
-        let handlers = nodeErrorHandlers.get(node);
-        if (!handlers) {
-            handlers = [];
-            nodeErrorHandlers.set(node, handlers);
-        }
-        handlers.push(callback);
     }
 
     // -----------------------------------------------------------------------------
@@ -4403,15 +4350,30 @@ See https://github.com/odoo/owl/blob/master/doc/reference/config.md#mode for mor
             return this;
         }
         mount(target, options) {
+            this.checkTarget(target);
+            const node = this.makeNode(this.Root, this.props);
+            const prom = this.mountNode(node, target, options);
+            this.root = node;
+            return prom;
+        }
+        checkTarget(target) {
             if (!(target instanceof HTMLElement)) {
                 throw new Error("Cannot mount component: the target is not a valid DOM element");
             }
             if (!document.body.contains(target)) {
                 throw new Error("Cannot mount a component on a detached dom node");
             }
-            const node = new ComponentNode(this.Root, this.props, this);
+        }
+        makeNode(Component, props) {
+            return new ComponentNode(Component, props, this);
+        }
+        mountNode(node, target, options) {
             const promise = new Promise((resolve, reject) => {
-                onMounted(() => resolve(node.component));
+                // manually set a onMounted callback.
+                // that way, we are independant from the current node.
+                node.mounted.push(() => {
+                    resolve(node.component);
+                });
                 // Manually add the last resort error handler on the node
                 let handlers = nodeErrorHandlers.get(node);
                 if (!handlers) {
@@ -4423,7 +4385,6 @@ See https://github.com/odoo/owl/blob/master/doc/reference/config.md#mode for mor
                     throw e;
                 });
             });
-            this.root = node;
             node.mountComponent(target, options);
             return promise;
         }
@@ -4592,6 +4553,64 @@ See https://github.com/odoo/owl/blob/master/doc/reference/config.md#mode for mor
             }
         }
         return true;
+    }
+
+    // -----------------------------------------------------------------------------
+    //  hooks
+    // -----------------------------------------------------------------------------
+    function onWillStart(fn) {
+        const node = getCurrent();
+        node.willStart.push(fn);
+    }
+    function onWillUpdateProps(fn) {
+        const node = getCurrent();
+        node.willUpdateProps.push(fn);
+    }
+    function onMounted(fn) {
+        const node = getCurrent();
+        node.mounted.push(fn);
+    }
+    function onWillPatch(fn) {
+        const node = getCurrent();
+        node.willPatch.unshift(fn);
+    }
+    function onPatched(fn) {
+        const node = getCurrent();
+        node.patched.push(fn);
+    }
+    function onWillUnmount(fn) {
+        const node = getCurrent();
+        node.willUnmount.unshift(fn);
+    }
+    function onWillDestroy(fn) {
+        const node = getCurrent();
+        node.willDestroy.push(fn);
+    }
+    function onWillRender(fn) {
+        const node = getCurrent();
+        const renderFn = node.renderFn;
+        node.renderFn = () => {
+            fn();
+            return renderFn();
+        };
+    }
+    function onRendered(fn) {
+        const node = getCurrent();
+        const renderFn = node.renderFn;
+        node.renderFn = () => {
+            const result = renderFn();
+            fn();
+            return result;
+        };
+    }
+    function onError(callback) {
+        const node = getCurrent();
+        let handlers = nodeErrorHandlers.get(node);
+        if (!handlers) {
+            handlers = [];
+            nodeErrorHandlers.set(node, handlers);
+        }
+        handlers.push(callback);
     }
 
     // Allows to get the target of a Reactive (used for making a new Reactive from the underlying object)
@@ -4977,8 +4996,8 @@ See https://github.com/odoo/owl/blob/master/doc/reference/config.md#mode for mor
 
 
     __info__.version = '2.0.0-alpha1';
-    __info__.date = '2021-12-03T09:14:35.759Z';
-    __info__.hash = '144d4a2';
+    __info__.date = '2021-12-08T14:03:59.911Z';
+    __info__.hash = '32bcfa9';
     __info__.url = 'https://github.com/odoo/owl';
 
 

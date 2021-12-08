@@ -153,13 +153,17 @@ odoo.define('web.OwlCompatibility', function (require) {
         }
 
         willUnmount() {
-            if (this.widget && this.widget.on_detach_callback) {
-                this.widget.on_detach_callback();
+            if (this.widget) {
+                this.widget.el.remove();
+                if (this.widget.on_detach_callback) {
+                    this.widget.on_detach_callback();
+                }
             }
         }
 
         __destroy() {
             if (this.widget) {
+                this.widget.el.remove();
                 this.widget.destroy();
             }
         }
@@ -267,9 +271,11 @@ odoo.define('web.OwlCompatibility', function (require) {
             }
         }
 
-        trigger(evName, payload) {
-            const event = new CustomEvent(evName, {detail: payload});
-            this.__owl__.firstNode().parentElement.dispatchEvent(event);
+        get el() {
+            if (this.widget) {
+                return this.widget.el;
+            }
+            return super.el;
         }
     }
 
@@ -355,223 +361,22 @@ odoo.define('web.OwlCompatibility', function (require) {
         }
     }
 
-    class ComponentWrapper {
-        constructor(parent, C, props) {
-            if (parent instanceof Component) {
-                throw new Error("ComponentWrapper must be used with a legacy Widget as parent");
-            }
-            if (parent) {
-                this._register(parent);
-            }
-            this.props = {
-                Component: C,
-                componentProps: props,
-            };
-            this.app = null;
-            this.componentRef = { comp: null };
-        }
-
-        async mount(target) {
-            const fn = () => {
-                this.componentRef.comp = Object.values(this.node.children)[0].component;
-            };
-            class Controller extends Component {
-                setup() {
-                    onMounted(fn);
-                    onPatched(fn);
-                }
-            }
-            Controller.template = xml`<t t-component="props.Component" t-props="props.componentProps"/>`;
-            this.app = new App(Controller, this.props);
-            await this.app.configure({ env: legacyEnv }).mount(target);
-            return this;
-        }
-
-        get node() {
-            return this.app.root;
-        }
-
-        on_attach_callback() {
-            recursiveCall(this.node, "mounted");
-        }
-
-        /**
-         * Calls __callWillUnmount to notify the component it will be unmounted.
-         */
-        on_detach_callback() {
-            recursiveCall(this.node, "willUnmount");
-            this.node.remove();
-        }
-
-        __destroy() {
-            this.app.destroy();
-        }
-
-        update(nextProps) {
-            this.props.componentProps = nextProps;
-            this.node.render();
-        }
-
-        /**
-         * Registers this instance as a child of the given parent in the
-         * 'children' weakMap.
-         *
-         * @private
-         * @param {Widget} parent
-         */
-        _register(parent) {
-            let parentChildren = children.get(parent);
-            if (!parentChildren) {
-                parentChildren = [];
-                children.set(parent, parentChildren);
-            }
-            parentChildren.push(this);
-        }
-    }
-
-    class ComponentWrapperLegacy extends Component {
-        /**
-         * Stores the reference of the instance in the parent (in __components).
-         * Also creates a sub environment with a function that will be called
-         * just before events are triggered (see component_extension.js). This
-         * allows to add DOM event listeners on-the-fly, to redirect those Owl
-         * custom (yet DOM) events to legacy custom events (trigger_up).
-         *
-         * @override
-         * @param {Widget|null} parent
-         * @param {Component} Component this is a Class, not an instance
-         * @param {Object} props
-         */
-        constructor(parent, Component, props) {
-            if (parent instanceof Component) {
-                throw new Error('ComponentWrapper must be used with a legacy Widget as parent');
-            }
-            const env = useEnv();
-            const { __owl__: node } = useComponent();
-            super(props, env, node);
-            if (parent) {
-                this._register(parent);
-            }
-            useSubEnv({
+    class ProxyComponent extends Component {
+        setup() {
+            onMounted(() => {
+                this.props.mounted();
+            });
+            onPatched(() => {
+                this.props.patched();
+            });
+            this.parentWidget = this.props.parentWidget;
+            this._handledEvents = new Set();
+            const env = Object.assign(Object.create(this.env), {
                 [widgetSymbol]: this._addListener.bind(this)
             });
-
-            this.parentWidget = parent;
-            this.Component = Component;
-            this.props = props || {};
-            this._handledEvents = new Set(); // Owl events we are redirecting
-
-            this.componentRef = useRef("component");
+            this.env = env;
+            owl.useSubEnv(env);
         }
-
-        /**
-         * Calls __callMounted on itself and on each sub component (as this
-         * function isn't recursive) when the component is appended into the DOM.
-         */
-        on_attach_callback() {
-            function recursiveCallMounted(component) {
-                const { status, currentFiber } = component.__owl__;
-
-                if (status === 2 && currentFiber && !currentFiber.isCompleted) {
-                    // the component is rendered but another rendering is being done
-                    // it would be foolish to declare the component and children as mounted
-                    return;
-                }
-                if (
-                   status !== 2 /* RENDERED */ &&
-                   status !== 3 /* MOUNTED */ &&
-                   status !== 4 /* UNMOUNTED */
-                ) {
-                    // Avoid calling mounted on a component that is not even
-                    // rendered. Doing otherwise will lead to a crash if a
-                    // specific mounted callback is legitimately relying on the
-                    // component being mounted.
-                    return;
-                }
-                for (const key in component.__owl__.children) {
-                    recursiveCallMounted(component.__owl__.children[key]);
-                }
-                component.__callMounted();
-            }
-            recursiveCallMounted(this);
-        }
-        /**
-         * Calls __callWillUnmount to notify the component it will be unmounted.
-         */
-        on_detach_callback() {
-            this.__callWillUnmount();
-        }
-
-        /**
-         * Overrides to remove the reference to this component in the parent.
-         *
-         * @override
-         */
-        destroy() {
-            if (this.parentWidget) {
-                const parentChildren = children.get(this.parentWidget);
-                if (parentChildren) {
-                    const index = parentChildren.indexOf(this);
-                    children.get(this.parentWidget).splice(index, 1);
-                }
-            }
-            super.destroy();
-        }
-
-        /**
-         * Changes the parent of the wrapper component. This is a function of the
-         * legacy widgets (ParentedMixin), so we have to handle it someway.
-         * It simply removes the reference of this component in the current
-         * parent (if there was one), and adds the reference to the new one.
-         *
-         * We have at least one usecase for this: in views, the renderer is
-         * instantiated without parent, then a controller is instantiated with
-         * the renderer as argument, and finally, setParent is called to set the
-         * controller as parent of the renderer. This implies that Owl renderers
-         * can't trigger events in their constructor.
-         *
-         * @param {Widget} parent
-         */
-        setParent(parent) {
-            if (parent instanceof Component) {
-                throw new Error('ComponentWrapper must be used with a legacy Widget as parent');
-            }
-            this._register(parent);
-            if (this.parentWidget) {
-                const parentChildren = children.get(this.parentWidget);
-                parentChildren.splice(parentChildren.indexOf(this), 1);
-            }
-            this.parentWidget = parent;
-        }
-
-        /**
-         * Updates the props and re-render the component.
-         *
-         * @async
-         * @param {Object} props
-         * @return {Promise}
-         */
-        async update(props = {}) {
-            if (this.__owl__.status === 2 /** NXOWL CHECK **/ /* destroyed */) {
-                return new Promise(() => {});
-            }
-
-            Object.assign(this.props, props);
-
-            let prom;
-            if (this.__owl__.status === 3 /* mounted */) {
-                prom = this.render();
-            } else {
-                // we may not be in the DOM, but actually want to be redrawn
-                // (e.g. we were detached from the DOM, and now we're going to
-                // be re-attached, but we need to be reloaded first). In this
-                // case, we have to call 'mount' as Owl would skip the rendering
-                // if we simply call render.
-                prom = this.mount(...this._mountArgs);
-            }
-            return prom;
-        }
-
         /**
          * Adds an event handler that will redirect the given Owl event to an
          * Odoo legacy event. This function is called just before the event is
@@ -599,6 +404,111 @@ odoo.define('web.OwlCompatibility', function (require) {
                 });
             }
         }
+    }
+    ProxyComponent.template = xml`<t t-component="props.Component" t-props="props.props"/>`;
+
+
+    class CustomApp extends App {
+        checkTarget(target) {} // no check at all, we can mount anywhere
+    }
+    class ComponentWrapper {
+        constructor(parent, Component, props) {
+            if (parent instanceof Component) {
+                throw new Error("ComponentWrapper must be used with a legacy Widget as parent");
+            }
+            this.setParent(parent);
+            this.props = props;
+
+            this.Component = Component;
+
+            const app = new CustomApp();
+            this.app = app;
+            this.app.configure({ env: owl.Component.env,  templates: window.__ODOO_TEMPLATES__ });
+            this.node  = app.makeNode(ProxyComponent, this.getProxyProps());
+            app.root = this.node;
+            this.__owl__ = Object.create(this.node);
+            this.componentRef = { comp: null };
+        }
+
+        getProxyProps() {
+            const onPatched = () => {
+                this.componentRef.comp = Object.values(this.node.children)[0].component;
+                if (this.renderResolve) {
+                    this.renderResolve();
+                }
+            };
+
+            return {
+                props: this.props,
+                mounted: onPatched,
+                patched: onPatched,
+                Component: this.Component,
+                parentWidget: this.parentWidget,
+            };
+        }
+
+        async mount(target) {
+            if (this.node.status === 1 && this.status === "unmounted") {
+                return this.render();
+            } else if (this.status === "unmounted") {
+                this.target = target;
+                return this.app.mountNode(target);
+            }
+            this.target = target;
+            await this.app.mountNode(this.node, target);
+            return this;
+        }
+
+        unmount() {
+            this.on_detach_callback();
+            this.status = "unmounted";
+        }
+
+        on_attach_callback() {
+            recursiveCall(this.__owl__, "mounted");
+            this.status = "mounted";
+        }
+
+        /**
+         * Calls __callWillUnmount to notify the component it will be unmounted.
+         */
+        on_detach_callback() {
+            recursiveCall(this.__owl__, "willUnmount");
+        }
+
+        __destroy() {
+            this.app.destroy();
+        }
+        destroy() {
+            return this.__destroy();
+        }
+
+        update(nextProps) {
+            const comp = this.__owl__.component;
+            Object.assign(this.props, nextProps);
+            if (owl.status(comp) === "destroyed") {
+                return this.__owl__.mountComponent(this.target);
+            } else {
+                return this.render();
+            }
+        }
+
+        render() {
+            if (this.renderProm) {
+                this.__owl__.render();
+                return this.renderProm;
+            }
+            this.renderProm = new Promise((resolve, reject) => {
+                this.renderResolve = resolve;
+                this.renderReject = reject;
+            }).then(() => {
+                this.renderProm = null;
+                this.renderResolve = null;
+                this.renderReject = null;
+            });
+            this.__owl__.render();
+            return this.renderProm;
+        }
 
         /**
          * Registers this instance as a child of the given parent in the
@@ -615,65 +525,36 @@ odoo.define('web.OwlCompatibility', function (require) {
             }
             parentChildren.push(this);
         }
-        /**
-         * Stores mount target and position at first mount. That way, when updating
-         * while out of DOM, we know where and how to remount.
-         * @see update()
-         * @override
-         */
-        async mount(target, options) {
-            this._mountArgs = arguments;
-            return this.__owl__.mount(...arguments);
+
+        trigger() {
+            return this.node.component.trigger(...arguments);
         }
 
-        //----------------------------------------------------------------------
-        // Getters
-        //----------------------------------------------------------------------
+        setParent(parent) {
+            if (parent instanceof Component) {
+                throw new Error('ComponentWrapper must be used with a legacy Widget as parent');
+            }
+            if (parent) {
+                this._register(parent);
+            }
+            if (this.parentWidget) {
+                const parentChildren = children.get(this.parentWidget);
+                parentChildren.splice(parentChildren.indexOf(this), 1);
+            }
 
+            this.parentWidget = parent;
+            if (this.node) {
+                this.node.component.parentWidget = parent;
+            }
+        }
+
+        get el() {
+            return this.node.component.el;
+        }
         get $el() {
             return $(this.el);
         }
     }
-    ComponentWrapperLegacy.template = xml`<t t-component="Component" t-props="props" t-ref="component"/>`;
-
-    class ComponentWrapperRoot extends Component {
-        setup() {
-            useSubEnv({
-                [widgetSymbol]: this._addListener.bind(this),
-            });
-            this._handledEvents = new Set(); // Owl events we are redirecting
-        }
-
-        /**
-         * Adds an event handler that will redirect the given Owl event to an
-         * Odoo legacy event. This function is called just before the event is
-         * actually triggered.
-         *
-         * @private
-         * @param {string} evType
-         */
-        _addListener(evType) {
-            if (this.props.parentWidget && !this._handledEvents.has(evType)) {
-                this._handledEvents.add(evType);
-                this.el.addEventListener(evType, (ev) => {
-                    // as the WrappeComponent has the same root node as the
-                    // actual sub Component, we have to check that the event
-                    // hasn't been stopped by that component (it would naturally
-                    // call stopPropagation, whereas it should actually call
-                    // stopImmediatePropagation to prevent from getting here)
-                    if (!ev.cancelBubble) {
-                        ev.stopPropagation();
-                        const detail = Object.assign({}, ev.detail, {
-                            __originalComponent: ev.originalComponent,
-                        });
-                        this.props.parentWidget.trigger_up(ev.type.replace(/-/g, "_"), detail);
-                    }
-                });
-            }
-        }
-    }
-    ComponentWrapperRoot.template = xml`<t t-component="props.Component" t-props="props.componentProps"/>`;
-
 
     return {
         ComponentAdapter,

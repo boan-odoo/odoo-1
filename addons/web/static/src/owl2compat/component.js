@@ -31,13 +31,13 @@
             return useComponent();
         }
 
-        get el() {
-            let bdom = this.__owl__.bdom;
-            while (!bdom.el) {
-                bdom = bdom.child || bdom.children[0] || bdom.bdom;
-            }
-            return bdom.el;
-        }
+        // get el() {
+        //     let bdom = this.__owl__.bdom;
+        //     while (bdom && !bdom.el) {
+        //         bdom = bdom.child || bdom.children[0] || bdom.bdom;
+        //     }
+        //     return bdom.el;
+        // }
 
         /**
          * Emit a custom event of type 'eventType' with the given 'payload' on the
@@ -63,6 +63,7 @@
             }
         }
     };
+    owl.Component.env = {};
 
     Object.defineProperty(owl.Component, "components", {
         get() {

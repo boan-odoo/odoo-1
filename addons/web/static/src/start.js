@@ -46,7 +46,12 @@ export async function startWebClient(Webclient) {
         return div.innerHTML;
     };
     app.configure({ env, dev: env.debug });
-    app.addTemplates(templates);
+    Object.defineProperty(window, "__ODOO_TEMPLATES__", {
+        get() {
+            return templates.cloneNode(true);
+        }
+    });
+    app.addTemplates(templates.cloneNode(true));
     const root = await app.mount(document.body);
     // delete odoo.debug; // FIXME: some legacy code rely on this
     odoo.__WOWL_DEBUG__ = { root };

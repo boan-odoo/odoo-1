@@ -176,7 +176,7 @@ export class ClientActionAdapter extends ActionAdapter {
     setup() {
         super.setup();
         useDebugCategory("action", { action: this.props.widgetArgs[0] });
-        owl.hooks.onMounted(() => {
+        owl.onMounted(() => {
             const action = this.props.widgetArgs[0];
             if ("params" in action) {
                 const newState = {};

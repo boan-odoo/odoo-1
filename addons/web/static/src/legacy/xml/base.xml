@@ -103,6 +103,7 @@
             class="custom-control-input"
             t-att-disabled="props.disabled"
             t-att-checked="props.value"
+            t-on-change="() => props.onChange()"
             />
         <label t-att-for="props.id or _id" class="custom-control-label">
             <t t-esc="props.text or '&#8203;'"/>
