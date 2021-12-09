@@ -62,7 +62,7 @@
             <field name="filter_tax_exigible" eval="True"/>
             <field name="filter_unfold_all" eval="True"/>
             <field name="root_report_id" ref="generic_tax_report"/>
-            <field name="dynamic_lines_generator">_generic_tax_report_default_grouping</field> <!--TODO OCO pareil: ça, c'est à ajouter en enterprise. Le champ aussi ?-->
+            <field name="dynamic_lines_generator" eval="False"/><!-- TODO OCO à remettre en testant davantage _generic_tax_report_default_grouping</field>--> <!--TODO OCO pareil: ça, c'est à ajouter en enterprise. Le champ aussi ?-->
             <field name="column_ids" eval="[(5, 0, 0),
                 (0, 0, {'name': 'MAIN', 'expression_label': 'main', 'sequence': 1}),
                 (0, 0, {'name': '42', 'expression_label': 'forty_two', 'sequence': 2}),
