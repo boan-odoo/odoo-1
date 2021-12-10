@@ -79,7 +79,7 @@ registerInstancePatchModel('mail.thread', 'im_livechat/static/src/models/thread/
      */
     _computeDisplayName() {
         if (this.channel_type === 'livechat' && this.correspondent) {
-            if (this.correspondent.country) {
+            if (this.correspondent.id > 0 && this.correspondent.country) {
                 return `${this.correspondent.nameOrDisplayName} (${this.correspondent.country.name})`;
             }
             return this.correspondent.nameOrDisplayName;
