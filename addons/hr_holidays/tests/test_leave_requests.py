@@ -562,3 +562,88 @@ class TestLeaveRequests(TestHrHolidaysCommon):
         req2_form.request_date_to = fields.Date.to_date('2021-12-08')
 
         self.assertEqual(req2_form.number_of_days, 3)
+    def test_time_off_recovery_on_create(self):
+        time_off = self.env['hr.leave'].create({
+            'name': 'Holiday Request',
+            'employee_id': self.employee_emp_id,
+            'holiday_status_id': self.holidays_type_1.id,
+            'date_from': '2021-12-06 00:00:00',
+            'date_to': '2021-12-10 23:59:59',
+        })
+        self.env['resource.calendar.leaves'].create({
+            'name': 'Global Time Off',
+            'date_from': '2021-12-07 00:00:00',
+            'date_to': '2021-12-07 23:59:59',
+        })
+        self.assertEqual(time_off.number_of_days, 4)
+
+    def test_time_off_recovery_on_write(self):
+        global_time_off = self.env['resource.calendar.leaves'].create({
+            'name': 'Global Time Off',
+            'date_from': '2021-12-07 00:00:00',
+            'date_to': '2021-12-07 23:59:59',
+        })
+
+        time_off_1 = self.env['hr.leave'].create({
+            'name': 'Holiday Request',
+            'employee_id': self.employee_emp_id,
+            'holiday_status_id': self.holidays_type_1.id,
+            'date_from': '2021-12-06 00:00:00',
+            'date_to': '2021-12-10 23:59:59',
+        })
+        self.assertEqual(time_off_1.number_of_days, 4)
+
+        time_off_2 = self.env['hr.leave'].create({
+            'name': 'Holiday Request',
+            'employee_id': self.employee_emp_id,
+            'holiday_status_id': self.holidays_type_1.id,
+            'date_from': '2021-12-13 00:00:00',
+            'date_to': '2021-12-17 23:59:59',
+        })
+        self.assertEqual(time_off_2.number_of_days, 5)
+
+        # adding 1 day to the global time off
+        global_time_off.write({
+            'date_to': '2021-12-08 23:59:59',
+        })
+        self.assertEqual(time_off_1.number_of_days, 3)
+
+        # moving the global time off to the next week
+        global_time_off.write({
+            'date_from': '2021-12-15 00:00:00',
+            'date_to': '2021-12-15 23:59:59',
+        })
+        self.assertEqual(time_off_1.number_of_days, 5)
+        self.assertEqual(time_off_2.number_of_days, 4)
+
+    def test_time_off_recovery_on_unlink(self):
+        global_time_off = self.env['resource.calendar.leaves'].create({
+            'name': 'Global Time Off',
+            'date_from': '2021-12-07 00:00:00',
+            'date_to': '2021-12-07 23:59:59',
+        })
+        time_off = self.env['hr.leave'].create({
+            'name': 'Holiday Request',
+            'employee_id': self.employee_emp_id,
+            'holiday_status_id': self.holidays_type_1.id,
+            'date_from': '2021-12-06 00:00:00',
+            'date_to': '2021-12-10 23:59:59',
+        })
+        self.assertEqual(time_off.number_of_days, 4)
+        global_time_off.unlink()
+        self.assertEqual(time_off.number_of_days, 5)
+    
+    def test_time_off_auto_cancel(self):
+        time_off = self.env['hr.leave'].create({
+            'name': 'Holiday Request',
+            'employee_id': self.employee_emp_id,
+            'holiday_status_id': self.holidays_type_1.id,
+            'date_from': '2021-12-06 00:00:00',
+            'date_to': '2021-12-10 23:59:59',
+        })
+        self.env['resource.calendar.leaves'].create({
+            'name': 'Global Time Off',
+            'date_from': '2021-12-06 00:00:00',
+            'date_to': '2021-12-10 23:59:59',
+        })
+        self.assertEqual(time_off.active, False)

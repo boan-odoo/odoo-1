@@ -41,8 +41,27 @@ class CalendarLeaves(models.Model):
         return res
 
     def write(self, vals):
+        old_calendar_leaves = []
+        for record in self:
+            old_calendar_leaves.append({
+                'resource_id': record.resource_id,
+                'date_from': record.date_from,
+                'date_to': record.date_to,
+            })
+
         res = super().write(vals)
 
+        # reevaluate for old dates
+        for record in old_calendar_leaves:
+            if not record['resource_id']:
+                leaves = self.env['hr.leave'].search([
+                    ('date_to', '>', record['date_from']),
+                    ('date_from', '<', record['date_to']),
+                    ('state', '!=', 'refuse')
+                ])
+                self._reevaluate_leaves(leaves)
+
+        # reevaluate for new dates
         for record in self:
             calendar_leave = {
                 'resource_id': record.resource_id,
