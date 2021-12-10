@@ -168,6 +168,18 @@ class Digest(models.Model):
         self.env['mail.mail'].sudo().create(mail_values)
         return True
 
+    def action_test(self):
+        self.ensure_one()
+        ctx = dict(self.env.context, default_digest_id=self.id)
+        return {
+            'name': _('Test Digest'),
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'digest.digest.test',
+            'target': 'new',
+            'context': ctx
+        }
+
     @api.model
     def _cron_send_digest_email(self):
         digests = self.search([('next_run_date', '<=', fields.Date.today()), ('state', '=', 'activated')])
