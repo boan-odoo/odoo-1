@@ -632,7 +632,7 @@ class TestLeaveRequests(TestHrHolidaysCommon):
         self.assertEqual(time_off.number_of_days, 4)
         global_time_off.unlink()
         self.assertEqual(time_off.number_of_days, 5)
-    
+
     def test_time_off_auto_cancel(self):
         time_off = self.env['hr.leave'].create({
             'name': 'Holiday Request',
