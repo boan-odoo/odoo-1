@@ -1172,6 +1172,18 @@ class HolidaysRequest(models.Model):
             }
         }
 
+    def force_cancel(self, reason):
+        self.ensure_one()
+
+        self.message_post(
+            body=_('The time off has been canceled: %s', reason)
+        )
+
+        leave_sudo = self.sudo()
+        leave_sudo.with_context(from_cancel_wizard=True).active = False
+        leave_sudo._remove_resource_leave()
+        return True
+
     def action_draft(self):
         if any(holiday.state not in ['confirm', 'refuse'] for holiday in self):
             raise UserError(_('Time off request state must be "Refused" or "To Approve" in order to be reset to draft.'))
