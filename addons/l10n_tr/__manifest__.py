@@ -13,8 +13,7 @@ Bu modül kurulduktan sonra, Muhasebe yapılandırma sihirbazı çalışır
     * Sihirbaz sizden hesap planı şablonu, planın kurulacağı şirket, banka hesap
       bilgileriniz, ilgili para birimi gibi bilgiler isteyecek.
     """,
-    'author': 'Ahmet Altınışık, Can Tecim',
-    'maintainer':'https://launchpad.net/~openerp-turkey, http://www.cantecim.com',
+    'author': 'Odoo',
     'depends': [
         'account',
     ],
@@ -29,14 +28,18 @@ Bu modül kurulduktan sonra, Muhasebe yapılandırma sihirbazı çalışır
         # Taxes
         "data/account_tax_group_data.xml",
         "data/account_tax_template_data.xml",
+        "data/account_fiscal_position_data.xml",
 
-        # post processing
+        # Post processing
         "data/account_chart_post_data.xml",
         "data/account_chart_template_try_loading.xml",
 
     ],
     'demo': [
         'demo/demo_company.xml',
+        'demo/res_partner_demo.xml',
+        'demo/product_demo.xml',
+        'demo/demo_try_loading.xml',
     ],
     'license': 'LGPL-3',
 }
