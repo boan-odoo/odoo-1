@@ -10,9 +10,9 @@
                 <group attrs="{'invisible': [('provider', '!=', 'payulatam')]}">
                     <field name="payulatam_merchant_id"
                            attrs="{'required':[('provider', '=', 'payulatam'), ('state', '!=', 'disabled')]}"/>
-                    <field name="payulatam_account_id"
+                    <field name="payulatam_account_id" password="True"
                            attrs="{'required':[('provider', '=', 'payulatam'), ('state', '!=', 'disabled')]}"/>
-                    <field name="payulatam_api_key"
+                    <field name="payulatam_api_key" password="True"
                            attrs="{'required':[('provider', '=', 'payulatam'), ('state', '!=', 'disabled')]}"/>
                 </group>
             </xpath>

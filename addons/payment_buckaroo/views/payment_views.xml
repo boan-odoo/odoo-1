@@ -8,8 +8,8 @@
         <field name="arch" type="xml">
             <xpath expr='//group[@name="acquirer"]' position='inside'>
                 <group attrs="{'invisible': [('provider', '!=', 'buckaroo')]}">
-                    <field name="buckaroo_website_key" attrs="{'required':[ ('provider', '=', 'buckaroo'), ('state', '!=', 'disabled')]}"/>
-                    <field name="buckaroo_secret_key" string="Secret Key" attrs="{'required':[ ('provider', '=', 'buckaroo'), ('state', '!=', 'disabled')]}"/>
+                    <field name="buckaroo_website_key" password="True" attrs="{'required':[ ('provider', '=', 'buckaroo'), ('state', '!=', 'disabled')]}"/>
+                    <field name="buckaroo_secret_key" password="True" string="Secret Key" attrs="{'required':[ ('provider', '=', 'buckaroo'), ('state', '!=', 'disabled')]}"/>
                 </group>
             </xpath>
         </field>
