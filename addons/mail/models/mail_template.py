@@ -29,7 +29,7 @@ class MailTemplate(models.Model):
 
     # description
     name = fields.Char('Name', translate=True)
-    model_id = fields.Many2one('ir.model', 'Applies to', help="The type of document this template can be used with")
+    model_id = fields.Many2one('ir.model', 'Related Model', help="The type of document this template can be used with")
     model = fields.Char('Related Document Model', related='model_id.model', index=True, store=True, readonly=True)
     subject = fields.Char('Subject', translate=True, help="Subject (placeholders may be used here)")
     email_from = fields.Char('From',
@@ -55,7 +55,7 @@ class MailTemplate(models.Model):
     report_name = fields.Char('Report Filename', translate=True,
                               help="Name to use for the generated report file (may contain placeholders)\n"
                                    "The extension can be omitted and will then come from the report type.")
-    report_template = fields.Many2one('ir.actions.report', 'Optional report to print and attach')
+    report_template = fields.Many2one('ir.actions.report', 'Attached Report')
     # options
     mail_server_id = fields.Many2one('ir.mail_server', 'Outgoing Mail Server', readonly=False,
                                      help="Optional preferred server for outgoing mails. If not set, the highest "
