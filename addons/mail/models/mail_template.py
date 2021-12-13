@@ -115,6 +115,27 @@ class MailTemplate(models.Model):
 
         return True
 
+    def reset_template(self):
+        default_template = self.env['mail.template.data'].search([
+            ('id', '=', 'email_template_edi_invoice')
+        ], limit = 1)
+        print("==================test==============")
+        default_data = {
+            'name': 1,
+            'model_id': 1,
+            'email_from': 1,
+            'partner_to': 1,
+            'subject': 1,
+            'body_html': 1,
+            'report_template': 1,
+            'report_name': 1,
+            'lang': 1,
+            'auto_delete': 1,
+        }
+        print("==================test2==============")
+
+        return True
+
     # ------------------------------------------------------------
     # MESSAGE/EMAIL VALUES GENERATION
     # ------------------------------------------------------------
