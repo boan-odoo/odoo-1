@@ -482,8 +482,14 @@ class TestExpression(SavepointCaseWithUserDemo):
 
         # test many2many operator with False
         partners = self._search(Partner, [('category_id', '=', False)])
+        self.assertTrue(partners)
         for partner in partners:
             self.assertFalse(partner.category_id)
+
+        partners = self._search(Partner, [('category_id', '!=', False)])
+        self.assertTrue(partners)
+        for partner in partners:
+            self.assertTrue(partner.category_id)
 
         # filtering on nonexistent value across x2many should return nothing
         partners = self._search(Partner, [('child_ids.city', '=', 'foo')])
@@ -1658,3 +1664,31 @@ class TestMany2many(TransactionCase):
             ORDER BY "res_users"."id"
         ''']):
             self.User.search([('company_ids', 'like', self.company.name)], order='id')
+
+    def test_empty(self):
+        self.User.search([('groups_id', '!=', False)], order='id')
+        self.User.search([('groups_id', '=', False)], order='id')
+
+        with self.assertQueries(['''
+            SELECT "res_users".id
+            FROM "res_users"
+            WHERE EXISTS (
+                SELECT 1
+                FROM "res_groups_users_rel"
+                WHERE "res_groups_users_rel"."uid" = "res_users".id
+            )
+            ORDER BY "res_users"."id"
+        ''']):
+            self.User.search([('groups_id', '!=', False)], order='id')
+
+        with self.assertQueries(['''
+            SELECT "res_users".id
+            FROM "res_users"
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM "res_groups_users_rel"
+                WHERE "res_groups_users_rel"."uid" = "res_users".id
+            )
+            ORDER BY "res_users"."id"
+        ''']):
+            self.User.search([('groups_id', '=', False)], order='id')

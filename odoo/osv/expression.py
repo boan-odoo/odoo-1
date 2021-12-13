@@ -835,9 +835,10 @@ class expression(object):
 
                 else:
                     # rewrite condition to match records with/without relations
-                    op1 = 'inselect' if operator in NEGATIVE_TERM_OPERATORS else 'not inselect'
-                    subquery = 'SELECT "%s" FROM "%s" where "%s" is not null' % (rel_id1, rel_table, rel_id1)
-                    push(('id', op1, (subquery, [])), model, alias, internal=True)
+                    assert rel_table != alias
+                    exists = 'EXISTS' if operator in NEGATIVE_TERM_OPERATORS else 'NOT EXISTS'
+                    query = f'{exists} (SELECT 1 FROM "{rel_table}" WHERE "{rel_table}"."{rel_id1}" = "{alias}".id)'
+                    push_result(query, [])
 
             elif field.type == 'many2one':
                 if operator in HIERARCHY_FUNCS:
