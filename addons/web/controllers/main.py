@@ -1623,6 +1623,7 @@ class Action(http.Controller):
     @http.route('/web/action/run', type='json', auth="user")
     def run(self, action_id):
         action = request.env['ir.actions.server'].browse([action_id])
+        print("=============", action.name, action.run)
         result = action.run()
         return clean_action(result, env=action.env) if result else False
 
