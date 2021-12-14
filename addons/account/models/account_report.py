@@ -122,7 +122,7 @@ class AccountReportExpression(models.Model):
             ('tax_tags', 'Tax Tags'),
             ('custom', 'Custom Code'),
             ('aggregation', 'Aggregate Other Formulas'),
-            ('accounts_prefix', 'Prefix of accounts'),#TODO OCO
+            ('account_codes', 'Prefix of Account Codes'),
         ],
         required=True
     )

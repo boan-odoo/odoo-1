@@ -203,5 +203,16 @@
             <field name="sequence">9</field>
         </record>
 
+        <record id="oco_test_line_prefix" model="account.report.line">
+            <field name="name">test prefix</field>
+            <field name="report_id" ref="test_report"/>
+            <field name="expression_ids" eval="[(5, 0, 0),
+                (0, 0, {'total': 'main', 'engine': 'account_codes', 'formula': '44 + 7002 + cocolasticot'}),
+                (0, 0, {'total': 'forty_two', 'engine': 'domain', 'formula': &quot;['|', '|', ('account_id.code', 'like', '44%'), ('account_id.code', 'like', '7002%'), ('account_id.code', 'like', 'cocolasticot%')]&quot;, 'subformula': 'sum'}),
+            ]"/>
+            <field name="hierarchy_level">1</field>
+            <field name="sequence">10</field>
+        </record>
+
     </data>
 </odoo>
