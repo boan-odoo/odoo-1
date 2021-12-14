@@ -296,6 +296,9 @@ class SaleOrder(models.Model):
     medium_id = fields.Many2one(ondelete='set null')
     source_id = fields.Many2one(ondelete='set null')
 
+    amount_paid_msg = fields.Text(string="Shows the amount already paid by the customer on this SO",
+                                  compute="_compute_amount_paid_msg")
+
     _sql_constraints = [
         ('date_order_conditional_required', "CHECK( (state IN ('sale', 'done') AND date_order IS NOT NULL) OR state NOT IN ('sale', 'done') )", "A confirmed sales order requires a confirmation date."),
     ]
@@ -1066,8 +1069,19 @@ class SaleOrder(models.Model):
         return (self.state == 'sent' or (self.state == 'draft' and include_draft)) and not self.is_expired and self.require_signature and not self.signature
 
     def has_to_be_paid(self, include_draft=False):
+        # there are two conditions to be verified here
+        # first if the SO is in a state that requires payment (of course)
+        # the second one (after the or) captures partially paid SO that are
+        #   confirmed, where there is still a positive amount to be paid
         transaction = self.get_portal_last_transaction()
-        return (self.state == 'sent' or (self.state == 'draft' and include_draft)) and not self.is_expired and self.require_payment and transaction.state != 'done' and self.amount_total
+        return (
+                ((self.state == 'sent' or (self.state == 'draft' and include_draft))
+                and not self.is_expired and self.require_payment and transaction.state != 'done'
+                and self.amount_total)
+               or
+                (self.state == "sale" and self.amount_paid() < self.amount_total and
+                 not self.is_expired and self.require_payment)
+        )
 
     def _notify_get_recipients_groups(self, msg_vals=None):
         """ Give access button to users and portal customer as portal is integrated
@@ -1188,3 +1202,30 @@ class SaleOrder(models.Model):
 
     def add_option_to_order_with_taxcloud(self):
         self.ensure_one()
+
+    def amount_paid(self):
+        """
+        For SO that are paid in partial amounts returns the amount paid at the moment.
+        We consider that transactions in the states 'authorized', 'done' and 'paid' are
+        already paid as the bank side has already given approbation.
+
+        :return: the amount already paid of the SO
+        """
+        self.ensure_one()
+        return sum(
+            tx.amount for tx in self.transaction_ids if tx.state in ['authorized', 'done', 'paid']
+        )
+
+    def _compute_amount_paid_msg(self):
+        """
+        Compute the message to be displayed on the portal for potentially partially paid SOs.
+        """
+        for so in self:
+            if so.amount_total > so.amount_paid():
+                so.amount_paid_msg = (f"You have already paid "
+                                      f"{format_amount(so.env, so.amount_paid(), so.currency_id)} "
+                                      f"of a total of "
+                                      f"{format_amount(so.env, so.amount_total, so.currency_id)} "
+                                      f"on this Sale Order.")
+            else:
+                so.amount_paid_msg = _("You have paid the totality of this Sale Order")
