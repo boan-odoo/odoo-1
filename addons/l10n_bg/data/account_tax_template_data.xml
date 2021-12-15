@@ -401,7 +401,7 @@
         ]"/>
     </record>
 
-    <!-- Received deliveries, VOP with the right to VAT -->
+    <!-- Received deliveries, ICA with the right to VAT -->
     <record id="l10n_bg_vat_20_purchase_1" model="account.tax.template">
         <field name="sequence">12</field>
         <field name="description">Получени доставки, ВОП с право на ПДК</field>
@@ -436,6 +436,162 @@
                 'repartition_type': 'tax',
                 'account_id': ref('l10n_bg_4531'),
                 'minus_report_line_ids': [ref('l10n_bg_tax_report_41')]
+            }),
+        ]"/>
+    </record>
+
+    <!-- Received deliveries under Article 82 And without the right to DC -->
+    <record id="l10n_bg_vat_20_purchase_2" model="account.tax.template">
+        <field name="sequence">13</field>
+        <field name="description">получени доставки по чл.82 И без право на ДК</field>
+        <field name="name">получени доставки по чл.82 И без право на ДК</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">20</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_20"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'base',
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_b_30')],
+            }),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'tax',
+                'account_id': ref('l10n_bg_4531'),
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_30')]
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'base',
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_b_30')],
+            }),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'tax',
+                'account_id': ref('l10n_bg_4531'),
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_30')]
+            }),
+        ]"/>
+    </record>
+
+    <!-- Received deliveries, ICA with the right of PDTC -->
+    <record id="l10n_bg_vat_20_purchase_3" model="account.tax.template">
+        <field name="sequence">14</field>
+        <field name="description">получени доставки, ВОП с право на ЧДК</field>
+        <field name="name">получени доставки, ВОП с право на ЧДК</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">20</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_20"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'base',
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_b_32')],
+            }),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'tax',
+                'account_id': ref('l10n_bg_4531'),
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_42')]
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'base',
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_b_32')],
+            }),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'tax',
+                'account_id': ref('l10n_bg_4531'),
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_42')]
+            }),
+        ]"/>
+    </record>
+
+    <!-- Annual adjustment, art. 73, para. 8 and Art. 147, para. 3 -->
+    <record id="l10n_bg_vat_20_purchase_4" model="account.tax.template">
+        <field name="sequence">15</field>
+        <field name="description">Годишна корекция, чл. 73, ал. 8 и чл. 147, ал. 3</field>
+        <field name="name">Годишна корекция, чл. 73, ал. 8 и чл. 147, ал. 3</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">20</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_20"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'base',
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_b_43')],
+            }),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'tax',
+                'account_id': ref('l10n_bg_4531'),
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_43')]
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'base',
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_b_43')],
+            }),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'tax',
+                'account_id': ref('l10n_bg_4531'),
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_43')]
+            }),
+        ]"/>
+    </record>
+
+    <!-- Acquisition in tripartite operations -->
+    <record id="l10n_bg_vat_20_purchase_5" model="account.tax.template">
+        <field name="sequence">16</field>
+        <field name="description">Придобиване при тристранни операции</field>
+        <field name="name">Придобиване при тристранни операции</field>
+        <field name="price_include" eval="0"/>
+        <field name="amount">20</field>
+        <field name="amount_type">percent</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="chart_template_id" ref="l10n_bg_chart_template"/>
+        <field name="tax_group_id" ref="tax_group_vat_20"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'base',
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_b_30')],
+            }),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'tax',
+                'account_id': ref('l10n_bg_4531'),
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_30')]
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'base',
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_b_30')],
+            }),
+            (0,0, {
+                'factor_percent': 100,
+                'repartition_type': 'tax',
+                'account_id': ref('l10n_bg_4531'),
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_30')]
             }),
         ]"/>
     </record>
