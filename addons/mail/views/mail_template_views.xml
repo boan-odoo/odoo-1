@@ -7,29 +7,8 @@
             <field name="arch" type="xml">
                 <form string="Templates">
                     <field name="create_uid" invisible="1"/>
-                    <field name="ref_ir_act_window" invisible="1"/>
                     <sheet>
                         <div class="oe_button_box" name="button_box">
-                            <button class="oe_stat_button"
-                                    groups="base.group_system"
-                                    name="create_action" type="object"
-                                    attrs="{'invisible':[('ref_ir_act_window','!=',False)]}" icon="fa-plus"
-                                    help="Display an option on related documents to open a composition wizard with this template">
-                                <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Add</span>
-                                    <span class="o_stat_text">Context Action</span>
-                                </div>
-                            </button>
-                            <button name="unlink_action" type="object"
-                                    groups="base.group_system"
-                                    class="oe_stat_button" icon="fa-minus"
-                                    attrs="{'invisible':[('ref_ir_act_window','=',False)]}"
-                                    help="Remove the contextual action to use this template on related documents" widget="statinfo">
-                                <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Remove</span>
-                                    <span class="o_stat_text">Context Action</span>
-                                </div>
-                            </button>
                             <button class="oe_stat_button" name="%(mail_template_preview_action)d" 
                                     icon="fa-search-plus" string="Preview"
                                     type="action" target="new"/>
@@ -136,8 +115,8 @@
             <field name="context">{'search_default_model': 1}</field>
         </record>
 
-        <record model="ir.actions.server" id="action_add_context_action">
-            <field name="name">Add context action</field>
+        <record model="ir.actions.server" id="action_toggle_context_action">
+            <field name="name">Add/Remove context action</field>
             <field name="model_id" ref="model_mail_template"/>
             <field name="binding_model_id" ref="model_mail_template"/>
             <field name="state">code</field>
@@ -145,18 +124,10 @@
             <field name="code">
                 for item in records:
                     if not item.ref_ir_act_window:
-                        action = records.create_action()
+                        item.create_action()
                     else:
-                        action = records.unlink_action()
+                        item.unlink_action()
             </field>
-        </record>
-        <record model="ir.actions.server" id="action_remove_context_action">
-            <field name="name">Remove context action</field>
-            <field name="model_id" ref="model_mail_template"/>
-            <field name="binding_model_id" ref="model_mail_template"/>
-            <field name="state">code</field>
-            <field name="binding_view_types">form</field>
-            <field name="code">action = records.unlink_action()</field>
         </record>
     </data>
 </odoo>
