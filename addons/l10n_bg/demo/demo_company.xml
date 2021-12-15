@@ -6,14 +6,13 @@
         <field name="street2">Unit 07</field>
         <field name="city">Sofia</field>
         <field name="zip">1000</field>
-        <field name="state_id" ref="base.state_bg_20"/>
         <field name="country_id" ref="base.bg"/>
 
         <field name="phone">+852 5123 4567</field>
         <field name="email">info@company.bgexample.com</field>
         <field name="website">www.bgexample.com</field>
 
-        <field name="vat">987654321</field>
+        <field name="vat">123123123</field>
     </record>
 
     <record id="demo_company_bg" model="res.company">
