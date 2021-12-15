@@ -455,7 +455,7 @@
             (0,0, {
                 'factor_percent': 100,
                 'repartition_type': 'base',
-                'plus_report_line_ids': [ref('l10n_bg_tax_report_b_30')],
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_30')],
             }),
             (0,0, {
                 'factor_percent': 100,
@@ -468,7 +468,7 @@
             (0,0, {
                 'factor_percent': 100,
                 'repartition_type': 'base',
-                'minus_report_line_ids': [ref('l10n_bg_tax_report_b_30')],
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_30')],
             }),
             (0,0, {
                 'factor_percent': 100,
@@ -533,7 +533,7 @@
             (0,0, {
                 'factor_percent': 100,
                 'repartition_type': 'base',
-                'plus_report_line_ids': [ref('l10n_bg_tax_report_b_43')],
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_43')],
             }),
             (0,0, {
                 'factor_percent': 100,
@@ -546,7 +546,7 @@
             (0,0, {
                 'factor_percent': 100,
                 'repartition_type': 'base',
-                'minus_report_line_ids': [ref('l10n_bg_tax_report_b_43')],
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_43')],
             }),
             (0,0, {
                 'factor_percent': 100,
@@ -572,7 +572,7 @@
             (0,0, {
                 'factor_percent': 100,
                 'repartition_type': 'base',
-                'plus_report_line_ids': [ref('l10n_bg_tax_report_b_30')],
+                'plus_report_line_ids': [ref('l10n_bg_tax_report_30')],
             }),
             (0,0, {
                 'factor_percent': 100,
@@ -585,7 +585,7 @@
             (0,0, {
                 'factor_percent': 100,
                 'repartition_type': 'base',
-                'minus_report_line_ids': [ref('l10n_bg_tax_report_b_30')],
+                'minus_report_line_ids': [ref('l10n_bg_tax_report_30')],
             }),
             (0,0, {
                 'factor_percent': 100,
