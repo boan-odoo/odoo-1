@@ -2,4 +2,5 @@
 
 from . import product
 from . import project
+from . import project_milestone
 from . import sale_order
