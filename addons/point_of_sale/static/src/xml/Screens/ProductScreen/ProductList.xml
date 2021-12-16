@@ -14,7 +14,9 @@
                         <p>
                             No results found for "
                             <b t-esc="props.searchWord"></b>
-                            ".
+                            ". <t t-if="env.pos.config.limited_products_loading and !env.pos.config.product_load_background">  
+                                <span> Press "Enter" to search the database.</span>
+                            </t>                              
                         </p>
                     </t>
                     <t t-else="">

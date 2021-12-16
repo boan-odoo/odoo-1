@@ -30,9 +30,13 @@ odoo.define('point_of_sale.ProductsWidgetControlPanel', function(require) {
         get displayCategImages() {
             return this.env.pos.config.iface_display_categ_images && !this.env.isMobile;
         }
-        updateSearch(event) {
+        async updateSearch(event) {
             this.trigger('update-search', event.target.value);
             if (event.key === 'Enter') {
+                // if not every product is loaded in the front-end
+                if (this.env.pos.config.limited_products_loading && !this.env.pos.config.product_load_background) {
+                    await this.loadProductFromDB();
+                }
                 // We are passing the searchWordInput ref so that when necessary,
                 // it can be modified by the parent.
                 this.trigger('try-add-product', { searchWordInput: this.searchWordInput });
