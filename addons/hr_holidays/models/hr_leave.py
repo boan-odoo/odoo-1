@@ -202,6 +202,7 @@ class HolidaysRequest(models.Model):
     can_reset = fields.Boolean('Can reset', compute='_compute_can_reset')
     can_approve = fields.Boolean('Can Approve', compute='_compute_can_approve')
     can_cancel = fields.Boolean('Can Cancel', compute='_compute_can_cancel')
+    resource_calendar_id = fields.Many2one('resource.calendar', compute='_compute_calendar_id')
 
     attachment_ids = fields.One2many('ir.attachment', 'res_id', string="Attachments")
     # To display in form view
@@ -661,6 +662,11 @@ class HolidaysRequest(models.Model):
         today = fields.Datetime.today()
         for leave in self:
             leave.can_cancel = leave.id and leave.employee_id.user_id == self.env.user and leave.state == 'validate' and leave.date_from and leave.date_from > today
+
+    @api.depends('employee_id')
+    def _compute_calendar_id(self):
+        for holiday in self:
+            holiday.resource_calendar_id = holiday.employee_id.resource_calendar_id
 
     @api.depends('state')
     def _compute_is_hatched(self):

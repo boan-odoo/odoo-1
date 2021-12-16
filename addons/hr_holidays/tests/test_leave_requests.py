@@ -570,6 +570,7 @@ class TestLeaveRequests(TestHrHolidaysCommon):
             'date_from': '2021-12-06 00:00:00',
             'date_to': '2021-12-10 23:59:59',
         })
+        self.assertEqual(time_off.number_of_days, 5)
         self.env['resource.calendar.leaves'].create({
             'name': 'Global Time Off',
             'date_from': '2021-12-07 00:00:00',
