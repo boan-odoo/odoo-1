@@ -579,13 +579,15 @@ class TestLeaveRequests(TestHrHolidaysCommon):
                 'date_to': '2021-12-10 23:59:59',
             }
         ])
-        self.assertEqual(time_off.number_of_days, 5)
+        self.assertEqual(time_off[0].number_of_days, 5)
+        self.assertEqual(time_off[1].number_of_days, 5)
         self.env['resource.calendar.leaves'].create({
             'name': 'Global Time Off',
             'date_from': '2021-12-07 00:00:00',
             'date_to': '2021-12-07 23:59:59',
         })
-        self.assertEqual(time_off.number_of_days, 4)
+        self.assertEqual(time_off[0].number_of_days, 4)
+        self.assertEqual(time_off[1].number_of_days, 4)
 
     def test_time_off_recovery_on_write(self):
         global_time_off = self.env['resource.calendar.leaves'].create({

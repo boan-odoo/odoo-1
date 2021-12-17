@@ -21,7 +21,7 @@ class CalendarLeaves(models.Model):
         leaves_to_validate.action_confirm()
         leaves_to_validate.action_validate()
         for leave in leaves:
-            leave.message_post(body="Due to a change in global time offs, this leave duration has been modified")
+            leave.message_post(body=_("Due to a change in global time offs, this leave duration has been modified"), subtype_id=1)
             if leave.number_of_days == 0.0:
                 leave.force_cancel(_("A new public holiday completely overrides this leave"))
         return True
