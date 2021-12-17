@@ -894,29 +894,39 @@ class SaleOrder(models.Model):
         })
 
     def action_cancel(self):
-        cancel_warning = self._show_cancel_wizard()
-        if cancel_warning:
+        if any((
+            order.state!='draft' and not order._context.get('disable_cancel_warning')
+        ) for order in self):
+            template_id = self.env['ir.model.data']._xmlid_to_res_id(
+                'sale.mail_template_sale_cancellation', raise_if_not_found=False
+            )
+            lang = self.env.context.get('lang')
+            template = self.env['mail.template'].browse(template_id)
+            if template.lang:
+                lang = template._render_lang(self.ids)[self.id]
+            ctx = {
+                'default_use_template': bool(template_id),
+                'default_template_id': template_id,
+                'default_order_id': self.id,
+                'mark_so_as_canceled': True,
+                'default_email_layout_xmlid': "mail.mail_notification_paynow",
+                'model_description': self.with_context(lang=lang).type_name,
+            }
             return {
                 'name': _('Cancel Sales Order'),
+                'type': 'ir.actions.act_window',
                 'view_mode': 'form',
                 'res_model': 'sale.order.cancel',
-                'view_id': self.env.ref('sale.sale_order_cancel_view_form').id,
-                'type': 'ir.actions.act_window',
-                'context': {'default_order_id': self.id},
-                'target': 'new'
+                'target': 'new',
+                'context': ctx,
             }
-        return self._action_cancel()
+        else:
+            return self._action_cancel()
 
     def _action_cancel(self):
         inv = self.invoice_ids.filtered(lambda inv: inv.state == 'draft')
         inv.button_cancel()
         return self.write({'state': 'cancel'})
-
-    def _show_cancel_wizard(self):
-        for order in self:
-            if order.invoice_ids.filtered(lambda inv: inv.state == 'draft') and not order._context.get('disable_cancel_warning'):
-                return True
-        return False
 
     def _find_mail_template(self, force_confirmation_template=False):
         template_id = False
