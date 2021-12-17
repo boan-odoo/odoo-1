@@ -107,7 +107,7 @@ class TestEventPerformance(EventPerformanceCase):
         has_social = 'social_menu' in self.env['event.event']  # otherwise view may crash in enterprise
 
         # no type, no website
-        with freeze_time(self.reference_now), self.assertQueryCount(event_user=234):  # tef only: 184 - com runbot: 184
+        with freeze_time(self.reference_now), self.assertQueryCount(event_user=235):  # tef only: 184 - com runbot: 184  # todo: update these and others (which are lower)
             self.env.cr._now = self.reference_now  # force create_date to check schedulers
             with Form(self.env['event.event']) as event_form:
                 event_form.name = 'Test Event'
@@ -125,7 +125,7 @@ class TestEventPerformance(EventPerformanceCase):
         has_social = 'social_menu' in self.env['event.event']  # otherwise view may crash in enterprise
 
         # no type, website
-        with freeze_time(self.reference_now), self.assertQueryCount(event_user=750):  # tef only: 637 - com runbot: 638
+        with freeze_time(self.reference_now), self.assertQueryCount(event_user=751):  # tef only: 637 - com runbot: 638  # todo: update these and others (which are lower)
             self.env.cr._now = self.reference_now  # force create_date to check schedulers
             with Form(self.env['event.event']) as event_form:
                 event_form.name = 'Test Event'

@@ -3,6 +3,7 @@
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
+from odoo.tools.misc import formatLang
 
 
 class EventTemplateTicket(models.Model):
@@ -67,10 +68,10 @@ class EventTicket(models.Model):
     sale_available = fields.Boolean(string='Is Available', compute='_compute_sale_available', compute_sudo=True)
     registration_ids = fields.One2many('event.registration', 'event_ticket_id', string='Registrations')
     # seats
-    seats_reserved = fields.Integer(string='Reserved Seats', compute='_compute_seats', store=True)
-    seats_available = fields.Integer(string='Available Seats', compute='_compute_seats', store=True)
-    seats_unconfirmed = fields.Integer(string='Unconfirmed Seats', compute='_compute_seats', store=True)
-    seats_used = fields.Integer(string='Used Seats', compute='_compute_seats', store=True)
+    seats_reserved = fields.Integer(string='Reserved Seats', compute='_compute_seats', store=False)
+    seats_available = fields.Integer(string='Available Seats', compute='_compute_seats', store=False)
+    seats_unconfirmed = fields.Integer(string='Unconfirmed Seats', compute='_compute_seats', store=False)
+    seats_used = fields.Integer(string='Used Seats', compute='_compute_seats', store=False)
 
     @api.depends('end_sale_datetime', 'event_id.date_tz')
     def _compute_is_expired(self):
@@ -127,14 +128,31 @@ class EventTicket(models.Model):
             if ticket.start_sale_datetime and ticket.end_sale_datetime and ticket.start_sale_datetime > ticket.end_sale_datetime:
                 raise UserError(_('The stop date cannot be earlier than the start date.'))
 
-    @api.constrains('seats_available', 'seats_max')
-    def _constrains_seats_available(self):
-        for record in self:
-            if record.seats_max and record.seats_available < 0:
-                raise ValidationError(
-                    _('No more available seats for the ticket %s (%s). '
-                      'Raise the limit or remove some other confirmed registrations first.',
-                      record.name, record.event_id.name))
+    @api.constrains('registration_ids', 'seats_max')
+    def _check_seats_availability(self):
+        for ticket in self:
+            if ticket.seats_max and ticket.seats_available < 0:
+                raise ValidationError(_(
+                    'Impossible to have a number of confirmed registrations above the seat limit '
+                    'for the ticket %(ticket_name)s (%(event_name)s). Raise the limit or remove '
+                    'some other confirmed registrations first.',
+                    ticket_name=ticket.name, event_name=ticket.event_id.name))
+
+    def name_get(self):
+        """Adds ticket seat availability if requested by context."""
+        if not self.env.context.get('name_with_seat_availability'):
+            return super().name_get()
+        res = []
+        for ticket in self:
+            if not ticket.seats_max:
+                availability = _('unlimited seats')
+            elif not ticket.seats_available:
+                availability = _('sold out')
+            else:
+                availability = _('%(count)s seats remaining',
+                                 count=formatLang(self.env, ticket.seats_available, digits=0))
+            res.append((ticket.id, f'{ticket.name} ({availability})'))
+        return res
 
     def _get_ticket_multiline_description(self):
         """ Compute a multiline description of this ticket. It is used when ticket
