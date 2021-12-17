@@ -1177,11 +1177,12 @@ class HolidaysRequest(models.Model):
             }
         }
 
-    def force_cancel(self, reason):
+    def force_cancel(self, msg_reason, msg_subtype=0):
         self.ensure_one()
 
         self.message_post(
-            body=_('The time off has been canceled: %s', reason)
+            body=_('The time off has been canceled: %s', msg_reason),
+            subtype_id=msg_subtype
         )
 
         leave_sudo = self.sudo()
