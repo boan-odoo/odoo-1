@@ -31,6 +31,12 @@ var MediaDialog = Dialog.extend({
         show_parent_dialog_request: '_onShowRequest',
         hide_parent_dialog_request: '_onHideRequest',
     }),
+    tabs: {
+        images: 'imageWidget',
+        documents: 'documentWidget',
+        icons: 'iconWidget',
+        videos: 'videoWidget',
+    },
 
     /**
      * @constructor
@@ -65,7 +71,9 @@ var MediaDialog = Dialog.extend({
             this.videoWidget = new MediaModules.VideoWidget(this, media, options);
         }
 
-        if (this.imageWidget && $media.is('img')) {
+        if (options.activeTab && this[this.tabs[options.activeTab]]) {
+            this.activeWidget = this[this.tabs[options.activeTab]];
+        } else if (this.imageWidget && $media.is('img')) {
             this.activeWidget = this.imageWidget;
         } else if (this.documentWidget && $media.is('a.o_image')) {
             this.activeWidget = this.documentWidget;
@@ -76,6 +84,7 @@ var MediaDialog = Dialog.extend({
         } else {
             this.activeWidget = [this.imageWidget, this.documentWidget, this.videoWidget, this.iconWidget].find(w => !!w);
         }
+
         this.initiallyActiveWidget = this.activeWidget;
     },
     /**
