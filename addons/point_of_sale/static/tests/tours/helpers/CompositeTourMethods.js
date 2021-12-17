@@ -11,7 +11,7 @@ odoo.define('point_of_sale.tour.CompositeTourMethods', function (require) {
             ProductScreen.exec.addMultiOrderlines(...orderlist);
             if (customer) {
                 ProductScreen.do.clickCustomerButton();
-                ClientListScreen.exec.setClient(customer);
+                ClientListScreen.do.clickClient(customer);
             }
             if (customerNote) { // this will add a note to the last selected order line
                 ProductScreen.exec.addCustomerNote(customerNote);

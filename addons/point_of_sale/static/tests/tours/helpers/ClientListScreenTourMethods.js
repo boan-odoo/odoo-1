@@ -10,24 +10,6 @@ odoo.define('point_of_sale.tour.ClientListScreenTourMethods', function (require)
                     content: `click client '${name}' from client list screen`,
                     trigger: `.clientlist-screen .client-list-contents .client-line td:contains("${name}")`,
                 },
-                {
-                    content: `check if client '${name}' is highlighted`,
-                    trigger: `.clientlist-screen .client-list-contents .client-line.highlight td:contains("${name}")`,
-                    run: () => {},
-                },
-            ];
-        }
-        clickSet() {
-            return [
-                {
-                    content: 'check if set button shown',
-                    trigger: '.clientlist-screen .button.next.highlight',
-                    run: () => {},
-                },
-                {
-                    content: 'click set button',
-                    trigger: '.clientlist-screen .button.next.highlight',
-                },
             ];
         }
     }
@@ -44,14 +26,7 @@ odoo.define('point_of_sale.tour.ClientListScreenTourMethods', function (require)
         }
     }
 
-    class Execute {
-        setClient(name) {
-            const steps = [];
-            steps.push(...this._do.clickClient(name));
-            steps.push(...this._do.clickSet());
-            return steps;
-        }
-    }
+    class Execute {}
 
     return createTourMethods('ClientListScreen', Do, Check, Execute);
 });

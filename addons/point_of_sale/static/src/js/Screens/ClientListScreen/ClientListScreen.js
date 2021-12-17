@@ -81,22 +81,6 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
             }
             return res.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') });
         }
-        get isNextButtonVisible() {
-            return this.state.selectedClient ? true : false;
-        }
-        /**
-         * Returns the text and command of the next button.
-         * The command field is used by the clickNext call.
-         */
-        get nextButton() {
-            if (!this.props.client) {
-                return { command: 'set', text: this.env._t('Set Customer') };
-            } else if (this.props.client && this.props.client === this.state.selectedClient) {
-                return { command: 'deselect', text: this.env._t('Deselect Customer') };
-            } else {
-                return { command: 'set', text: this.env._t('Change Customer') };
-            }
-        }
 
         // Methods
 
@@ -107,8 +91,9 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
             this.state.query = event.target.value;
             const clients = this.clients;
             if (event.code === 'Enter' && clients.length === 1) {
-                this.state.selectedClient = clients[0];
-                this.clickNext();
+                this.clickClient(new CustomEvent('click-client', {
+                    detail: { client: clients[0] }
+                }));
             } else {
                 this.render();
             }
@@ -119,7 +104,7 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
             } else {
                 this.state.selectedClient = partner;
             }
-            this.render();
+            this.confirm();
         }
         editClient() {
             this.state.editModeProps = {
@@ -127,10 +112,6 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
             };
             this.state.detailIsShown = true;
             this.render();
-        }
-        clickNext() {
-            this.state.selectedClient = this.nextButton.command === 'set' ? this.state.selectedClient : null;
-            this.confirm();
         }
         activateEditMode(event) {
             const { isNewClient } = event.detail;
