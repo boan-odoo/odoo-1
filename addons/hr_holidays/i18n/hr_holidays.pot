@@ -2049,7 +2049,7 @@ msgstr ""
 
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave_type__time_type
-msgid "Kind of Leave"
+msgid "Kind of Time Off"
 msgstr ""
 
 #. module: hr_holidays
@@ -2676,13 +2676,18 @@ msgstr ""
 #. module: hr_holidays
 #: model:ir.model.fields,help:hr_holidays.field_hr_leave_accrual_level__is_based_on_worked_time
 msgid ""
-"Only accrue for the time worked by the employee. This is the time when the "
-"employee did not take time off."
+"If checked, the rate will be prorated on time off type where type is "
+"set on Working Time in the configuration."
 msgstr ""
 
 #. module: hr_holidays
+#: model:ir.model.fields.selection,name:hr_holidays.selection__hr_leave_type__time_type__leave
+msgid "Absence"
+msgstr "
+
+#. module: hr_holidays
 #: model:ir.model.fields.selection,name:hr_holidays.selection__hr_leave_type__time_type__other
-msgid "Other"
+msgid "Worked Time"
 msgstr ""
 
 #. module: hr_holidays
@@ -3314,7 +3319,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_employee_public__leave_manager_id
 #: model:ir.model.fields,field_description:hr_holidays.field_res_users__leave_manager_id
 #: model:ir.model.fields.selection,name:hr_holidays.selection__hr_leave_report__leave_type__request
-#: model:ir.model.fields.selection,name:hr_holidays.selection__hr_leave_type__time_type__leave
 #: model:ir.ui.menu,name:hr_holidays.menu_hr_holidays_root
 #: model:ir.ui.menu,name:hr_holidays.menu_open_department_leave_approve
 #: model:mail.message.subtype,name:hr_holidays.mt_leave
@@ -3815,7 +3819,8 @@ msgstr ""
 #. module: hr_holidays
 #: model:ir.model.fields,help:hr_holidays.field_hr_leave_type__time_type
 msgid ""
-"Whether this should be computed as a holiday or as work time (eg: formation)"
+"The distinction between working time (ex. Attendance) and absence (ex. Formation) will be used "
+"in the computation of Accrual's plan rate."
 msgstr ""
 
 #. module: hr_holidays
