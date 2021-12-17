@@ -3,7 +3,6 @@
 
 from odoo import fields, models, api, _
 from odoo.osv import expression
-from datetime import datetime
 
 
 class CalendarLeaves(models.Model):
@@ -22,23 +21,26 @@ class CalendarLeaves(models.Model):
         leaves_to_validate.action_confirm()
         leaves_to_validate.action_validate()
         for leave in leaves:
+            leave.message_post(body="Due to a change in global time offs, this leave duration has been modified")
             if leave.number_of_days == 0.0:
                 leave.force_cancel(_("A new public holiday completely overrides this leave"))
         return True
 
-    @api.model
-    def create(self, vals):
-        res = super().create(vals)
-        if not 'resource_id' in vals or not vals['resource_id']:
-            date_from = fields.Date.to_date(vals['date_from'])
-            date_to = fields.Date.to_date(vals['date_to'])
-            calendar_id = vals['calendar_id']
-            leaves = self.env['hr.leave'].search([
-                ('date_to', '>', date_from),
-                ('date_from', '<', date_to),
-                ('resource_calendar_id', 'in', (False, calendar_id)),
-                ('state', '!=', 'refuse')
-            ])
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        domain = []
+        for vals in vals_list:
+            if not 'resource_id' in vals or not vals['resource_id']:
+                date_from = fields.Date.to_date(vals['date_from'])
+                date_to = fields.Date.to_date(vals['date_to'])
+                domain = expression.OR([domain, [
+                    ('date_to', '>', date_from),
+                    ('date_from', '<', date_to)]
+                ])
+        if domain:
+            domain = expression.AND([domain, [('state', '!=', 'refuse')]])
+            leaves = self.env['hr.leave'].search(domain)
             self._reevaluate_leaves(leaves)
         return res
 
@@ -79,7 +81,6 @@ class CalendarLeaves(models.Model):
             'resource_id': record.resource_id,
             'date_from': record.date_from,
             'date_to': record.date_to,
-            'resource_calendar_id': record.calendar_id,
         } for record in self]
 
         res = super().unlink()
@@ -89,7 +90,6 @@ class CalendarLeaves(models.Model):
                 leaves = self.env['hr.leave'].search([
                     ('date_to', '>', calendar_leave['date_from']),
                     ('date_from', '<', calendar_leave['date_to']),
-                    ('resource_calendar_id', 'in', (False, calendar_leave['resource_calendar_id'])),
                     ('state', '!=', 'refuse')
                 ])
                 self._reevaluate_leaves(leaves)

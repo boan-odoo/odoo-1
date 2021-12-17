@@ -563,13 +563,22 @@ class TestLeaveRequests(TestHrHolidaysCommon):
 
         self.assertEqual(req2_form.number_of_days, 3)
     def test_time_off_recovery_on_create(self):
-        time_off = self.env['hr.leave'].create({
-            'name': 'Holiday Request',
-            'employee_id': self.employee_emp_id,
-            'holiday_status_id': self.holidays_type_1.id,
-            'date_from': '2021-12-06 00:00:00',
-            'date_to': '2021-12-10 23:59:59',
-        })
+        time_off = self.env['hr.leave'].create([
+            {
+                'name': 'Holiday Request',
+                'employee_id': self.employee_emp_id,
+                'holiday_status_id': self.holidays_type_1.id,
+                'date_from': '2021-12-06 00:00:00',
+                'date_to': '2021-12-10 23:59:59',
+            },
+            {
+                'name': 'Holiday Request',
+                'employee_id': self.employee_hruser_id,
+                'holiday_status_id': self.holidays_type_1.id,
+                'date_from': '2021-12-06 00:00:00',
+                'date_to': '2021-12-10 23:59:59',
+            }
+        ])
         self.assertEqual(time_off.number_of_days, 5)
         self.env['resource.calendar.leaves'].create({
             'name': 'Global Time Off',

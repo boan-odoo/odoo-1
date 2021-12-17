@@ -202,7 +202,6 @@ class HolidaysRequest(models.Model):
     can_reset = fields.Boolean('Can reset', compute='_compute_can_reset')
     can_approve = fields.Boolean('Can Approve', compute='_compute_can_approve')
     can_cancel = fields.Boolean('Can Cancel', compute='_compute_can_cancel')
-    resource_calendar_id = fields.Many2one('resource.calendar', compute='_compute_calendar_id')
 
     attachment_ids = fields.One2many('ir.attachment', 'res_id', string="Attachments")
     # To display in form view
