@@ -13,12 +13,20 @@ class AccountMove(models.Model):
     authorized_transaction_ids = fields.Many2many(
         string="Authorized Transactions", comodel_name='payment.transaction',
         compute='_compute_authorized_transaction_ids', readonly=True, copy=False)
+    total_amount_tx = fields.Monetary(string='Amount paid', compute='_compute_total_amount_tx')
 
     @api.depends('transaction_ids')
     def _compute_authorized_transaction_ids(self):
         for invoice in self:
             invoice.authorized_transaction_ids = invoice.transaction_ids.filtered(
                 lambda tx: tx.state == 'authorized'
+            )
+
+    @api.depends('transaction_ids')
+    def _compute_total_amount_tx(self):
+        for invoice in self:
+            invoice.total_amount_tx = sum(
+                invoice.transaction_ids.mapped('amount')
             )
 
     def get_portal_last_transaction(self):
