@@ -368,6 +368,7 @@ class AccountMove(models.Model):
         help="Technical field used for tracking the status of the currency")
     tax_country_id = fields.Many2one(comodel_name='res.country', compute='_compute_tax_country_id', help="Technical field to filter the available taxes depending on the fiscal country and fiscal position.")
     tax_country_code = fields.Char(compute="_compute_tax_country_code")
+    duplicated_ref = fields.Many2many('account.move', compute='_compute_duplicated_ref')
     # Technical field to hide Reconciled Entries stat button
     has_reconciled_entries = fields.Boolean(compute="_compute_has_reconciled_entries")
     show_reset_to_draft_button = fields.Boolean(compute='_compute_show_reset_to_draft_button')
@@ -1951,6 +1952,28 @@ class AccountMove(models.Model):
         for record in self:
             record.tax_country_code = record.tax_country_id.code
 
+    @api.depends('ref', 'move_type', 'partner_id', 'invoice_date')
+    def _compute_duplicated_ref(self):
+        """ The computed field only appears in the move view form and thus is supposed
+        to only be computed for one move at a time which makes the search in loop "ok"
+        """
+        for move in self:
+            if not (move.is_purchase_document() and move.ref):
+                move.duplicated_ref = self.env['account.move']
+                continue
+
+            duplicated_ref_domain = [
+                ('company_id', '=', move.company_id.id),
+                ('move_type', '=', move.move_type),
+                ('commercial_partner_id', '=', move.commercial_partner_id.id),
+                ('ref', '=', move.ref),
+                ('invoice_date', '=', move.invoice_date or False),
+            ]
+            # Check if move is currently being created (NewID Object is Falsy)
+            if move.id:
+                duplicated_ref_domain.append(('id', '!=', move.id))
+            move.duplicated_ref = self.env['account.move'].search(duplicated_ref_domain)
+
     # -------------------------------------------------------------------------
     # BUSINESS MODELS SYNCHRONIZATION
     # -------------------------------------------------------------------------
@@ -2000,44 +2023,6 @@ class AccountMove(models.Model):
         if res:
             raise ValidationError(_('Posted journal entry must have an unique sequence number per company.\n'
                                     'Problematic numbers: %s\n') % ', '.join(r[1] for r in res))
-
-    @api.constrains('ref', 'move_type', 'partner_id', 'journal_id', 'invoice_date', 'state')
-    def _check_duplicate_supplier_reference(self):
-        moves = self.filtered(lambda move: move.state == 'posted' and move.is_purchase_document() and move.ref)
-        if not moves:
-            return
-
-        self.env["account.move"].flush([
-            "ref", "move_type", "invoice_date", "journal_id",
-            "company_id", "partner_id", "commercial_partner_id",
-        ])
-        self.env["account.journal"].flush(["company_id"])
-        self.env["res.partner"].flush(["commercial_partner_id"])
-
-        # /!\ Computed stored fields are not yet inside the database.
-        self._cr.execute('''
-            SELECT move2.id
-            FROM account_move move
-            JOIN account_journal journal ON journal.id = move.journal_id
-            JOIN res_partner partner ON partner.id = move.partner_id
-            INNER JOIN account_move move2 ON
-                move2.ref = move.ref
-                AND move2.company_id = journal.company_id
-                AND move2.commercial_partner_id = partner.commercial_partner_id
-                AND move2.move_type = move.move_type
-                AND (move.invoice_date is NULL OR move2.invoice_date = move.invoice_date)
-                AND move2.id != move.id
-            WHERE move.id IN %s
-        ''', [tuple(moves.ids)])
-        duplicated_moves = self.browse([r[0] for r in self._cr.fetchall()])
-        if duplicated_moves:
-            raise ValidationError(_('Duplicated vendor reference detected. You probably encoded twice the same vendor bill/credit note:\n%s') % "\n".join(
-                duplicated_moves.mapped(lambda m: "%(partner)s - %(ref)s - %(date)s" % {
-                    'ref': m.ref,
-                    'partner': m.partner_id.display_name,
-                    'date': format_date(self.env, m.invoice_date),
-                })
-            ))
 
     def _check_balanced(self):
         ''' Assert the move is fully balanced debit = credit.
@@ -2856,6 +2841,18 @@ class AccountMove(models.Model):
             'domain': [('id', 'in', self.tax_cash_basis_created_move_ids.ids)],
             'views': [(self.env.ref('account.view_move_tree').id, 'tree'), (False, 'form')],
         }
+
+    def open_duplicated_ref_bill_view(self):
+        moves = self.mapped('duplicated_ref')
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_line_form")
+        if len(moves) > 1:
+            action['domain'] = [('id', 'in', moves.ids)]
+        elif len(moves) == 1:
+            action['views'] = [(self.env.ref('account.view_move_form').id, 'form')] + [(state, view) for state, view in action['views'] if view != 'form']
+            action['res_id'] = moves.id
+        else:
+            action = {'type': 'ir.actions.act_window_close'}
+        return action
 
     @api.model
     def message_new(self, msg_dict, custom_values=None):

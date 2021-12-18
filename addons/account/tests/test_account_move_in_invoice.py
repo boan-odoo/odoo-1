@@ -1564,12 +1564,24 @@ class TestAccountMoveInInvoiceOnchanges(AccountTestInvoicingCommon):
         })
 
     def test_in_invoice_duplicate_supplier_reference(self):
-        ''' Ensure two vendor bills can't share the same vendor reference. '''
-        self.invoice.ref = 'a supplier reference'
-        invoice2 = self.invoice.copy(default={'invoice_date': self.invoice.invoice_date})
-        invoice2.ref = 'a supplier reference'
-        with self.assertRaises(ValidationError):
-            invoice2.action_post()
+        """ Ensure duplicated ref are calculated correctly and that no error is raised on post """
+        invoice_1 = self.invoice
+        invoice_1.ref = 'a unique supplier reference that will be copied'
+        invoice_2 = invoice_1.copy(default={'invoice_date': invoice_1.invoice_date})
+        # ensure no Error is raised
+        invoice_2.ref = invoice_1.ref
+        self.assertRecordValues(invoice_2, [{'duplicated_ref': invoice_1.ids}])
+
+        invoice_3 = invoice_2.copy(default={'invoice_date': invoice_2.invoice_date})
+        # reassign to trigger the compute method
+        invoice_2.ref = invoice_1.ref
+        invoice_3.ref = invoice_2.ref
+        self.assertRecordValues(invoice_1, [{'duplicated_ref': (invoice_2 + invoice_3).ids}])
+        self.assertRecordValues(invoice_2, [{'duplicated_ref': (invoice_1 + invoice_3).ids}])
+        self.assertRecordValues(invoice_3, [{'duplicated_ref': (invoice_1 + invoice_2).ids}])
+        invoice_1.action_post()
+        invoice_2.action_post()
+        invoice_3.action_post()
 
     def test_in_invoice_switch_in_refund_1(self):
         # Test creating an account_move with an in_invoice_type and switch it in an in_refund.
