@@ -154,11 +154,13 @@ $nav-pills-link-active-bg: $o-brand-primary !default;
 // Toasts
 
 $toast-max-width: 320px !default;
-$toast-padding-x: 1.5rem !default;
+$toast-padding-x: 1rem !default;
 $toast-padding-y: 0.5rem !default;
 $toast-font-size: $font-size-base !default;
-$toast-background-color: rgba($white, .7) !default;
-$toast-header-background-color: $toast-background-color !default;
+$toast-background-color: $white !default;
+$toast-header-background-color: $white !default;
+$toast-box-shadow: $o-notification-shadow !default;
+$toast-header-border-color: none !default;
 
 // Modals
 
