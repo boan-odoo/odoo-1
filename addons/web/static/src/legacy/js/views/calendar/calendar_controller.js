@@ -526,6 +526,7 @@ var CalendarController = AbstractController.extend({
         this.mode = event.data.mode;
         if (this.$buttons) {
             this.$buttons.find('.active').removeClass('active');
+            this.$buttons.find('.scale_button_selection')[0].innerText = this.mode;
             this.$buttons.find('.o_calendar_button_' + this.mode).addClass('active');
         }
         const title = `${this.displayName} (${event.data.title})`;
