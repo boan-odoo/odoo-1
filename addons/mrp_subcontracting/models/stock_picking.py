@@ -10,7 +10,8 @@ from dateutil.relativedelta import relativedelta
 
 
 class StockPicking(models.Model):
-    _inherit = 'stock.picking'
+    _name = 'stock.picking'
+    _inherit = ['stock.picking', 'portal.mixin']
 
     display_action_record_components = fields.Selection(
         [('hide', 'Hide'), ('facultative', 'Facultative'), ('mandatory', 'Mandatory')],
@@ -29,6 +30,11 @@ class StockPicking(models.Model):
                 continue
             if subcontracted_moves._subcontrating_can_be_record():
                 picking.display_action_record_components = 'facultative'
+
+    def _compute_access_url(self):
+        super()._compute_access_url()
+        for picking in self:
+            picking.access_url = f'/my/productions/{picking.id}'
 
     # -------------------------------------------------------------------------
     # Action methods
@@ -66,7 +72,7 @@ class StockPicking(models.Model):
                 production._set_qty_producing()
                 production.subcontracting_has_been_recorded = True
                 if move_line != move.move_line_ids[-1]:
-                    backorder = production._split_productions()[1:]
+                    backorder = production.sudo()._split_productions()[1:]
                     # The move_dest_ids won't be set because the _split filter out done move
                     backorder.move_finished_ids.filtered(lambda mo: mo.product_id == move.product_id).move_dest_ids = production.move_finished_ids.filtered(lambda mo: mo.product_id == move.product_id).move_dest_ids
                     production.product_qty = production.qty_producing
@@ -123,6 +129,8 @@ class StockPicking(models.Model):
         vals = {
             'company_id': subcontract_move.company_id.id,
             'procurement_group_id': group.id,
+            'subcontractor_id': subcontract_move.picking_id.partner_id.id,
+            'picking_ids': [subcontract_move.picking_id.id],
             'product_id': product.id,
             'product_uom_id': subcontract_move.product_uom.id,
             'bom_id': bom.id,

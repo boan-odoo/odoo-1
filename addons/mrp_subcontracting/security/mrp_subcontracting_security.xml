@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record model="ir.rule" id="production_subcontractor_rule">
+        <field name="name">MRP Productions Subcontractor</field>
+        <field name="model_id" ref="model_mrp_production"/>
+        <field name="domain_force">[('subcontractor_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+    
+    <record model="ir.rule" id="stock_move_subcontractor_rule">
+        <field name="name">Stock Moves Subcontractor</field>
+        <field name="model_id" ref="model_stock_move"/>
+        <field name="domain_force">[
+        '|', 
+            '|',
+                ('production_id.subcontractor_id', '=', user.partner_id.id),
+                ('move_orig_ids.production_id.subcontractor_id', 'in', user.partner_id.ids),
+            '|',
+                ('raw_material_production_id.subcontractor_id', 'in', user.partner_id.ids),
+                ('move_orig_ids.raw_material_production_id.subcontractor_id', 'in', user.partner_id.ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+    <record model="ir.rule" id="stock_move_line_subcontractor_rule">
+        <field name="name">Stock Move Lines Subcontractor</field>
+        <field name="model_id" ref="model_stock_move_line"/>
+        <field name="domain_force">[
+        '|', 
+            '|',
+                ('move_id.production_id.subcontractor_id', '=', user.partner_id.id),
+                ('move_id.move_orig_ids.production_id.subcontractor_id', 'in', user.partner_id.ids),
+            '|',
+                ('move_id.raw_material_production_id.subcontractor_id', 'in', user.partner_id.ids),
+                ('move_id.move_orig_ids.raw_material_production_id.subcontractor_id', 'in', user.partner_id.ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+    <record model="ir.rule" id="picking_subcontractor_rule">
+        <field name="name">Stock Pickings Subcontractor</field>
+        <field name="model_id" ref="model_stock_picking"/>
+        <field name="domain_force">[('partner_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+    <record model="ir.rule" id="scrap_subcontractor_rule">
+        <field name="name">Scrap Subcontractor</field>
+        <field name="model_id" ref="stock.model_stock_scrap"/>
+        <field name="domain_force">[('production_id.subcontractor_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+    <record id="product_template_subcontracting_rule" model="ir.rule">
+        <field name="name">Product Template Subcontractor</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="domain_force">[
+        '|',
+            '|',
+                ('id', 'in', user.partner_id.bom_ids.product_id.product_tmpl_id.ids),
+                ('id', 'in', user.partner_id.bom_ids.product_tmpl_id.ids),
+            ('id', 'in', user.partner_id.bom_ids.bom_line_ids.product_id.product_tmpl_id.ids),
+            ]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+    <record id="stock_lot_subcontracting_rule" model="ir.rule">
+        <field name="name">Stock Lot Subcontractor</field>
+        <field name="model_id" ref="stock.model_stock_lot"/>
+        <field name="domain_force">[
+        '|',
+            '|',
+                ('product_id', 'in', user.partner_id.bom_ids.product_id.ids),
+                ('product_id', 'in', user.partner_id.bom_ids.product_tmpl_id.product_variant_ids.ids),
+            ('product_id', 'in', user.partner_id.bom_ids.bom_line_ids.product_id.ids),
+            ]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+</odoo>

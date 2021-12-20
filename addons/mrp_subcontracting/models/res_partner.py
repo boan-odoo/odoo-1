@@ -13,6 +13,12 @@ class ResPartner(models.Model):
         goods to this contact during a subcontracting process.")
     is_subcontractor = fields.Boolean(
         string="Subcontractor", store=False, search="_search_is_subcontractor")
+    bom_ids = fields.Many2many('mrp.bom', compute='_compute_bom_ids', string="BoMs for which the Partner is one of the subcontractors")
+
+    def _compute_bom_ids(self):
+        boms = self.env['mrp.bom'].search([('subcontractor_ids', 'in', self.ids)])
+        for partner in self:
+            partner.bom_ids = boms.filtered(lambda bom: partner in bom.subcontractor_ids)
 
     def _search_is_subcontractor(self, operator, value):
         assert operator in ('=', '!=', '<>') and value in (True, False), 'Operation not supported'

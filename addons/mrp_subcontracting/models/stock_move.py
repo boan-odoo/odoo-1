@@ -3,8 +3,8 @@
 
 from collections import defaultdict
 
-from odoo import fields, models, _
-from odoo.exceptions import UserError
+from odoo import fields, models, api, _
+from odoo.exceptions import UserError, AccessError
 from odoo.tools.float_utils import float_compare, float_is_zero
 
 
@@ -15,6 +15,7 @@ class StockMove(models.Model):
     show_subcontracting_details_visible = fields.Boolean(
         compute='_compute_show_subcontracting_details_visible'
     )
+    order_finished_lot_id = fields.Many2one('stock.lot', string="Finished Lot/Serial Number", compute='_compute_order_finished_lot_id', store=True)
 
     def _compute_show_subcontracting_details_visible(self):
         """ Compute if the action button in order to see moves raw is visible """
@@ -37,10 +38,18 @@ class StockMove(models.Model):
         for move in self:
             if not move.is_subcontract:
                 continue
+            if self.env.context.get("is_subcontracting_portal"):
+                move.show_details_visible = any(not p._has_been_recorded() for p in move._get_subcontract_production())
+                continue
             if not move._get_subcontract_production()._has_tracked_component():
                 continue
             move.show_details_visible = True
         return res
+
+    @api.depends('raw_material_production_id.lot_producing_id')
+    def _compute_order_finished_lot_id(self):
+        for move in self:
+            move.order_finished_lot_id = move.raw_material_production_id.lot_producing_id
 
     def copy(self, default=None):
         self.ensure_one()
@@ -55,6 +64,9 @@ class StockMove(models.Model):
         """ If the initial demand is updated then also update the linked
         subcontract order to the new quantity.
         """
+        if self.env.user.has_group('base.group_portal') and not self.env.su and 'state' in values:
+            if values['state'] == 'done':
+                raise AccessError(_("Portal users cannot change the state of a stock move to 'Done'."))
         if 'product_uom_qty' in values and self.env.context.get('cancel_backorder') is not False:
             self.filtered(lambda m: m.is_subcontract and m.state not in ['draft', 'cancel', 'done'])._update_subcontract_order_qty(values['product_uom_qty'])
         res = super().write(values)
@@ -67,6 +79,13 @@ class StockMove(models.Model):
                     'date_planned_start': move.date,
                 })
         return res
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('state') == 'done':
+                raise AccessError(_("Portal users cannot create a stock move with a state set as 'Done'."))
+        return super().create(vals_list)
 
     def action_show_details(self):
         """ Open the produce wizard in order to register tracked components for
