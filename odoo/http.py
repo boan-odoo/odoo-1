@@ -1478,8 +1478,7 @@ class Application(object):
                 manifest = get_manifest(module)
                 static_path = opj(addons_path, module, 'static')
                 if (manifest
-                        and manifest['installable']
-                        and manifest['assets']
+                        and (manifest['installable'] or manifest['assets'])
                         and os.path.isdir(static_path)):
                     mod2path[module] = static_path
         return mod2path
