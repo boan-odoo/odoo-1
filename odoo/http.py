@@ -1369,7 +1369,7 @@ class Request:
         router = app.nodb_routing_map.bind_to_environ(self.httprequest.environ)
         rule, args = router.match(return_rule=True)
         self._pre_dispatch(rule, args)
-        if self.type == 'json':
+        if rule.endpoint.routing['type'] == 'json':
             response = self._json_dispatch(rule.endpoint, args)
         else:
             response = self._http_dispatch(rule.endpoint, args)
@@ -1450,7 +1450,7 @@ class Request:
 
         ir_http._authenticate(rule.endpoint)
         ir_http._pre_dispatch(rule, args)
-        if self.type == 'json':
+        if rule.endpoint.routing['type'] == 'json':
             response = self._json_dispatch(rule.endpoint, args)
         else:
             response = self._http_dispatch(rule.endpoint, args)
