@@ -21,7 +21,9 @@ class CalendarLeaves(models.Model):
             ])
         return expression.AND([domain, [('state', '!=', 'refuse'), ('active', '=', 'True')]])
 
-    def _get_time_domain_dict(self, time_domain_dict=[]):
+    def _get_time_domain_dict(self, time_domain_dict=None):
+        if not time_domain_dict:
+            time_domain_dict = []
         for record in self:
             if not record['resource_id']:
                 time_domain_dict.append({
@@ -65,7 +67,7 @@ class CalendarLeaves(models.Model):
     def _split_leave(self, leave, time_domain_dict):
         new_leaves = self.env['hr.leave'].sudo()
         for record in self\
-                .search(['|',('date_to', '>', leave['date_from']),('date_from', '<', leave['date_to'])])\
+                .search(['|', ('date_to', '>', leave['date_from']), ('date_from', '<', leave['date_to'])])\
                 .sorted(key=lambda r: r.date_from):
             new_leave = record._split_leave_on_gto(leave)
             if new_leave:
@@ -78,17 +80,26 @@ class CalendarLeaves(models.Model):
             leaves = self.env['hr.leave'].search(domain)
             if not leaves:
                 return
-            validated_leaves = leaves.filtered(lambda l: l.state == 'validate')
-            validated_leaves.action_refuse()
-            validated_leaves.action_draft()
+            ordered_leaves = {
+                'approved': leaves.filtered(lambda l: l.state in ['validate1', 'validate']),
+                'validated': leaves.filtered(lambda l: l.state == 'validate'),
+            }
+            ordered_leaves['validated'].action_refuse()
+            ordered_leaves['approved'].action_draft()
             previous_durations = [leave.number_of_days for leave in leaves]
             leaves._compute_number_of_days()
-            leaves_to_validate = validated_leaves.filtered(lambda l: l.number_of_days > 0)
-            leaves_to_validate.action_confirm()
-            leaves_to_validate.action_validate()
             for previous_duration, leave in zip(previous_durations, leaves):
                 if leave.number_of_days > previous_duration:
-                    leaves |= self._split_leave(leave, leaves, time_domain_dict)
+                    new_leaves = self._split_leave(leave, time_domain_dict)
+                    if leave - ordered_leaves['approved']:
+                        ordered_leaves['approved'] |= new_leaves
+                    if leave - ordered_leaves['validated']:
+                        ordered_leaves['validated'] |= new_leaves
+                    leaves |= new_leaves
+            ordered_leaves['approved'].action_confirm()
+            ordered_leaves['approved'].action_approve()
+            leaves_to_validate = ordered_leaves['validated'].filtered(lambda l: l.number_of_days > 0)
+            leaves_to_validate.action_validate()
             for leave in leaves:
                 if leave.number_of_days == 0.0:
                     leave.force_cancel(_("a new public holiday completely overrides this leave"), 1)
