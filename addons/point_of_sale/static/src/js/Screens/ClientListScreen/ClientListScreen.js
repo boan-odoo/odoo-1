@@ -29,7 +29,6 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
         setup() {
             super.setup();
             useListener('click-save', () => this.env.bus.trigger('save-customer'));
-            useListener('click-edit', () => this.editClient());
             useListener('save-changes', this.saveChanges);
 
             // We are not using useState here because the object
@@ -41,7 +40,6 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
                 query: null,
                 selectedClient: this.props.client,
                 detailIsShown: false,
-                isEditMode: false,
                 editModeProps: {
                     partner: {
                         country_id: this.env.pos.company.country_id,
@@ -106,22 +104,11 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
             }
             this.confirm();
         }
-        editClient() {
-            this.state.editModeProps = {
-                partner: this.state.selectedClient,
-            };
-            this.state.detailIsShown = true;
-            this.render();
-        }
         activateEditMode(event) {
-            const { isNewClient } = event.detail;
-            this.state.isEditMode = true;
+            const { isNewClient, partner } = event.detail;
             this.state.detailIsShown = true;
-            this.state.isNewClient = isNewClient;
             if (!isNewClient) {
-                this.state.editModeProps = {
-                    partner: this.state.selectedClient,
-                };
+                this.state.editModeProps.partner = partner;
             }
             this.render();
         }
