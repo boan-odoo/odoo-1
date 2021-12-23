@@ -5,6 +5,7 @@
 
 from collections import defaultdict
 from datetime import date, datetime, time
+from decimal import Decimal
 from operator import attrgetter
 from xmlrpc.client import MAXINT
 import base64
@@ -65,6 +66,13 @@ def resolve_mro(model, name, predicate):
         if not predicate(value):
             break
         result.append(value)
+    return result
+
+
+def decimalize(value, digits):
+    result = Decimal(value).quantize(Decimal('1.' + '0' * digits))
+    if result:
+        assert str(result) == float_repr(value, digits)
     return result
 
 
@@ -1475,7 +1483,7 @@ class Float(Field):
         digits = self.get_digits(record.env)
         if digits:
             precision, scale = digits
-            result = float_repr(float_round(result, precision_digits=scale), precision_digits=scale)
+            result = decimalize(float_round(result, precision_digits=scale), scale)
         return result
 
     def convert_to_cache(self, value, record, validate=True):
@@ -1560,7 +1568,7 @@ class Monetary(Field):
 
         value = float(value or 0.0)
         if currency:
-            return float_repr(currency.round(value), currency.decimal_places)
+            return decimalize(currency.round(value), currency.decimal_places)
         return value
 
     def convert_to_cache(self, value, record, validate=True):
