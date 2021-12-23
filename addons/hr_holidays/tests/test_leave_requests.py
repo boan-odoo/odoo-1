@@ -625,7 +625,7 @@ class TestLeaveRequests(TestHrHolidaysCommon):
             'date_from': '2021-12-15 00:00:00',
             'date_to': '2021-12-15 23:59:59',
         })
-        self.assertEqual(time_off_1.number_of_days, 5)
+        self.assertEqual(time_off_1.number_of_days, 2)
         self.assertEqual(time_off_2.number_of_days, 4)
 
     def test_time_off_recovery_on_unlink(self):
@@ -643,7 +643,7 @@ class TestLeaveRequests(TestHrHolidaysCommon):
         })
         self.assertEqual(time_off.number_of_days, 4)
         global_time_off.unlink()
-        self.assertEqual(time_off.number_of_days, 5)
+        self.assertEqual(time_off.number_of_days, 3)
 
     def test_time_off_auto_cancel(self):
         time_off = self.env['hr.leave'].create({

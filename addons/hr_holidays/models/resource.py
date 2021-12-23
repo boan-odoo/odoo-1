@@ -115,7 +115,7 @@ class CalendarLeaves(models.Model):
     def create(self, vals_list):
         res = super().create(vals_list)
         time_domain_dict = res._get_time_domain_dict()
-        if time_domain_dict :
+        if time_domain_dict:
             self._reevaluate_leaves(time_domain_dict)
         return res
 
@@ -123,7 +123,7 @@ class CalendarLeaves(models.Model):
         time_domain_dict = self._get_time_domain_dict()
         res = super().write(vals)
         time_domain_dict = self._get_time_domain_dict(time_domain_dict)
-        if time_domain_dict :
+        if time_domain_dict:
             self._reevaluate_leaves(time_domain_dict)
 
         return res
@@ -131,7 +131,7 @@ class CalendarLeaves(models.Model):
     def unlink(self):
         time_domain_dict = self._get_time_domain_dict()
         res = super().unlink()
-        if time_domain_dict :
+        if time_domain_dict:
             self._reevaluate_leaves(time_domain_dict)
 
         return res
