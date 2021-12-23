@@ -43,4 +43,4 @@ class test_model_sub(models.Model):
 class test_model_monetary(models.Model):
     _name = 'test_converter.monetary'
     _description = 'Test Converter Monetary'
-    value = fields.Float(digits=(16, 55))
+    value = fields.Float(digits=(16, 25))
