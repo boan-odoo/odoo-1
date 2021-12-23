@@ -220,18 +220,11 @@ class TestSaleOrder(TestSaleCommon):
         self.assertEqual(mail_message.partner_ids, mail_message.sudo().mail_ids.recipient_ids, 'Sale: author should receive mail due to presence in composer recipients')
 
     def test_sale_sequence(self):
-        self.env['ir.sequence'].search([
-            ('code', '=', 'sale.order'),
-        ]).write({
-            'use_date_range': True, 'prefix': 'SO/%(range_year)s/',
-        })
-        sale_order = self.sale_order.copy({'date_order': '2019-01-01'})
-        self.assertTrue(sale_order.name.startswith('SO/2019/'))
-        sale_order = self.sale_order.copy({'date_order': '2020-01-01'})
-        self.assertTrue(sale_order.name.startswith('SO/2020/'))
-        # In EU/BXL tz, this is actually already 01/01/2020
-        sale_order = self.sale_order.with_context(tz='Europe/Brussels').copy({'date_order': '2019-12-31 23:30:00'})
-        self.assertTrue(sale_order.name.startswith('SO/2020/'))
+        today = fields.Datetime.now()
+        self.sale_order.name = 'SO/%s' % (today.strftime("%d/%m/%y-0001"))
+        sale_order = self.sale_order.copy()
+        name = today.strftime("SO/%d/%m/%y-0002")
+        self.assertEqual(sale_order.name, name)
 
     def test_unlink_cancel(self):
         """ Test deleting and cancelling sales orders depending on their state and on the user's rights """

@@ -280,3 +280,31 @@ class TestSaleOrder(TestSaleCommon):
             "If a pricelist is set without discount included, the discount "
             "shall be computed according to the price unit and the subtotal."
             "price")
+
+    def test_04_template_with_custom_prefix(self):
+        self.quotation_template_no_discount.so_prefix = 'TEST'
+        so = self.env['sale.order'].create({
+            'partner_id': self.partner_a.id,
+            'pricelist_id': self.company_data['default_pricelist'].id,
+            'sale_order_template_id': self.quotation_template_no_discount.id
+
+        })
+        so._onchange_sale_order_template_id()
+        self.assertEqual(so.name, 'TEST00001')
+        so = self.env['sale.order'].create({
+            'partner_id': self.partner_a.id,
+            'pricelist_id': self.company_data['default_pricelist'].id,
+            'sale_order_template_id': self.quotation_template_no_discount.id
+
+        })
+        so._onchange_sale_order_template_id()
+        self.assertEqual(so.name, 'TEST00002')
+        self.quotation_template_no_discount.so_prefix = 'PLOP'
+        so = self.env['sale.order'].create({
+            'partner_id': self.partner_a.id,
+            'pricelist_id': self.company_data['default_pricelist'].id,
+            'sale_order_template_id': self.quotation_template_no_discount.id
+
+        })
+        so._onchange_sale_order_template_id()
+        self.assertEqual(so.name, 'PLOP00001')

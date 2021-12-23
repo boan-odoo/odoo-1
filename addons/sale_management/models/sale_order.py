@@ -80,6 +80,25 @@ class SaleOrder(models.Model):
                     bad_products=', '.join(bad_products.mapped('display_name')),
                 ))
 
+    def _get_last_sequence_domain(self, relaxed=False):
+        self.ensure_one()
+        prefix = self.sale_order_template_id.so_prefix
+        param = {'company_id': self.company_id.id, 'sale_order_template_id': self.sale_order_template_id.id or 0}
+        if not prefix:
+            # Get the latest document with no prefix: no sale_order_template_id or sale_order_template_id with empty prefix
+            where_string = "WHERE company_id = %(company_id)s AND (sale_order_template_id IS NULL OR sale_order_template_id = %(sale_order_template_id)s)"
+        else:
+            where_string = "WHERE company_id = %(company_id)s AND (sale_order_template_id = %(sale_order_template_id)s AND name LIKE %(prefix)s)"
+            param.update(prefix=f"%{prefix}%")
+        return where_string, param
+
+    def _get_starting_sequence(self):
+        self.ensure_one()
+        if not self.sale_order_template_id.so_prefix:
+            return super()._get_starting_sequence()
+        prefix = self.sale_order_template_id.so_prefix
+        return prefix + "00000"
+
     #=== ONCHANGE METHODS ===#
 
     # TODO convert to compute ???
@@ -144,8 +163,8 @@ class SaleOrder(models.Model):
         # i.e. to make sure the discount is correctly reset
         # if pricelist discount_policy is different than when the price was first computed.
         self.sale_order_option_ids.discount = 0.0
-        self.sale_order_option_ids._compute_price_unit()
-        self.sale_order_option_ids._compute_discount()
+        # self.sale_order_option_ids._compute_price_unit()
+        # self.sale_order_option_ids._compute_discount()
 
 
 class SaleOrderLine(models.Model):
@@ -248,11 +267,14 @@ class SaleOrderOption(models.Model):
         for option in self:
             if not option.product_id or not option.order_id.pricelist_id:
                 continue
-            # To compute the price_unit a so line is created in cache
+
+            # # To compute the price_unit a so line is created in cache
             values = option._get_values_to_add_to_order()
             new_sol = self.env['sale.order.line'].new(values)
             new_sol._compute_price_unit()
             option.price_unit = new_sol.price_unit
+            # Avoid attaching the new line when called on template change
+            new_sol.order_id = False
 
     @api.depends('product_id', 'uom_id', 'quantity')
     def _compute_discount(self):
@@ -264,6 +286,8 @@ class SaleOrderOption(models.Model):
             new_sol = self.env['sale.order.line'].new(values)
             new_sol._compute_discount()
             option.discount = new_sol.discount
+            # Avoid attaching the new line when called on template change
+            new_sol.order_id = False
 
     def _get_values_to_add_to_order(self):
         self.ensure_one()

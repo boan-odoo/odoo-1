@@ -16,6 +16,7 @@ class SaleOrderTemplate(models.Model):
 
     name = fields.Char(string="Quotation Template", required=True)
     note = fields.Html(string="Terms and conditions", translate=True)
+    so_prefix = fields.Char('Reference Code', help="If defined, all the documents using this template will start with this prefix. Not mandatory")
 
     mail_template_id = fields.Many2one(
         comodel_name='mail.template',
@@ -45,6 +46,7 @@ class SaleOrderTemplate(models.Model):
         comodel_name='sale.order.template.option', inverse_name='sale_order_template_id',
         string="Optional Products",
         copy=True)
+
 
     #=== COMPUTE METHODS ===#
 

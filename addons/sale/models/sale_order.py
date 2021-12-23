@@ -32,10 +32,15 @@ INVOICE_STATUS = [
 
 class SaleOrder(models.Model):
     _name = "sale.order"
-    _inherit = ['portal.mixin', 'mail.thread', 'mail.activity.mixin', 'utm.mixin']
+    _inherit = ['portal.mixin', 'mail.thread', 'mail.activity.mixin', 'utm.mixin', 'sequence.mixin']
     _description = "Sales Order"
     _order = 'date_order desc, id desc'
     _check_company_auto = True
+    _sequence_date_field = "create_date"
+
+    @api.model
+    def _default_name(self):
+        return _('New')
 
     @api.depends('order_line.price_total')
     def _amount_all(self):
@@ -147,7 +152,7 @@ class SaleOrder(models.Model):
 
     name = fields.Char(
         string='Order Reference', required=True, copy=False, readonly=True,
-        states={'draft': [('readonly', False)]}, index='trigram', default=lambda self: _('New'))
+        states={'draft': [('readonly', False)]}, index='trigram', default=_default_name)
     origin = fields.Char(string='Source Document', help="Reference of the document that generated this sales order request.")
     client_order_ref = fields.Char(string='Customer Reference', copy=False)
     reference = fields.Char(string='Payment Ref.', copy=False,
@@ -572,19 +577,27 @@ class SaleOrder(models.Model):
         if self.partner_id and self.id:
             self.message_post(body=_("Product prices have been recomputed according to pricelist <b>%s<b> ", self.pricelist_id.display_name))
 
+    def _get_last_sequence_domain(self, relaxed=False):
+        self.ensure_one()
+        where_string = "WHERE company_id = %(company_id)s"
+        param = {'company_id': self.company_id.id}
+        return where_string, param
+
+    def _get_starting_sequence(self):
+        self.ensure_one()
+        return "S00000"
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if 'company_id' in vals:
                 self = self.with_company(vals['company_id'])
-            if vals.get('name', _('New')) == _('New'):
-                seq_date = fields.Datetime.context_timestamp(
-                    self, fields.Datetime.to_datetime(vals['date_order'])
-                ) if 'date_order' in vals else None
-                vals['name'] = self.env['ir.sequence'].next_by_code(
-                    'sale.order', sequence_date=seq_date) or _('New')
-
-        return super().create(vals_list)
+        orders = super().create(vals_list)
+        for order in orders:
+            # Override the name only if it has the default value.
+            if order.name == order._default_name():
+                order._set_next_sequence()
+        return orders
 
     def _compute_field_value(self, field):
         if field.name == 'invoice_status' and not self.env.context.get('mail_activity_automation_skip'):

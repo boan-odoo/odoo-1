@@ -870,7 +870,7 @@ tour.stepUtils.openBuggerMenu("li.breadcrumb-item.active:contains('Quotations')"
     content: _t("Go to the last sale order"),
     position: "bottom"
 },
-tour.stepUtils.mobileModifier(tour.stepUtils.autoExpandMoreButtons('.o_control_panel .breadcrumb:contains("S0")')),
+tour.stepUtils.mobileModifier(tour.stepUtils.autoExpandMoreButtons('.o_control_panel .breadcrumb:contains("Test")')),
 {
     mobile: false,
     trigger: '.oe_button_box .oe_stat_button:has(div[name=tasks_count])',
@@ -879,7 +879,7 @@ tour.stepUtils.mobileModifier(tour.stepUtils.autoExpandMoreButtons('.o_control_p
 }, {
     mobile: true,
     trigger: '.oe_button_box .oe_stat_button:has(div[name=tasks_count])',
-    extra_trigger: '.o_control_panel .breadcrumb:contains("S0")',
+    extra_trigger: '.o_control_panel .breadcrumb:contains("Test")',
     content: _t('See Tasks'),
     position: 'bottom',
 }, {
