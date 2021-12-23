@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from decimal import Decimal
 from math import log10
 
 from odoo.tests.common import TransactionCase
 from odoo.tools import float_compare, float_is_zero, float_repr, float_round, float_split, float_split_str
+
+
+def decimal_repr(value, digits):
+    return str(Decimal(value).quantize(Decimal('1.' + '0' * digits)))
 
 
 class TestFloatPrecision(TransactionCase):
@@ -18,6 +23,9 @@ class TestFloatPrecision(TransactionCase):
             digits = max(0, -int(log10(currency.rounding)))
             result = float_repr(currency.round(amount), precision_digits=digits)
             self.assertEqual(result, expected, 'Rounding error: got %s, expected %s' % (result, expected))
+
+            result = decimal_repr(currency.round(amount), digits)
+            self.assertEqual(result, expected, 'Decimal rounding error: got %s, expected %s' % (result, expected))
 
         try_round(2.674,'2.67')
         try_round(2.675,'2.68')   # in Python 2.7.2, round(2.675,2) gives 2.67
@@ -70,6 +78,9 @@ class TestFloatPrecision(TransactionCase):
             value = float_round(amount, precision_digits=digits, rounding_method=method)
             result = float_repr(value, precision_digits=digits)
             self.assertEqual(result, expected, 'Rounding error: got %s, expected %s' % (result, expected))
+
+            result = decimal_repr(value, digits)
+            self.assertEqual(result, expected, 'Decimal rounding error: got %s, expected %s' % (result, expected))
 
         try_round(2.6745, '2.675')
         try_round(-2.6745, '-2.675')
@@ -153,6 +164,9 @@ class TestFloatPrecision(TransactionCase):
             value = float_round(amount, precision_rounding=precision_rounding, rounding_method=method)
             result = float_repr(value, precision_digits=2)
             self.assertEqual(result, expected, 'Rounding error: got %s, expected %s' % (result, expected))
+
+            result = decimal_repr(value, 2)
+            self.assertEqual(result, expected, 'Decimal rounding error: got %s, expected %s' % (result, expected))
 
         try_round(-457.4554, '-457.45', precision_rounding=0.05)
         try_round(457.444, '457.50', precision_rounding=0.5)
