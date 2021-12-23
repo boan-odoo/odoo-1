@@ -1629,13 +1629,23 @@ class AccountMove(models.Model):
             reconciliation_ref = '%s (%s)' % (counterpart_line.move_id.name, counterpart_line.move_id.ref)
         else:
             reconciliation_ref = counterpart_line.move_id.name
+        is_exchange = False
+        for ln in counterpart_line.move_id.line_ids:
+            # Check if there are exchange difference lines and update amount if there are
+            if ln.account_id.code in [self.company_id.income_currency_exchange_account_id.code, self.company_id.expense_currency_exchange_account_id.code]:
+                amount = self.browse(counterpart_line.move_id.id).amount_total_signed
+                is_exchange = True
+        is_paid_in_company_currency = True if partial.debit_amount_currency != partial.credit_amount_currency else False
         return {
             'name': counterpart_line.name,
             'journal_name': counterpart_line.journal_id.name,
             'amount': amount,
-            'currency': self.currency_id.symbol,
-            'digits': [69, self.currency_id.decimal_places],
+            'amount_company_currency': partial.amount,
+            'currency': self.currency_id.symbol, #invoice currency
+            'paid_currency': self.company_currency_id.symbol if (is_exchange or is_paid_in_company_currency) else self.currency_id.symbol, # if customer paid in company currency
             'position': self.currency_id.position,
+            'company_position': self.company_currency_id.position if (is_exchange or is_paid_in_company_currency) else self.currency_id.position, # if customer paid in company currency
+            'digits': [69, self.currency_id.decimal_places],
             'date': counterpart_line.date,
             'payment_id': counterpart_line.id,
             'partial_id': partial.id,
@@ -1643,6 +1653,9 @@ class AccountMove(models.Model):
             'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
             'move_id': counterpart_line.move_id.id,
             'ref': reconciliation_ref,
+            # these are necessary for the views to change depending on the values
+            'is_exchange': is_exchange,
+            'is_paid_in_company_currency': is_paid_in_company_currency,
         }
 
     @api.depends('move_type', 'line_ids.amount_residual')
@@ -5517,6 +5530,9 @@ class AccountMoveLine(models.Model):
         for aml in self.filtered('account_id.reconcile'):
             ids.extend([r.debit_move_id.id for r in aml.matched_debit_ids] if aml.credit > 0 else [r.credit_move_id.id for r in aml.matched_credit_ids])
             ids.append(aml.id)
+        for aml_id in ids:
+            if aml_id != aml.id:
+                ids.extend([r.debit_move_id.id for r in self.browse(aml_id).matched_debit_ids if r.debit_move_id.id not in ids] if self.browse(aml_id).credit > 0 else [r.credit_move_id.id for r in self.browse(aml_id).matched_credit_ids if r.credit_move_id.id not in ids])
         return ids
 
     def open_reconcile_view(self):
