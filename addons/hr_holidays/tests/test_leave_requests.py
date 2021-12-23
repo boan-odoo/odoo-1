@@ -650,12 +650,12 @@ class TestLeaveRequests(TestHrHolidaysCommon):
             'name': 'Holiday Request',
             'employee_id': self.employee_emp_id,
             'holiday_status_id': self.holidays_type_1.id,
-            'date_from': '2021-12-06 00:00:00',
-            'date_to': '2021-12-10 23:59:59',
+            'date_from': '2021-11-15 00:00:00',
+            'date_to': '2021-11-19 23:59:59',
         })
         self.env['resource.calendar.leaves'].create({
             'name': 'Global Time Off',
-            'date_from': '2021-12-06 00:00:00',
-            'date_to': '2021-12-10 23:59:59',
+            'date_from': '2021-11-15 00:00:00',
+            'date_to': '2021-11-19 23:59:59',
         })
         self.assertEqual(time_off.active, False)
