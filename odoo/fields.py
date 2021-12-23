@@ -1487,15 +1487,16 @@ class Float(Field):
         return result
 
     def convert_to_cache(self, value, record, validate=True):
-        # apply rounding here, otherwise value in cache may be wrong!
-        value = float(value or 0.0)
-        if not validate:
-            return value
+        # cache format: Decimal or float or None
+        result = float(value or 0.0)
         digits = self.get_digits(record.env)
-        return float_round(value, precision_digits=digits[1]) if digits else value
+        if digits:
+            _, scale = digits
+            result = decimalize(float_round(result, precision_digits=scale), scale)
+        return result
 
     def convert_to_record(self, value, record):
-        return value or 0.0
+        return float(value or 0.0)
 
     def convert_to_export(self, value, record):
         if value or value == 0.0:
@@ -1572,7 +1573,7 @@ class Monetary(Field):
         return value
 
     def convert_to_cache(self, value, record, validate=True):
-        # cache format: float
+        # cache format: Decimal or None
         value = float(value or 0.0)
         if value and validate:
             # FIXME @rco-odoo: currency may not be already initialized if it is
@@ -1584,11 +1585,11 @@ class Monetary(Field):
             if len(currency) > 1:
                 raise ValueError("Got multiple currencies while assigning values of monetary field %s" % str(self))
             elif currency:
-                value = currency.round(value)
+                value = decimalize(currency.round(value), currency.decimal_places)
         return value
 
     def convert_to_record(self, value, record):
-        return value or 0.0
+        return float(value or 0.0)
 
     def convert_to_read(self, value, record, use_name_get=True):
         return value
