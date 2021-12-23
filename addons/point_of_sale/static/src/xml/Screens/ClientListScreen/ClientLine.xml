@@ -6,9 +6,10 @@
             t-on-click="() => this.props.onClickClient(props.partner)">
             <td>
                 <t t-esc="props.partner.name or ''" />
+                <br/><t t-esc="props.partner.parent_name or ''"/>
             </td>
             <td t-if="!env.isMobile">
-                <t t-esc="props.partner.address" />
+                <t t-esc="shortAddress" />
             </td>
             <td t-if="!env.isMobile" style="width: 130px;">
                 <t t-esc="props.partner.phone || ''" />
