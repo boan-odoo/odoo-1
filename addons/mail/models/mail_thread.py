@@ -2259,13 +2259,19 @@ class MailThread(models.AbstractModel):
         mail_subject = message.subject or (message.record_name and 'Re: %s' % message.record_name) # in cache, no queries
         # Replace new lines by spaces to conform to email headers requirements
         mail_subject = ' '.join((mail_subject or '').splitlines())
+        # compute references
+        message_sudo = message.sudo()
+        if message_sudo.parent_id:
+            references = '%s %s' % (message_sudo.parent_id.sudo().message_id, message_sudo.message_id)
+        else:
+            references = message_sudo.message_id
         # prepare notification mail values
         base_mail_values = {
             'mail_message_id': message.id,
             'mail_server_id': message.mail_server_id.id, # 2 query, check acces + read, may be useless, Falsy, when will it be used?
             'auto_delete': mail_auto_delete,
             # due to ir.rule, user have no right to access parent message if message is not published
-            'references': message.parent_id.sudo().message_id if message.parent_id else False,
+            'references': references,
             'subject': mail_subject,
         }
         base_mail_values = self._notify_by_email_add_values(base_mail_values)
