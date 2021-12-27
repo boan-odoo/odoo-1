@@ -47,6 +47,7 @@ class Mailing(models.Model):
     # opt_out_link
     sms_allow_unsubscribe = fields.Boolean('Include opt-out link', default=False)
     # A/B Testing
+    ab_testing_sms_count = fields.Integer(related="campaign_id.ab_testing_sms_count")
     ab_testing_sms_winner_selection = fields.Selection(related="campaign_id.ab_testing_sms_winner_selection", default="clicks_ratio", readonly=False, copy=True)
 
     @api.depends('mailing_type')
