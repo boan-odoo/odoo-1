@@ -279,3 +279,16 @@ class SaleOrderLine(models.Model):
 
         for line in lines_by_timesheet:
             line.qty_to_invoice = mapping.get(line.id, 0.0)
+
+    def _get_action_per_item(self):
+        """ Get action per Sales Order Item
+
+            When the Sales Order Item contains a service product then the action will be View Timesheets.
+
+            :returns: Dict containing id of SOL as key and the action as value
+        """
+        action_per_sol = super()._get_action_per_item()
+        for sol in self:
+            if sol.is_service:
+                action_per_sol[sol.id] = 'sale_timesheet.timesheet_action_from_sales_order_item'
+        return action_per_sol
