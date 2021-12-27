@@ -1,0 +1,144 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ro
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 15.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-02-16 16:39+0000\n"
+"PO-Revision-Date: 2022-02-16 16:39+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. modules: l10n_ro
+#: model:ir.model,name:l10n_ro.model_res_partner
+msgid "Contact"
+msgstr ""
+
+#. module: l10n_ro
+#: model:ir.model.fields,field_description:l10n_ro.field_res_partner__nrc
+#: model:ir.model.fields,field_description:l10n_ro.field_res_users__nrc
+msgid "NRC"
+msgstr ""
+
+#. module: l10n_ro
+#: model_terms:account.fiscal.position,note:l10n_ro.1_fiscal_position_template_51
+#: model_terms:account.fiscal.position,note:l10n_ro.2_fiscal_position_template_51
+#: model_terms:account.fiscal.position,note:l10n_ro.3_fiscal_position_template_51
+#: model_terms:account.fiscal.position,note:l10n_ro.4_fiscal_position_template_51
+#: model_terms:account.fiscal.position,note:l10n_ro.5_fiscal_position_template_51
+msgid ""
+"Pozitia se refera atat la livrari / achizitii intracomunitare cat si "
+"extracomunitare cu drept de deducere"
+msgstr ""
+
+#. module: l10n_ro
+#: model_terms:account.fiscal.position,note:l10n_ro.1_fiscal_position_template_52
+#: model_terms:account.fiscal.position,note:l10n_ro.2_fiscal_position_template_52
+#: model_terms:account.fiscal.position,note:l10n_ro.3_fiscal_position_template_52
+#: model_terms:account.fiscal.position,note:l10n_ro.4_fiscal_position_template_52
+#: model_terms:account.fiscal.position,note:l10n_ro.5_fiscal_position_template_52
+msgid ""
+"Pozitia se refera atat la livrari / achizitii intracomunitare cat si "
+"extracomunitare fara drept de deducere"
+msgstr ""
+
+#. module: l10n_ro
+#: model_terms:account.fiscal.position,note:l10n_ro.1_fiscal_position_template_7
+#: model_terms:account.fiscal.position,note:l10n_ro.2_fiscal_position_template_7
+#: model_terms:account.fiscal.position,note:l10n_ro.3_fiscal_position_template_7
+#: model_terms:account.fiscal.position,note:l10n_ro.4_fiscal_position_template_7
+#: model_terms:account.fiscal.position,note:l10n_ro.5_fiscal_position_template_7
+msgid "Pozitia se refera la livrari extracomunitare care sunt taxabile."
+msgstr ""
+
+#. module: l10n_ro
+#: model:ir.model.fields,help:l10n_ro.field_res_partner__nrc
+#: model:ir.model.fields,help:l10n_ro.field_res_users__nrc
+msgid "Registration number at the Registry of Commerce"
+msgstr ""
+
+#. module: l10n_ro
+#: model:ir.ui.menu,name:l10n_ro.account_reports_ro_statements_menu
+msgid "Romania"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_0
+msgid "TVA 0%"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_0_eu
+msgid "TVA 0% EU"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_19
+msgid "TVA 19%"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_19_eu
+msgid "TVA 19% EU"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_20
+msgid "TVA 20%"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_24
+msgid "TVA 24%"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_5
+msgid "TVA 5%"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_5_eu
+msgid "TVA 5% EU"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_9
+msgid "TVA 9%"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_9_eu
+msgid "TVA 9% EU"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_ned
+msgid "TVA Nedeductibil"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_neimp
+msgid "TVA Neimpozabil"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_scutit
+msgid "TVA Scutit"
+msgstr ""
+
+#. module: l10n_ro
+#: model:account.tax.group,name:l10n_ro.tax_group_tva_ti
+msgid "TVA Taxare Inversa"
+msgstr ""
+
+#. module: l10n_ro
+#: model_terms:ir.ui.view,arch_db:l10n_ro.res_partner_form_ro
+msgid "e.g. J12/1234/2012"
+msgstr ""

@@ -1,0 +1,65 @@
+id,name,applicability
+account_tag_0,Intangible Assets,accounts
+account_tag_1,Tangible Assets,accounts
+account_tag_2,Biological Assets,accounts
+account_tag_3,Right of Use of Leasing Assets,accounts
+account_tag_4,Financial Assets,accounts
+account_tag_5,Inventories,accounts
+account_tag_6,Receivables,accounts
+account_tag_7,Short-Term Investments,accounts
+account_tag_8,Liabilities up to a year,accounts
+account_tag_9,Provisions,accounts
+account_tag_10,Defered Income,accounts
+account_tag_11,Capital,accounts
+account_tag_12,Share Premium,accounts
+account_tag_13,Revaluation Reserves,accounts
+account_tag_14,Reserves,accounts
+account_tag_15,Reported Results before IAS 29,accounts
+account_tag_16,Reported Results after IAS 29,accounts
+account_tag_17,Profit and Loss,accounts
+account_tag_18,Net Turnover,accounts
+account_tag_19,Revenues from Cost of Production,accounts
+account_tag_20,Revenues from N-C Assets Production and Real Estate Investments,accounts
+account_tag_21,Revenues from non-current assets,accounts
+account_tag_22,Revenues from revaluation of non-current assets,accounts
+account_tag_23,Real estate investment income,accounts
+account_tag_24,Income from biological assets and agricultural products,accounts
+account_tag_25,Income from operating grants,accounts
+account_tag_26,Other operating revenues,accounts
+account_tag_27,Expenditures on raw materials and consumables,accounts
+account_tag_48,Staff costs,accounts
+account_tag_28,Value adjustments on assets,accounts
+account_tag_29,Other operating expenses,accounts
+account_tag_30,Income from shares held in subsidiaries,accounts
+account_tag_31,Income from shares held in associated entities,accounts
+account_tag_32,Income from shares held by associates and jointly controlled entities,accounts
+account_tag_33,Income from securities operations and other financial instruments,accounts
+account_tag_34,Income from derivative transactions,accounts
+account_tag_35,Income from exchange rate differences,accounts
+account_tag_36,Interest income,accounts
+account_tag_37,Income from operating subsidies for the debt due,accounts
+account_tag_38,Income from short-term financial investments,accounts
+account_tag_39,Income from deferred collection over normal credit terms,accounts
+account_tag_40,Other incomes,accounts
+account_tag_41,Value adj. in respect of financial n.-c. assets and investments held as current assets,accounts
+account_tag_42,Expenditures on operations with securities and other financial instruments,accounts
+account_tag_43,Costs of derivative transaction,accounts
+account_tag_44,Interest charges,accounts
+account_tag_45,Payments with deferred payment over normal credit terms,accounts
+account_tag_46,Interest costs on leasing contracts,accounts
+account_tag_47,Other financial expenses,accounts
+account_tag_49,Current profit tax,accounts
+account_tag_50,Deferred income tax,accounts
+account_tag_51,Deferred income tax revenue,accounts
+account_tag_52,Income tax expenses,accounts
+account_tag_53,Activity-specific taxes,accounts
+account_tag_54,Other taxes,accounts
+account_tag_55,Cash and Bank Accounts,accounts
+account_tag_56,Prepayments,accounts
+account_tag_57,Liabilities up to a year,accounts
+account_tag_58,Profit distribution,accounts
+account_tag_59,Public Patrimony,accounts
+account_tag_60,Private Patrimony,accounts
+account_tag_61,Own shares,accounts
+account_tag_62,Negative goodwill,accounts
+account_tag_63,Expenditure on goods,accounts
