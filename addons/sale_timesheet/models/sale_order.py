@@ -123,6 +123,7 @@ class SaleOrderLine(models.Model):
     remaining_hours_available = fields.Boolean(compute='_compute_remaining_hours_available', compute_sudo=True)
     remaining_hours = fields.Float('Remaining Hours on SO', compute='_compute_remaining_hours', compute_sudo=True, store=True)
     has_displayed_warning_upsell = fields.Boolean('Has Displayed Warning Upsell')
+    timesheet_count = fields.Integer(compute='_compute_timesheet_count')
 
     def name_get(self):
         res = super(SaleOrderLine, self).name_get()
@@ -220,6 +221,13 @@ class SaleOrderLine(models.Model):
         for line in lines_by_timesheet:
             line.qty_delivered = mapping.get(line.id or line._origin.id, 0.0)
 
+    @api.depends('analytic_line_ids.project_id')
+    def _compute_timesheet_count(self):
+        timesheet_read_group = self.env['account.analytic.line'].read_group([('so_line', 'in', self.ids), ('project_id', '!=', False)], ['so_line'], ['so_line'])
+        timesheet_count_per_sol = {res['so_line'][0]: res['so_line_count'] for res in timesheet_read_group}
+        for sol in self:
+            sol.timesheet_count = timesheet_count_per_sol.get(sol.id, 0)
+
     def _timesheet_compute_delivered_quantity_domain(self):
         """ Hook for validated timesheet in addionnal module """
         domain = [('project_id', '!=', False)]
@@ -289,6 +297,6 @@ class SaleOrderLine(models.Model):
         """
         action_per_sol = super()._get_action_per_item()
         for sol in self:
-            if sol.is_service:
+            if sol.is_service and sol.timesheet_count > 0:
                 action_per_sol[sol.id] = 'sale_timesheet.timesheet_action_from_sales_order_item'
         return action_per_sol
