@@ -11,15 +11,14 @@
             <td t-if="!env.isMobile">
                 <t t-esc="shortAddress" />
             </td>
-            <td t-if="!env.isMobile" style="width: 130px;">
-                <t t-esc="props.partner.phone || ''" />
+            <td class="client-line-email" t-if="!env.isMobile">
+                <t t-esc="props.partner.phone or ''"/>
+                <span t-if="props.partner.phone"><br/></span>
+                <t t-esc="props.partner.email or ''" />
+                <span t-if="highlight"><br/></span>
             </td>
             <td t-if="env.isMobile">
                 <t t-esc="props.partner.zip or ''" />
-                <span t-if="highlight"><br/></span>
-            </td>
-            <td class="client-line-email">
-                <t t-esc="props.partner.email or ''" />
                 <span t-if="highlight"><br/></span>
             </td>
             <td>

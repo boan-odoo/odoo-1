@@ -53,9 +53,8 @@
                                             <tr>
                                                 <th>Name</th>
                                                 <th t-if="!env.isMobile">Address</th>
-                                                <th t-if="!env.isMobile">Phone</th>
+                                                <th t-if="!env.isMobile" class="client-line-email">Contact</th>
                                                 <th t-if="env.isMobile">ZIP</th>
-                                                <th class="client-line-email">Email</th>
                                                 <th class="client-line-details"></th>
                                                 <th class="client-line-last-column-placeholder oe_invisible"></th>
                                             </tr>
