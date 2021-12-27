@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-import json
 from collections import defaultdict
 
 from odoo import api, fields, models, _
@@ -301,18 +300,8 @@ class Project(models.Model):
         return {
             **panel_data,
             'analytic_account_id': self.analytic_account_id.id,
-            'sale_items': self._get_sale_items(),
             'profitability_items': self._get_profitability_items(),
         }
-
-    def _get_sale_items_domain(self, additional_domain=None):
-        task_read_group = self.env['project.task'].read_group([('project_id', 'in', self.ids), ('sale_order_id', '!=', False), ('allow_billable', '=', True)], ['sale_order_ids:array_agg(sale_order_id)'], [])
-        task_sale_order_ids = set(task_read_group[0]['sale_order_ids'])
-        sale_orders = task_sale_order_ids.union(set(self.sale_order_id.ids))
-        domain = [('order_id', 'in', list(sale_orders))]
-        if additional_domain:
-            domain = expression.AND([domain, additional_domain])
-        return domain
 
     def _get_service_sale_order_lines(self):
         # used in project update model
@@ -321,32 +310,6 @@ class Project(models.Model):
             return self.env['sale.order.line']
         domain = self._get_sale_items_domain([('is_service', '=', True), ('is_downpayment', '=', False)])
         return self.env['sale.order.line'].search(domain)
-
-    def _get_sale_items(self):
-        domain = self._get_sale_items_domain()
-        return {
-            'total': self.env['sale.order.line'].search_count(domain),
-            'data': self.get_sale_items_data(domain),
-        }
-
-    def get_sale_items_data(self, domain=None, limit=25, offset=None):
-        sols = self.env['sale.order.line'].sudo().search(
-            domain or self._get_sale_items_domain(),
-            limit=limit,
-            offset=offset,
-        )
-        # filter to only get the action for the SOLs that the user can read
-        action_per_sol = sols._filter_access_rules_python('read')._get_action_per_item()
-
-        def get_action(sol_id):
-            """ Return the action vals to call it in frontend if the user can access to the SO related """
-            action = action_per_sol.get(sol_id)
-            return {'action': action, 'additional_context': json.dumps({'active_id': sol_id})} if action else {}
-
-        return [{
-            **sol_read,
-            **get_action(sol_read['id']),
-        } for sol_read in sols.read(['display_name', 'product_uom_qty', 'qty_delivered', 'qty_invoiced', 'product_uom'])]
 
     def _get_profitability_items(self):
         if not self.user_has_groups('project.group_project_manager'):
@@ -375,6 +338,7 @@ class Project(models.Model):
         }
 
     def _get_profitability_common(self):
+        # FIXME: used in project update model
         self.ensure_one()
         result = {
             'costs': 0.0,

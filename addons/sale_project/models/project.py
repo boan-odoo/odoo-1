@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import json
 from ast import literal_eval
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, AccessError
+from odoo.osv import expression
 
 
 class Project(models.Model):
@@ -72,7 +74,6 @@ class Project(models.Model):
         (self - project_to_invoice).has_any_so_to_invoice = False
 
     def _get_all_sales_orders(self):
-        self.ensure_one()
         return self.sale_order_id | self.task_ids.sale_order_id
 
     @api.depends('sale_order_id', 'task_ids.sale_order_id')
@@ -127,6 +128,46 @@ class Project(models.Model):
     # ----------------------------
     #  Project Updates
     # ----------------------------
+
+    def get_panel_data(self):
+        panel_data = super(Project, self).get_panel_data()
+        return {
+            **panel_data,
+            'sale_items': self._get_sale_items(),
+        }
+
+    def get_sale_items_data(self, domain=None, offset=0, limit=None):
+        sols = self.env['sale.order.line'].sudo().search(
+            domain or self._get_sale_items_domain(),
+            offset=offset,
+            limit=limit,
+        )
+        # filter to only get the action for the SOLs that the user can read
+        action_per_sol = sols._filter_access_rules_python('read')._get_action_per_item()
+
+        def get_action(sol_id):
+            """ Return the action vals to call it in frontend if the user can access to the SO related """
+            action = action_per_sol.get(sol_id)
+            return {'action': action, 'additional_context': json.dumps({'active_id': sol_id})} if action else {}
+
+        return [{
+            **sol_read,
+            **get_action(sol_read['id']),
+        } for sol_read in sols.read(['display_name', 'product_uom_qty', 'qty_delivered', 'qty_invoiced', 'product_uom'])]
+
+    def _get_sale_items_domain(self, additional_domain=None):
+        sale_orders = self._get_all_sales_orders()
+        domain = [('order_id', 'in', sale_orders.ids)]
+        if additional_domain:
+            domain = expression.AND([domain, additional_domain])
+        return domain
+
+    def _get_sale_items(self):
+        domain = self._get_sale_items_domain()
+        return {
+            'total': self.env['sale.order.line'].search_count(domain),
+            'data': self.get_sale_items_data(domain),
+        }
 
     def _get_stat_buttons(self):
         buttons = super(Project, self)._get_stat_buttons()
