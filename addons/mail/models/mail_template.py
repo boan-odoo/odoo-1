@@ -68,6 +68,13 @@ class MailTemplate(models.Model):
     ref_ir_act_window = fields.Many2one('ir.actions.act_window', 'Sidebar action', readonly=True, copy=False,
                                         help="Sidebar action to make this template available on records "
                                              "of the related document model")
+    # original data
+    original_body_html = fields.Html('Original Body', render_engine='qweb', translate=True, sanitize=False)
+    is_standard = fields.Boolean('Is Standard', compute='_compute_is_standard_template', copy=False)
+
+    # ------------------------------------------------------------
+    # Compute
+    # ------------------------------------------------------------
 
     # Overrides of mail.render.mixin
     @api.depends('model')
@@ -75,9 +82,34 @@ class MailTemplate(models.Model):
         for template in self:
             template.render_model = template.model
 
+    @api.depends()
+    def _compute_is_standard_template(self):
+        self.ensure_one()
+        original = self.env['ir.model.data'].search(['&', ('model', '=', 'mail.template'), ('res_id', '=', self.id)])
+        if original:
+            self.is_standard = True
+        else:
+            self.is_standard = False
+        return True
+
     # ------------------------------------------------------------
     # CRUD
     # ------------------------------------------------------------
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        is_updating = tools.config.options['init'] or tools.config.options['update']
+        if is_updating:
+            for vals in vals_list:
+                if 'body_html' in vals:
+                    vals['original_body_html'] = vals['body_html']
+        return super().create(vals_list)
+
+    def write(self, vals):
+        is_updating = tools.config.options['init'] or tools.config.options['update']
+        if is_updating and 'body_html' in vals:
+            vals['original_body_html'] = vals['body_html']
+        return super().write(vals)
 
     def unlink(self):
         self.unlink_action()
@@ -116,24 +148,9 @@ class MailTemplate(models.Model):
         return True
 
     def reset_template(self):
-        default_template = self.env['mail.template.data'].search([
-            ('id', '=', 'email_template_edi_invoice')
-        ], limit = 1)
-        print("==================test==============")
-        default_data = {
-            'name': 1,
-            'model_id': 1,
-            'email_from': 1,
-            'partner_to': 1,
-            'subject': 1,
-            'body_html': 1,
-            'report_template': 1,
-            'report_name': 1,
-            'lang': 1,
-            'auto_delete': 1,
-        }
-        print("==================test2==============")
-
+        for record in self:
+            if record.is_stantard:
+                record['body_html'] = record['original_body_html']
         return True
 
     # ------------------------------------------------------------
