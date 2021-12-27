@@ -269,10 +269,6 @@
                                                     Send Winner Now
                                                 </span>
                                             </button>
-                                            <button name="action_select_as_winner" type="object" class="btn btn-link d-block"
-                                                attrs="{'invisible': ['|', ('ab_testing_completed', '!=', False), ('ab_testing_winner_selection', '!=', 'manual')]}">
-                                                <i class="fa fa-envelope"/> Send this as winner
-                                            </button>
                                         </div>
                                         <button name="action_duplicate" type="object" class="btn btn-primary"
                                             attrs="{'invisible': ['|', ('ab_testing_mailings_count', '&gt;=', 2), ('ab_testing_enabled', '=', False)]}">

@@ -169,11 +169,6 @@
                 <attribute name="attrs">{'invisible': [('ab_testing_winner_selection', '=', 'manual'),
                     ('ab_testing_sms_winner_selection', '=', 'manual')]}</attribute>
             </xpath>
-            <xpath expr="//button[@name='action_select_as_winner']" position="attributes">
-                <attribute name="attrs">{'invisible': ['|', ('ab_testing_completed', '!=', False), '|',
-                    ('ab_testing_winner_selection', '=', 'manual'),
-                    ('ab_testing_sms_winner_selection', '=', 'manual')]}</attribute>
-            </xpath>
         </field>
     </record>
 
