@@ -6,39 +6,114 @@
     </button>
 
     <t t-inherit="project.ProjectRightPanel" t-inherit-mode="extension" owl="1">
-        <xpath expr="//t[@t-call='project.StatButtonsSection']" position="after">
+        <xpath expr="//t[@t-call='sale_project.SalesSection']" position="after">
             <t t-call="sale_timesheet.ProfitabilitySection"/>
         </xpath>
     </t>
 
     <t t-name="sale_timesheet.ProfitabilitySection" owl="1">
-        <t t-if="state.data.user.is_project_user &amp;&amp; state.data.profitability_items.data.length > 0 &amp;&amp; state.data.analytic_account_id">
-            <t t-set="profitability_items" t-value="state.data.profitability_items"/>
-            <div name="profitability" class="o_rightpanel_section">
-                <div class="o_rightpanel_header">
-                    <div class="o_rightpanel_title">
-                        Profitability Forecast
-                    </div>
-                </div>
-
-                <div class="o_rightpanel_data">
-                    <div t-foreach="profitability_items.data" t-as="profitability" t-key="profitability.name" class="o_rightpanel_data_row">
-                        <span class="o_rightpanel_left_col o_rightpanel_left_text" data-toggle="tooltip" title="In the margin forecast, costs and revenues related to the analytical account are taken into account, along with future income based on hours that have been sold but not invoiced yet." t-if="profitability.name == 'Margin'">
-                            <t t-esc="profitability.name"/>
-                        </span>
-                        <span class="o_rightpanel_left_col o_rightpanel_left_text" t-else="">
-                            <t t-esc="profitability.name"/>
-                        </span>
-                        <t t-if="profitability.color">
-                            <span t-attf-class="o_rightpanel_right_col o_color_{{profitability.color}}"><b><t t-esc="profitability.value"/></b></span>
-                        </t>
-                        <t t-else="">
-                            <span class="o_rightpanel_right_col"><t t-esc="profitability.value"/></span>
-                        </t>
-                    </div>
+        <t t-set="profitability_items" t-value="state.data.profitability_items"/>
+        <div name="profitability" class="o_rightpanel_section">
+            <div class="o_rightpanel_header">
+                <div class="o_rightpanel_title">
+                    Profitability
                 </div>
             </div>
-        </t>
+
+            <div class="o_rightpanel_data">
+                <div class="o_rightpanel_subsection">
+                    <t t-call="sale_timesheet.RevenueSection"/>
+                </div>
+                <div class="o_rightpanel_subsection">
+                    <t t-call="sale_timesheet.CostSection"/>
+                </div>
+                <div class="o_rightpanel_subsection">
+                    <t t-call="sale_timesheet.MarginSection"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sale_timesheet.RevenueSection" owl="1">
+        <t t-set="revenues" t-value="profitability_items.revenues"/>
+        <t t-set="revenue_items" t-value="revenues.data"/>
+        <t t-set="revenue_total" t-value="revenues.total"/>
+        <table class="w-100">
+            <thead>
+                <tr>
+                    <th style="width: 40%">Revenues</th>
+                    <th style="width: 20%">Invoiced</th>
+                    <th style="width: 20%">To Invoice</th>
+                    <th style="width: 20%">Expected</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr t-foreach="revenue_items" t-as="revenue" t-key="revenue.name">
+                    <td><t t-esc="revenue.name"/></td>
+                    <td><t t-esc="revenue.invoiced"/></td>
+                    <td><t t-esc="revenue.to_invoice"/></td>
+                    <td><t t-esc="revenue.invoiced + revenue.to_invoice"/></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td>Total</td>
+                    <td><t t-esc="revenue_total.invoiced"/></td>
+                    <td><t t-esc="revenue_total.to_invoice"/></td>
+                    <td><t t-esc="revenue_total.invoiced + revenue_total.to_invoice"/></td>
+                </tr>
+            </tfoot>
+        </table>
+    </t>
+
+    <t t-name="sale_timesheet.CostSection" owl="1">
+        <t t-set="costs" t-value="profitability_items.costs"/>
+        <t t-set="cost_items" t-value="costs.data"/>
+        <t t-set="cost_total" t-value="costs.total"/>
+        <table class="w-100">
+            <thead>
+                <tr>
+                    <th style="width: 40%">Costs</th>
+                    <th style="width: 20%">Billed</th>
+                    <th style="width: 20%">To Bill</th>
+                    <th style="width: 20%">Expected</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr t-foreach="cost_items" t-as="cost" t-key="cost.name">
+                    <td><t t-esc="cost.name"/></td>
+                    <td><t t-esc="cost.billed"/></td>
+                    <td><t t-esc="cost.to_bill"/></td>
+                    <td><t t-esc="cost.billed + cost.to_bill"/></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td>Total</td>
+                    <td><t t-esc="cost_total.billed"/></td>
+                    <td><t t-esc="cost_total.to_bill"/></td>
+                    <td><t t-esc="cost_total.billed + cost_total.to_bill"/></td>
+                </tr>
+            </tfoot>
+        </table>
+    </t>
+
+    <t t-name="sale_timesheet.MarginSection" owl="1">
+        <t t-set="revenues_total" t-value="profitability_items.revenues.total"/>
+        <t t-set="costs_total" t-value="profitability_items.costs.total"/>
+        <t t-set="margin_invoiced_billed" t-value="revenues_total.invoiced + costs_total.billed"/>
+        <t t-set="margin_to_invoice_to_bill" t-value="revenues_total.to_invoice + costs_total.to_bill"/>
+        <t t-set="margin_total" t-value="margin_invoiced_billed + margin_to_invoice_to_bill"/>
+        <table class="w-100">
+            <thead>
+                <tr>
+                    <th style="width: 40%">Margin</th>
+                    <th style="width: 20%" t-att-class="margin_invoiced_billed &lt; 0 ? 'o_color_red' : 'o_color_green'"><t t-esc="margin_invoiced_billed"/></th>
+                    <th style="width: 20%" t-att-class="margin_to_invoice_to_bill &lt; 0 ? 'o_color_red' : 'o_color_green'"><t t-esc="margin_to_invoice_to_bill"/></th>
+                    <th style="width: 20%" t-att-class="margin_total &lt; 0 ? 'o_color_red' : 'o_color_green'"><t t-esc="margin_total"/></th>
+                </tr>
+            </thead>
+        </table>
     </t>
 
 </templates>

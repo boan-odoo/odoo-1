@@ -44,6 +44,7 @@ have real delivered quantities in sales orders.
         ],
         'web.assets_backend': [
             'sale_timesheet/static/src/js/so_line_one2many.js',
+            'sale_timesheet/static/src/scss/project_rightpanel.scss',
         ],
         'web.assets_tests': [
             'sale_timesheet/static/tests/**/*',

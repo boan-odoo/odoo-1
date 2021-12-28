@@ -7,6 +7,8 @@ from odoo import api, fields, models, _
 from odoo.osv import expression
 from odoo.exceptions import ValidationError, UserError
 
+from odoo.addons.sale_timesheet.models.product import GENERAL_TO_SERVICE
+
 # YTI PLEASE SPLIT ME
 class Project(models.Model):
     _inherit = 'project.project'
@@ -326,32 +328,100 @@ class Project(models.Model):
         domain = self._get_sale_items_domain([('is_service', '=', True), ('is_downpayment', '=', False)])
         return self.env['sale.order.line'].search(domain)
 
-    def _get_profitability_items(self):
-        if not self.user_has_groups('project.group_project_manager'):
-            return {'data': []}
-        data = []
-        if self.allow_billable:
-            profitability = self._get_profitability_common()
-            margin_color = False
-            if not float_is_zero(profitability['margin'], precision_digits=0):
-                margin_color = profitability['margin'] > 0 and 'green' or 'red'
-            data += [{
-                'name': _("Revenues"),
-                'value': format_amount(self.env, profitability['revenues'], self.env.company.currency_id)
-            }, {
-                'name': _("Costs"),
-                'value': format_amount(self.env, profitability['costs'], self.env.company.currency_id)
-            }, {
-                'name': _("Margin"),
-                'color': margin_color,
-                'value': format_amount(self.env, profitability['margin'], self.env.company.currency_id)
-            }]
+    def _get_profitability_items_from_aal(self):
+        aa_line_read_group = self.env['account.analytic.line'].read_group(
+            ['|',
+             ('so_line', 'in', self._get_all_sale_order_items().ids),
+             ('account_id', 'in', self.analytic_account_id.ids)],
+            ['timesheet_invoice_type', 'timesheet_invoice_id', 'so_line', 'product_id', 'unit_amount', 'amount', 'ids:array_agg(id)'],
+            ['timesheet_invoice_type', 'timesheet_invoice_id', 'so_line', 'product_id'],
+            lazy=False)
+        can_see_timesheets = self.user_has_groups('hr_timesheet.group_hr_timesheet_approver')
+        revenues_dict = defaultdict(lambda: {'invoiced': 0.0, 'to_invoice': 0.0, 'record_ids': []})
+        costs_dict = defaultdict(lambda: {'billed': 0.0, 'to_bill': 0.0, 'record_ids': []})
+        total_revenues = {'invoiced': 0.0, 'to_invoice': 0.0}
+        total_costs = {'billed': 0.0, 'to_bill': 0.0}
+        aal_per_invoice = defaultdict(list)
+        aal_per_sol = defaultdict(list)
+        for res in aa_line_read_group:
+            amount = res['amount']
+            invoice_type = res['timesheet_invoice_type']
+            if amount < 0:  # cost
+                cost = costs_dict[invoice_type]
+                if can_see_timesheets and invoice_type != 'other_costs':
+                    cost['record_ids'] += res['ids']
+                cost['billed'] += amount
+                total_costs['billed'] += amount
+            else:  # revenues
+                revenues = revenues_dict[invoice_type]
+                if can_see_timesheets and invoice_type != 'other_revenues':
+                    revenues['record_ids'] += res['ids']
+                revenues['invoiced'] += amount
+                total_revenues['invoiced'] += amount
+            invoice_id = res['timesheet_invoice_id'] and res['timesheet_invoice_id'][0]
+            aal_per_invoice[invoice_id] += res['ids']
+            sol_id = res['so_line'] and res['so_line'][0]
+            aal_per_sol[sol_id] += res['ids']
+        sol_read = self.env['sale.order.line'].search_read(
+            [('id', 'in', list(aal_per_sol.keys())), ('product_id', '!=', False), ('is_expense', '=', False)],
+            ['product_id', 'untaxed_amount_to_invoice', 'untaxed_amount_invoiced', 'is_downpayment'],
+        )
+        sols_per_product = {
+            res['product_id'][0]: {
+                res['id']: (res['untaxed_amount_to_invoice'], res['untaxed_amount_invoiced'], res['is_downpayment'])
+            } for res in sol_read
+        }
+        product_read_group = self.env['product.product'].read_group(
+            [('id', 'in', list(sols_per_product)), ('expense_policy', '=', 'no')],
+            ['invoice_policy', 'service_type', 'type', 'ids:array_agg(id)'],
+            ['invoice_policy', 'service_type', 'type'],
+            lazy=False)
+        sols_service_policy = defaultdict(dict)
+        service_policy_to_invoice_type = {
+            'ordered_timesheet': 'billable_fixed',
+            'delivered_timesheet': 'billable_time',
+            'delivered_manual': 'service_revenues',
+        }
+        for res in product_read_group:
+            product_ids = res['ids']
+            service_policy = GENERAL_TO_SERVICE.get(
+                (res['invoice_policy'], res['service_type']),
+                res['type'] == 'service' and 'ordered_timesheet')
+            for product_id, sol_dict in sols_per_product.items():
+                if product_id in product_ids:
+                    sols_service_policy[service_policy].update(sol_dict)  # just for testing purpose
+                    revenue = revenues_dict[service_policy_to_invoice_type.get(service_policy, False)]
+                    for sol_id, (untaxed_amount_to_invoice, untaxed_amount_invoiced, is_downpayment) in sol_dict.items():
+                        assert not is_downpayment, f"Normally no downpayment should be taken into account, see the problematic SOL ID: {sol_id}"  # FIXME: testing purpose
+                        revenue['to_invoice'] += untaxed_amount_to_invoice
+                        total_revenues['to_invoice'] += untaxed_amount_to_invoice
+                        revenue['invoiced'] += untaxed_amount_invoiced
+                        total_revenues['invoiced'] += untaxed_amount_invoiced
+        invoice_type_to_label = {
+            'billable_fixed': _('Timesheets (Fixed Price)'),
+            'billable_time': _('Timesheets (Billed on Timesheets)'),
+            'service_revenues': _('Timesheets (Billed on Milestones)'),
+            'non_billable': _('Timesheets (Non Billable)'),
+            'other_revenues': _('Material'),
+        }
         return {
-            'action': self.allow_billable and self.allow_timesheets and "action_view_timesheet",
-            'allow_billable': self.allow_billable,
-            'data': data,
+            'revenues': {'data': [{'id': k, 'name': invoice_type_to_label.get(k, k), **v} for k, v in revenues_dict.items()], 'total': total_revenues},
+            'costs': {'data': [{'id': k, 'name': invoice_type_to_label.get(k, k), **v} for k, v in costs_dict.items()], 'total': total_costs},
         }
 
+    def _get_profitability_items(self):
+        profitability_items = super()._get_profitability_items()
+        aal_profitability_items = self._get_profitability_items_from_aal()
+
+        def merge_profitability_data(a, b):
+            assert all(k in a and k in b for k in ['data', 'total']), 'the both dictionary given in parameter should have "data" and "total" as key'
+            return {
+                'data': a['data'] + b['data'],
+                'total': {key: a['total'][key] + b['total'][key] for key in a['total'].keys() if key in b['total']}
+            }
+
+        profitability_items['revenues'] = merge_profitability_data(profitability_items['revenues'], aal_profitability_items['revenues'])
+        profitability_items['costs'] = merge_profitability_data(profitability_items['costs'], aal_profitability_items['costs'])
     def _get_profitability_common(self):
         # FIXME: used in project update model
         self.ensure_one()

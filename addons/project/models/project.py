@@ -732,6 +732,12 @@ class Project(models.Model):
             'is_project_user': self.user_has_groups('project.group_project_user'),
         }
 
+    def _get_profitability_items(self):
+        return {
+            'revenues': {'data': [], 'total': {'invoiced': 0.0, 'to_invoice': 0.0}},
+            'costs': {'data': [], 'total': {'billed': 0.0, 'to_bill': 0.0}},
+        }
+
     def _get_milestones(self):
         self.ensure_one()
         return {

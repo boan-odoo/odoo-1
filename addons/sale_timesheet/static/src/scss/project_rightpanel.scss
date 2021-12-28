@@ -1,0 +1,10 @@
+.o_rightpanel .o_rightpanel_section .o_rightpanel_data {
+    .o_rightpanel_subsection:not(:last-child) {
+        padding-bottom: 1rem;
+    }
+
+    table > tfoot {
+        font-weight: bold;
+        border-top: 1px solid black;
+    }
+}
