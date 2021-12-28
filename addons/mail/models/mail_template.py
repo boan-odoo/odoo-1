@@ -69,7 +69,7 @@ class MailTemplate(models.Model):
                                         help="Sidebar action to make this template available on records "
                                              "of the related document model")
     # original data
-    original_body_html = fields.Html('Original Body', render_engine='qweb', translate=True, sanitize=False)
+    original_body_html = fields.Html('Original Body', translate=True)
     original_subject = fields.Char('Original Subject', translate=True, help="Subject (placeholders may be used here)")
     is_standard = fields.Boolean('Is Standard', compute='_compute_is_standard_template', copy=False)
 
@@ -104,7 +104,7 @@ class MailTemplate(models.Model):
             for vals in vals_list:
                 if 'body_html' in vals:
                     vals['original_body_html'] = vals['body_html']
-                if 'body_html' in vals:
+                if 'subject' in vals:
                     vals['original_subject'] = vals['subject']
         return super().create(vals_list)
 
@@ -113,7 +113,7 @@ class MailTemplate(models.Model):
         if is_updating:
             if 'body_html' in vals:
                 vals['original_body_html'] = vals['body_html']
-            if 'body_html' in vals:
+            if 'subject' in vals:
                 vals['original_subject'] = vals['subject']
         return super().write(vals)
 
