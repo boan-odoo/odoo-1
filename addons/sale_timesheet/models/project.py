@@ -173,11 +173,6 @@ class Project(models.Model):
             ], limit=1)
             project.sale_line_id = sol or project.sale_line_employee_ids.sale_line_id[:1]  # get the first SOL containing in the employee mappings if no sol found in the search
 
-    def _get_all_sales_orders(self):
-        if self.allow_billable:
-            return super()._get_all_sales_orders() | self.sale_line_employee_ids.sale_line_id.order_id
-        return self.env['sale.order']
-
     @api.depends('sale_line_employee_ids.sale_line_id', 'allow_billable')
     def _compute_sale_order_count(self):
         billable_projects = self.filtered('allow_billable')
@@ -302,6 +297,26 @@ class Project(models.Model):
             'analytic_account_id': self.analytic_account_id.id,
             'profitability_items': self._get_profitability_items(),
         }
+
+    def _get_all_sale_order_items_query(self):
+        billable_project = self.filtered('allow_billable')
+        query = super(Project, billable_project)._get_all_sale_order_items_query()
+        Timesheet = self.env['account.analytic.line']
+        timesheet_query_str, timesheet_params = Timesheet\
+            ._where_calc([('project_id', 'in', billable_project.ids), ('so_line', '!=', False)])\
+            .select(f'{Timesheet._table}.project_id AS id', f'{Timesheet._table}.so_line')
+
+        EmployeeMapping = self.env['project.sale.line.employee.map']
+        employee_mapping_query_str, employee_mapping_params = EmployeeMapping \
+            ._where_calc([('project_id', 'in', billable_project.ids), ('sale_line_id', '!=', False)]) \
+            .select(f'{EmployeeMapping._table}.project_id AS id', f'{EmployeeMapping._table}.sale_line_id')
+
+        query._tables['project_sale_order_item'] = ' UNION '.join([
+            query._tables['project_sale_order_item'],
+            timesheet_query_str,
+            employee_mapping_query_str])
+        query._where_params += timesheet_params + employee_mapping_params
+        return query
 
     def _get_service_sale_order_lines(self):
         # used in project update model

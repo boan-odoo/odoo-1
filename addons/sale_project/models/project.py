@@ -7,6 +7,7 @@ from ast import literal_eval
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, AccessError
 from odoo.osv import expression
+from odoo.osv.query import Query
 
 
 class Project(models.Model):
@@ -74,12 +75,13 @@ class Project(models.Model):
         (self - project_to_invoice).has_any_so_to_invoice = False
 
     def _get_all_sales_orders(self):
-        return self.sale_order_id | self.task_ids.sale_order_id
+        return self._get_all_sale_order_items().order_id
 
     @api.depends('sale_order_id', 'task_ids.sale_order_id')
     def _compute_sale_order_count(self):
+        sol_ids_per_project = self._fetch_sale_order_items_per_project()
         for project in self:
-            project.sale_order_count = len(project._get_all_sales_orders())
+            project.sale_order_count = len(self.env['sale.order.line'].browse(sol_ids_per_project.get(project.id, [])).order_id)
 
     def action_view_sos(self):
         self.ensure_one()
@@ -155,18 +157,62 @@ class Project(models.Model):
             **get_action(sol_read['id']),
         } for sol_read in sols.read(['display_name', 'product_uom_qty', 'qty_delivered', 'qty_invoiced', 'product_uom'])]
 
+    def _fetch_sale_order_items_per_project(self):
+        if not self:
+            return {}
+        if len(self) == 1:
+            {self.id: self._fetch_sale_order_items()}
+        query_str, params = self._get_all_sale_order_items_query().select('id, ARRAY_AGG(DISTINCT sale_line_id) AS sale_line_ids')
+        query = f"""
+            {query_str}
+            GROUP BY id
+        """
+        self._cr.execute(query, params)
+        return {row['id']: row['sale_line_ids'] for row in self._cr.dictfetchall()}
+
+    def _fetch_sale_order_items(self, limit=None, offset=0):
+        if not self:
+            return []
+        query_str, params = self._get_all_sale_order_items_query().select('DISTINCT sale_line_id')
+        prefix_term = lambda prefix, term: f"{prefix} {term}" if term else ''
+        query = f"""
+            {query_str}
+            {prefix_term('LIMIT', int(limit) if limit else None)}
+            {prefix_term('OFFSET', int(offset) if limit else None)}
+        """
+        self._cr.execute(query, params)
+        return self._cr.fetchone()
+
+    def _get_all_sale_order_items(self):
+        return self.env['sale.order.line'].browse(self._fetch_sale_order_items())
+
+    def _get_all_sale_order_items_query(self):
+        Project = self.env['project.project']
+        project_query_str, project_params = Project\
+            ._where_calc([('id', 'in', self.ids), ('sale_line_id', '!=', False)])\
+            .select('id', 'sale_line_id')
+
+        Task = self.env['project.task']
+        task_query_str, task_params = Task\
+            ._where_calc([('project_id', 'in', self.ids), ('sale_line_id', '!=', False)])\
+            .select(f'{Task._table}.project_id AS id', f'{Task._table}.sale_line_id')
+
+        query = Query(self._cr, 'project_sale_order_item', ' UNION '.join([project_query_str, task_query_str]))
+        query._where_params = project_params + task_params
+        return query
+
     def _get_sale_items_domain(self, additional_domain=None):
-        sale_orders = self._get_all_sales_orders()
-        domain = [('order_id', 'in', sale_orders.ids)]
+        sale_line_ids = self._fetch_sale_order_items()
+        domain = [('id', 'in', sale_line_ids)]
         if additional_domain:
             domain = expression.AND([domain, additional_domain])
         return domain
 
     def _get_sale_items(self):
-        domain = self._get_sale_items_domain()
+        sol_ids = self._fetch_sale_order_items()
         return {
-            'total': self.env['sale.order.line'].search_count(domain),
-            'data': self.get_sale_items_data(domain),
+            'total': len(sol_ids),
+            'data': self.get_sale_items_data([('id', 'in', sol_ids)]),
         }
 
     def _get_stat_buttons(self):
