@@ -451,9 +451,10 @@
                 <group>
                     <field name="holiday_type" string="Mode"
                         groups="hr_holidays.group_hr_holidays_user"/>
-                    <field name="mode_company_id" string="Company" groups="hr_holidays.group_hr_holidays_user" attrs="{
-                        'required': [('holiday_type', '=', 'company')],
-                        'invisible': [('holiday_type', '!=', 'company')]
+                    <field name="mode_company_id" string="Company" groups="hr_holidays.group_hr_holidays_user"
+                        options="{'no_open': True, 'no_create': True}"
+                        attrs="{
+                            'invisible': [('holiday_type', '!=', 'company')]
                         }"/>
                     <field name="category_id" groups="hr_holidays.group_hr_holidays_user" attrs="{
                         'required': [('holiday_type', '=', 'category')],

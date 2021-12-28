@@ -11,16 +11,26 @@ class StressDay(models.Model):
     _order = 'start_date desc, end_date desc'
 
     name = fields.Char(required=True)
-    company_id = fields.Many2one('res.company', default=lambda self: self.env.company, required=True)
+    company_id = fields.Many2one('res.company', default=lambda self: self.env.company)
     start_date = fields.Date(required=True)
     end_date = fields.Date(required=True)
     color = fields.Integer(default=lambda dummy: randint(1, 11))
-    resource_calendar_id = fields.Many2one('resource.calendar', 'Working Hours',
-        default=lambda self: self.env.company.resource_calendar_id.id, domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+    resource_calendar_ids = fields.Many2many('resource.calendar', compute='_compute_from_company_id',
+                                             store=True, string="Working Hours",
+                                             readonly=False)
 
     _sql_constraints = [
         ('date_from_after_day_to', 'CHECK(start_date <= end_date)', 'The start date must be anterior than the end date.')
     ]
+
+    @api.depends('company_id')
+    def _compute_from_company_id(self):
+        resource_calendars = self.env['resource.calendar'].search([])
+        for stress_day in self:
+            search_domain = []
+            if self.company_id:
+                search_domain.append(('company_id', 'in', self.company_id.ids))
+            stress_day.resource_calendar_ids = resource_calendars.filtered_domain(search_domain)
 
     @api.model
     def get_stress_days(self, start_date, end_date, resource_calendar_id=None):
@@ -30,8 +40,8 @@ class StressDay(models.Model):
             ('start_date', '>=', start_date),
             ('end_date', '<=', end_date),
             '|',
-                ('resource_calendar_id', '=', False),
-                ('resource_calendar_id', '=', resource_calendar_id.id),
+                ('resource_calendar_ids', '=', False),
+                ('resource_calendar_ids', 'in', resource_calendar_id.ids),
         ])
 
         for stress_day in stress_days:

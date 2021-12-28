@@ -34,7 +34,7 @@
                 <field name="start_date"/>
                 <field name="end_date"/>
                 <field name="color" widget="color_picker" width="1"/>
-                <field name="resource_calendar_id" optional="hide"/>
+                <field name="resource_calendar_ids" optional="hide" widget="many2many_tags"/>
             </tree>
         </field>
     </record>

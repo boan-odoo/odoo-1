@@ -283,10 +283,10 @@ class HolidaysRequest(models.Model):
     _sql_constraints = [
         ('type_value',
          "CHECK((holiday_type='employee' AND (employee_id IS NOT NULL OR multi_employee IS TRUE)) or "
-         "(holiday_type='company' AND mode_company_id IS NOT NULL) or "
+         "(holiday_type='company') or "
          "(holiday_type='category' AND category_id IS NOT NULL) or "
          "(holiday_type='department' AND department_id IS NOT NULL) )",
-         "The employee, department, company or employee category of this request is missing. Please make sure that your user login is linked to an employee."),
+         "The employee, department or employee category of this request is missing. Please make sure that your user login is linked to an employee."),
         ('date_check2', "CHECK ((date_from <= date_to))", "The start date must be anterior to the end date."),
         ('duration_check', "CHECK ( number_of_days >= 0 )", "If you want to change the number of days you should use the 'period' mode"),
     ]
@@ -530,8 +530,8 @@ class HolidaysRequest(models.Model):
                 ('start_date', '<=', date_to.date()),
                 ('end_date', '>=', date_from.date()),
                 '|',
-                    ('resource_calendar_id', '=', False),
-                    ('resource_calendar_id', 'in', resource_calendar_id.ids),
+                    ('resource_calendar_ids', '=', False),
+                    ('resource_calendar_ids', 'in', resource_calendar_id.ids),
             ])
 
             for leave in self:
@@ -539,8 +539,8 @@ class HolidaysRequest(models.Model):
                     ('start_date', '<=', leave.date_to.date()),
                     ('end_date', '>=', leave.date_from.date()),
                     '|',
-                        ('resource_calendar_id', '=', False),
-                        ('resource_calendar_id', '=', (leave.employee_id.resource_calendar_id or self.env.company.resource_calendar_id).id)
+                        ('resource_calendar_ids', '=', False),
+                        ('resource_calendar_ids', '=', (leave.employee_id.resource_calendar_id or self.env.company.resource_calendar_id).id)
                 ]
 
                 if leave.holiday_status_id.company_id:
@@ -1253,7 +1253,8 @@ class HolidaysRequest(models.Model):
                 elif leave.holiday_type == 'category':
                     employees = leave.category_id.employee_ids
                 elif leave.holiday_type == 'company':
-                    employees = self.env['hr.employee'].search([('company_id', '=', leave.mode_company_id.id)])
+                    search_domain = [('company_id', '=', leave.mode_company_id.id)] if leave.mode_company_id else []
+                    employees = self.env['hr.employee'].sudo().search(search_domain)
                 else:
                     employees = leave.department_id.member_ids
 
@@ -1326,7 +1327,7 @@ class HolidaysRequest(models.Model):
                     split_leaves.filtered(lambda l: l.state in 'validate')._validate_leave_request()
 
                 values = leave._prepare_employees_holiday_values(employees)
-                leaves = self.env['hr.leave'].with_context(
+                leaves = self.env['hr.leave'].sudo().with_context(
                     tracking_disable=True,
                     mail_activity_automation_skip=True,
                     leave_fast_create=True,
