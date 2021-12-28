@@ -63,7 +63,7 @@
                                                 icon="fa-refresh"
                                                 string="Reset template"
                                                 attrs="{'invisible':[('is_standard','=', False)]}"
-                                                confirm="Are you sure you want to do reset this template to its original state ?"/>
+                                                confirm="Are you sure you want to do reset this template to its original state ? Changes made the subject and the body will be lost."/>
                                     </group>
                                 </group>
                             </page>

@@ -70,6 +70,7 @@ class MailTemplate(models.Model):
                                              "of the related document model")
     # original data
     original_body_html = fields.Html('Original Body', render_engine='qweb', translate=True, sanitize=False)
+    original_subject = fields.Char('Original Subject', translate=True, help="Subject (placeholders may be used here)")
     is_standard = fields.Boolean('Is Standard', compute='_compute_is_standard_template', copy=False)
 
     # ------------------------------------------------------------
@@ -98,17 +99,22 @@ class MailTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        is_updating = tools.config.options['init'] or tools.config.options['update']
+        is_updating = self.env.context.get('install_mode')
         if is_updating:
             for vals in vals_list:
                 if 'body_html' in vals:
                     vals['original_body_html'] = vals['body_html']
+                if 'body_html' in vals:
+                    vals['original_subject'] = vals['subject']
         return super().create(vals_list)
 
     def write(self, vals):
-        is_updating = tools.config.options['init'] or tools.config.options['update']
-        if is_updating and 'body_html' in vals:
-            vals['original_body_html'] = vals['body_html']
+        is_updating = self.env.context.get('install_mode')
+        if is_updating:
+            if 'body_html' in vals:
+                vals['original_body_html'] = vals['body_html']
+            if 'body_html' in vals:
+                vals['original_subject'] = vals['subject']
         return super().write(vals)
 
     def unlink(self):
@@ -149,7 +155,7 @@ class MailTemplate(models.Model):
 
     def reset_template(self):
         for record in self:
-            if record.is_stantard:
+            if record.is_standard:
                 record['body_html'] = record['original_body_html']
         return True
 
