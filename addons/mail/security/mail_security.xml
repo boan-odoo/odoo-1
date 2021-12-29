@@ -112,8 +112,9 @@
         <record id="mail_template_own_rights_user" model="ir.rule">
             <field name="name">mail.template: users can only edit/delete their own entries</field>
             <field name="model_id" ref="model_mail_template"/>
-            <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
+            <field name="groups" eval="[Command.link(ref('mail.group_mail_template_editor'))]"/>
             <field name="domain_force">[('create_uid', '=', user.id)]</field>
+            <field name="perm_create" eval="False"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_unlink" eval="True"/>
         </record>
@@ -121,7 +122,7 @@
         <record id="mail_template_rights_admin" model="ir.rule">
             <field name="name">Administrators and template editors can access all mail templates.</field>
             <field name="model_id" ref="model_mail_template"/>
-            <field name="groups" eval="[Command.link(ref('base.group_system')), Command.link(ref('mail.group_mail_template_editor'))]"/>
+            <field name="groups" eval="[Command.link(ref('base.group_system'))]"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>

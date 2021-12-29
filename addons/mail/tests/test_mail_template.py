@@ -14,7 +14,7 @@ class TestMailTemplate(MailCommon):
         cls.env['ir.config_parameter'].set_param('mail.restrict.template.rendering', True)
         cls.user_employee.groups_id -= cls.env.ref('mail.group_mail_template_editor')
 
-        cls.mail_template = cls.env['mail.template'].create({
+        cls.mail_template = cls.env['mail.template'].with_user(cls.user_employee).create({
             'name': 'Test template',
             'subject': '{{ 1 + 5 }}',
             'body_html': '<t t-out="4 + 9"/>',
