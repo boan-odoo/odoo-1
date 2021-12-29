@@ -39,7 +39,7 @@
                         decoration-warning="channel_enroll == 'payment'"
                         optional="hide"/>
                     <field name="channel_website_id" groups="website.group_multi_website" optional="hide"/>
-                    <button name="action_archive" title="Remove" icon="fa-times" type="object"/>
+                    <button name="action_archive" title="Archive" icon="fa-times" type="object"/>
                 </tree>
             </field>
         </record>
@@ -99,12 +99,17 @@
         <record id="slide_channel_partner_action_report" model="ir.actions.act_window">
             <field name="name">Attendees</field>
             <field name="res_model">slide.channel.partner</field>
-            <field name="view_mode">tree,kanban</field>
+            <field name="view_mode">tree,form,kanban</field>
             <field name="search_view_id" ref="website_slides.slide_channel_partner_view_search"/>
-            <field name="context">{
-                'search_default_groupby_channel': 1,
-                'search_default_active': 1
-            }</field>
+            <field name="context">{'search_default_groupby_channel': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    <strong>No Attendees Yet!</strong>
+                </p>
+                <p>
+                    From here you'll be able to monitor attendees and to track their progress.
+                </p>
+            </field>
         </record>
 
     </data>

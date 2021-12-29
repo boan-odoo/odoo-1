@@ -25,7 +25,7 @@ class SurveyUserInput(models.Model):
             self._check_for_failed_attempt()
         return res
 
-    def get_failed_attempts(self):
+    def get_failed_attempts(self, survey_sudo):
         if self:
             user_inputs = self.search([
                 ('id', 'in', self.ids),
@@ -35,11 +35,11 @@ class SurveyUserInput(models.Model):
             ])
 
             if user_inputs:
-                user_inputs_attempts = []
+                user_inputs_attempts = self.env['survey.user_input']
                 for user_input in user_inputs:
                     has_attempt = user_input.survey_id._has_attempts_left(user_input.partner_id, user_input.email, user_input.invite_token)
                     if not has_attempt:
-                        user_inputs_attempts.append(user_input)
+                        user_inputs_attempts |= user_input
                 return user_inputs_attempts
         return []
 

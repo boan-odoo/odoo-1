@@ -14,7 +14,7 @@ $o-kanban-large-record-width: 400px;
     }
 }
 
-.o_slide_attendee_kanban {
+.o_slide_attendee_kanban, .o_slide_channel_kanban {
     .ribbon {
         &::before, &::after {
             display: none;

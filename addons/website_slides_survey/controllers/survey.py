@@ -29,8 +29,12 @@ class Survey(main.Survey):
         result = super(Survey, self).survey_submit(survey_token, answer_token, **post)
         access_data = self._get_access_data(survey_token, answer_token, ensure_token=True)
         if not result.get('error'):
-            answer_sudo = access_data['answer_sudo']
-            user_inputs_attempts = answer_sudo.get_failed_attempts()
+            survey_sudo, answer_sudo = access_data['survey_sudo'], access_data['answer_sudo']
+            # TODO: MSH: Move following method in survey.survey model and rename it to remove_failed_attempts
+            # TODO: remove_failed_attempts will accept partner, email, invite_token as params and we will take
+            # this params from answer_sudo like answer_sudo.partner_id etc.
+            user_inputs_attempts = answer_sudo.get_failed_attempts(survey_sudo)
+            print ("\n\nuser_inputs_attempts ::: ", user_inputs_attempts)
             for user_input in user_inputs_attempts:
                 domain = [
                     ('survey_id', '=', user_input.survey_id.id),
@@ -47,5 +51,6 @@ class Survey(main.Survey):
                     domain = expression.AND([domain, [('invite_token', '=', user_input.invite_token)]])
                 # remove failed user inputs as we gonna archive membership if failed attempt is equal to attempt limit
                 # so when user rejoin course then we unarchive the membership and survey do not have failed attempts
+                print ("\n\ndomain based user inputs ::: ", request.env['survey.user_input'].sudo().search(domain))
                 request.env['survey.user_input'].sudo().search(domain).unlink()
         return result
