@@ -296,6 +296,7 @@ class Project(models.Model):
         panel_data = super(Project, self).get_panel_data()
         return {
             **panel_data,
+            'currency_id': self.currency_id.id,
             'analytic_account_id': self.analytic_account_id.id,
             'profitability_items': self._get_profitability_items(),
         }
