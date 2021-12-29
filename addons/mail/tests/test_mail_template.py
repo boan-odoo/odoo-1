@@ -14,7 +14,7 @@ class TestMailTemplate(MailCommon):
         cls.env['ir.config_parameter'].set_param('mail.restrict.template.rendering', True)
         cls.user_employee.groups_id -= cls.env.ref('mail.group_mail_template_editor')
 
-        cls.mail_template = cls.env['mail.template'].with_user(cls.user_employee).create({
+        cls.mail_template = cls.env['mail.template'].create({
             'name': 'Test template',
             'subject': '{{ 1 + 5 }}',
             'body_html': '<t t-out="4 + 9"/>',
@@ -63,3 +63,46 @@ class TestMailTemplate(MailCommon):
 
         with self.assertRaises(AccessError):
             mail_template.with_user(self.user_employee).name = 'Test write'
+
+    def test_mail_template_access(self):
+        self.user_employee.groups_id += self.env.ref('mail.group_mail_template_editor')
+        user_template = self.env['mail.template'].with_user(self.user_employee).create({
+            'name': 'Test template',
+            'subject': '{{ 1 + 5 }}',
+            'body_html': '<t t-out="4 + 9"/>',
+            'lang': '{{ object.lang }}',
+            'auto_delete': True,
+            'model_id': self.env.ref('base.model_res_partner').id,
+        })
+        admin_template = self.env['mail.template'].create({
+            'name': 'Test template',
+            'subject': '{{ 1 + 5 }}',
+            'body_html': '<t t-out="4 + 9"/>',
+            'lang': '{{ object.lang }}',
+            'auto_delete': True,
+            'model_id': self.env.ref('base.model_res_partner').id,
+        })
+
+        # Standard employee can modify their own template
+        user_template.with_user(self.user_employee).write({
+            'name': 'Test template write',
+        })
+        self.assertEqual(user_template['name'], 'Test template write')
+
+        # Standard employee cannot modify other's template
+        with self.assertRaises(AccessError):
+            admin_template.with_user(self.user_employee).write({
+                'name': 'Test template write',
+            })
+
+        # Admin employee can modify their own template
+        admin_template.with_user(self.user_admin).write({
+            'name': 'Test template write 2',
+        })
+        self.assertEqual(admin_template['name'], 'Test template write 2')
+
+        # Admin employee can modify other's template
+        user_template.with_user(self.user_admin).write({
+            'name': 'Test template write 2',
+        })
+        self.assertEqual(user_template['name'], 'Test template write 2')
