@@ -171,3 +171,12 @@ class TestMailingListMerge(MassMailCommon):
         merge = merge_form.save()
         self.assertEqual(merge.src_list_ids, self.mailing_list_1 + self.mailing_list_2)
         self.assertEqual(merge.dest_list_id, self.mailing_list_3)
+
+    @users('user_marketing')
+    def test_mailing_list_to_mailig(self):
+        mailing_ctx = self.mailing_list_1.action_send_new_mailing().get('context', {})
+        form = Form(self.env['mailing.mailing'].with_context(mailing_ctx))
+        form.subject = 'Test Mail'
+        mailing = form.save()
+        # Check that mailing list is set properly
+        self.assertEqual(mailing.contact_list_ids, self.mailing_list_1, 'Should have the correct mailing list set')

@@ -227,6 +227,19 @@ class MassMailingList(models.Model):
     def close_dialog(self):
         return {'type': 'ir.actions.act_window_close'}
 
+    def action_send_new_mailing(self):
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Send Mailing From Mailing List"),
+            "res_model": "mailing.mailing",
+            "view_mode": "form",
+            "views": [(self.env.ref("mass_mailing.mailing_mailing_view_form_full_width").id, "form")],
+            "context": {
+                'default_contact_list_ids': [self.id],
+                'default_mailing_type': 'mail',
+            },
+        }
+
     # ------------------------------------------------------
     # MAILING
     # ------------------------------------------------------
