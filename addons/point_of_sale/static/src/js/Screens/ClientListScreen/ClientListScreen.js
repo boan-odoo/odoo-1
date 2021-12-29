@@ -79,19 +79,24 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
             }
             return res.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') });
         }
+        get isEveryPartnerLoadedAfterStartOfSession() {
+            return !this.env.pos.config.limited_partners_loading || this.env.pos.config.partner_load_background;
+        }
 
         // Methods
 
         // We declare this event handler as a debounce function in
         // order to lower its trigger rate.
         async updateClientList(event) {
-            var newClientList = await this.getNewClient();
             this.state.query = event.target.value;
             const clients = this.clients;
-            if (event.code === 'Enter' && clients.length === 1) {
-                this.clickClient(new CustomEvent('click-client', {
-                    detail: { client: clients[0] }
-                }));
+            if (event.code === 'Enter') {
+                if (!this.isEveryPartnerLoadedAfterStartOfSession) {
+                    await this.searchClient();
+                }
+                if (clients.length === 1) {
+                    this.clickClient(clients[0]);
+                }
             } else {
                 this.render();
             }
