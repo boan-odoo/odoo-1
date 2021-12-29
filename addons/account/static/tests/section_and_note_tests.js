@@ -37,6 +37,10 @@ QUnit.module('section_and_note', {
                         string: "Name",
                         type: 'text'
                     },
+                    name_section_note: {
+                        string: "S&N",
+                        type: 'text'
+                    }
                 },
                 records: [
                     {id: 1, display_type: false, invoice_id: 1, name: 'product\n2 lines'},
@@ -58,6 +62,7 @@ QUnit.module('section_and_note', {
             archs: {
                 'invoice_line,false,list': '<tree editable="bottom">' +
                     '<field name="display_type" invisible="1"/>' +
+                    '<field name="name_section_note"/>' +
                     '<field name="name" widget="section_and_note_text"/>' +
                 '</tree>',
             },

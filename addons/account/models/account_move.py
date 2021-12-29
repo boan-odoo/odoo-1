@@ -3680,6 +3680,8 @@ class AccountMoveLine(models.Model):
     is_rounding_line = fields.Boolean(help="Technical field used to retrieve the cash rounding line.")
     exclude_from_invoice_tab = fields.Boolean(help="Technical field used to exclude some lines from the invoice_line_ids tab in the form view.")
 
+    name_section_note = fields.Text(string="S&N")
+
     _sql_constraints = [
         (
             'check_credit_debit',
@@ -3768,7 +3770,9 @@ class AccountMoveLine(models.Model):
         if product.partner_ref:
             values.append(product.partner_ref)
         if self.journal_id.type == 'sale':
-            if product.description_sale:
+            if self.display_type in ['line_section', 'line_note']:
+                values = [self.name_section_note or ""]
+            elif product.description_sale:
                 values.append(product.description_sale)
         elif self.journal_id.type == 'purchase':
             if product.description_purchase:
@@ -4164,6 +4168,12 @@ class AccountMoveLine(models.Model):
     # -------------------------------------------------------------------------
     # ONCHANGE METHODS
     # -------------------------------------------------------------------------
+
+    @api.onchange('name_section_note')
+    def _onchange_name_section_note(self):
+        for line in self:
+            if line.display_type in ['line_note', 'line_section']:
+                line.name = line.name_section_note
 
     @api.onchange('amount_currency', 'currency_id', 'debit', 'credit', 'tax_ids', 'account_id', 'price_unit', 'quantity')
     def _onchange_mark_recompute_taxes(self):
@@ -4623,6 +4633,12 @@ class AccountMoveLine(models.Model):
         moves._check_fiscalyear_lock_date()
         lines._check_tax_lock_date()
         moves._synchronize_business_models({'line_ids'})
+
+        for line in lines:
+            if line.display_type in ["line_note", "line_section"]:
+                line.name_section_note = line.name
+            else:
+                line.name_section_note = ""
 
         return lines
 

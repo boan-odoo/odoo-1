@@ -875,6 +875,7 @@
 
                                         <!-- Displayed fields -->
                                         <field name="sequence" widget="handle"/>
+                                        <field name="name_section_note"/>
                                         <field name="move_name" invisible="1"/>
                                         <field name="product_id"
                                                optional="show"

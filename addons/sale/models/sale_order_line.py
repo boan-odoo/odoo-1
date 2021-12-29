@@ -350,6 +350,15 @@ class SaleOrderLine(models.Model):
         'Packaging Quantity',
         compute='_compute_product_packaging_qty', store=True, readonly=False, precompute=True)
 
+    # Field to store name of sections and notes in the order lines.
+    name_section_note = fields.Text(string="S&N")
+
+    @api.onchange('name_section_note')
+    def _onchange_name_section_note(self):
+        for line in self:
+            if line.display_type in ['line_note', 'line_section']:
+                line.name = line.name_section_note
+
     # This computed default is necessary
     # because the ORM doesn't provide a way to remove a field default on inheritance
     # if a default is specified in sale, it disables the compute in sale_stock
@@ -619,9 +628,13 @@ class SaleOrderLine(models.Model):
     @api.depends('product_id')
     def _compute_name(self):
         for line in self:
-            if not line.product_id:
-                continue
-            line.name = line.with_context(lang=line.order_partner_id.lang)._get_sale_order_line_multiline_description_sale()
+            if line.display_type in ['line_note', 'line_section']:
+                line.name = line.name_section_note or ""
+            else:
+                if not line.product_id:
+                    continue
+                line.name = line.with_context(lang=line.order_partner_id.lang).\
+                    _get_sale_order_line_multiline_description_sale()
 
     @api.depends('product_id')
     def _compute_custom_attribute_values(self):

@@ -14,21 +14,57 @@ var ListRenderer = require('web.ListRenderer');
 
 var SectionAndNoteListRenderer = ListRenderer.extend({
     /**
+     * We want the header of section and note to be invisible,
+     * as with the rows in the table, the section and note field
+     * should not be visible.
+     *
+     * @override
+    **/
+    _renderHeaderCell: function(node) {
+        var $th = this._super.apply(this, arguments);
+
+        var isAccountModel =  this.state.id.startsWith("account.move.line");
+        var isSaleModel =  this.state.id.startsWith("sale.order.line");
+        var isSectionNote = node.attrs.name === "name_section_note";
+        var isProduct = node.attrs.name === "product_id"
+            || node.attrs.name === "product_template_id";
+        var isLabel = node.attrs.name === "name";
+
+        if (isSectionNote) {
+            $th.removeClass('o_invisible_modifier');
+            return $th.addClass('o_hidden');
+        } else if (isProduct && isSaleModel) {
+            $th.attr('colspan', 2)
+            return $th;
+        } else if (isLabel && isAccountModel) {
+            $th.attr('colspan', 2)
+            return $th;
+        }
+
+        return $th;
+    },
+
+    /**
      * We want section and note to take the whole line (except handle and trash)
      * to look better and to hide the unnecessary fields.
      *
      * @override
      */
     _renderBodyCell: function (record, node, index, options) {
+
         var $cell = this._super.apply(this, arguments);
 
         var isSection = record.data.display_type === 'line_section';
         var isNote = record.data.display_type === 'line_note';
+        var isProduct = record.data.display_type === false;
+
+        var isAccountModel = record.model === "account.move.line";
+        var isSaleModel = record.model === "sale.order.line";
 
         if (isSection || isNote) {
             if (node.attrs.widget === "handle") {
                 return $cell;
-            } else if (node.attrs.name === "name") {
+            } else if (node.attrs.name === "name_section_note") {
                 var nbrColumns = this._getNumberOfCols();
                 if (this.handleField) {
                     nbrColumns--;
@@ -36,11 +72,31 @@ var SectionAndNoteListRenderer = ListRenderer.extend({
                 if (this.addTrashIcon) {
                     nbrColumns--;
                 }
+
+                var columns = this.columns.map(function (obj) {return obj.attrs.name});
+                if (columns.includes("product_id") && columns.includes("product_template_id")) {
+                    nbrColumns++;
+                }
+
                 $cell.attr('colspan', nbrColumns);
             } else {
                 $cell.removeClass('o_invisible_modifier');
                 return $cell.addClass('o_hidden');
             }
+        } else if (isProduct) {
+            if (node.attrs.widget === "handle") {
+                return $cell;
+            } else if (node.attrs.name === "name_section_note") {
+                $cell.removeClass('o_invisible_modifier');
+                return $cell.addClass('o_hidden');
+            } else if ((node.attrs.name === "product_id"
+                || node.attrs.name === "product_template_id") && isSaleModel) {
+                $cell.attr('colspan', 2)
+            } else if (node.attrs.name === "name" && isAccountModel) {
+                $cell.attr('colspan', 2)
+            }
+
+            return $cell;
         }
 
         return $cell;
