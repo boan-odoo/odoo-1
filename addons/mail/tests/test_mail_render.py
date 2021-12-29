@@ -103,7 +103,7 @@ class TestMailRender(common.MailCommon):
         ]
 
         # link to mail template
-        cls.test_template = cls.env['mail.template'].create({
+        cls.test_template = cls.env['mail.template'].with_user(cls.user_employee).create({
             'name': 'Test Template',
             'subject': cls.base_inline_template_bits[0],
             'body_html': cls.base_qweb_bits[1],
