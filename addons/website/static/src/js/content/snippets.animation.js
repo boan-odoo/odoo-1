@@ -917,13 +917,12 @@ registry.anchorSlide = publicWidget.Widget.extend({
      * @private
      */
     _onAnimateClick: function (ev) {
-        if (this.$target[0].pathname.replaceAll("/", "") !== window.location.pathname.replaceAll("/", "")) {
-            return;
-        }
         var hash = this.$target[0].hash;
-        if (!utils.isValidAnchor(hash)) {
+        if (!hash.length || (this.$target[0].pathname.replaceAll("/", "") !== window.location.pathname.replaceAll("/", ""))) {
             return;
         }
+        // Escape special characters to make the jQuery selector to work.
+        hash = '#' + $.escapeSelector(hash.substring(1));
         var $anchor = $(hash);
         const scrollValue = $anchor.attr('data-anchor');
         if (!$anchor.length || !scrollValue) {
