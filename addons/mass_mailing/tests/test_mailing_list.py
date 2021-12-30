@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from datetime import datetime
+from freezegun import freeze_time
 from odoo import exceptions
 from odoo.addons.mass_mailing.tests.common import MassMailCommon
 from odoo.tests.common import Form, users
@@ -110,6 +112,20 @@ class TestMailingListMerge(MassMailCommon):
         # Copy the contact with default_list_ids in context, which should not raise anything
         contact_2 = contact_1.with_context(default_list_ids=self.mailing_list_3.ids).copy()
         self.assertEqual(contact_1.list_ids, contact_2.list_ids, 'Should copy the existing mailing list(s)')
+
+    @freeze_time("2021-09-28 05:30:00")
+    @users('user_marketing')
+    def test_mailing_contact_subscription_date(self):
+        ''' Test the subscription date of contact when it subscribe any mailing list. '''
+        contact = self.env['mailing.contact'].create({
+            'name': 'Contact 1',
+            'email': 'contact_1@test.example.com',
+            'subscription_list_ids': [(0, 0, {
+                'list_id': self.mailing_list_1.id,
+                'opt_out': False,
+            })],
+        })
+        self.assertEqual(contact.subscription_list_ids.subscription_date, datetime.now())
 
     @users('user_marketing')
     def test_mailing_list_merge(self):

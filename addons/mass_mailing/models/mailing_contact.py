@@ -18,6 +18,7 @@ class MassMailingContactListRel(models.Model):
     list_id = fields.Many2one('mailing.list', string='Mailing List', ondelete='cascade', required=True)
     opt_out = fields.Boolean(string='Opt Out',
                              help='The contact has chosen not to receive mails anymore from this list', default=False)
+    subscription_date = fields.Datetime(string='Subscription Date', readonly=True)
     unsubscription_date = fields.Datetime(string='Unsubscription Date')
     message_bounce = fields.Integer(related='contact_id.message_bounce', store=False, readonly=False)
     is_blacklisted = fields.Boolean(related='contact_id.is_blacklisted', store=False, readonly=False)
@@ -31,6 +32,7 @@ class MassMailingContactListRel(models.Model):
     def create(self, vals_list):
         now = fields.Datetime.now()
         for vals in vals_list:
+            vals['subscription_date'] = now
             if 'opt_out' in vals and 'unsubscription_date' not in vals:
                 vals['unsubscription_date'] = now if vals['opt_out'] else False
             if vals.get('unsubscription_date'):
