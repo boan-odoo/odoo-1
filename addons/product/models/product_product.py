@@ -677,6 +677,7 @@ class ProductProduct(models.Model):
 
     def _get_contextual_price(self):
         self.ensure_one()
+<<<<<<< HEAD:addons/product/models/product_product.py
         # YTI TODO: During website_sale cleaning, we should get rid of those crappy context thing
         if not self._context.get('pricelist'):
             return 0.0
@@ -686,3 +687,82 @@ class ProductProduct(models.Model):
         uom = self.env['uom.uom'].browse(self.env.context.get('uom'))
         date = self.env.context.get('date')
         return pricelist._get_product_price(self, quantity, uom=uom, date=date)
+=======
+        default_uom = self.product_id.uom_id
+        packaging_qty = default_uom._compute_quantity(self.qty, uom_id)
+        # We do not use the modulo operator to check if qty is a mltiple of q. Indeed the quantity
+        # per package might be a float, leading to incorrect results. For example:
+        # 8 % 1.6 = 1.5999999999999996
+        # 5.4 % 1.8 = 2.220446049250313e-16
+        if product_qty and packaging_qty:
+            rounded_qty = float_round(product_qty / packaging_qty, precision_rounding=1.0,
+                                  rounding_method=rounding_method) * packaging_qty
+            return rounded_qty if float_compare(rounded_qty, product_qty, precision_rounding=default_uom.rounding) else product_qty
+        return product_qty
+
+    def _find_suitable_product_packaging(self, product_qty, uom_id):
+        """ try find in `self` if a packaging's qty in given uom is a divisor of
+        the given product_qty. If so, return the one with greatest divisor.
+        """
+        packagings = self.sorted(lambda p: p.qty, reverse=True)
+        for packaging in packagings:
+            new_qty = packaging._check_qty(product_qty, uom_id)
+            if new_qty == product_qty:
+                return packaging
+        return self.env['product.packaging']
+
+
+class SupplierInfo(models.Model):
+    _name = "product.supplierinfo"
+    _description = "Supplier Pricelist"
+    _order = 'sequence, min_qty DESC, price, id'
+
+    name = fields.Many2one(
+        'res.partner', 'Vendor',
+        ondelete='cascade', required=True,
+        help="Vendor of this product", check_company=True)
+    product_name = fields.Char(
+        'Vendor Product Name',
+        help="This vendor's product name will be used when printing a request for quotation. Keep empty to use the internal one.")
+    product_code = fields.Char(
+        'Vendor Product Code',
+        help="This vendor's product code will be used when printing a request for quotation. Keep empty to use the internal one.")
+    sequence = fields.Integer(
+        'Sequence', default=1, help="Assigns the priority to the list of product vendor.")
+    product_uom = fields.Many2one(
+        'uom.uom', 'Unit of Measure',
+        related='product_tmpl_id.uom_po_id',
+        help="This comes from the product form.")
+    min_qty = fields.Float(
+        'Quantity', default=0.0, required=True, digits="Product Unit Of Measure",
+        help="The quantity to purchase from this vendor to benefit from the price, expressed in the vendor Product Unit of Measure if not any, in the default unit of measure of the product otherwise.")
+    price = fields.Float(
+        'Price', default=0.0, digits='Product Price',
+        required=True, help="The price to purchase a product")
+    company_id = fields.Many2one(
+        'res.company', 'Company',
+        default=lambda self: self.env.company.id, index=1)
+    currency_id = fields.Many2one(
+        'res.currency', 'Currency',
+        default=lambda self: self.env.company.currency_id.id,
+        required=True)
+    date_start = fields.Date('Start Date', help="Start date for this vendor price")
+    date_end = fields.Date('End Date', help="End date for this vendor price")
+    product_id = fields.Many2one(
+        'product.product', 'Product Variant', check_company=True,
+        help="If not set, the vendor price will apply to all variants of this product.")
+    product_tmpl_id = fields.Many2one(
+        'product.template', 'Product Template', check_company=True,
+        index=True, ondelete='cascade')
+    product_variant_count = fields.Integer('Variant Count', related='product_tmpl_id.product_variant_count')
+    delay = fields.Integer(
+        'Delivery Lead Time', default=1, required=True,
+        help="Lead time in days between the confirmation of the purchase order and the receipt of the products in your warehouse. Used by the scheduler for automatic computation of the purchase order planning.")
+
+    @api.model
+    def get_import_templates(self):
+        return [{
+            'label': _('Import Template for Vendor Pricelists'),
+            'template': '/product/static/xls/product_supplierinfo.xls'
+        }]
+>>>>>>> 93374111916... temp:addons/product/models/product.py
