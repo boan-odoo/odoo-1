@@ -82,8 +82,6 @@ class DiscussController(http.Controller):
             if not channel_sudo.env.user._is_public():
                 channel_sudo.add_members([channel_sudo.env.user.partner_id.id])
             else:
-                if channel_sudo.public == 'groups':
-                    raise NotFound()
                 guest = channel_sudo.env['mail.guest']._get_guest_from_request(request)
                 if guest:
                     channel_sudo = channel_sudo.with_context(guest=guest)
@@ -100,6 +98,8 @@ class DiscussController(http.Controller):
                         'shouldAddGuestAsMemberOnJoin': True,
                         'shouldDisplayWelcomeViewInitially': True,
                     })
+                if not channel_sudo._can_invite_guest(guests=guest):
+                    raise NotFound()
                 channel_sudo = channel_sudo.with_context(guest=guest)
         response = self._response_discuss_public_channel_template(channel_sudo=channel_sudo, discuss_public_view_data=discuss_public_view_data)
         if add_guest_cookie:

@@ -3,6 +3,7 @@
 
 import base64
 import logging
+import werkzeug
 from collections import defaultdict
 from hashlib import sha512
 from secrets import choice
@@ -311,13 +312,15 @@ class Channel(models.Model):
             members_to_create = []
             if channel.public == 'groups':
                 invalid_partners = partners.filtered(lambda partner: channel.group_public_id not in partner.user_ids.groups_id)
-                if invalid_partners or guests:
+                if invalid_partners:
                     raise UserError(_(
                         'Channel "%(channel_name)s" only accepts members of group "%(group_name)s". Forbidden for: %(partner_names)s',
                         channel_name=channel.name,
                         group_name=channel.group_public_id.name,
                         partner_names=', '.join(partner.name for partner in invalid_partners)
                     ))
+                if not channel._can_invite_guest(guests=guests):
+                    raise werkzeug.exceptions.NotFound()
             existing_partners = self.env['res.partner'].search([('id', 'in', partners.ids), ('channel_ids', 'in', channel.id)])
             members_to_create += [{
                 'partner_id': partner.id,
@@ -405,6 +408,11 @@ class Channel(models.Model):
                     return False
                 if channel.group_public_id not in self.env.user.groups_id:
                     return False
+        return True
+
+    def _can_invite_guest(self, guests=None):
+        if self.public == 'groups' and guests:
+            return False
         return True
 
     # ------------------------------------------------------------
