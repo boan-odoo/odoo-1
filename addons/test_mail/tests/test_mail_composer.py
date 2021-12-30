@@ -57,7 +57,7 @@ class TestMailComposer(TestMailCommon, TestRecipients):
             'sequence': 666,
         })
 
-        cls.template = cls.env['mail.template'].create({
+        cls.template = cls.env['mail.template'].with_user(cls.employee).create({
             'name': 'TestTemplate',
             'subject': 'TemplateSubject {{ object.name }}',
             'body_html': '<p>TemplateBody <t t-esc="object.name"></t></p>',
