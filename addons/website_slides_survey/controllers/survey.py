@@ -30,27 +30,7 @@ class Survey(main.Survey):
         access_data = self._get_access_data(survey_token, answer_token, ensure_token=True)
         if not result.get('error'):
             survey_sudo, answer_sudo = access_data['survey_sudo'], access_data['answer_sudo']
-            # TODO: MSH: Move following method in survey.survey model and rename it to remove_failed_attempts
-            # TODO: remove_failed_attempts will accept partner, email, invite_token as params and we will take
-            # this params from answer_sudo like answer_sudo.partner_id etc.
-            user_inputs_attempts = answer_sudo.get_failed_attempts(survey_sudo)
-            print ("\n\nuser_inputs_attempts ::: ", user_inputs_attempts)
-            for user_input in user_inputs_attempts:
-                domain = [
-                    ('survey_id', '=', user_input.survey_id.id),
-                    ('test_entry', '=', False),
-                    ('state', '=', 'done')
-                ]
-
-                if user_input.partner_id:
-                    domain = expression.AND([domain, [('partner_id', '=', user_input.partner_id.id)]])
-                else:
-                    domain = expression.AND([domain, [('email', '=', user_input.email)]])
-
-                if user_input.invite_token:
-                    domain = expression.AND([domain, [('invite_token', '=', user_input.invite_token)]])
-                # remove failed user inputs as we gonna archive membership if failed attempt is equal to attempt limit
-                # so when user rejoin course then we unarchive the membership and survey do not have failed attempts
-                print ("\n\ndomain based user inputs ::: ", request.env['survey.user_input'].sudo().search(domain))
-                request.env['survey.user_input'].sudo().search(domain).unlink()
+            # remove failed user inputs as we gonna archive membership if failed attempt is equal to attempt limit
+            # so when user rejoin course then we unarchive the membership and survey do not have failed attempts
+            survey_sudo._remove_all_failed_attempt_of_partner(answer_sudo.partner_id, answer_sudo.email, answer_sudo.invite_token)
         return result

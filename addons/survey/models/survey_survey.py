@@ -507,10 +507,7 @@ class Survey(models.Model):
 
         return True
 
-    def _get_number_of_attempts_lefts(self, partner, email, invite_token):
-        """ Returns the number of attempts left. """
-        self.ensure_one()
-
+    def _get_attempts_left_domain(self, partner, email, invite_token):
         domain = [
             ('survey_id', '=', self.id),
             ('test_entry', '=', False),
@@ -525,7 +522,21 @@ class Survey(models.Model):
         if invite_token:
             domain = expression.AND([domain, [('invite_token', '=', invite_token)]])
 
+        return domain
+
+    def _get_number_of_attempts_lefts(self, partner, email, invite_token):
+        """ Returns the number of attempts left. """
+        self.ensure_one()
+
+        domain = self._get_attempts_left_domain(partner, email, invite_token)
         return self.attempts_limit - self.env['survey.user_input'].search_count(domain)
+
+    def _remove_all_failed_attempt_of_partner(self, partner, email, invite_token):
+        self.ensure_one()
+
+        domain = self._get_attempts_left_domain(partner, email, invite_token)
+        if not self._has_attempts_left(partner, email, invite_token):
+            self.env['survey.user_input'].sudo().search(domain).unlink()
 
     # ------------------------------------------------------------
     # QUESTIONS MANAGEMENT
