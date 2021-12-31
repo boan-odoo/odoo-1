@@ -13,6 +13,6 @@ class AccountMove(models.Model):
             company_shipping_id = self.mapped(
                 "invoice_line_ids.purchase_line_id.move_ids.warehouse_id.partner_id"
             )
-        if len(company_shipping_id) == 1:
-            return company_shipping_id
+            if len(company_shipping_id) == 1:
+                return company_shipping_id
         return res
