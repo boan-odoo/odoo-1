@@ -658,7 +658,7 @@ class Channel(models.Model):
 
         return total_karma
 
-    def _remove_membership(self, partner_ids):
+    def _remove_membership(self, partner_ids, unlink=False):
         """ Unlink (!!!) the relationships between the passed partner_ids
         and the channels and their slides (done in the unlink of slide.channel.partner model).
         Remove earned karma when completed quizz """
@@ -683,7 +683,11 @@ class Channel(models.Model):
         self.message_unsubscribe(partner_ids=partner_ids)
 
         if removed_channel_partner_domain:
-            self.env['slide.channel.partner'].sudo().search(removed_channel_partner_domain).action_archive()
+            members = self.env['slide.channel.partner'].sudo().search(removed_channel_partner_domain)
+            if unlink:
+                members.unlink()
+            else:
+                members.action_archive()
 
     def action_view_slides(self):
         action = self.env["ir.actions.actions"]._for_xml_id("website_slides.slide_slide_action")
