@@ -892,7 +892,7 @@ class SaleOrder(models.Model):
             if not template_id:
                 template_id = self.env['ir.model.data']._xmlid_to_res_id('sale.mail_template_sale_confirmation', raise_if_not_found=False)
         if not template_id:
-            template_id = self.env['ir.model.data']._xmlid_to_res_id('sale.email_template_edi_sale', raise_if_not_found=False)
+            template_id = int(self.env['ir.config_parameter'].sudo().get_param('sale.default_order_template'))
 
         return template_id
 

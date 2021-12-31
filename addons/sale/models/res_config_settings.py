@@ -55,16 +55,16 @@ class ResConfigSettings(models.TransientModel):
              "and not after the delivery.",
         config_parameter='sale.automatic_invoice',
     )
-    invoice_mail_template_id = fields.Many2one(
+    sale_mail_template_id = fields.Many2one(
         comodel_name='mail.template',
-        string='Invoice Email Template',
-        domain="[('model', '=', 'account.move')]",
-        config_parameter='sale.default_invoice_email_template',
-        default=lambda self: self.env.ref('account.email_template_edi_invoice', False)
+        string='Template',
+        domain="[('model', '=', 'sale.order')]",
+        config_parameter='sale.default_order_template',
+        help="Template used when sending an order by email."
     )
     confirmation_mail_template_id = fields.Many2one(
         comodel_name='mail.template',
-        string='Confirmation Email Template',
+        string='Confirmation Email',
         domain="[('model', '=', 'sale.order')]",
         config_parameter='sale.default_confirmation_template',
         help="Email sent to the customer once the order is paid."

@@ -3112,13 +3112,15 @@ class AccountMove(models.Model):
 
     def _get_mail_template(self):
         """
-        :return: the correct mail template based on the current move type
+        :return: the correct mail template id based on the current move type
         """
-        return (
-            'account.email_template_edi_credit_note'
+        template_id = (
+            int(self.env['ir.config_parameter'].sudo().get_param('account.default_credit_note_template'))
             if all(move.move_type == 'out_refund' for move in self)
-            else 'account.email_template_edi_invoice'
+            else int(self.env['ir.config_parameter'].sudo().get_param('account.default_invoice_template'))
         )
+        template = self.env['mail.template'].search([('id', '=', template_id)])
+        return template_id
 
     def action_send_and_print(self):
         return {
@@ -3127,7 +3129,7 @@ class AccountMove(models.Model):
             'view_mode': 'form',
             'context': {
                 'default_email_layout_xmlid': 'mail.mail_notification_paynow',
-                'default_template_id': self.env.ref(self._get_mail_template()).id,
+                'default_template_id': self._get_mail_template(),
                 'mark_invoice_as_sent': True,
                 'active_model': 'account.move',
                 # Setting both active_id and active_ids is required, mimicking how direct call to
@@ -3144,7 +3146,8 @@ class AccountMove(models.Model):
             message loaded by default
         """
         self.ensure_one()
-        template = self.env.ref(self._get_mail_template(), raise_if_not_found=False)
+        template_id = self._get_mail_template()
+        template = self.env['mail.template'].browse(template_id)
         lang = False
         if template:
             lang = template._render_lang(self.ids)[self.id]
