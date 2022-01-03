@@ -1,8 +1,10 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import models, fields, api, _
 import hashlib
 import random
+
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 
 DEFAULT_DHD_POWER = 1
@@ -10,8 +12,8 @@ DEFAULT_ZPM_POWER = 1000
 DIAL_DISTANT_GALAXY_POWER_REQUIREMENT = 100
 
 
-MILKY_WAY_REGIONS = [*['P3X'] * 55, *['P4X'] * 12, *['P2X'] * 11, *['P5C'] * 8]
-PEGASUS_REGIONS = [*['M4R'] * 6, *['P3Y'] * 4, *['M6R'] * 3]
+MILKY_WAY_REGIONS = ['P3X', 'P4X', 'P2X', 'P5C']
+PEGASUS_REGIONS = ['M4R', 'P3Y', 'M6R']
 
 
 class Stargate(models.Model):
@@ -40,12 +42,12 @@ class Stargate(models.Model):
     def _compute_sgc_designation(self):
         for gate in self:
             if gate.galaxy.name not in ('Milky Way', 'Pegasus'):
-                game.sgc_designation = False
+                gate.sgc_designation = False
                 continue
 
-            region_part = (
-                random.choice(PEGASUS_REGIONS) if gate.galaxy.name == 'Pegasus'
-                else random.choice(MILKY_WAY_REGIONS))
+            region_part = (PEGASUS_REGIONS[gate.id % len(PEGASUS_REGIONS)]
+                if gate.galaxy.name == 'Pegasus'
+                else MILKY_WAY_REGIONS[gate.id % len(MILKY_WAY_REGIONS)])
             local_part = self.hash_address(gate.address)
             gate.sgc_designation = f'{region_part}-{local_part}'
 

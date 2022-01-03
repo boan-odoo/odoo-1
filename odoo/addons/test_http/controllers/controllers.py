@@ -1,7 +1,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+import json
+import werkzeug
+
+from werkzeug.exceptions import BadRequest
+
 from odoo import http
 from odoo.http import request
-from werkzeug.exceptions import BadRequest
+from odoo.exceptions import UserError
 
 
 class TestHttp(http.Controller):
@@ -11,51 +16,47 @@ class TestHttp(http.Controller):
     # =====================================================
     @http.route(['/test_http/greeting', '/test_http/greeting-none'], type='http', auth='none')
     def greeting_none(self):
-        return "Hello"
+        return "Tek'ma'te"
 
     @http.route('/test_http/greeting-public', type='http', auth='public')
     def greeting_public(self):
-        assert self.env.user, "ORM should be initialized"
-        return "Hello"
+        assert request.env.user, "ORM should be initialized"
+        return "Tek'ma'te"
 
     @http.route('/test_http/greeting-user', type='http', auth='user')
     def greeting_user(self):
-        assert self.env.user, "ORM should be initialized"
-        return "Hello"
+        assert request.env.user, "ORM should be initialized"
+        return "Tek'ma'te"
 
     # =====================================================
     # Echo-Reply
     # =====================================================
-    @http.route('/test_http/echo-http', type='http', auth='none')
-    def echo_http(self):
-        return str(request.params)
+    @http.route('/test_http/echo-http-get', type='http', auth='none', methods=['GET'])
+    def echo_http_get(self, **kwargs):
+        return str(kwargs)
 
-    @http.route('/test_http/echo-json', type='json', auth='none')
-    def echo_json(self):
-        return request.params
+    @http.route('/test_http/echo-http-post', type='http', auth='none', methods=['POST'], csrf=False)
+    def echo_http_post(self, **kwargs):
+        return str(kwargs)
 
-    @http.route('/test_http/echo-json-context', type='json', auth='user')
-    def echo_json_context(self):
-        return request.env.context
-
-    @http.route('/test_http/echo-json-over-http', type='http', auth='none')
-    def echo_json_over_http(self):
-        if request.type != 'json':
-            raise BadRequest('This endpoint requires JSON data')
-
+    @http.route('/test_http/echo-json', type='json', auth='none', methods=['POST'], csrf=False)
+    def echo_json(self, **kwargs):
         charset = request.httprequest.charset
         payload = request.httprequest.get_data().decode(charset)
-        echo = json.dumps(json.loads(payload))
+        return {'payload': payload and json.loads(payload), 'kwargs': kwargs}
 
-        return request.make_response(echo, headers=[
-            ('Content-Type', 'application/json; charset=utf-8')
-        ])
+    @http.route('/test_http/echo-json-context', type='json', auth='user', methods=['POST'], csrf=False)
+    def echo_json_context(self, **kwargs):
+        return request.env.context
 
     # =====================================================
     # Models
     # =====================================================
     @http.route('/test_http/<model("test_http.galaxy"):galaxy>', auth='public')
     def galaxy(self, galaxy):
+        if not galaxy.exists():
+            raise UserError('The Ancients did not settle there.')
+
         return http.request.render('test_http.tmpl_galaxy', {
             'galaxy': galaxy,
             'stargates': http.request.env['test_http.stargate'].search([
@@ -65,13 +66,37 @@ class TestHttp(http.Controller):
 
     @http.route('/test_http/<model("test_http.galaxy"):galaxy>/<model("test_http.stargate"):gate>', auth='user')
     def stargate(self, galaxy, gate):
+        if not gate.exists():
+            raise UserError("The goa'uld destroyed the gate")
+
         return http.request.render('test_http.tmpl_stargate', {
             'gate': gate
         })
 
+    @http.route('/test_http/1/3', auth='user')
+    def exploring_sg1(self):
+        assert request.env.user.login == 'admin'
+
+        pegasus = request.env.ref('test_http.pegasus')
+        athos = request.env.ref('test_http.athos')
+
+        return werkzeug.utils.redirect(f'/test_http/{pegasus.id}/{athos.id}')
+
+    @http.route('/test_http/1/6', auth='user')
+    def exploring_bratac(self):
+        assert request.env.user.login == 'demo'
+
+        return werkzeug.utils.redirect(f'/test_http/static/src/img/48px-StargateGlyph01.png')
+
     # =====================================================
     # Misc
     # =====================================================
-    @http.route('/test_http/redirect-double-slash', type='http')
+    @http.route('/test_http/redirect-double-slash', type='http', auth='none')
     def redirect_double_slash(self):
         return werkzeug.utils.redirect('/test_http//greeting')
+
+    @http.route('/test_http/headers', type='http', auth='none')
+    def headers(self):
+        return request.make_response('', headers=[
+            ('Content-Type', 'application/json; charset=toto')
+        ])
