@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import tempfile
+import pudb
 
 import werkzeug
 import werkzeug.exceptions
@@ -189,7 +190,7 @@ def module_installed(environment):
     # Retrieve database installed modules
     # TODO The following code should move to ir.module.module.list_installed_modules()
     Modules = environment['ir.module.module']
-    domain = [('state','=','installed'), ('name','in', loadable)]
+    domain = ['|',('state','=','installed'), ('name','in', loadable)]
     modules = OrderedDict(
         (module.name, module.dependencies_id.mapped('name'))
         for module in Modules.search(domain)
@@ -233,6 +234,9 @@ def manifest_glob(extension, addons=None, db=None, include_remotes=False):
 
     r = []
     for addon in addons:
+        if(addon == "post_extended"):
+            import pudb
+            pudb.set_trace()
         manifest = http.addons_manifest.get(addon, None)
         if not manifest:
             continue
@@ -607,14 +611,27 @@ class HomeStaticTemplateHelpers(object):
         :returns: (concatenation_result, checksum)
         :rtype: (bytes, str)
         """
+
         checksum = hashlib.new('sha512')  # sha512/256
         if not file_dict:
             return b'', checksum.hexdigest()
 
         root = None
+        print ("\n\nfile_dict ::: ", file_dict)
+        import pudb
+        pudb.set_trace()
         for addon, fnames in file_dict.items():
             for fname in fnames:
-                contents = self._read_addon_file(fname)
+                try:
+                    contents = self._read_addon_file(fname)
+                except FileNotFoundError:
+                    import pudb
+                    pudb.set_trace()
+                    attachment = request.env['ir.attachment'].sudo().search([('url', '=', fname),], limit=1)
+                    if not attachment:
+                        raise FileNotFoundError
+                    contents = attachment.raw or ''
+
                 checksum.update(contents)
                 if not self.checksum_only:
                     xml = self._compute_xml_tree(addon, fname, contents)
@@ -628,13 +645,37 @@ class HomeStaticTemplateHelpers(object):
 
         return etree.tostring(root, encoding='utf-8') if root is not None else b'', checksum.hexdigest()[:64]
 
+    def temp(self):
+        files = OrderedDict([(addon, list()) for addon in self.addons])
+        [files[f[2]].append(f[0]) for f in self._manifest_glob()]
+        return files
+
     def _get_qweb_templates(self):
         """One and only entry point that gets and evaluates static qweb templates
 
         :rtype: (str, str)
         """
-        files = OrderedDict([(addon, list()) for addon in self.addons])
-        [files[f[2]].append(f[0]) for f in self._manifest_glob()]
+        # files = OrderedDict([(addon, list()) for addon in self.addons])
+        # [files[f[2]].append(f[0]) for f in self._manifest_glob()]
+        files = self.temp()
+            
+
+        # importedModules = request.env['ir.module.module'].sudo().search([('state', '=', 'installed'),] )
+        # if importedModules:
+        #     searchList = []
+        #     searchList.extend("|" * (len(importedModules)-1))
+        #     for module in importedModules:
+        #         searchList.append(('url', '=like', "%"+module.name+"/static/src/xml%"))
+        #     import pudb
+        #     pudb.set_trace()
+        #     attachments = request.env['ir.attachment'].sudo().search(searchList)
+        #     [files[module.name].append(attachment.url) for attachment in attachments if attachment.url]
+
+        # importedModules = request.env['ir.module.module'].sudo().search([('imported', '=', True),] )
+        # if importedModules:
+        #     for module in importedModules:
+        #         attachments = request.env['ir.attachment'].sudo().search([('url', '=like', "%"+module.name+"/static/src/xml%")])
+        #         [files[module.name].append(attachment.url) for attachment in attachments]
         content, checksum = self._concat_xml(files)
         return content, checksum
 
