@@ -3119,7 +3119,6 @@ class AccountMove(models.Model):
             if all(move.move_type == 'out_refund' for move in self)
             else int(self.env['ir.config_parameter'].sudo().get_param('account.default_invoice_template'))
         )
-        template = self.env['mail.template'].search([('id', '=', template_id)])
         return template_id
 
     def action_send_and_print(self):

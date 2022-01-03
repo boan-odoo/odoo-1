@@ -57,7 +57,7 @@ class ResConfigSettings(models.TransientModel):
     )
     sale_mail_template_id = fields.Many2one(
         comodel_name='mail.template',
-        string='Template',
+        string='Send Order Template',
         domain="[('model', '=', 'sale.order')]",
         config_parameter='sale.default_order_template',
         help="Template used when sending an order by email."
