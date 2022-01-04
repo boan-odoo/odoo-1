@@ -1491,6 +1491,10 @@ class BaseModel(metaclass=MetaModel):
         return not has_groups
 
     @api.model
+    def _get_default_view(self, view_type):
+        return getattr(self, '_get_default_%s_view' % view_type)()
+
+    @api.model
     def _get_default_form_view(self):
         """ Generates a default single-line form view using all fields
         of the current model.
@@ -1672,7 +1676,7 @@ class BaseModel(metaclass=MetaModel):
         if view_id:
             # read the view with inherited views applied
             view = View.browse(view_id)
-            result['arch'] = view.get_combined_arch()
+            template = view.id
             result['name'] = view.name
             result['type'] = view.type
             result['view_id'] = view.id
@@ -1681,12 +1685,12 @@ class BaseModel(metaclass=MetaModel):
         else:
             # fallback on default views methods if no ir.ui.view could be found
             try:
-                arch_etree = getattr(self, '_get_default_%s_view' % view_type)()
-                result['arch'] = etree.tostring(arch_etree, encoding='unicode')
-                result['type'] = view_type
-                result['name'] = 'default'
+                template = self._get_default_view(view_type)
             except AttributeError:
                 raise UserError(_("No default view of type '%s' could be found !", view_type))
+            result['type'] = view_type
+            result['name'] = 'default'
+        result['arch'] = self.env['ir.qweb.js']._render(template, View._prepare_qcontext(), model=self._name)
         return result
 
     @api.model
@@ -1719,8 +1723,41 @@ class BaseModel(metaclass=MetaModel):
             view = view.with_context(base_model_name=result['base_model'])
 
         # Apply post processing, groups and modifiers etc...
-        xarch, xfields = view.postprocess_and_fields(etree.fromstring(result['arch']), model=self._name)
-        result['arch'] = xarch
+        xarch = result['arch']
+        node = etree.fromstring(xarch)
+
+        def collect_fields(node, fields_info):
+            view_fields = set(el.get('name') for el in node.xpath('.//field[not(ancestor::field)]'))
+            view_fields = {fname: fields_info.get(fname) for fname in view_fields}
+            for el in node.xpath('.//field[not(ancestor::field)][descendant::field]'):
+                fname = el.get('name')
+                comodel = self.env[fields_info[fname]['relation']]
+                comodel_fields_info = comodel.fields_get()
+                views = {}
+                for child in el:
+                    el.remove(child)
+                    views[child.tag] = {
+                        'arch': etree.tostring(child, encoding='unicode'),
+                        'fields': collect_fields(child, comodel_fields_info),
+                    }
+                view_fields[fname]['views'] = views
+            for el in node.xpath('.//groupby'):
+                fname = el.get('name')
+                comodel = self.env[fields_info[fname]['relation']]
+                comodel_fields_info = comodel.fields_get()
+                view_fields[fname]['views'] = {
+                    'groupby': {
+                        'arch': etree.tostring(el, encoding='unicode'),
+                        'fields': collect_fields(el, comodel_fields_info)
+                    }
+                }
+                for child in el:
+                    el.remove(child)
+            return view_fields
+
+        xfields = collect_fields(node, self.fields_get())
+
+        result['arch'] = etree.tostring(node, encoding='unicode')
         result['fields'] = xfields
 
         # Add related action information if asked

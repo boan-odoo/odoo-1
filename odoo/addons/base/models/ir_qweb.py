@@ -1509,7 +1509,14 @@ class IrQWeb(models.AbstractModel):
             options = dict(options, nsmap=el.nsmap)
 
         if el.text is not None:
-            self._append_text(el.text, options)
+            # e.g. `Manage promotion &amp; coupon programs` should remain and not become
+            # `Manage promotion & coupon programs`
+            text = el.text
+            if el.tag not in ['t', 'script']:
+                text = re.sub(r'&([^a-zA-Z#])', r'&amp;\1', text)
+                text = re.sub(r'<', r'&lt;', text)
+                text = re.sub(r'>', r'&gt;', text)
+            self._append_text(text, options)
         body = []
         for item in el:
             if isinstance(item, etree._Comment):
@@ -1519,7 +1526,10 @@ class IrQWeb(models.AbstractModel):
                 body.extend(self._compile_node(item, options, level))
             # comments can also contains tail text
             if item.tail is not None:
-                self._append_text(item.tail, options)
+                # in XML, `<field name="shortdesc"/>&amp;nbsp;` must remain, and not become `<field name="shortdesc"/>&nbsp;`
+                # but in JS, `odoo.reloadMenus = () => fetch` must remain, and not become `odoo.reloadMenus = () =&gt; fetch`
+                tail = item.tail.replace('&', '&amp;') if el.tag not in ['t', 'script'] else item.tail
+                self._append_text(tail, options)
         return body
 
     def _compile_directive_if(self, el, options, level):

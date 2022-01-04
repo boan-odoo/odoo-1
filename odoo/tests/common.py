@@ -1904,7 +1904,7 @@ class Form(object):
         views = submodel.with_context(**refs) \
             .load_views([(False, 'tree'), (False, 'form')])['fields_views']
         # embedded views should take the priority on externals
-        views.update(descr['views'])
+        views.update(descr.get('views') or {})
         # re-set all resolved views on the descriptor
         descr['views'] = views
         # if the default view is a kanban or a non-editable list, the
