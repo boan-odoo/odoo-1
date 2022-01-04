@@ -68,13 +68,9 @@ class MailTemplate(models.Model):
     ref_ir_act_window = fields.Many2one('ir.actions.act_window', 'Sidebar action', readonly=True, copy=False,
                                         help="Sidebar action to make this template available on records "
                                              "of the related document model")
-    # original data
-    original_body_html = fields.Html('Original Body', translate=True)
-    original_subject = fields.Char('Original Subject', translate=True, help="Subject (placeholders may be used here)")
-    is_standard = fields.Boolean('Is Standard', compute='_compute_is_standard_template', copy=False)
 
     # ------------------------------------------------------------
-    # Compute
+    # COMPUTE
     # ------------------------------------------------------------
 
     # Overrides of mail.render.mixin
@@ -83,39 +79,9 @@ class MailTemplate(models.Model):
         for template in self:
             template.render_model = template.model
 
-    @api.depends()
-    def _compute_is_standard_template(self):
-        self.ensure_one()
-        original = self.env['ir.model.data'].search(['&', ('model', '=', 'mail.template'), ('res_id', '=', self.id)])
-        if original:
-            self.is_standard = True
-        else:
-            self.is_standard = False
-        return True
-
     # ------------------------------------------------------------
     # CRUD
     # ------------------------------------------------------------
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        is_updating = self.env.context.get('install_mode')
-        if is_updating:
-            for vals in vals_list:
-                if 'body_html' in vals:
-                    vals['original_body_html'] = vals['body_html']
-                if 'subject' in vals:
-                    vals['original_subject'] = vals['subject']
-        return super().create(vals_list)
-
-    def write(self, vals):
-        is_updating = self.env.context.get('install_mode')
-        if is_updating:
-            if 'body_html' in vals:
-                vals['original_body_html'] = vals['body_html']
-            if 'subject' in vals:
-                vals['original_subject'] = vals['subject']
-        return super().write(vals)
 
     def unlink(self):
         self.unlink_action()
@@ -151,12 +117,6 @@ class MailTemplate(models.Model):
             })
             template.write({'ref_ir_act_window': action.id})
 
-        return True
-
-    def reset_template(self):
-        for record in self:
-            if record.is_standard:
-                record['body_html'] = record['original_body_html']
         return True
 
     # ------------------------------------------------------------

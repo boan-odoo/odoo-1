@@ -58,12 +58,6 @@
                                         <field name="report_template" domain="[('model','=',model)]"/>
                                         <field name="report_name" 
                                                 attrs="{'invisible':[('report_template','=',False)]}"/>
-                                        <button name="reset_template" 
-                                                type="object"
-                                                icon="fa-refresh"
-                                                string="Reset template"
-                                                attrs="{'invisible':[('is_standard','=', False)]}"
-                                                confirm="Are you sure you want to do reset this template to its original state ? Changes made the subject and the body will be lost."/>
                                     </group>
                                 </group>
                             </page>
