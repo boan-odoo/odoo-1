@@ -18,8 +18,6 @@ import os
 import re
 import sys
 import tempfile
-import pudb
-
 import werkzeug
 import werkzeug.exceptions
 import werkzeug.utils
@@ -234,9 +232,6 @@ def manifest_glob(extension, addons=None, db=None, include_remotes=False):
 
     r = []
     for addon in addons:
-        if(addon == "post_extended"):
-            import pudb
-            pudb.set_trace()
         manifest = http.addons_manifest.get(addon, None)
         if not manifest:
             continue
@@ -617,16 +612,11 @@ class HomeStaticTemplateHelpers(object):
             return b'', checksum.hexdigest()
 
         root = None
-        print ("\n\nfile_dict ::: ", file_dict)
-        import pudb
-        pudb.set_trace()
         for addon, fnames in file_dict.items():
             for fname in fnames:
                 try:
                     contents = self._read_addon_file(fname)
                 except FileNotFoundError:
-                    import pudb
-                    pudb.set_trace()
                     attachment = request.env['ir.attachment'].sudo().search([('url', '=', fname),], limit=1)
                     if not attachment:
                         raise FileNotFoundError
@@ -645,7 +635,7 @@ class HomeStaticTemplateHelpers(object):
 
         return etree.tostring(root, encoding='utf-8') if root is not None else b'', checksum.hexdigest()[:64]
 
-    def temp(self):
+    def _get_qweb_files_list(self):
         files = OrderedDict([(addon, list()) for addon in self.addons])
         [files[f[2]].append(f[0]) for f in self._manifest_glob()]
         return files
@@ -657,7 +647,7 @@ class HomeStaticTemplateHelpers(object):
         """
         # files = OrderedDict([(addon, list()) for addon in self.addons])
         # [files[f[2]].append(f[0]) for f in self._manifest_glob()]
-        files = self.temp()
+        files = self._get_qweb_files_list()
             
 
         # importedModules = request.env['ir.module.module'].sudo().search([('state', '=', 'installed'),] )

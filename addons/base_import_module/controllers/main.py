@@ -8,11 +8,11 @@ from odoo.addons.web.controllers import main
 import odoo.modules.registry
 
 class HomeStaticTemplateHelpers(main.HomeStaticTemplateHelpers):
-    def temp(self):
-        files = super(HomeStaticTemplateHelpers, self).temp()
+    def _get_qweb_files_list(self):
+        files = super(HomeStaticTemplateHelpers, self)._get_qweb_files_list()
         registry = odoo.modules.registry.Registry(request.db)
         with registry.cursor() as cr:
-            cr.execute("""SELECT irmodule.name, attachment.url, attachment.mimetype
+            cr.execute("""SELECT irmodule.name, attachment.url
                           FROM ir_module_module irmodule CROSS JOIN ir_attachment attachment
                           WHERE attachment.url like concat('%',irmodule.name,'/static/%') AND
                           attachment.mimetype = 'application/xml' """)
