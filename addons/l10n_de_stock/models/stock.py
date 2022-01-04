@@ -6,6 +6,7 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     l10n_de_template_data = fields.Binary(compute='_compute_l10n_de_template_data')
+    l10n_de_addresses = fields.Binary(compute='_compute_l10n_de_addresses')
 
     def _compute_l10n_de_template_data(self):
         for record in self:
@@ -16,3 +17,10 @@ class StockPicking(models.Model):
                 data.append((_("Shipping Date"), format_date(self.env, record.date_done)))
             else:
                 data.append((_("Shipping Date"), format_date(self.env, record.scheduled_date)))
+
+    def _compute_l10n_de_addresses(self):
+        for record in self:
+            record.l10n_de_addresses = data = []
+            if record.move_ids_without_package and record.move_ids_without_package[0].partner_id and \
+                    record.move_ids_without_package[0].partner_id.id != record.partner_id.id:
+                data.append(("", record.move_ids_without_package[0].partner_id))
