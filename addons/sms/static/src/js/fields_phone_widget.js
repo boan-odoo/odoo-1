@@ -56,6 +56,7 @@ Phone.include({
             default_res_id: parseInt(this.res_id),
             default_number_field_name: this.name,
             default_composition_mode: 'comment',
+            default_country_id: this.recordData.country_id && this.recordData.country_id.res_id || false,
         });
         var self = this;
         return this.do_action({

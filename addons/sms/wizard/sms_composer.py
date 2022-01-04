@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+import phonenumbers
 
 from ast import literal_eval
 
@@ -27,6 +28,10 @@ class SendSMS(models.TransientModel):
         if not result.get('res_id'):
             if not result.get('res_ids') and self.env.context.get('active_id'):
                 result['res_id'] = self.env.context.get('active_id')
+        if self.env.context.get('active_id'):
+            res_model = self.env[result['res_model']]
+            if 'country_id' in res_model._fields:
+                result['country_id'] = res_model.browse(self.env.context['active_id']).country_id.id
 
         return result
 
@@ -59,6 +64,7 @@ class SendSMS(models.TransientModel):
     recipient_invalid_count = fields.Integer('# Invalid recipients', compute='_compute_recipients', compute_sudo=False)
     recipient_single_description = fields.Text('Recipients (Partners)', compute='_compute_recipient_single', compute_sudo=False)
     recipient_single_number = fields.Char('Stored Recipient Number', compute='_compute_recipient_single', compute_sudo=False)
+    country_id = fields.Many2one(string="Country", comodel_name='res.country')
     recipient_single_number_itf = fields.Char(
         'Recipient Number', compute='_compute_recipient_single',
         readonly=False, compute_sudo=False, store=True,
@@ -168,6 +174,16 @@ class SendSMS(models.TransientModel):
             elif record.template_id:
                 record.body = record.template_id.body
 
+    @api.onchange('country_id', 'recipient_single_number_itf')
+    def _onchange_recipient_single_number_itf_validation(self):
+        if self.recipient_single_number_itf and self.country_id:
+            try:
+                parsed_number = phonenumbers.parse(self.recipient_single_number_itf)
+                phone_number = str(parsed_number.national_number)
+            except phonenumbers.phonenumberutil.NumberParseException:
+                phone_number = self.recipient_single_number_itf
+            self.recipient_single_number_itf = self.env['res.partner']._phone_format(phone_number, self.country_id)
+
     # ------------------------------------------------------------
     # Actions
     # ------------------------------------------------------------
@@ -214,8 +230,13 @@ class SendSMS(models.TransientModel):
         # on the numbers in the database.
         records = records if records is not None else self._get_records()
         records.ensure_one()
+        vals = {}
         if self.recipient_single_number_itf and self.recipient_single_number_itf != self.recipient_single_number:
-            records.write({self.number_field_name: self.recipient_single_number_itf})
+            vals[self.number_field_name] = self.recipient_single_number_itf
+        if 'country_id' in records._fields and self.country_id != records.country_id:
+            vals['country_id'] = self.country_id
+        if vals:
+            records.write(vals)
         return self._action_send_sms_comment(records=records)
 
     def _action_send_sms_comment(self, records=None):

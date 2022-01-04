@@ -21,13 +21,18 @@
                         <field name="sanitized_numbers" invisible="1"/>
 
                         <!-- Single mode information (invalid number) -->
-                        <div colspan="2" class="alert alert-danger text-center mb-3" role="alert"
+                        <div colspan="2" class="alert alert-danger text-center mb-3 mt-n4" role="alert"
                             attrs="{'invisible': ['|', ('comment_single_recipient', '=', False), ('recipient_single_valid', '=', True)]}">
                             <p class="my-0">Invalid phone number</p>
                         </div>
+                        <!-- Single mode information (blank country) -->
+                        <div colspan="2" class="alert alert-danger text-center mb-3 mt-n2" role="alert"
+                            attrs="{'invisible': ['|', ('comment_single_recipient', '=', False), ('country_id', '!=', False)]}">
+                            <p class="my-0">Could not validate phone number. Please specify the country.</p>
+                        </div>
 
                         <!-- Mass mode information (res_ids versus active domain) -->
-                        <div colspan="2" class="alert alert-info text-center mb-3" role="alert"
+                        <div colspan="2" class="alert alert-info text-center mb-3 mt-n4" role="alert"
                                 attrs="{'invisible': [('comment_single_recipient', '=', True)]}">
                             <p class="my-0">
                                 <span attrs="{'invisible': [('use_active_domain', '=', 'True')]}">
@@ -45,7 +50,8 @@
                             attrs="{'invisible': [('comment_single_recipient', '=', False)]}"/>
                         <div attrs="{'invisible': [('comment_single_recipient', '=', False)]}">
                             <field name="recipient_single_description" class="oe_inline"/>
-                            <field name="recipient_single_number_itf" class="oe_inline" nolabel="1" options="{'onchange_on_keydown': True}" placeholder="e.g. +1 415 555 0100"/>
+                            <field name="country_id" class="oe_inline pr-4" nolabel="1" options='{"no_open": True, "no_create": True}' placeholder="Pick a Country" />
+                            <field name="recipient_single_number_itf" class="oe_inline" nolabel="1" options="{'onchange_on_keydown': True}" placeholder="e.g. 415 555 0100"/>
                         </div>
                                                 
                         <field name="body" widget="sms_widget" attrs="{'invisible': ['|', ('comment_single_recipient', '=', False), ('recipient_single_valid', '=', True)]}"/>

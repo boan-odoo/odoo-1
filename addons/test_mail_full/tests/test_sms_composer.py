@@ -2,7 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo.addons.test_mail_full.tests.common import TestMailFullCommon, TestMailFullRecipients
-
+from odoo.tests import Form
 
 class TestSMSComposerComment(TestMailFullCommon, TestMailFullRecipients):
     """ TODO LIST
@@ -61,6 +61,19 @@ class TestSMSComposerComment(TestMailFullCommon, TestMailFullRecipients):
                 messages = composer._action_send_sms()
 
         self.assertSMSNotification([{'partner': self.test_record.customer_id, 'number': self.test_numbers_san[1]}], self._test_body, messages)
+
+    def test_onchange_recipient_single_number_itf_validation(self):
+        with Form(self.env['sms.composer']) as composer_form:
+            composer_form.body = self._test_body
+            composer_form.country_id = self.env.ref('base.be')
+            composer_form.recipient_single_number_itf = 81000000
+
+            self.assertEqual(composer_form.recipient_single_number_itf, '+32 81 00 00 00')
+
+            composer_form.country_id = self.env.ref('base.in')
+            composer_form.recipient_single_number_itf = 9999999999
+
+            self.assertEqual(composer_form.recipient_single_number_itf, '+91 99999 99999')
 
     def test_composer_comment_field_1(self):
         with self.with_user('employee'):

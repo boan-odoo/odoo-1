@@ -30,27 +30,14 @@ var SmsWidget = FieldTextEmojis.extend({
         if (this.enableEmojis) {
             this._super.apply(this, arguments);
         }
-    },
-
-    //--------------------------------------------------------------------------
-    // Private: override widget
-    //--------------------------------------------------------------------------
-
-    /**
-     * @private
-     * @override
-     */
-    _renderEdit: function () {
-        var def = this._super.apply(this, arguments);
-
-        this._compute();
-        $('.o_sms_container').remove();
-        var $sms_container = $('<div class="o_sms_container"/>');
-        $sms_container.append(this._renderSMSInfo());
-        $sms_container.append(this._renderIAPButton());
-        this.$el = this.$el.add($sms_container);
-
-        return def;
+        if (this.mode === 'edit') {
+            this._compute();
+            $('.o_sms_container').remove();
+            var $sms_container = $('<div class="o_sms_container"/>');
+            $sms_container.append(this._renderSMSInfo());
+            $sms_container.append(this._renderIAPButton());
+            $sms_container.insertAfter(this.$el);
+        }
     },
 
     //--------------------------------------------------------------------------
@@ -137,7 +124,7 @@ var SmsWidget = FieldTextEmojis.extend({
     _updateSMSInfo: function ()  {
         this._compute();
         var string = _.str.sprintf(_t('%s characters, fits in %s SMS (%s) '), this.nbrChar, this.nbrSMS, this.encoding);
-        this.$('.o_sms_count').text(string);
+        this.$el.parents().find('.o_sms_count').text(string);
     },
 
     //--------------------------------------------------------------------------
