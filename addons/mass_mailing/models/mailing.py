@@ -177,6 +177,7 @@ class MassMailing(models.Model):
     warning_message = fields.Char(
         'Warning Message', compute='_compute_warning_message',
         help='Warning message displayed in the mailing form view')
+    is_past_departure = fields.Boolean('Is Past Departure', compute="_compute_is_past_departure")
 
     _sql_constraints = [(
         'percentage_valid',
@@ -391,6 +392,15 @@ class MassMailing(models.Model):
                 mailing._get_ab_testing_description_values()
             )
 
+    def _compute_is_past_departure(self):
+        # If the departure time has passed but mailing is still in queue, this compute field
+        # will be used to display warning with reload button on a mailing form view
+        for mailing in self:
+            if mailing.state == 'in_queue' and mailing.next_departure < fields.Datetime.now():
+                mailing.is_past_departure = True
+            else:
+                mailing.is_past_departure = False
+
     def _get_ab_testing_description_modifying_fields(self):
         return ['ab_testing_enabled', 'ab_testing_pc', 'ab_testing_schedule_datetime', 'ab_testing_winner_selection', 'campaign_id']
 
@@ -503,6 +513,12 @@ class MassMailing(models.Model):
         else:
             self.state = 'sending'
             return self.action_send_mail()
+
+    def action_reload(self):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
 
     def action_schedule(self):
         self.ensure_one()
