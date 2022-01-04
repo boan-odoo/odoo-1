@@ -298,12 +298,25 @@ odoo.define('website.s_website_form', function (require) {
                     }
                     switch (successMode) {
                         case 'redirect': {
-                            successPage = successPage.startsWith("/#") ? successPage.slice(1) : successPage;
+                            const hashIndex = successPage.indexOf("#");
+                            if (hashIndex > 0) {
+                                // Compare the redirect link (with and without
+                                // the lang url code) with the current page to
+                                // know if if we should stay on the same page
+                                // in the case of an anchor link.
+                                const target = successPage.replaceAll("/", "");
+                                if ([target, session.lang_url_code + target].some(link => link.startsWith(window.location.pathname.replaceAll("/", "") + '#'))) {
+                                    successPage = successPage.substring(hashIndex);
+                                }
+                            }
                             if (successPage.charAt(0) === "#") {
-                                await dom.scrollTo($(successPage)[0], {
-                                    duration: 500,
-                                    extraOffset: 0,
-                                });
+                                successPage = document.getElementById(successPage.substring(1));
+                                if (successPage) {
+                                    dom.scrollTo(successPage, {
+                                        duration: 500,
+                                        extraOffset: 0,
+                                    });
+                                }
                                 break;
                             }
                             $(window.location).attr('href', successPage);
