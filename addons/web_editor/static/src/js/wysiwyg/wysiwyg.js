@@ -1012,12 +1012,13 @@ const Wysiwyg = Widget.extend({
             if (params.htmlClass) {
                 element.className += " " + params.htmlClass;
             }
-            restoreSelection();
+            restoreSelection(undefined, false);
             if (wysiwygUtils.isImg($node[0])) {
                 $node.replaceWith(element);
                 this.odooEditor.unbreakableStepUnactive();
                 this.odooEditor.historyStep();
             } else if (element) {
+                $node.remove();
                 this.odooEditor.execCommand('insertHTML', element.outerHTML);
             }
         });
@@ -1025,7 +1026,7 @@ const Wysiwyg = Widget.extend({
             // if the mediaDialog content has been saved
             // the previous selection in not relevant anymore
             if (mediaDialog.destroyAction !== 'save') {
-                restoreSelection();
+                restoreSelection(undefined, false);
             }
         });
     },
