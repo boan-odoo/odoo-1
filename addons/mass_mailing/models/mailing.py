@@ -496,8 +496,13 @@ class MassMailing(models.Model):
         }
 
     def action_launch(self):
-        self.write({'schedule_type': 'now'})
-        return self.action_put_in_queue()
+        mailing_send_immediate_nbr = self.env['ir.config_parameter'].sudo().get_param('mass_mailing.mass_mailing_immediate_send_nbr', 20)
+        if len(self._get_recipients()) > int(mailing_send_immediate_nbr):
+            self.schedule_type = 'now'
+            return self.action_put_in_queue()
+        else:
+            self.state = 'sending'
+            return self.action_send_mail()
 
     def action_schedule(self):
         self.ensure_one()
@@ -515,6 +520,7 @@ class MassMailing(models.Model):
             schedule_date or fields.Datetime.now()
             for schedule_date in self.mapped('schedule_date')
         )
+        return True
 
     def action_cancel(self):
         self.write({'state': 'draft', 'schedule_date': False, 'schedule_type': 'now', 'next_departure': False})
@@ -526,7 +532,12 @@ class MassMailing(models.Model):
         ])
         failed_mails.mapped('mailing_trace_ids').unlink()
         failed_mails.unlink()
-        self.write({'state': 'in_queue'})
+        mailing_send_immediate_nbr = self.env['ir.config_parameter'].sudo().get_param('mass_mailing.mass_mailing_immediate_send_nbr', 20)
+        if len(self._get_remaining_recipients()) > int(mailing_send_immediate_nbr):
+            self.state = 'in_queue'
+        else:
+            self.state = 'sending'
+            self.action_send_mail()
 
     def action_view_traces_scheduled(self):
         return self._action_view_traces_filtered('scheduled')

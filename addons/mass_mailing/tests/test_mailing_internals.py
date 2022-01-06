@@ -394,6 +394,33 @@ Email: <a id="url5" href="mailto:test@odoo.com">test@odoo.com</a></div>""",
                     link_params=link_params,
                 )
 
+    @users('user_marketing')
+    @mute_logger('odoo.addons.mail.models.mail_mail')
+    def test_mailing_launch_flow(self):
+        """ Test that mail should be sent directly if total recipients are less than value
+        specified by config param 'mass_mailing_immediate_send_nbr', otherwise it should
+        enqueue the mailing """
+        mailing_1 = self.env['mailing.mailing'].create({
+            'name': 'One',
+            'subject': 'One',
+            'mailing_model_name': 'mailing.list',
+            'contact_list_ids': [(4, self.mailing_list_1.id), (4, self.mailing_list_2.id)],
+            'body_html': 'This is mass mail marketing demo'
+        })
+        mailing_1.action_launch()
+        self.assertEqual(mailing_1.state, 'done', "Mailing should be sent directly")
+        # Set config param to a lower number to check enqueue flow
+        self.env['ir.config_parameter'].sudo().set_param('mass_mailing.mass_mailing_immediate_send_nbr', 5)
+        mailing_2 = self.env['mailing.mailing'].create({
+            'name': 'Two',
+            'subject': 'Two',
+            'mailing_model_name': 'mailing.list',
+            'contact_list_ids': [(4, self.mailing_list_1.id), (4, self.mailing_list_2.id)],
+            'body_html': 'This is mass mail marketing demo'
+        })
+        mailing_2.action_launch()
+        self.assertEqual(mailing_2.state, 'in_queue', "Mailing should be enqueued")
+
 class TestMailingScheduleDateWizard(MassMailCommon):
 
     @mute_logger('odoo.addons.mail.models.mail_mail')
