@@ -2,8 +2,6 @@
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 
-import { browser } from "@web/core/browser/browser";
-
 const { Component, onWillStart, useState } = owl;
 
 export class RtcConfigurationMenu extends Component {
@@ -20,7 +18,7 @@ export class RtcConfigurationMenu extends Component {
     }
 
     async _willStart() {
-        this.state.userDevices = await browser.navigator.mediaDevices.enumerateDevices();
+        this.state.userDevices = await this.messaging.browser.navigator.mediaDevices.enumerateDevices();
     }
 
     //--------------------------------------------------------------------------

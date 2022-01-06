@@ -5,6 +5,7 @@ import { attr, many, one } from '@mail/model/model_field';
 import { OnChange } from '@mail/model/model_onchange';
 import { insertAndReplace, link, unlink } from '@mail/model/model_field_command';
 import { makeDeferred } from '@mail/utils/deferred/deferred';
+import { browser } from "@web/core/browser/browser";
 
 const { EventBus } = owl;
 
@@ -13,8 +14,9 @@ registerModel({
     identifyingFields: [],
     lifecycleHooks: {
         _willDelete() {
-            if (this.env.services['bus_service']) {
-                this.env.services['bus_service'].off('window_focus', null, this._handleGlobalWindowFocus);
+            const legacyEnv = owl.Component.env;
+            if (legacyEnv.services['bus_service']) {
+                legacyEnv.services['bus_service'].off('window_focus', null, this._handleGlobalWindowFocus);
             }
         },
     },
@@ -23,7 +25,8 @@ registerModel({
          * Starts messaging and related records.
          */
         async start() {
-            this.env.services['bus_service'].on('window_focus', null, this._handleGlobalWindowFocus);
+            const legacyEnv = owl.Component.env;
+            legacyEnv.services['bus_service'].on('window_focus', null, this._handleGlobalWindowFocus);
             await this.initializer.start();
             if (!this.exists()) {
                 return;
@@ -79,15 +82,15 @@ registerModel({
          * @param {string} param0.model
          */
         async openDocument({ id, model }) {
-            this.env.bus.trigger('do-action', {
-                action: {
+            this.env.services.action.doAction(
+                {
                     type: 'ir.actions.act_window',
                     res_model: model,
                     views: [[false, 'form']],
                     res_id: id,
                 },
-            });
-            if (this.messaging.device.isMobile) {
+            );
+            if (this.messaging.device.isSmall) {
                 // messaging menu has a higher z-index than views so it must
                 // be closed to ensure the visibility of the view
                 this.messaging.messagingMenu.close();
@@ -118,10 +121,10 @@ registerModel({
                     ))[0];
                 }
                 if (!channel) {
-                    this.env.services['notification'].notify({
-                        message: this.env._t("You can only open the profile of existing channels."),
-                        type: 'warning',
-                    });
+                    this.env.services['notification'].add(
+                        this.env._t("You can only open the profile of existing channels."),
+                        { type: 'warning' },
+                    );
                     return;
                 }
                 return channel.openProfile();
@@ -184,8 +187,7 @@ registerModel({
          * @returns {boolean}
          */
         _computeIsNotificationPermissionDefault() {
-            const browserNotification = this.env.browser.Notification;
-            return browserNotification ? browserNotification.permission === 'default' : false;
+            return window.Notification ? window.Notification.permission === 'default' : false;
         },
         /**
          * @private
@@ -228,6 +230,10 @@ registerModel({
          */
         autofetchPartnerImStatus: attr({
             default: true,
+        }),
+        browser: attr({
+            default: browser,
+            readonly: true,
         }),
         cannedResponses: many('CannedResponse'),
         chatWindowManager: one('ChatWindowManager', {
@@ -334,6 +340,9 @@ registerModel({
             default: insertAndReplace(),
             isCausal: true,
             readonly: true,
+        }),
+        odoobot_initialized: attr({
+            default: false,
         }),
         outOfFocusUnreadMessageCounter: attr({
             default: 0,

@@ -4,7 +4,7 @@ from odoo import Command
 from odoo.tests import HttpCase, tagged
 
 
-@tagged('post_install', '-at_install')
+@tagged('post_install', '-at_install', 'this')
 class TestProjectSharingUi(HttpCase):
 
     @classmethod

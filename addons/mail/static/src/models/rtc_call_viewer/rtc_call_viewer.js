@@ -1,7 +1,5 @@
 /** @odoo-module **/
 
-import { browser } from "@web/core/browser/browser";
-
 import { registerModel } from '@mail/model/model_core';
 import { attr, many, one } from '@mail/model/model_field';
 import { OnChange } from '@mail/model/model_onchange';
@@ -15,11 +13,11 @@ registerModel({
     lifecycleHooks: {
         _created() {
             this._timeoutId = undefined;
-            browser.addEventListener('fullscreenchange', this._onFullScreenChange);
+            this.messaging.browser.addEventListener('fullscreenchange', this._onFullScreenChange);
         },
         _willDelete() {
-            browser.clearTimeout(this._timeoutId);
-            browser.removeEventListener('fullscreenchange', this._onFullScreenChange);
+            this.messaging.browser.clearTimeout(this._timeoutId);
+            this.messaging.browser.removeEventListener('fullscreenchange', this._onFullScreenChange);
         },
     },
     recordMethods: {
@@ -58,7 +56,7 @@ registerModel({
             this.update({
                 showOverlay: true,
             });
-            browser.clearTimeout(this._timeoutId);
+            this.messaging.browser.clearTimeout(this._timeoutId);
         },
         /**
          * @param {MouseEvent} ev
@@ -83,10 +81,10 @@ registerModel({
                 if (this.exists()) {
                     this.update({ isFullScreen: false });
                 }
-                this.env.services.notification.notify({
-                    message: this.env._t("The FullScreen mode was denied by the browser"),
-                    type: 'warning',
-                });
+                this.env.services.notification.add(
+                    this.env._t("The FullScreen mode was denied by the browser"),
+                    { type: 'warning' },
+                );
             }
         },
         async deactivateFullScreen() {
@@ -248,8 +246,8 @@ registerModel({
          * @private
          */
         _debounce(f, { delay = 0 } = {}) {
-            browser.clearTimeout(this._timeoutId);
-            this._timeoutId = browser.setTimeout(() => {
+            this.messaging.browser.clearTimeout(this._timeoutId);
+            this._timeoutId = this.messaging.browser.setTimeout(() => {
                 if (!this.exists()) {
                     return;
                 }

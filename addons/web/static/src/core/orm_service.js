@@ -109,7 +109,9 @@ export class ORM {
             args,
             kwargs: fullKwargs,
         };
-        return this.rpc(url, params, { silent: this._silent });
+
+        const res = this.rpc(url, params, { silent: this._silent });
+        return res;
     }
 
     create(model, state, ctx) {

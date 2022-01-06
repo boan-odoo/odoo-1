@@ -30,6 +30,7 @@ const NotificationAlertWidget = Widget.extend(WidgetAdapterMixin, {
             getMessagingComponent("NotificationAlert"),
             {}
         );
+        this.component.env = owl.Component.wowlEnv;
         await this.component.mount(this.el);
     },
 });

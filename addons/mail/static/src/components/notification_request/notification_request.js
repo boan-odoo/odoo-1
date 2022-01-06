@@ -34,7 +34,7 @@ export class NotificationRequest extends Component {
     _handleResponseNotificationPermission(value) {
         this.messaging.refreshIsNotificationPermissionDefault();
         if (value !== 'granted') {
-            this.env.services['bus_service'].sendNotification({
+            owl.Component.env.services['bus_service'].sendNotification({
                 message: this.env._t("Odoo will not have the permission to send native notifications on this device."),
                 title: this.env._t("Permission denied"),
             });
@@ -49,12 +49,12 @@ export class NotificationRequest extends Component {
      * @private
      */
     _onClick() {
-        const windowNotification = this.env.browser.Notification;
+        const windowNotification = window.Notification;
         const def = windowNotification && windowNotification.requestPermission();
         if (def) {
             def.then(this._handleResponseNotificationPermission.bind(this));
         }
-        if (!this.messaging.device.isMobile) {
+        if (!this.messaging.device.isSmall) {
             this.messaging.messagingMenu.close();
         }
     }

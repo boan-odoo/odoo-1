@@ -1,7 +1,5 @@
 /** @odoo-module **/
 
-import { browser } from "@web/core/browser/browser";
-
 import { registerModel } from '@mail/model/model_core';
 import { attr, many, one } from '@mail/model/model_field';
 import { clear } from '@mail/model/model_field_command';
@@ -22,7 +20,7 @@ registerModel({
          * restores the session to its default values
          */
         reset() {
-            this._timeoutId && browser.clearTimeout(this._timeoutId);
+            this._timeoutId && this.messaging.browser.clearTimeout(this._timeoutId);
             this._removeAudio();
             this.removeVideo();
             this.update({
@@ -153,19 +151,17 @@ registerModel({
                 }
                 await this.async(() => {
                     this.env.services.rpc(
+                        '/mail/rtc/session/update_and_broadcast',
                         {
-                            route: '/mail/rtc/session/update_and_broadcast',
-                            params: {
-                                session_id: this.id,
-                                values: {
-                                    is_camera_on: this.isCameraOn,
-                                    is_deaf: this.isDeaf,
-                                    is_muted: this.isSelfMuted,
-                                    is_screen_sharing_on: this.isScreenSharingOn,
-                                },
+                            session_id: this.id,
+                            values: {
+                                is_camera_on: this.isCameraOn,
+                                is_deaf: this.isDeaf,
+                                is_muted: this.isSelfMuted,
+                                is_screen_sharing_on: this.isScreenSharingOn,
                             },
                         },
-                        { shadow: true }
+                        { silent: true },
                     );
                 });
             }, 3000);
@@ -240,8 +236,8 @@ registerModel({
          * @private
          */
         _debounce(f, delay) {
-            this._timeoutId && browser.clearTimeout(this._timeoutId);
-            this._timeoutId = browser.setTimeout(() => {
+            this._timeoutId && this.messaging.browser.clearTimeout(this._timeoutId);
+            this._timeoutId = this.messaging.browser.setTimeout(() => {
                 if (!this.exists()) {
                     return;
                 }

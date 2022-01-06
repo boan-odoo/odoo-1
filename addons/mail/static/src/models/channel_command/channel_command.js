@@ -94,12 +94,12 @@ registerModel({
          * @param {Object} [param0.body='']
          */
         async execute({ channel, body = '' }) {
-            return this.env.services.rpc({
-                model: 'mail.channel',
-                method: this.methodName,
-                args: [[channel.id]],
-                kwargs: { body },
-            });
+            return this.env.services.orm.call(
+                'mail.channel',
+                this.methodName,
+                [[channel.id]],
+                { body },
+            );
         },
         /**
          * Returns the text that identifies this channel command in a mention.

@@ -220,11 +220,11 @@ QUnit.test('livechat - states: close should update the value on the server', asy
     const currentUserId = this.data.currentUserId;
     await this.start();
 
-    const initalSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const initalSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         initalSettings.is_discuss_sidebar_category_livechat_open,
         true,
@@ -237,11 +237,11 @@ QUnit.test('livechat - states: close should update the value on the server', asy
             .o_DiscussSidebarCategory_title
         `).click()
     );
-    const newSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const newSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         newSettings.is_discuss_sidebar_category_livechat_open,
         false,
@@ -266,11 +266,11 @@ QUnit.test('livechat - states: open should update the value on the server', asyn
     const currentUserId = this.data.currentUserId;
     await this.start();
 
-    const initalSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const initalSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         initalSettings.is_discuss_sidebar_category_livechat_open,
         false,
@@ -283,11 +283,11 @@ QUnit.test('livechat - states: open should update the value on the server', asyn
             .o_DiscussSidebarCategory_title
         `).click()
     );
-    const newSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const newSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         newSettings.is_discuss_sidebar_category_livechat_open,
         true,

@@ -1,7 +1,5 @@
 /** @odoo-module **/
 
-import { browser } from "@web/core/browser/browser";
-
 import { registerModel } from '@mail/model/model_core';
 import { attr, many, one } from '@mail/model/model_field';
 import { clear, insert, unlink } from '@mail/model/model_field_command';
@@ -64,10 +62,10 @@ registerModel({
              */
             this._pushToTalkTimeoutId = undefined;
 
-            browser.addEventListener('keydown', this._onKeyDown);
-            browser.addEventListener('keyup', this._onKeyUp);
+            this.messaging.browser.addEventListener('keydown', this._onKeyDown);
+            this.messaging.browser.addEventListener('keyup', this._onKeyUp);
             // Disconnects the RTC session if the page is closed or reloaded.
-            browser.addEventListener('beforeunload', this._onBeforeUnload);
+            this.messaging.browser.addEventListener('beforeunload', this._onBeforeUnload);
             /**
              * Call all sessions for which no peerConnection is established at
              * a regular interval to try to recover any connection that failed
@@ -76,7 +74,7 @@ registerModel({
              * This is distinct from this._recoverConnection which tries to restores
              * connection that were established but failed or timed out.
              */
-            this._intervalId = browser.setInterval(async () => {
+            this._intervalId = this.messaging.browser.setInterval(async () => {
                 if (!this.currentRtcSession || !this.channel) {
                     return;
                 }
@@ -88,10 +86,10 @@ registerModel({
             }, 30000); // 30 seconds
         },
         async _willDelete() {
-            browser.removeEventListener('beforeunload', this._onBeforeUnload);
-            browser.removeEventListener('keydown', this._onKeyDown);
-            browser.removeEventListener('keyup', this._onKeyUp);
-            browser.clearInterval(this._intervalId);
+            this.messaging.browser.removeEventListener('beforeunload', this._onBeforeUnload);
+            this.messaging.browser.removeEventListener('keydown', this._onKeyDown);
+            this.messaging.browser.removeEventListener('keyup', this._onKeyUp);
+            this.messaging.browser.clearInterval(this._intervalId);
         },
     },
     recordMethods: {
@@ -282,16 +280,16 @@ registerModel({
             if (audio) {
                 let audioTrack;
                 try {
-                    const audioStream = await browser.navigator.mediaDevices.getUserMedia({ audio: this.messaging.userSetting.getAudioConstraints() });
+                    const audioStream = await this.messaging.browser.navigator.mediaDevices.getUserMedia({ audio: this.messaging.userSetting.getAudioConstraints() });
                     audioTrack = audioStream.getAudioTracks()[0];
                 } catch (e) {
-                    this.env.services.notification.notify({
-                        message: _.str.sprintf(
+                    this.env.services.notification.add(
+                        _.str.sprintf(
                             this.env._t(`"%s" requires microphone access`),
                             window.location.host,
                         ),
-                        type: 'warning',
-                    });
+                        { type: 'warning' },
+                    );
                     if (this.currentRtcSession) {
                         this.currentRtcSession.updateAndBroadcast({ isSelfMuted: true });
                     }
@@ -350,10 +348,10 @@ registerModel({
                  * in that case, voice activation is not enabled
                  * and the microphone is always 'on'.
                  */
-                this.env.services.notification.notify({
-                    message: this.env._t("Your browser does not support voice activation"),
-                    type: 'warning',
-                });
+                this.env.services.notification.add(
+                    this.env._t("Your browser does not support voice activation"),
+                    { type: 'warning' },
+                );
                 this.currentRtcSession.update({ isTalking: true });
             }
             await this._updateLocalAudioTrackEnabledState();
@@ -685,14 +683,15 @@ registerModel({
          */
         async _pingServer() {
             const channel = this.channel;
-            const { rtcSessions } = await this.env.services.rpc({
-                route: '/mail/channel/ping',
-                params: {
+            const { rtcSessions } = await this.env.services.rpc(
+                '/mail/channel/ping',
+                {
                     'channel_id': channel.id,
                     'check_rtc_session_ids': channel.rtcSessions.map(rtcSession => rtcSession.id),
                     'rtc_session_id': this.currentRtcSession.id,
                 },
-            }, { shadow: true });
+                { silent: true },
+            );
             if (channel.exists()) {
                 channel.updateRtcSessions(rtcSessions);
             }
@@ -711,7 +710,7 @@ registerModel({
             if (this._fallBackTimeouts[token]) {
                 return;
             }
-            this._fallBackTimeouts[token] = browser.setTimeout(async () => {
+            this._fallBackTimeouts[token] = this.messaging.browser.setTimeout(async () => {
                 delete this._fallBackTimeouts[token];
                 const peerConnection = this._peerConnections[token];
                 if (!peerConnection || !this.channel) {
@@ -753,7 +752,7 @@ registerModel({
                 peerConnection.close();
             }
             delete this._peerConnections[token];
-            browser.clearTimeout(this._fallBackTimeouts[token]);
+            this.messaging.browser.clearTimeout(this._fallBackTimeouts[token]);
             delete this._fallBackTimeouts[token];
             this._outGoingCallTokens.delete(token);
             this._addLogEntry(token, 'peer removed', { step: 'peer removed' });
@@ -795,9 +794,9 @@ registerModel({
             await new Promise(resolve => setTimeout(resolve, this.peerNotificationWaitDelay));
             const peerNotifications = this.peerNotificationsToSend;
             try {
-                await this.env.services.rpc({
-                    route: '/mail/rtc/session/notify_call_members',
-                    params: {
+                await this.env.services.rpc(
+                    '/mail/rtc/session/notify_call_members',
+                    {
                         'peer_notifications': peerNotifications.map(peerNotification =>
                             [
                                 peerNotification.senderId,
@@ -810,7 +809,8 @@ registerModel({
                             ],
                         ),
                     },
-                }, { shadow: true });
+                    { silent: true }
+                );
                 if (!this.exists()) {
                     return;
                 }
@@ -1006,21 +1006,21 @@ registerModel({
             }
             try {
                 if (type === 'user-video') {
-                    videoStream = await browser.navigator.mediaDevices.getUserMedia({ video: this.videoConfig });
+                    videoStream = await this.messaging.browser.navigator.mediaDevices.getUserMedia({ video: this.videoConfig });
                 }
                 if (type === 'display') {
-                    videoStream = await browser.navigator.mediaDevices.getDisplayMedia({ video: this.videoConfig });
+                    videoStream = await this.messaging.browser.navigator.mediaDevices.getDisplayMedia({ video: this.videoConfig });
                     this.messaging.soundEffects.screenSharing.play();
                 }
             } catch (e) {
-                this.env.services.notification.notify({
-                    message: _.str.sprintf(
+                this.env.services.notification.add(
+                    _.str.sprintf(
                         this.env._t(`"%s" requires "%s" access`),
                         window.location.host,
                         type === 'user-video' ? 'camera' : 'display',
                     ),
-                    type: 'warning',
-                });
+                    { type: 'warning' },
+                );
                 return;
             }
             const videoTrack = videoStream ? videoStream.getVideoTracks()[0] : undefined;
@@ -1161,7 +1161,7 @@ registerModel({
                 return;
             }
             if (this._pushToTalkTimeoutId) {
-                browser.clearTimeout(this._pushToTalkTimeoutId);
+                this.messaging.browser.clearTimeout(this._pushToTalkTimeoutId);
             }
             if (!this.currentRtcSession.isTalking) {
                 this.messaging.soundEffects.pushToTalk.play({ volume: 0.3 });
@@ -1185,7 +1185,7 @@ registerModel({
             if (!this.currentRtcSession.isMute) {
                 this.messaging.soundEffects.pushToTalk.play({ volume: 0.3 });
             }
-            this._pushToTalkTimeoutId = browser.setTimeout(
+            this._pushToTalkTimeoutId = this.messaging.browser.setTimeout(
                 () => {
                     this._setSoundBroadcast(false);
                 },

@@ -16,15 +16,15 @@ registerModel({
             if (this.notification_type !== 'email') {
                 return;
             }
-            this.env.bus.trigger('do-action', {
-                action: 'mail.mail_resend_cancel_action',
-                options: {
+            this.env.services.action.doAction(
+                'mail.mail_resend_cancel_action',
+                {
                     additional_context: {
                         default_model: this.res_model,
                         unread_counter: this.notifications.length,
                     },
                 },
-            });
+            );
         },
         /**
          * Opens the view that displays either the single record of the group or
@@ -95,8 +95,8 @@ registerModel({
             if (this.notification_type !== 'email') {
                 return;
             }
-            this.env.bus.trigger('do-action', {
-                action: {
+            this.env.services.action.doAction(
+                {
                     name: this.env._t("Mail Failures"),
                     type: 'ir.actions.act_window',
                     view_mode: 'kanban,list,form',
@@ -106,8 +106,8 @@ registerModel({
                     domain: [['message_has_error', '=', true]],
                     context: { create: false },
                 },
-            });
-            if (this.messaging.device.isMobile) {
+            );
+            if (this.messaging.device.isSmall) {
                 // messaging menu has a higher z-index than views so it must
                 // be closed to ensure the visibility of the view
                 this.messaging.messagingMenu.close();

@@ -9,7 +9,7 @@
                 'o-discussion': messageView and (messageView.message.is_discussion or messageView.message.is_notification),
                 'o-has-message-selection': threadView and threadView.replyingToMessageView,
                 'o-highlighted': messageView and (messageView.message.isHighlighted or messageView.isHighlighted),
-                'o-mobile': messaging and messaging.device.isMobile,
+                'o-mobile': messaging and messaging.device.isSmall,
                 'o-not-discussion': messageView and !(messageView.message.is_discussion or messageView.message.is_notification),
                 'o-notification': messageView and messageView.message.message_type === 'notification',
                 'o-selected': isSelected,
@@ -35,7 +35,7 @@
                                         className="'o_Message_partnerImStatusIcon'"
                                         classNameObj="{
                                             'o-message-selected': isSelected,
-                                            'o_Message_partnerImStatusIcon-mobile': messaging.device.isMobile,
+                                            'o_Message_partnerImStatusIcon-mobile': messaging.device.isSmall,
                                         }"
                                         hasOpenChat="hasAuthorOpenChat"
                                         partnerLocalId="messageView.message.author.localId"

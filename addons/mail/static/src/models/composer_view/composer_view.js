@@ -197,7 +197,7 @@ registerModel({
                 return;
             }
             // Let event be handled by bubbling handlers first
-            await new Promise(this.env.browser.setTimeout);
+            await new Promise(this.messaging.browser.setTimeout);
             if (isEventHandled(ev, 'MessageActionList.replyTo')) {
                 return;
             }
@@ -226,10 +226,10 @@ registerModel({
             ev.preventDefault();
             if (!this.composer.canPostMessage) {
                 if (this.composer.hasUploadingAttachment) {
-                    this.env.services['notification'].notify({
-                        message: this.env._t("Please wait while the file is uploading."),
-                        type: 'warning',
-                    });
+                    this.env.services['notification'].add(
+                        this.env._t("Please wait while the file is uploading."),
+                        { type: 'warning' },
+                    );
                 }
                 return;
             }
@@ -287,7 +287,7 @@ registerModel({
             };
             const composer = this.composer;
             const options = {
-                on_close: () => {
+                onClose: () => {
                     if (!composer.exists()) {
                         return;
                     }
@@ -297,7 +297,7 @@ registerModel({
                     }
                 },
             };
-            await this.env.bus.trigger('do-action', { action, options });
+            await this.env.services.action.doAction(action, options);
         },
         /**
          * Post a message in provided composer's thread based on current composer fields values.
@@ -359,7 +359,7 @@ registerModel({
                 const { threadView = {} } = this;
                 const { thread: chatterThread } = this.chatter || {};
                 const { thread: threadViewThread } = threadView;
-                const messageData = await this.env.services.rpc({ route: `/mail/message/post`, params });
+                const messageData = await this.env.services.rpc('/mail/message/post', params);
                 if (!this.messaging) {
                     return;
                 }
@@ -383,10 +383,10 @@ registerModel({
                         if (this.exists()) {
                             this.delete();
                         }
-                        this.env.services['notification'].notify({
-                            message: _.str.sprintf(this.env._t(`Message posted on "%s"`), message.originThread.displayName),
-                            type: 'info',
-                        });
+                        this.env.services['notification'].add(
+                            _.str.sprintf(this.env._t(`Message posted on "%s"`), message.originThread.displayName),
+                            { type: 'info' },
+                        );
                     }
                     if (threadView && threadView.exists()) {
                         threadView.update({ replyingToMessageView: clear() });
@@ -606,7 +606,7 @@ registerModel({
                 // small screen size with a non-mailing channel. Here send will be done on clicking
                 // the button or using the 'ctrl/meta enter' shortcut.
                 if (
-                    this.messaging.device.isMobile ||
+                    this.messaging.device.isSmall ||
                     (
                         this.messaging.discuss.threadView === this.threadView &&
                         this.messaging.discuss.thread === this.messaging.inbox
@@ -745,9 +745,8 @@ registerModel({
                 });
                 body = body.replace(text, placeholder);
             }
-            const baseHREF = this.env.session.url('/web');
             for (const mention of mentions) {
-                const href = `href='${baseHREF}#model=${mention.model}&id=${mention.id}'`;
+                const href = `href='/web#model=${mention.model}&id=${mention.id}'`;
                 const attClass = `class='${mention.class}'`;
                 const dataOeId = `data-oe-id='${mention.id}'`;
                 const dataOeModel = `data-oe-model='${mention.model}'`;

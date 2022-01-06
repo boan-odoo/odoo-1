@@ -18,6 +18,7 @@ export class Discuss extends Component {
         this._onMobileAddItemHeaderInputSource = this._onMobileAddItemHeaderInputSource.bind(this);
         useUpdate({ func: () => this._update() });
         this._onHideMobileAddItemHeader = this._onHideMobileAddItemHeader.bind(this);
+        this.discuss.update({ initActiveId: this.props.actionId });
     }
 
     _update() {
@@ -25,7 +26,10 @@ export class Discuss extends Component {
             return;
         }
         if (this.discussView.discuss.thread) {
-            this.trigger('o-push-state-action-manager');
+            this.env.services.router.pushState({
+                action: this.props.actionId,
+                active_id: this.discuss.activeId,
+            });
         } else if (!this._activeThreadCache) {
             this.discussView.discuss.openInitThread();
         }
@@ -36,7 +40,9 @@ export class Discuss extends Component {
             this._lastThreadCache === this.discussView.discuss.threadView.threadCache.localId &&
             this._lastThreadCounter > 0 && this.discussView.discuss.thread.counter === 0
         ) {
-            this.trigger('o-show-rainbow-man');
+            this.env.services.effect.add({
+                message: this.env._t("Congratulations, your inbox is empty!"),
+            });
         }
         this._activeThreadCache = this.discussView.discuss.threadView && this.discussView.discuss.threadView.threadCache;
         this._updateLocalStoreProps();
@@ -151,7 +157,11 @@ export class Discuss extends Component {
 }
 
 Object.assign(Discuss, {
-    props: { localId: String },
+    props: {
+        action: Object,
+        actionId: Number,
+        globalState: { type: Object, optional: 1 },
+    },
     template: 'mail.Discuss',
 });
 

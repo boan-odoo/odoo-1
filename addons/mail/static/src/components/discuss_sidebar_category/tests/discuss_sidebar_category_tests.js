@@ -251,11 +251,11 @@ QUnit.test('channel - states: close should update the value on the server', asyn
     const currentUserId = this.data.currentUserId;
     await this.start();
 
-    const initalSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const initalSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         initalSettings.is_discuss_sidebar_category_channel_open,
         true,
@@ -265,11 +265,11 @@ QUnit.test('channel - states: close should update the value on the server', asyn
     await afterNextRender(() => {
         document.querySelector(`.o_DiscussSidebar_categoryChannel .o_DiscussSidebarCategory_title`).click();
     });
-    const newSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const newSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         newSettings.is_discuss_sidebar_category_channel_open,
         false,
@@ -288,11 +288,11 @@ QUnit.test('channel - states: open should update the value on the server', async
     const currentUserId = this.data.currentUserId;
     await this.start();
 
-    const initalSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const initalSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         initalSettings.is_discuss_sidebar_category_channel_open,
         false,
@@ -302,11 +302,11 @@ QUnit.test('channel - states: open should update the value on the server', async
     await afterNextRender(() => {
         document.querySelector(`.o_DiscussSidebar_categoryChannel .o_DiscussSidebarCategory_title`).click();
     });
-    const newSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const newSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         newSettings.is_discuss_sidebar_category_channel_open,
         true,
@@ -615,11 +615,11 @@ QUnit.test('chat - states: close should call update server data', async function
     const currentUserId = this.data.currentUserId;
     await this.start();
 
-    const initalSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const initalSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         initalSettings.is_discuss_sidebar_category_chat_open,
         true,
@@ -629,11 +629,11 @@ QUnit.test('chat - states: close should call update server data', async function
     await afterNextRender(() => {
         document.querySelector(`.o_DiscussSidebar_categoryChat .o_DiscussSidebarCategory_title`).click();
     });
-    const newSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const newSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         newSettings.is_discuss_sidebar_category_chat_open,
         false,
@@ -652,11 +652,11 @@ QUnit.test('chat - states: open should call update server data', async function 
     const currentUserId = this.data.currentUserId;
     await this.start();
 
-    const initalSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const initalSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         initalSettings.is_discuss_sidebar_category_chat_open,
         false,
@@ -666,11 +666,11 @@ QUnit.test('chat - states: open should call update server data', async function 
     await afterNextRender(() => {
         document.querySelector(`.o_DiscussSidebar_categoryChat .o_DiscussSidebarCategory_title`).click();
     });
-    const newSettings = await this.env.services.rpc({
-        model: 'res.users.settings',
-        method: '_find_or_create_for_user',
-        args: [[currentUserId]],
-    });
+    const newSettings = await this.env.services.orm.call(
+        'res.users.settings',
+        '_find_or_create_for_user',
+        [[currentUserId]],
+    );
     assert.strictEqual(
         newSettings.is_discuss_sidebar_category_chat_open,
         true,

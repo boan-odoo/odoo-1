@@ -104,11 +104,10 @@ registerModel({
          * Delete the record from database and locally.
          */
         async deleteServerRecord() {
-            await this.async(() => this.env.services.rpc({
-                model: 'mail.activity',
-                method: 'unlink',
-                args: [[this.id]],
-            }));
+            await this.async(() => this.env.services.unlink(
+                'mail.activity',
+                [this.id],
+            ));
             this.delete();
         },
         /**
@@ -129,17 +128,17 @@ registerModel({
                 },
                 res_id: this.id,
             };
-            this.env.bus.trigger('do-action', {
+            this.env.services.action.doAction(
                 action,
-                options: { on_close: () => this.fetchAndUpdate() },
-            });
+                { onClose: () => this.fetchAndUpdate() },
+            );
         },
         async fetchAndUpdate() {
-            const [data] = await this.env.services.rpc({
-                model: 'mail.activity',
-                method: 'activity_format',
-                args: [this.id],
-            }, { shadow: true }).catch(e => {
+            const [data] = await this.env.services.orm.silent.call(
+                'mail.activity',
+                'activity_format',
+                [this.id],
+            ).catch(e => {
                 const errorName = e.message && e.message.data && e.message.data.name;
                 if (errorName === 'odoo.exceptions.MissingError') {
                     return [];
@@ -165,15 +164,15 @@ registerModel({
          */
         async markAsDone({ attachments = [], feedback = false }) {
             const attachmentIds = attachments.map(attachment => attachment.id);
-            await this.async(() => this.env.services.rpc({
-                model: 'mail.activity',
-                method: 'action_feedback',
-                args: [[this.id]],
-                kwargs: {
+            await this.async(() => this.env.services.orm.call(
+                'mail.activity',
+                'action_feedback',
+                [[this.id]],
+                {
                     attachment_ids: attachmentIds,
                     feedback,
                 },
-            }));
+            ));
             this.thread.fetchData(['attachments', 'messages']);
             this.delete();
         },
@@ -183,26 +182,22 @@ registerModel({
          * @returns {Object}
          */
         async markAsDoneAndScheduleNext({ feedback }) {
-            const action = await this.async(() => this.env.services.rpc({
-                model: 'mail.activity',
-                method: 'action_feedback_schedule_next',
-                args: [[this.id]],
-                kwargs: { feedback },
-            }));
+            const action = await this.async(() => this.env.services.orm.call(
+                'mail.activity',
+                'action_feedback_schedule_next',
+                [[this.id]],
+                { feedback },
+            ));
             this.thread.fetchData(['activities', 'attachments', 'messages']);
             const thread = this.thread;
             this.delete();
             if (!action) {
                 return;
             }
-            this.env.bus.trigger('do-action', {
+            this.env.services.action.doAction(
                 action,
-                options: {
-                    on_close: () => {
-                        thread.fetchData(['activities']);
-                    },
-                },
-            });
+                { onClose: () => thread.fetchData(['activities']) },
+            );
         },
         /**
          * @private

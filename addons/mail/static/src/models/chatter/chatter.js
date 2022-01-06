@@ -86,12 +86,10 @@ registerModel({
                 },
                 res_id: false,
             };
-            return this.env.bus.trigger('do-action', {
+            return this.env.services.action.doAction(
                 action,
-                options: {
-                    on_close: () => this.reloadParentView(),
-                },
-            });
+                { onClose: () => this.reloadParentView() },
+            );
         },
         /**
          * Handles click on "send message" button.
@@ -231,7 +229,7 @@ registerModel({
          */
         _prepareAttachmentsLoading() {
             this._isPreparingAttachmentsLoading = true;
-            this._attachmentsLoaderTimeout = this.env.browser.setTimeout(() => {
+            this._attachmentsLoaderTimeout = this.messaging.browser.setTimeout(() => {
                 this.update({ isShowingAttachmentsLoading: true });
                 this._isPreparingAttachmentsLoading = false;
             }, this.messaging.loadingBaseDelayDuration);
@@ -240,7 +238,7 @@ registerModel({
          * @private
          */
         _stopAttachmentsLoading() {
-            this.env.browser.clearTimeout(this._attachmentsLoaderTimeout);
+            this.messaging.browser.clearTimeout(this._attachmentsLoaderTimeout);
             this._attachmentsLoaderTimeout = null;
             this._isPreparingAttachmentsLoading = false;
         },

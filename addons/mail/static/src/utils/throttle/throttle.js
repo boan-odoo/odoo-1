@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { makeDeferred } from '@mail/utils/deferred/deferred';
+import { browser } from '@web/core/browser/browser';
 
 /**
  * This module define an utility function that enables throttling calls on a
@@ -266,7 +267,7 @@ class Throttle {
         const coolingDownDeferred = makeDeferred();
         this._coolingDownDeferred = coolingDownDeferred;
         this._isCoolingDown = true;
-        const cooldownTimeoutId = this.env.browser.setTimeout(
+        const cooldownTimeoutId = browser.setTimeout(
             () => coolingDownDeferred.resolve(),
             this._duration
         );
@@ -283,7 +284,7 @@ class Throttle {
                 unexpectedError = error;
             }
         } finally {
-            this.env.browser.clearTimeout(cooldownTimeoutId);
+            browser.clearTimeout(cooldownTimeoutId);
             this._coolingDownDeferred = undefined;
             this._isCoolingDown = false;
         }

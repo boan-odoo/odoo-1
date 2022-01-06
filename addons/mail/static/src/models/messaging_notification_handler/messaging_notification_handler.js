@@ -15,9 +15,10 @@ registerModel({
     identifyingFields: ['messaging'],
     lifecycleHooks: {
         _willDelete() {
-            if (this.env.services['bus_service']) {
-                this.env.services['bus_service'].off('notification');
-                this.env.services['bus_service'].stopPolling();
+            const legacyEnv = owl.Component.env;
+            if (legacyEnv.services['bus_service']) {
+                legacyEnv.services['bus_service'].off('notification');
+                legacyEnv.services['bus_service'].stopPolling();
             }
         },
     },
@@ -27,8 +28,9 @@ registerModel({
          * the current users. This includes pinned channels for instance.
          */
         start() {
-            this.env.services.bus_service.onNotification(null, notifs => this._handleNotifications(notifs));
-            this.env.services.bus_service.startPolling();
+            const legacyEnv = owl.Component.env;
+            legacyEnv.services.bus_service.onNotification(null, notifs => this._handleNotifications(notifs));
+            legacyEnv.services.bus_service.startPolling();
         },
         /**
          * @private
@@ -189,13 +191,13 @@ registerModel({
             const channel = this.messaging.models['Thread'].insert(this.messaging.models['Thread'].convertData(channelData));
             if (this.messaging.currentUser && invitedByUserId !== this.messaging.currentUser.id) {
                 // Current user was invited by someone else.
-                this.env.services['notification'].notify({
-                    message: _.str.sprintf(
+                this.env.services['notification'].add(
+                    _.str.sprintf(
                         this.env._t("You have been invited to #%s"),
                         channel.displayName
                     ),
-                    type: 'info',
-                });
+                    { type: 'info' },
+                );
             }
         },
         /**
@@ -260,7 +262,7 @@ registerModel({
                 channel.correspondent === this.messaging.partnerRoot
             );
             if (!isChatWithOdooBot) {
-                const isOdooFocused = this.env.services['bus_service'].isOdooFocused();
+                const isOdooFocused = owl.Component.env.services['bus_service'].isOdooFocused();
                 // Notify if out of focus
                 if (!isOdooFocused && channel.isChatChannel) {
                     this._notifyNewChannelMessageWhileOutOfFocus({
@@ -274,7 +276,7 @@ registerModel({
                     channel.markAsFetched();
                 }
                 // open chat on receiving new message if it was not already opened or folded
-                if (channel.channel_type !== 'channel' && !this.messaging.device.isMobile && !channel.chatWindow) {
+                if (channel.channel_type !== 'channel' && !this.messaging.device.isSmall && !channel.chatWindow) {
                     this.messaging.chatWindowManager.openThread(channel);
                 }
             }
@@ -439,12 +441,14 @@ registerModel({
          * @param {boolean} param1.warning
          */
         _handleNotificationSimpleNotification({ message, message_is_html, sticky, title, warning }) {
-            this.env.services['notification'].notify({
-                message: message_is_html ? Markup(message) : message,
-                sticky,
-                title,
-                type: warning ? 'warning' : 'danger',
-            });
+            this.env.services['notification'].add(
+                message_is_html ? Markup(message) : message,
+                {
+                    type: warning ? 'warning' : 'danger',
+                    sticky,
+                    title,
+                },
+            );
         },
         /**
          * @private
@@ -465,10 +469,10 @@ registerModel({
             const currentSession = this.messaging.rtc.currentRtcSession;
             if (currentSession && currentSession.id === sessionId) {
                 this.messaging.rtc.channel.endCall();
-                this.env.services['notification'].notify({
-                    message: this.env._t("Disconnected from the RTC call by the server"),
-                    type: 'warning',
-                });
+                this.env.services['notification'].add(
+                    this.env._t("Disconnected from the RTC call by the server"),
+                    { type: 'warning' },
+                );
             }
         },
         /**
@@ -612,7 +616,7 @@ registerModel({
                 return;
             }
             const message = _.str.sprintf(this.env._t("You unsubscribed from %s."), channel.displayName);
-            this.env.services['notification'].notify({ message, type: 'info' });
+            this.env.services['notification'].add(message, { type: 'info' });
             // We assume that arriving here the server has effectively
             // unpinned the channel
             channel.update({
@@ -634,7 +638,7 @@ registerModel({
                 return;
             }
             const message = _.str.sprintf(this.env._t("You unpinned your conversation with %s."), channel.displayName);
-            this.env.services['notification'].notify({ message, type: 'info' });
+            this.env.services['notification'].add(message, { type: 'info' });
             // We assume that arriving here the server has effectively
             // unpinned the channel
             channel.update({
@@ -654,9 +658,9 @@ registerModel({
             // then open a chat for the current user with the new user.
             const message = _.str.sprintf(this.env._t('%s connected'), username);
             const title = this.env._t("This is their first connection. Wish them luck.");
-            this.env.services['bus_service'].sendNotification({ message, title, type: 'info' });
+            owl.Component.env.services['bus_service'].sendNotification({ message, title, type: 'info' });
             const chat = await this.async(() => this.messaging.getChat({ partnerId }));
-            if (!chat || this.messaging.device.isMobile) {
+            if (!chat || this.messaging.device.isSmall) {
                 return;
             }
             this.messaging.chatWindowManager.openThread(chat);
@@ -696,7 +700,7 @@ registerModel({
             const notificationContent = escape(
                 htmlToTextContentInline(message.body).substr(0, PREVIEW_MSG_MAX_SIZE)
             );
-            this.env.services['bus_service'].sendNotification({
+            owl.Component.env.services['bus_service'].sendNotification({
                 message: notificationContent,
                 title: notificationTitle,
                 type: 'info',

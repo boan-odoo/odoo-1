@@ -28,14 +28,14 @@ registerModel({
                 return;
             }
             const channel = this.channel;
-            const channelData = await this.env.services.rpc(({
-                route: '/mail/rtc/channel/cancel_call_invitation',
-                params: {
+            const channelData = await this.env.services.rpc(
+                '/mail/rtc/channel/cancel_call_invitation',
+                {
                     channel_id: this.channel.id,
                     partner_ids: this.invitedPartner && [this.invitedPartner.id],
                     guest_ids: this.invitedGuest && [this.invitedGuest.id],
                 },
-            }));
+            );
             if (!channel.exists()) {
                 return;
             }

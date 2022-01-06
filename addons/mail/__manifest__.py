@@ -83,7 +83,7 @@
             'mail/static/src/model/*.js',
             'mail/static/src/models/*/*.js',
             'mail/static/src/public/*',
-            'mail/static/src/services/messaging/messaging.js',
+            'mail/static/src/services/messaging_service/messaging_service.js',
             'mail/static/src/utils/*/*.js',
             'mail/static/src/utils/messaging_component.js',
             'mail/static/src/utils/utils.js',
@@ -162,7 +162,6 @@
         'web.assets_qweb': [
             'mail/static/src/xml/*.xml',
             'mail/static/src/components/*/*.xml',
-            'mail/static/src/widgets/*/*.xml',
         ],
     },
     'license': 'LGPL-3',

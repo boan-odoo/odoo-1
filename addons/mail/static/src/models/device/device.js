@@ -2,6 +2,8 @@
 
 import { registerModel } from '@mail/model/model_core';
 import { attr } from '@mail/model/model_field';
+import { isMobileOS } from "@web/core/browser/feature_detection";
+import { SIZES } from '@web/core/ui/ui_service';
 
 registerModel({
     name: 'Device',
@@ -29,11 +31,11 @@ registerModel({
          */
         _refresh() {
             this.update({
-                globalWindowInnerHeight: this.env.browser.innerHeight,
-                globalWindowInnerWidth: this.env.browser.innerWidth,
-                isMobile: this.env.device.isMobile,
-                isMobileDevice: this.messaging.device.isMobileDevice,
-                sizeClass: this.env.device.size_class,
+                globalWindowInnerHeight: window.innerHeight,
+                globalWindowInnerWidth: window.innerWidth,
+                isSmall: this.env.isSmall,
+                isMobileDevice: isMobileOS(),
+                sizeClass: this.env.services.ui.size,
             });
         },
     },
@@ -43,7 +45,7 @@ registerModel({
         /**
          * States whether this device has a small size (note: this field name is not ideal).
          */
-        isMobile: attr(),
+        isSmall: attr(),
         /**
          * States whether this device is an actual mobile device.
          */
@@ -57,5 +59,8 @@ registerModel({
          * attribute.
          */
         sizeClass: attr(),
+        sizeClasses: attr({
+            default: SIZES,
+        }),
     },
 });

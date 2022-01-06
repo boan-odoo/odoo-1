@@ -40,15 +40,14 @@ registerModel({
          * @param {integer[]} param0.ids
          */
         async performRpcRead({ context, fields, ids }) {
-            const usersData = await this.env.services.rpc({
-                model: 'res.users',
-                method: 'read',
-                args: [ids],
-                kwargs: {
+            const usersData = await this.env.services.orm.silent.read(
+                'res.users',
+                [ids],
+                {
                     context,
                     fields,
                 },
-            }, { shadow: true });
+            );
             return this.messaging.models['User'].insert(usersData.map(userData =>
                 this.messaging.models['User'].convertData(userData)
             ));
@@ -81,10 +80,10 @@ registerModel({
                 // - Validity of id is not verified at insert.
                 // - There is no bus notification in case of user delete from
                 //   another tab or by another user.
-                this.env.services['notification'].notify({
-                    message: this.env._t("You can only chat with existing users."),
-                    type: 'warning',
-                });
+                this.env.services['notification'].add(
+                    this.env._t("You can only chat with existing users."),
+                    { type: 'warning' },
+                );
                 return;
             }
             // in other cases a chat would be valid, find it or try to create it
@@ -104,10 +103,10 @@ registerModel({
                 );
             }
             if (!chat) {
-                this.env.services['notification'].notify({
-                    message: this.env._t("An unexpected error occurred during the creation of the chat."),
-                    type: 'warning',
-                });
+                this.env.services['notification'].add(
+                    this.env._t("An unexpected error occurred during the creation of the chat."),
+                    { type: 'warning' },
+                );
                 return;
             }
             return chat;
@@ -144,10 +143,10 @@ registerModel({
                 // - Validity of id is not verified at insert.
                 // - There is no bus notification in case of user delete from
                 //   another tab or by another user.
-                this.env.services['notification'].notify({
-                    message: this.env._t("You can only open the profile of existing users."),
-                    type: 'warning',
-                });
+                this.env.services['notification'].add(
+                    this.env._t("You can only open the profile of existing users."),
+                    {type: 'warning' },
+                );
                 return;
             }
             return this.partner.openProfile();

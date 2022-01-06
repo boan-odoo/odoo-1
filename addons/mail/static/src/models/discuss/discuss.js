@@ -178,7 +178,7 @@ registerModel({
                 return;
             }
             thread.open();
-            if (this.messaging.device.isMobile && thread.channel_type) {
+            if (this.messaging.device.isSmall && thread.channel_type) {
                 this.update({ activeMobileNavbarTabId: thread.channel_type });
             }
         },
@@ -197,14 +197,14 @@ registerModel({
                 this.focus();
             }
             if (!this.discussView) {
-                this.env.bus.trigger('do-action', {
-                    action: 'mail.action_discuss',
-                    options: {
+                this.env.services.action.doAction(
+                    'mail.action_discuss',
+                    {
                         active_id: this.threadToActiveId(this),
                         clear_breadcrumbs: false,
                         on_reverse_breadcrumb: () => this.close(), // this is useless, close is called by destroy anyway
                     },
-                });
+                );
             }
         },
         /**
@@ -254,7 +254,7 @@ registerModel({
                 return false;
             }
             if (
-                this.messaging.device.isMobile &&
+                this.messaging.device.isSmall &&
                 (
                     this.activeMobileNavbarTabId !== 'mailbox' ||
                     this.thread.model !== 'mail.box'
@@ -291,7 +291,7 @@ registerModel({
         _computeMobileMessagingNavbarView() {
             if (
                 this.messaging.device &&
-                this.messaging.device.isMobile &&
+                this.messaging.device.isSmall &&
                 !(this.threadView && this.threadView.replyingToMessageView)
             ) {
                 return insertAndReplace();

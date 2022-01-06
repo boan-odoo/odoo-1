@@ -1,17 +1,23 @@
 /** @odoo-module **/
 
-import { ChatWindowService } from '@mail/services/chat_window_service/chat_window_service';
-import { DialogService } from '@mail/services/dialog_service/dialog_service';
-import { MessagingService } from '@mail/services/messaging/messaging';
-import { SystrayService } from '@mail/services/systray_service/systray_service';
-import { DiscussWidget } from '@mail/widgets/discuss/discuss';
+import { getMessagingComponent } from './utils/messaging_component';
+import { messagingService } from '@mail/services/messaging_service/messaging_service';
+import { registry } from '@web/core/registry';
+import { systrayService } from '@mail/services/systray_service/systray_service';
+import { wowlEnvProviderService } from '@mail/services/wowl_env_provider_service/wowl_env_provider_service';
 
-import { action_registry } from 'web.core';
-import { serviceRegistry } from 'web.core';
+const serviceRegistry = registry.category('services');
+const componnentsRegistry = registry.category('main_components');
 
-serviceRegistry.add('chat_window', ChatWindowService);
-serviceRegistry.add('dialog', DialogService);
-serviceRegistry.add('messaging', MessagingService);
-serviceRegistry.add('systray_service', SystrayService);
+serviceRegistry.add("messaging", messagingService);
+serviceRegistry.add("systray_service", systrayService)
+serviceRegistry.add("wowlEnvProviderService", wowlEnvProviderService);
 
-action_registry.add('mail.widgets.discuss', DiscussWidget);
+componnentsRegistry.add('chat_window_manager', {
+    Component: getMessagingComponent("ChatWindowManager"),
+});
+componnentsRegistry.add('dialog_manager', {
+    Component: getMessagingComponent('DialogManager'),
+});
+
+registry.category('actions').add("mail.discuss", getMessagingComponent('Discuss'));

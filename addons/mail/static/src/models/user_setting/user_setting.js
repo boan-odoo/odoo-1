@@ -1,7 +1,5 @@
 /** @odoo-module **/
 
-import { browser } from "@web/core/browser/browser";
-
 import { registerModel } from '@mail/model/model_core';
 import { attr, many, one } from '@mail/model/model_field';
 import { insertAndReplace } from '@mail/model/model_field_command';
@@ -16,7 +14,7 @@ registerModel({
         },
         _willDelete() {
             for (const timeoutId of Object.values(this._timeoutIds)) {
-                browser.clearTimeout(timeoutId);
+                this.messaging.browser.clearTimeout(timeoutId);
             }
         },
     },
@@ -100,7 +98,7 @@ registerModel({
             this.update({
                 audioInputDeviceId,
             });
-            this.env.services.local_storage.setItem('mail_user_setting_audio_input_device_id', audioInputDeviceId);
+            this.messaging.browser.localStorage.setItem('mail_user_setting_audio_input_device_id', audioInputDeviceId);
             await this.messaging.rtc.updateLocalAudioTrack(true);
         },
         /**
@@ -131,20 +129,15 @@ registerModel({
          */
         async saveVolumeSetting({ guestId, partnerId, volume }) {
             this._debounce(async () => {
-                await this.async(() => this.env.services.rpc(
-                    {
-                        model: 'res.users.settings',
-                        method: 'set_volume_setting',
-                        args: [
-                            [this.messaging.currentUser.resUsersSettingsId],
-                            partnerId,
-                            volume,
-                        ],
-                        kwargs: {
-                            guest_id: guestId,
-                        },
-                    },
-                    { shadow: true },
+                await this.async(() => this.env.services.orm.silent.call(
+                    'res.users.settings',
+                    'set_volume_setting',
+                    [
+                        [this.messaging.currentUser.resUsersSettingsId],
+                        partnerId,
+                        volume,
+                    ],
+                    { guest_id: guestId },
                 ));
             }, 5000, `sound_${partnerId}`);
         },
@@ -153,7 +146,7 @@ registerModel({
          */
         async setThresholdValue(voiceActivationThreshold) {
             this.update({ voiceActivationThreshold });
-            this.env.services.local_storage.setItem('mail_user_setting_voice_threshold', voiceActivationThreshold);
+            localStorage.setItem('mail_user_setting_voice_threshold', voiceActivationThreshold);
             await this.messaging.rtc.updateVoiceActivation();
         },
         async togglePushToTalk() {
@@ -179,8 +172,8 @@ registerModel({
          * @param {any} key
          */
         _debounce(f, delay, key) {
-            this._timeoutIds[key] && browser.clearTimeout(this._timeoutIds[key]);
-            this._timeoutIds[key] = browser.setTimeout(() => {
+            this._timeoutIds[key] && this.messaging.browser.clearTimeout(this._timeoutIds[key]);
+            this._timeoutIds[key] = this.messaging.browser.setTimeout(() => {
                 if (!this.exists()) {
                     return;
                 }
@@ -191,10 +184,10 @@ registerModel({
          * @private
          */
         _loadLocalSettings() {
-            const voiceActivationThresholdString = this.env.services.local_storage.getItem(
+            const voiceActivationThresholdString = localStorage.getItem(
                 "mail_user_setting_voice_threshold"
             );
-            const audioInputDeviceId = this.env.services.local_storage.getItem(
+            const audioInputDeviceId = localStorage.getItem(
                 "mail_user_setting_audio_input_device_id"
             );
             const voiceActivationThreshold = parseFloat(voiceActivationThresholdString);
@@ -210,17 +203,14 @@ registerModel({
          */
         async _saveSettings() {
             this._debounce(async () => {
-                await this.async(() => this.env.services.rpc(
-                    {
-                        model: 'res.users.settings',
-                        method: 'set_res_users_settings',
-                        args: [[this.messaging.currentUser.resUsersSettingsId], {
-                            push_to_talk_key: this.pushToTalkKey,
-                            use_push_to_talk: this.usePushToTalk,
-                            voice_active_duration: this.voiceActiveDuration,
-                        }],
-                    },
-                    { shadow: true },
+                await this.async(() => this.env.services.orm.silent.call(
+                    'res.users.settings',
+                    'set_res_users_settings',
+                    [[this.messaging.currentUser.resUsersSettingsId], {
+                        push_to_talk_key: this.pushToTalkKey,
+                        use_push_to_talk: this.usePushToTalk,
+                        voice_active_duration: this.voiceActiveDuration,
+                    }],
                 ));
             }, 2000, 'globalSettings');
         },

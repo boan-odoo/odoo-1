@@ -322,16 +322,16 @@ QUnit.test('mark channel as fetched when a new message is loaded and as seen whe
         thread: link(thread),
     });
     await createThreadViewComponent(threadViewer.threadView);
-    await afterNextRender(async () => this.env.services.rpc({
-        route: '/mail/chat_post',
-        params: {
+    await afterNextRender(async () => this.env.services.rpc(
+        '/mail/chat_post',
+        {
             context: {
                 mockedUserId: 10,
             },
             message_content: "new message",
             uuid: thread.uuid,
         },
-    }));
+    ));
     assert.verifySteps(
         ['rpc:channel_fetch'],
         "Channel should have been fetched but not seen yet"
@@ -396,16 +396,16 @@ QUnit.test('mark channel as fetched and seen when a new message is loaded if com
     // simulate receiving a message
     await this.afterEvent({
         eventName: 'o-thread-last-seen-by-current-partner-message-id-changed',
-        func: () => this.env.services.rpc({
-            route: '/mail/chat_post',
-            params: {
+        func: () => this.env.services.rpc(
+            '/mail/chat_post',
+            {
                 context: {
                     mockedUserId: 10,
                 },
                 message_content: "<p>fdsfsd</p>",
                 uuid: thread.uuid,
             },
-        }),
+        ),
         message: "should wait until last seen by current partner message id changed after receiving a message while thread is focused",
         predicate: ({ thread }) => {
             return (
@@ -614,16 +614,16 @@ QUnit.test('new messages separator on receiving new message [REQUIRE FOCUS]', as
     // simulate receiving a message
     await this.afterEvent({
         eventName: 'o-thread-view-hint-processed',
-        func: () => this.env.services.rpc({
-            route: '/mail/chat_post',
-            params: {
+        func: () => this.env.services.rpc(
+            '/mail/chat_post',
+            {
                 context: {
                     mockedUserId: 42,
                 },
                 message_content: "hu",
                 uuid: thread.uuid,
             },
-        }),
+        ),
         message: "should wait until new message is received",
         predicate: ({ hint, threadViewer }) => {
             return (
@@ -864,16 +864,16 @@ QUnit.test('should scroll to bottom on receiving new message if the list is init
     await this.afterEvent({
         eventName: 'o-component-message-list-scrolled',
         func: () =>
-            this.env.services.rpc({
-                route: '/mail/chat_post',
-                params: {
+            this.env.services.rpc(
+                '/mail/chat_post',
+                {
                     context: {
                         mockedUserId: 42,
                     },
                     message_content: "hello",
                     uuid: thread.uuid,
                 },
-            }),
+            ),
         message: "should wait until channel 20 scrolled after receiving a message",
         predicate: data => threadViewer === data.threadViewer,
     });
@@ -949,16 +949,16 @@ QUnit.test('should not scroll on receiving new message if the list is initially 
     await this.afterEvent({
         eventName: 'o-thread-view-hint-processed',
         func: () =>
-            this.env.services.rpc({
-                route: '/mail/chat_post',
-                params: {
+            this.env.services.rpc(
+                '/mail/chat_post',
+                {
                     context: {
                         mockedUserId: 42,
                     },
                     message_content: "hello",
                     uuid: thread.uuid,
                 },
-            }),
+            ),
         message: "should wait until channel 20 processed new message hint",
         predicate: data => threadViewer === data.threadViewer && data.hint.type === 'message-received',
     });
@@ -1791,16 +1791,16 @@ QUnit.test('first unseen message should be directly preceded by the new message 
     // composer is focused by default, we remove that focus
     document.querySelector('.o_ComposerTextInput_textarea').blur();
     // simulate receiving a message
-    await afterNextRender(() => this.env.services.rpc({
-        route: '/mail/chat_post',
-        params: {
+    await afterNextRender(() => this.env.services.rpc(
+        '/mail/chat_post',
+        {
             context: {
                 mockedUserId: 42,
             },
             message_content: "test",
             uuid: 'channel20uuid',
         },
-    }));
+    ));
     assert.containsN(
         document.body,
         '.o_Message',

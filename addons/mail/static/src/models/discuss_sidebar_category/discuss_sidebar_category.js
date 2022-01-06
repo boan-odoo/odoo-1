@@ -17,16 +17,11 @@ registerModel({
          * @param {boolean} [resUsersSettings.is_category_chat_open]
          */
         async performRpcSetResUsersSettings(resUsersSettings) {
-            return this.env.services.rpc(
-                {
-                    model: 'res.users.settings',
-                    method: 'set_res_users_settings',
-                    args: [[this.messaging.currentUser.resUsersSettingsId]],
-                    kwargs: {
-                        new_settings: resUsersSettings,
-                    },
-                },
-                { shadow: true },
+            return this.env.services.orm.silent.call(
+                    'res.users.settings',
+                    'set_res_users_settings',
+                    [[this.messaging.currentUser.resUsersSettingsId]],
+                    { new_settings: resUsersSettings },
             );
         },
     },
@@ -166,15 +161,15 @@ registerModel({
          */
         onClickCommandView(ev) {
             ev.stopPropagation();
-            return this.env.bus.trigger('do-action', {
-                action: {
+            return this.env.services.action.doAction(
+                {
                     name: this.env._t("Public Channels"),
                     type: 'ir.actions.act_window',
                     res_model: 'mail.channel',
                     views: [[false, 'kanban'], [false, 'form']],
                     domain: [['public', '!=', 'private']],
                 },
-            });
+            );
         },
         /**
          * Handles change of open state coming from the server. Useful to

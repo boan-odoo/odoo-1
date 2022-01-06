@@ -8,13 +8,8 @@ import {
     addTimeControlToEnv,
 } from '@mail/env/test_env';
 import { insertAndReplace, replace } from '@mail/model/model_field_command';
-import { ChatWindowService } from '@mail/services/chat_window_service/chat_window_service';
-import { MessagingService } from '@mail/services/messaging/messaging';
 import { makeDeferred } from '@mail/utils/deferred/deferred';
-import { DialogService } from '@mail/services/dialog_service/dialog_service';
-import { getMessagingComponent } from '@mail/utils/messaging_component';
 import { nextTick } from '@mail/utils/utils';
-import { DiscussWidget } from '@mail/widgets/discuss/discuss';
 import { MockModels } from '@mail/../tests/helpers/mock_models';
 
 import AbstractStorageService from 'web.AbstractStorageService';
@@ -26,8 +21,11 @@ import {
 } from 'web.test_utils';
 import Widget from 'web.Widget';
 import { createWebClient, getActionManagerServerData } from "@web/../tests/webclient/helpers";
+import { getMessagingComponent } from '@mail/utils/messaging_component';
 
 import LegacyRegistry from "web.Registry";
+import { registry } from '@web/core/registry';
+import { makeFakeMessagingService } from './tests/mock_services';
 
 const { Component, EventBus } = owl;
 const {
@@ -682,7 +680,18 @@ async function start(param0 = {}) {
         env = addTimeControlToEnv(env);
     }
 
-    const services = Object.assign({}, {
+    const mainComponentsRegistry = registry.category('main_components');
+    const mainComponentsTarget = document.querySelector(debug ? 'body' : '#qunit-fixture');
+    mainComponentsRegistry.add('chat_window_manager', {
+        Component: getMessagingComponent("ChatWindowManager"),
+        target: mainComponentsTarget,
+    });
+    mainComponentsRegistry.add('dialog_manager', {
+        Component: getMessagingComponent('DialogManager'),
+        target: mainComponentsTarget,
+    });
+
+    const legacyService = Object.assign({}, {
         bus_service: BusService.extend({
             _beep() {}, // Do nothing
             _poll() {}, // Do nothing
@@ -692,20 +701,11 @@ async function start(param0 = {}) {
             },
             updateOption() {},
         }),
-        chat_window: ChatWindowService.extend({
-            _getParentNode() {
-                return document.querySelector(debug ? 'body' : '#qunit-fixture');
-            },
-            _listenHomeMenu: () => {},
-        }),
-        dialog: DialogService.extend({
-            _getParentNode() {
-                return document.querySelector(debug ? 'body' : '#qunit-fixture');
-            },
-            _listenHomeMenu: () => {},
-        }),
         local_storage: AbstractStorageService.extend({ storage: new RamStorage() }),
-        messaging: MessagingService.extend({
+    }, param0.legacyServices);
+
+    const services = Object.assign({}, {
+        messaging: makeFakeMessagingService({
             // test specific values
             messagingValues: {
                 autofetchPartnerImStatus: false,
@@ -713,14 +713,6 @@ async function start(param0 = {}) {
                 isQUnitTest: true,
                 loadingBaseDelayDuration,
                 messagingBus,
-            },
-            /**
-             * Override to ensure tests run in debug mode to catch all potential
-             * programming errors and provide better message when they happen.
-             */
-            init(...args) {
-                this._super(...args);
-                this.modelManager.isDebug = true;
             },
             /**
              * Override:
@@ -732,11 +724,10 @@ async function start(param0 = {}) {
              *
              * @override
              */
-            async start() {
-                const _super = this._super.bind(this);
-                await testSetupDoneDeferred;
-                await messagingBeforeCreationDeferred;
-                _super();
+            start: async function() {
+              await testSetupDoneDeferred;
+              await messagingBeforeCreationDeferred;
+              this.modelManager.isDebug = true;
             },
         }),
     }, param0.services);

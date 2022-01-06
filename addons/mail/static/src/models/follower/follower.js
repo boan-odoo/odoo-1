@@ -61,11 +61,11 @@ registerModel({
         async remove() {
             const partner_ids = [];
             partner_ids.push(this.partner.id);
-            await this.async(() => this.env.services.rpc({
-                model: this.followedThread.model,
-                method: 'message_unsubscribe',
-                args: [[this.followedThread.id], partner_ids]
-            }));
+            await this.async(() => this.env.services.orm.call(
+                this.followedThread.model,
+                'message_unsubscribe',
+                [[this.followedThread.id], partner_ids]
+            ));
             const followedThread = this.followedThread;
             this.delete();
             followedThread.fetchData(['suggestedRecipients']);
@@ -82,10 +82,10 @@ registerModel({
          * Show (editable) list of subtypes of this follower.
          */
         async showSubtypes() {
-            const subtypesData = await this.async(() => this.env.services.rpc({
-                route: '/mail/read_subscription_data',
-                params: { follower_id: this.id },
-            }));
+            const subtypesData = await this.async(() => this.env.services.rpc(
+                '/mail/read_subscription_data',
+                { follower_id: this.id },
+            ));
             this.update({ subtypes: unlinkAll() });
             for (const data of subtypesData) {
                 const subtype = this.messaging.models['FollowerSubtype'].insert(
@@ -121,16 +121,16 @@ registerModel({
                 if (this.partner) {
                     kwargs.partner_ids = [this.partner.id];
                 }
-                await this.async(() => this.env.services.rpc({
-                    model: this.followedThread.model,
-                    method: 'message_subscribe',
-                    args: [[this.followedThread.id]],
+                await this.async(() => this.env.services.orm.call(
+                    this.followedThread.model,
+                    'message_subscribe',
+                    [[this.followedThread.id]],
                     kwargs,
-                }));
-                this.env.services['notification'].notify({
-                    type: 'success',
-                    message: this.env._t("The subscription preferences were successfully applied."),
-                });
+                ));
+                this.env.services['notification'].add(
+                    this.env._t("The subscription preferences were successfully applied."),
+                    { type: 'success' },
+                );
             }
             this.closeSubtypes();
         },

@@ -87,7 +87,7 @@ export class MessagingMenu extends Component {
      * @param {MouseEvent} ev
      */
     _onClickNewMessage(ev) {
-        if (!this.messaging.device.isMobile) {
+        if (!this.messaging.device.isSmall) {
             this.messaging.chatWindowManager.openNewMessage();
             this.messagingMenu.close();
         } else {

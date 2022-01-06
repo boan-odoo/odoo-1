@@ -133,11 +133,12 @@ registerModel({
          * @param {Array[]} domain
          */
         async markAllAsRead(domain) {
-            await this.env.services.rpc({
-                model: 'mail.message',
-                method: 'mark_all_as_read',
-                kwargs: { domain },
-            }, { shadow: true });
+            await this.env.services.orm.silent.call(
+                'mail.message',
+                'mark_all_as_read',
+                undefined,
+                { domain },
+            );
         },
         /**
          * Mark provided messages as read. Messages that have been marked as
@@ -151,11 +152,11 @@ registerModel({
          * @param {Message[]} messages
          */
         async markAsRead(messages) {
-            await this.env.services.rpc({
-                model: 'mail.message',
-                method: 'set_message_done',
-                args: [messages.map(message => message.id)]
-            });
+            await this.env.services.orm.call(
+                'mail.message',
+                'set_message_done',
+                [messages.map(message => message.id)]
+            );
         },
         /**
          * Performs the given `route` RPC to fetch messages.
@@ -165,7 +166,7 @@ registerModel({
          * @returns {Message[]}
          */
         async performRpcMessageFetch(route, params) {
-            const messagesData = await this.env.services.rpc({ route, params }, { shadow: true });
+            const messagesData = await this.env.services.rpc(route, params, { silent: true });
             if (!this.messaging) {
                 return;
             }
@@ -192,10 +193,10 @@ registerModel({
          * Unstar all starred messages of current user.
          */
         async unstarAll() {
-            await this.env.services.rpc({
-                model: 'mail.message',
-                method: 'unstar_all',
-            });
+            await this.env.services.orm.call(
+                'mail.message',
+                'unstar_all',
+            );
         },
     },
     recordMethods: {
@@ -205,10 +206,10 @@ registerModel({
          * @param {string} content
          */
         async addReaction(content) {
-            const messageData = await this.env.services.rpc({
-                route: '/mail/message/add_reaction',
-                params: { content, message_id: this.id },
-            });
+            const messageData = await this.env.services.rpc(
+                '/mail/message/add_reaction',
+                { content, message_id: this.id },
+            );
             if (!this.exists()) {
                 return;
             }
@@ -219,24 +220,24 @@ registerModel({
          * partner Inbox.
          */
         async markAsRead() {
-            await this.async(() => this.env.services.rpc({
-                model: 'mail.message',
-                method: 'set_message_done',
-                args: [[this.id]]
-            }));
+            await this.async(() => this.env.services.orm.call(
+                'mail.message',
+                'set_message_done',
+                [[this.id]]
+            ));
         },
         /**
          * Opens the view that allows to resend the message in case of failure.
          */
         openResendAction() {
-            this.env.bus.trigger('do-action', {
-                action: 'mail.mail_resend_message_action',
-                options: {
+            this.env.services.action.doAction(
+                'mail.mail_resend_message_action',
+                {
                     additional_context: {
                         mail_message_to_resend: this.id,
                     },
                 },
-            });
+            );
         },
         /**
          * Refreshes the value of `dateFromNow` field to the "current now".
@@ -250,10 +251,10 @@ registerModel({
          * @param {string} content
          */
         async removeReaction(content) {
-            const messageData = await this.env.services.rpc({
-                route: '/mail/message/remove_reaction',
-                params: { content, message_id: this.id },
-            });
+            const messageData = await this.env.services.rpc(
+                '/mail/message/remove_reaction',
+                { content, message_id: this.id },
+            );
             if (!this.exists()) {
                 return;
             }
@@ -263,11 +264,11 @@ registerModel({
          * Toggle the starred status of the provided message.
          */
         async toggleStar() {
-            await this.async(() => this.env.services.rpc({
-                model: 'mail.message',
-                method: 'toggle_message_starred',
-                args: [[this.id]]
-            }));
+            await this.async(() => this.env.services.orm.call(
+                'mail.message',
+                'toggle_message_starred',
+                [[this.id]],
+            ));
         },
         /**
          * Updates the message's content.
@@ -276,14 +277,14 @@ registerModel({
          * @param {string} param0.body the new body of the message
          */
         async updateContent({ body, attachment_ids }) {
-            const messageData = await this.env.services.rpc({
-                route: '/mail/message/update_content',
-                params: {
+            const messageData = await this.env.services.rpc(
+                '/mail/message/update_content',
+                {
                     body,
                     attachment_ids,
                     message_id: this.id,
                 },
-            });
+            );
             if (!this.messaging) {
                 return;
             }

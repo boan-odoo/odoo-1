@@ -174,7 +174,7 @@ export class ChatWindow extends Component {
      * @private
      */
     _onClickedHeader() {
-        if (this.messaging.device.isMobile) {
+        if (this.messaging.device.isSmall) {
             return;
         }
         if (this.chatWindow.isFolded) {

@@ -10,12 +10,12 @@ addRecordMethods('ActivityView', {
      */
     async onGrantAccess(ev) {
         const { chatter } = this.activityBoxView; // save value before deleting activity
-        await this.env.services.rpc({
-            model: 'slide.channel',
-            method: 'action_grant_access',
-            args: [[this.activity.thread.id]],
-            kwargs: { partner_id: this.activity.requestingPartner.id },
-        });
+        await this.env.services.orm.call(
+            'slide.channel',
+            'action_grant_access',
+            [[this.activity.thread.id]],
+            { partner_id: this.activity.requestingPartner.id },
+        );
         if (this.activity) {
             this.activity.delete();
         }
@@ -26,12 +26,12 @@ addRecordMethods('ActivityView', {
      */
     async onRefuseAccess(ev) {
         const { chatter } = this.activityBoxView; // save value before deleting activity
-        await this.env.services.rpc({
-            model: 'slide.channel',
-            method: 'action_refuse_access',
-            args: [[this.activity.thread.id]],
-            kwargs: { partner_id: this.activity.requestingPartner.id },
-        });
+        await this.env.services.orm.call(
+            'slide.channel',
+            'action_refuse_access',
+            [[this.activity.thread.id]],
+            { partner_id: this.activity.requestingPartner.id },
+        );
         if (this.activity) {
             this.activity.delete();
         }

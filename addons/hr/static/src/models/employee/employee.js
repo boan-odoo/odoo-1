@@ -47,15 +47,7 @@ registerModel({
          * @param {integer[]} param0.ids
          */
         async performRpcRead({ context, fields, ids }) {
-            const employeesData = await this.env.services.rpc({
-                model: 'hr.employee.public',
-                method: 'read',
-                args: [ids],
-                kwargs: {
-                    context,
-                    fields,
-                },
-            });
+            const employeesData = await this.env.services.orm.read('hr.employee.public', [ids], fields, context);
             this.messaging.models['Employee'].insert(employeesData.map(employeeData =>
                 this.messaging.models['Employee'].convertData(employeeData)
             ));
@@ -69,15 +61,7 @@ registerModel({
          * @param {string[]} param0.fields
          */
         async performRpcSearchRead({ context, domain, fields }) {
-            const employeesData = await this.env.services.rpc({
-                model: 'hr.employee.public',
-                method: 'search_read',
-                kwargs: {
-                    context,
-                    domain,
-                    fields,
-                },
-            });
+            const employeesData = await this.env.services.orm.searchRead('hr.employee.public', domain, fields, {}, context);
             this.messaging.models['Employee'].insert(employeesData.map(employeeData =>
                 this.messaging.models['Employee'].convertData(employeeData)
             ));
@@ -108,10 +92,10 @@ registerModel({
             }
             // prevent chatting with non-users
             if (!this.user) {
-                this.env.services['notification'].notify({
-                    message: this.env._t("You can only chat with employees that have a dedicated user."),
-                    type: 'info',
-                });
+                this.env.services['notification'].add(
+                    this.env._t("You can only chat with employees that have a dedicated user."),
+                    { type: 'info' },
+                );
                 return;
             }
             return this.user.getChat();

@@ -1,7 +1,5 @@
 /** @odoo-module **/
 
-import { browser } from "@web/core/browser/browser";
-
 import { registerModel } from '@mail/model/model_core';
 import { attr, one } from '@mail/model/model_field';
 
@@ -10,12 +8,12 @@ registerModel({
     identifyingFields: ['userSetting'],
     lifecycleHooks: {
         _created() {
-            browser.addEventListener('keydown', this._onKeyDown);
-            browser.addEventListener('keyup', this._onKeyUp);
+            this.messaging.browser.addEventListener('keydown', this._onKeyDown);
+            this.messaging.browser.addEventListener('keyup', this._onKeyUp);
         },
         _willDelete() {
-            browser.removeEventListener('keydown', this._onKeyDown);
-            browser.removeEventListener('keyup', this._onKeyUp);
+            this.messaging.browser.removeEventListener('keydown', this._onKeyDown);
+            this.messaging.browser.removeEventListener('keyup', this._onKeyUp);
         },
     },
     recordMethods: {

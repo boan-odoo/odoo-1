@@ -88,17 +88,16 @@ QUnit.test('channel - avatar: should update avatar url from bus', async function
     );
 
     await afterNextRender(() => {
-        this.env.services.rpc({
-            model: 'mail.channel',
-            method: 'write',
-            args: [[20], { image_128: 'This field does not matter' }],
-        });
+        this.env.services.orm.call(
+            'mail.channel',
+            'write',
+            [[20], { image_128: 'This field does not matter' }],
+        );
     });
-    const result = await this.env.services.rpc({
-        model: 'mail.channel',
-        method: 'read',
-        args: [[20], ['avatarCacheKey']],
-    });
+    const result = await this.env.services.orm.read(
+        'mail.channel',
+        [[20], ['avatarCacheKey']],
+    );
     const newCacheKey = result[0]['avatarCacheKey'];
 
     // FIXME: current test framework does not replace `src` with `data-src` during the re-rendering.

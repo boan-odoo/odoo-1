@@ -5,6 +5,7 @@ import { useDragVisibleDropZone } from '@mail/component_hooks/use_drag_visible_d
 import { useRefToModel } from '@mail/component_hooks/use_ref_to_model/use_ref_to_model';
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { isEventHandled } from '@mail/utils/utils';
+import { url } from "@web/core/utils/urls";
 
 const { Component } = owl;
 
@@ -41,11 +42,11 @@ export class Composer extends Component {
      */
     get currentPartnerAvatar() {
         const avatar = this.messaging.currentUser
-            ? this.env.session.url('/web/image', {
-                    field: 'avatar_128',
-                    id: this.messaging.currentUser.id,
-                    model: 'res.users',
-                })
+            ? url('/web/image', {
+                field: 'avatar_128',
+                id: this.messaging.currentUser.id,
+                model: 'res.users',
+            })
             : '/web/static/img/user_menu_avatar.png';
         return avatar;
     }
@@ -98,10 +99,10 @@ export class Composer extends Component {
     _postMessage() {
         if (!this.composerView.composer.canPostMessage) {
             if (this.composerView.composer.hasUploadingAttachment) {
-                this.env.services['notification'].notify({
-                    message: this.env._t("Please wait while the file is uploading."),
-                    type: 'warning',
-                });
+                this.env.services['notification'].add(
+                    this.env._t("Please wait while the file is uploading."),
+                    { type: 'warning' },
+                );
             }
             return;
         }

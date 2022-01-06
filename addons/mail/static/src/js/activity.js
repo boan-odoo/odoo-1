@@ -613,7 +613,7 @@ var KanbanActivity = BasicActivity.extend({
     _renderDropdown: function () {
         var self = this;
         this.$('.o_activity')
-            .toggleClass('dropdown-menu-right', config.device.isMobile)
+            .toggleClass('dropdown-menu-right', config.device.isSmall)
             .html(QWeb.render('mail.KanbanActivityLoading'));
         return _readActivities(this, this.value.res_ids).then(function (activities) {
             activities = setFileUploadID(activities);

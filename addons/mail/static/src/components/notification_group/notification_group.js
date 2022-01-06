@@ -53,7 +53,7 @@ export class NotificationGroup extends Component {
             return;
         }
         this.notificationGroupView.notificationGroup.openDocuments();
-        if (!this.messaging.device.isMobile) {
+        if (!this.messaging.device.isSmall) {
             this.messaging.messagingMenu.close();
         }
     }
@@ -64,7 +64,7 @@ export class NotificationGroup extends Component {
      */
     _onClickMarkAsRead(ev) {
         this.notificationGroupView.notificationGroup.openCancelAction();
-        if (!this.messaging.device.isMobile) {
+        if (!this.messaging.device.isSmall) {
             this.messaging.messagingMenu.close();
         }
     }

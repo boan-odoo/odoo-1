@@ -1844,16 +1844,16 @@ QUnit.test('new messages separator [REQUIRE FOCUS]', async function (assert) {
     // composer is focused by default, we remove that focus
     document.querySelector('.o_ComposerTextInput_textarea').blur();
     // simulate receiving a message
-    await afterNextRender(async () => this.env.services.rpc({
-        route: '/mail/chat_post',
-        params: {
+    await afterNextRender(async () => this.env.services.rpc(
+        '/mail/chat_post',
+        {
             context: {
                 mockedUserId: 42,
             },
             message_content: "hu",
             uuid: 'randomuuid',
         },
-    }));
+    ));
 
     assert.containsN(
         document.body,

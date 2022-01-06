@@ -1,13 +1,15 @@
 /** @odoo-module **/
 
 import { getMessagingComponent } from "@mail/utils/messaging_component";
-
 import FormRenderer from 'web.FormRenderer';
 import { ComponentWrapper } from 'web.OwlCompatibility';
 
-const { Component } = owl;
-
-class ChatterContainerWrapperComponent extends ComponentWrapper {}
+class ChatterContainerWrapperComponent extends ComponentWrapper {
+    constructor(parent, Component, props, wowlEnv) {
+        super(parent, Component, props);
+        owl.hooks.useSubEnv(wowlEnv);
+    }
+}
 
 /**
  * Include the FormRenderer to instantiate the chatter area containing (a
@@ -29,6 +31,7 @@ FormRenderer.include({
         this._chatterContainerTarget = undefined;
         // Do not load chatter in form view dialogs
         this._isFromFormViewDialog = params.isFromFormViewDialog;
+        this.env = owl.Component.wowlEnv;
     },
     /**
      * @override
@@ -39,7 +42,9 @@ FormRenderer.include({
         this.off('o_attachments_changed', this);
         this.off('o_chatter_rendered', this);
         this.off('o_message_posted', this);
-        Component.env.bus.off('Thread:promptAddFollower-closed', this);
+        if (this._hasChatter()) {
+            this.env.bus.off('Thread:promptAddFollower-closed', this);
+        }
     },
 
     //--------------------------------------------------------------------------
@@ -64,7 +69,8 @@ FormRenderer.include({
         this._chatterContainerComponent = new ChatterContainerWrapperComponent(
             this,
             getMessagingComponent("ChatterContainer"),
-            props
+            props,
+            this.env,
         );
         // Not in custom_events because other modules may remove this listener
         // while attempting to extend them.
@@ -78,7 +84,9 @@ FormRenderer.include({
             this.on('o_attachments_changed', this, ev => this.trigger_up('reload', { keepChanges: true }));
         }
         if (this.chatterFields.hasRecordReloadOnFollowersUpdate) {
-            Component.env.bus.on('Thread:promptAddFollower-closed', this, ev => this.trigger_up('reload', { keepChanges: true }));
+            this.env.bus.on('Thread:promptAddFollower-closed', this, ev => {
+                this.trigger_up('reload', { keepChanges: true });
+            });
         }
     },
     /**

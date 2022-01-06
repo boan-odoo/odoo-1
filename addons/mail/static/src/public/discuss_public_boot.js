@@ -2,7 +2,7 @@
 
 import { data } from 'mail.discuss_public_channel_template';
 
-import { MessagingService } from '@mail/services/messaging/messaging';
+import { messagingService } from '@mail/services/messaging_service/messaging_service';
 import { getMessagingComponent } from '@mail/utils/messaging_component';
 
 import { processTemplates } from '@web/core/assets';
@@ -12,7 +12,6 @@ import { makeEnv, startServices } from '@web/env';
 import { session } from '@web/session';
 
 import * as AbstractService from 'web.AbstractService';
-import { serviceRegistry as legacyServiceRegistry } from 'web.core';
 import * as legacyEnv from 'web.env';
 import {
     makeLegacyCrashManagerService,
@@ -22,6 +21,7 @@ import {
     makeLegacySessionService,
     mapLegacyEnvToWowlEnv,
 } from '@web/legacy/utils';
+
 import * as legacySession from 'web.session';
 
 const { Component, config, mount, whenReady } = owl;
@@ -38,6 +38,10 @@ Component.env = legacyEnv;
     serviceRegistry.add('legacy_notification', makeLegacyNotificationService(Component.env));
     serviceRegistry.add('legacy_crash_manager', makeLegacyCrashManagerService(Component.env));
     serviceRegistry.add('legacy_dialog_mapping', makeLegacyDialogMappingService(Component.env));
+    serviceRegistry.add("messaging", {
+        ...messagingService,
+        messagingValues: { autofetchPartnerImStatus: false },
+    });
     await legacySession.is_bound;
     Component.env.qweb.addTemplates(legacySession.owlTemplates);
     Object.assign(odoo, {
@@ -57,21 +61,12 @@ Component.env = legacyEnv;
     env.qweb.addTemplates(templates);
     mapLegacyEnvToWowlEnv(Component.env, env);
     odoo.isReady = true;
-    legacyServiceRegistry.add('messaging', MessagingService.extend({
-        messagingValues: {
-            autofetchPartnerImStatus: false,
-        },
-    }));
-    await mount(MainComponentsContainer, { env, target: document.body });
-    createAndMountDiscussPublicView();
+    createAndMountDiscussPublicView(env);
 })();
 
-async function createAndMountDiscussPublicView() {
-    const messaging = await Component.env.services.messaging.get();
+async function createAndMountDiscussPublicView(env) {
+    const messaging = await env.services.messaging.get();
     // needed by the attachment viewer
-    const DialogManager = getMessagingComponent('DialogManager');
-    const dialogManagerComponent = new DialogManager(null, {});
-    await dialogManagerComponent.mount(document.body);
     messaging.models['Thread'].insert(messaging.models['Thread'].convertData(data.channelData));
     const discussPublicView = messaging.models['DiscussPublicView'].create(data.discussPublicViewData);
     if (discussPublicView.shouldDisplayWelcomeViewInitially) {
@@ -79,9 +74,18 @@ async function createAndMountDiscussPublicView() {
     } else {
         discussPublicView.switchToThreadView();
     }
-    const DiscussPublicView = getMessagingComponent('DiscussPublicView');
-    const discussPublicViewComponent = new DiscussPublicView(null, {
-        localId: discussPublicView.localId,
+
+    const componentsRegistry = registry.category('main_components');
+    componentsRegistry.add('dialog_manager', {
+        Component: getMessagingComponent('DialogManager'),
     });
-    await discussPublicViewComponent.mount(document.body);
+    componentsRegistry.add('discuss_public_view', {
+        Component: getMessagingComponent('DiscussPublicView'),
+        props: {
+            localId: discussPublicView.localId,
+        },
+    });
+
+    const mainComponent = await mount(MainComponentsContainer, { env, target: document.body });
+    mainComponent.el.classList.add("h-100");
 }

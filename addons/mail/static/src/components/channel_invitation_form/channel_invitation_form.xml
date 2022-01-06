@@ -18,7 +18,7 @@
                                         <PartnerImStatusIcon
                                             className="'o_ChannelInvitationForm_selectablePartnerImStatusIcon d-flex align-items-center justify-content-center text-white'"
                                             classNameObj="{
-                                                'o_ChannelInvitationForm_selectablePartnerImStatusIcon-mobile': messaging.device.isMobile,
+                                                'o_ChannelInvitationForm_selectablePartnerImStatusIcon-mobile': messaging.device.isSmall,
                                             }"
                                             partnerLocalId="selectablePartner.localId"
                                         />

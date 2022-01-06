@@ -54,7 +54,7 @@ registerModel({
          * @returns {FieldCommand}
          */
          _computeMobileMessagingNavbarView() {
-            if (this.messaging.device && this.messaging.device.isMobile) {
+            if (this.messaging.device && this.messaging.device.isSmall) {
                 return insertAndReplace();
             }
             return clear();

@@ -5,6 +5,7 @@ import { useUpdateToModel } from '@mail/component_hooks/use_update_to_model/use_
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { useUpdate } from '@mail/component_hooks/use_update/use_update';
 import { isEventHandled, markEventHandled } from '@mail/utils/utils';
+import { registry } from '@web/core/registry';
 
 import { _lt } from 'web.core';
 import { format } from 'web.field_utils';
@@ -14,6 +15,9 @@ const { Component, onWillUnmount, useRef, useState } = owl;
 
 const READ_MORE = _lt("Read More");
 const READ_LESS = _lt("Read Less");
+
+const formatters = registry.category("formatters");
+const parsers = registry.category("parsers");
 
 export class Message extends Component {
 
@@ -268,6 +272,10 @@ export class Message extends Component {
     }
 
     /**
+     * Map tracked field type to a JS formatter. Tracking values are not always stored in the same
+     * field type as their origin type. Supported values are: char, many2one, selection, date,
+     * datetime, float, integer, monetary, text. Also see `create_tracking_values` in Python.
+     *
      * @returns {Object}
      */
     get trackingValues() {
@@ -275,76 +283,35 @@ export class Message extends Component {
             const value = Object.assign({}, trackingValue);
             value.changed_field = _.str.sprintf(this.env._t("%s:"), value.changed_field);
             /**
-             * Maps tracked field type to a JS formatter. Tracking values are
-             * not always stored in the same field type as their origin type.
-             * Field types that are not listed here are not supported by
-             * tracking in Python. Also see `create_tracking_values` in Python.
+             * many2one formatter exists but is expecting id/name_get or data
+             * object but only the target record name is known in this context.
+             *
+             * Selection formatter exists but requires knowing all
+             * possibilities and they are not given in this context.
              */
+            const fieldType = ['many2one', 'selection'].includes(value.field_type) ? 'char' : value.field_type;
+            // If the formatter is not found on the registry, search on the legacy fieldUtils.format.
+            // This must be removed when all the formatters will be on the registry
+            let formatFn = formatters.get(fieldType, null) || format[fieldType];
+            const options = {};
+
             switch (value.field_type) {
                 case 'boolean':
-                    value.old_value = format.boolean(value.old_value, undefined, { forceString: true });
-                    value.new_value = format.boolean(value.new_value, undefined, { forceString: true });
-                    break;
-                /**
-                 * many2one formatter exists but is expecting id/name_get or data
-                 * object but only the target record name is known in this context.
-                 *
-                 * Selection formatter exists but requires knowing all
-                 * possibilities and they are not given in this context.
-                 */
-                case 'char':
-                case 'many2one':
-                case 'selection':
-                    value.old_value = format.char(value.old_value);
-                    value.new_value = format.char(value.new_value);
+                    const originalFormatFn = formatFn
+                    formatFn = val => originalFormatFn(val, undefined, { forceString: true });
                     break;
                 case 'date':
-                    if (value.old_value) {
-                        value.old_value = moment.utc(value.old_value);
-                    }
-                    if (value.new_value) {
-                        value.new_value = moment.utc(value.new_value);
-                    }
-                    value.old_value = format.date(value.old_value);
-                    value.new_value = format.date(value.new_value);
-                    break;
                 case 'datetime':
-                    if (value.old_value) {
-                        value.old_value = moment.utc(value.old_value);
-                    }
-                    if (value.new_value) {
-                        value.new_value = moment.utc(value.new_value);
-                    }
-                    value.old_value = format.datetime(value.old_value);
-                    value.new_value = format.datetime(value.new_value);
-                    break;
-                case 'float':
-                    value.old_value = format.float(value.old_value);
-                    value.new_value = format.float(value.new_value);
-                    break;
-                case 'integer':
-                    value.old_value = format.integer(value.old_value);
-                    value.new_value = format.integer(value.new_value);
+                    const dateParser = parsers.get(fieldType);
+                    value.old_value = dateParser(value.old_value);
+                    value.new_value = dateParser(value.new_value);
                     break;
                 case 'monetary':
-                    value.old_value = format.monetary(value.old_value, undefined, {
-                        currency: value.currency_id
-                            ? this.env.session.currencies[value.currency_id]
-                            : undefined,
-                        forceString: true,
-                    });
-                    value.new_value = format.monetary(value.new_value, undefined, {
-                        currency: value.currency_id
-                            ? this.env.session.currencies[value.currency_id]
-                            : undefined,
-                        forceString: true,
-                    });
-                    break;
-                case 'text':
-                    value.old_value = format.text(value.old_value);
-                    value.new_value = format.text(value.new_value);
+                    options['currencyId'] = value.currency_id;
                     break;
             }
+            value.old_value = formatFn(value.old_value, options);
+            value.new_value = formatFn(value.new_value, options);
             return value;
         });
     }

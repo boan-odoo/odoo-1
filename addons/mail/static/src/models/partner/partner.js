@@ -82,13 +82,11 @@ registerModel({
             if (isNonPublicChannel) {
                 kwargs.channel_id = thread.id;
             }
-            const suggestedPartners = await this.env.services.rpc(
-                {
-                    model: 'res.partner',
-                    method: 'get_mention_suggestions',
-                    kwargs,
-                },
-                { shadow: true },
+            const suggestedPartners = await this.env.services.orm.silent.call(
+                'res.partner',
+                'get_mention_suggestions',
+                undefined,
+                kwargs,
             );
             const partners = this.messaging.models['Partner'].insert(suggestedPartners.map(data =>
                 this.messaging.models['Partner'].convertData(data)
@@ -195,13 +193,10 @@ registerModel({
                 }
             }
             if (!partners.length) {
-                const partnersData = await this.env.services.rpc(
-                    {
-                        model: 'res.partner',
-                        method: 'im_search',
-                        args: [keyword, limit]
-                    },
-                    { shadow: true }
+                const partnersData = await this.env.services.orm.silent.call(
+                   'res.partner',
+                   'im_search',
+                   [keyword, limit]
                 );
                 const newPartners = this.insert(partnersData.map(
                     partnerData => this.convertData(partnerData)
@@ -275,12 +270,11 @@ registerModel({
             if (partnerIds.length === 0) {
                 return;
             }
-            const dataList = await this.env.services.rpc({
-                route: '/longpolling/im_status',
-                params: {
-                    partner_ids: partnerIds,
-                },
-            }, { shadow: true });
+            const dataList = await this.env.services.rpc(
+                '/longpolling/im_status',
+                { partner_ids: partnerIds },
+                { silent: true }
+            );
             this.insert(dataList);
         },
         /**
@@ -299,14 +293,12 @@ registerModel({
          * applicable.
          */
         async checkIsUser() {
-            const userIds = await this.async(() => this.env.services.rpc({
-                model: 'res.users',
-                method: 'search',
-                args: [[['partner_id', '=', this.id]]],
-                kwargs: {
-                    context: { active_test: false },
-                },
-            }, { shadow: true }));
+            const userIds = await this.async(() => this.env.services.orm.silent.search(
+                'res.users',
+                [['partner_id', '=', this.id]],
+                undefined,
+                { active_test: false },
+            ));
             this.update({ hasCheckedUser: true });
             if (userIds.length > 0) {
                 this.update({ user: insert({ id: userIds[0] }) });
@@ -325,10 +317,10 @@ registerModel({
             }
             // prevent chatting with non-users
             if (!this.user) {
-                this.env.services['notification'].notify({
-                    message: this.env._t("You can only chat with partners that have a dedicated user."),
-                    type: 'info',
-                });
+                this.env.services['notification'].add(
+                    this.env._t("You can only chat with partners that have a dedicated user."),
+                    { type: 'info' },
+                );
                 return;
             }
             return this.user.getChat();

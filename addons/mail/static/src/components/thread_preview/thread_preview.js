@@ -70,7 +70,7 @@ export class ThreadPreview extends Component {
             return;
         }
         this.threadPreviewView.thread.open();
-        if (!this.messaging.device.isMobile) {
+        if (!this.messaging.device.isSmall) {
             this.messaging.messagingMenu.close();
         }
     }

@@ -35,15 +35,15 @@ registerModel({
                 }
                 channel.open();
             } else {
-                await this.env.services.rpc(({
-                    model: 'mail.channel',
-                    method: 'add_members',
-                    args: [[this.thread.id]],
-                    kwargs: {
+                await this.env.services.orm.call(
+                    'mail.channel',
+                    'add_members',
+                    [[this.thread.id]],
+                    {
                         partner_ids: this.selectedPartners.map(partner => partner.id),
                         invite_to_rtc_call: !!this.thread.rtc,
                     },
-                }));
+                );
             }
             this.update({
                 searchTerm: "",
@@ -113,16 +113,14 @@ registerModel({
             });
             try {
                 const channelId = (this.thread && this.thread.model === 'mail.channel') ? this.thread.id : undefined;
-                const { count, partners: partnersData } = await this.env.services.rpc(
+                const { count, partners: partnersData } = await this.env.services.orm.silent.call(
+                    'res.partner',
+                    'search_for_channel_invite',
+                    undefined,
                     {
-                        model: 'res.partner',
-                        method: 'search_for_channel_invite',
-                        kwargs: {
-                            channel_id: channelId,
-                            search_term: cleanSearchTerm(this.searchTerm),
-                        },
+                        channel_id: channelId,
+                        search_term: cleanSearchTerm(this.searchTerm),
                     },
-                    { shadow: true }
                 );
                 if (!this.exists()) {
                     return;

@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
 
     <t t-name="mail.MessagingMenu" owl="1">
-        <div class="o_MessagingMenu dropdown" t-att-class="{ 'show': messagingMenu ? messagingMenu.isOpen : false, 'o-mobile': messaging ? messaging.device.isMobile : false }" t-attf-class="{{ className }}" t-ref="root">
+        <div class="o_MessagingMenu dropdown" t-att-class="{ 'show': messagingMenu ? messagingMenu.isOpen : false, 'o-mobile': messaging ? messaging.device.isSmall : false }" t-attf-class="{{ className }}" t-ref="root">
             <a class="o_MessagingMenu_toggler dropdown-toggle o-no-caret o-dropdown--narrow" t-att-class="{ 'o-no-notification': messagingMenu ? !messagingMenu.counter : false }" href="#" title="Conversations" role="button" t-att-aria-expanded="messagingMenu and messagingMenu.isOpen ? 'true' : 'false'" aria-haspopup="true" t-on-click="_onClickToggler">
                 <i class="o_MessagingMenu_icon fa fa-comments" role="img" aria-label="Messages"/>
                 <t t-if="!messagingMenu or !messaging.isInitialized">
@@ -15,13 +15,13 @@
                 </t>
             </a>
             <t t-if="messagingMenu and messagingMenu.isOpen">
-                <div class="o_MessagingMenu_dropdownMenu dropdown-menu dropdown-menu-right" t-att-class="{ 'o-mobile': messaging.device.isMobile, 'o-messaging-not-initialized': !messaging.isInitialized }" role="menu">
+                <div class="o_MessagingMenu_dropdownMenu dropdown-menu dropdown-menu-right" t-att-class="{ 'o-mobile': messaging.device.isSmall, 'o-messaging-not-initialized': !messaging.isInitialized }" role="menu">
                     <t t-if="!messaging.isInitialized">
                         <span><i class="o_MessagingMenu_dropdownLoadingIcon fa fa-circle-o-notch fa-spin"/>Please wait...</span>
                     </t>
                     <t t-else="">
-                        <div class="o_MessagingMenu_dropdownMenuHeader" t-att-class="{ 'o-mobile': messaging.device.isMobile }">
-                            <t t-if="!messaging.device.isMobile">
+                        <div class="o_MessagingMenu_dropdownMenuHeader" t-att-class="{ 'o-mobile': messaging.device.isSmall }">
+                            <t t-if="!messaging.device.isSmall">
                                 <t t-foreach="['all', 'chat', 'channel']" t-as="tabId" t-key="tabId">
                                     <button class="o_MessagingMenu_tabButton o-desktop btn btn-link" t-att-class="{ 'o-active': messagingMenu.activeTabId === tabId, }" t-on-click="_onClickDesktopTabButton" type="button" role="tab" t-att-data-tab-id="tabId">
                                         <t t-if="tabId === 'all'">All</t>
@@ -30,14 +30,14 @@
                                     </button>
                                 </t>
                             </t>
-                            <t t-if="messaging.device.isMobile">
+                            <t t-if="messaging.device.isSmall">
                                 <t t-call="mail.MessagingMenu.newMessageButton"/>
                             </t>
                             <div class="o-autogrow"/>
-                            <t t-if="!messaging.device.isMobile and !messaging.discuss.discussView">
+                            <t t-if="!messaging.device.isSmall and !messaging.discuss.discussView">
                                 <t t-call="mail.MessagingMenu.newMessageButton"/>
                             </t>
-                            <t t-if="messaging.device.isMobile and messagingMenu.isMobileNewMessageToggled">
+                            <t t-if="messaging.device.isSmall and messagingMenu.isMobileNewMessageToggled">
                                 <AutocompleteInput
                                     className="'o_MessagingMenu_mobileNewMessageInput'"
                                     customClass="id + '_mobileNewMessageInputAutocomplete'"
@@ -50,7 +50,7 @@
                             </t>
                         </div>
                         <t t-if="messagingMenu.notificationListView">
-                            <NotificationList className="'o_MessagingMenu_notificationList'" classNameObj="{ 'o-mobile': messaging.device.isMobile }" localId="messagingMenu.notificationListView.localId"/>
+                            <NotificationList className="'o_MessagingMenu_notificationList'" classNameObj="{ 'o-mobile': messaging.device.isSmall }" localId="messagingMenu.notificationListView.localId"/>
                         </t>
                         <t t-if="messagingMenu.mobileMessagingNavbarView">
                             <MobileMessagingNavbar
@@ -67,9 +67,9 @@
     <t t-name="mail.MessagingMenu.newMessageButton" owl="1">
         <button class="o_MessagingMenu_newMessageButton btn"
             t-att-class="{
-                'btn-link': !messaging.device.isMobile,
-                'btn-secondary': messaging.device.isMobile,
-                'o-mobile': messaging.device.isMobile,
+                'btn-link': !messaging.device.isSmall,
+                'btn-secondary': messaging.device.isSmall,
+                'o-mobile': messaging.device.isSmall,
             }" t-on-click="_onClickNewMessage" type="button"
         >
             New message

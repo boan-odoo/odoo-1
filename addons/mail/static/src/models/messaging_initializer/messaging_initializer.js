@@ -35,10 +35,15 @@ registerModel({
             });
             const device = this.messaging.device;
             device.start();
+            const context = Object.assign({
+                isSmall: device.isSmall,
+            }, this.env.services.user.context);
             const discuss = this.messaging.discuss;
-            const data = await this.async(() => this.env.services.rpc({
-                route: '/mail/init_messaging',
-            }, { shadow: true }));
+            const data = await this.async(() => this.env.services.rpc(
+                '/mail/init_messaging',
+                { context },
+                { silent: true },
+            ));
             await this.async(() => this._init(data));
             if (discuss.discussView) {
                 discuss.openInitThread();

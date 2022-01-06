@@ -40,7 +40,7 @@
                         <PartnerImStatusIcon
                             className="'o_ChannelMemberList_partnerImStatusIcon d-flex align-items-center justify-content-center'"
                             classNameObj="{
-                                'o-mobile': messaging.device.isMobile,
+                                'o-mobile': messaging.device.isSmall,
                             }"
                             partnerLocalId="member.localId"
                         />
