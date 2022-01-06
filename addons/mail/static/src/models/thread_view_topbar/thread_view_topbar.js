@@ -125,8 +125,8 @@ function factory(dependencies) {
             if (!this.thread || !this.thread.isChannelDescriptionChangeable) {
                 return;
             }
-            // Guests cannot edit description
-            if (this.messaging.isCurrentUserGuest) {
+            // Guests or portal user cannot edit description
+            if (this.messaging.isCurrentUserGuest || this.messaging.currentUser.isPortalUser) {
                 return;
             }
             const selection = window.getSelection();

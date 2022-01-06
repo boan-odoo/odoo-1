@@ -724,6 +724,7 @@ class TestDiscussFullPerformance(TransactionCase):
                 },
             ],
             'companyName': 'YourCompany',
+            'is_portal_user': False,
             'mail_failures': [],
             'shortcodes': [
                 {

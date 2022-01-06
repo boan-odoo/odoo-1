@@ -194,6 +194,7 @@ function factory(dependencies) {
          * `share` field in python.
          */
         isInternalUser: attr(),
+        isPortalUser: attr(),
         display_name: attr({
             compute: '_computeDisplayName',
         }),

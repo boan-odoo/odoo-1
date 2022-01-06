@@ -25,6 +25,24 @@ export class ThreadViewTopbar extends Component {
     //--------------------------------------------------------------------------
 
     /**
+     * Determine whether description should display on top bar.
+     *
+     * @returns {boolean}
+     */
+    get hasThreadViewTopbarDescription() {
+        if (!this.threadViewTopbar.thread) {
+            return false;
+        }
+        return (
+            this.threadViewTopbar.thread.description ||
+            this.threadViewTopbar.thread.isChannelDescriptionChangeable &&
+            this.messaging.currentUser &&
+            !this.messaging.currentUser.isPortalUser &&
+            !this.messaging.isCurrentUserGuest
+        );
+    }
+
+    /**
      * @returns {mail.thread_view_topbar}
      */
     get threadViewTopbar() {

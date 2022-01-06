@@ -64,6 +64,7 @@ function factory(dependencies) {
          * @param {Object} param0.current_partner
          * @param {integer} param0.current_user_id
          * @param {Object} param0.current_user_settings
+         * @param {Object} param0.is_portal_user
          * @param {Object} [param0.mail_failures={}]
          * @param {integer} [param0.needaction_inbox_counter=0]
          * @param {Object} param0.partner_root
@@ -79,6 +80,7 @@ function factory(dependencies) {
             currentGuest,
             current_user_id,
             current_user_settings,
+            is_portal_user,
             mail_failures = {},
             menu_id,
             needaction_inbox_counter = 0,
@@ -93,6 +95,7 @@ function factory(dependencies) {
                 currentGuest,
                 current_partner,
                 current_user_id,
+                is_portal_user,
                 partner_root,
                 public_partners,
             });
@@ -288,6 +291,7 @@ function factory(dependencies) {
          * @param {Object} currentGuest
          * @param {Object} current_partner
          * @param {integer} current_user_id
+         * @param {boolean} is_portal_user
          * @param {Object} partner_root
          * @param {Object[]} [public_partners=[]]
          */
@@ -295,6 +299,7 @@ function factory(dependencies) {
             currentGuest,
             current_partner,
             current_user_id: currentUserId,
+            is_portal_user,
             partner_root,
             public_partners = [],
         }) {
@@ -308,6 +313,7 @@ function factory(dependencies) {
                     currentPartner: insert(partnerData),
                     currentUser: insert({ id: currentUserId }),
                 });
+                this.messaging.currentUser.update({ isPortalUser: is_portal_user });
             }
             this.messaging.update({
                 partnerRoot: insert(this.messaging.models['mail.partner'].convertData(partner_root)),
