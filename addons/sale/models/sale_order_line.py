@@ -616,12 +616,33 @@ class SaleOrderLine(models.Model):
         """
         return {}
 
-    @api.depends('product_id')
+    def _is_downpayment_draft(self):
+        """ Check that this sale order line is a draft down payment
+
+         Note: self.ensure_one()
+
+         :return: True Verify that this SO line is a draft down payment
+         :rtype: Boolean
+         """
+        self.ensure_one()
+
+        if not self.is_downpayment:
+            return False
+
+        return all(line.move_id.state == 'draft' for line in self._get_invoice_lines())
+
+    @api.depends('product_id', 'invoice_lines.move_id.state', 'invoice_lines.move_id.payment_state')
     def _compute_name(self):
         for line in self:
             if not line.product_id:
                 continue
-            line.name = line.with_context(lang=line.order_partner_id.lang)._get_sale_order_line_multiline_description_sale()
+
+            # added to be sure the client knows that this down payment is still in the
+            # draft state
+            to_add = " (Draft) " if line._is_downpayment_draft() else ""
+
+            line.name = line.with_context(lang=line.order_partner_id.lang)\
+                            ._get_sale_order_line_multiline_description_sale() + to_add
 
     @api.depends('product_id')
     def _compute_custom_attribute_values(self):
@@ -888,7 +909,8 @@ class SaleOrderLine(models.Model):
           the product is not sufficient because we also need to know the event_id and the event_ticket_id (both which belong to the sale order line).
         """
         self.ensure_one()
-        return self.product_id.get_product_multiline_description_sale() + self._get_sale_order_line_multiline_description_variants()
+        return self.product_id.get_product_multiline_description_sale() \
+               + self._get_sale_order_line_multiline_description_variants()
 
     def _get_sale_order_line_multiline_description_variants(self):
         """When using no_variant attributes or is_custom values, the product
