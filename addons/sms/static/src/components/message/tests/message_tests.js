@@ -3,13 +3,11 @@
 import { insert, insertAndReplace } from '@mail/model/model_field_command';
 import { makeDeferred } from '@mail/utils/deferred/deferred';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
+    makeFakeActionService,
     start,
 } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
 
 QUnit.module('sms', {}, function () {
 QUnit.module('components', {}, function () {
@@ -19,33 +17,29 @@ QUnit.module('message_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { afterEvent, components, env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { afterEvent, env, webClient } = res;
             this.afterEvent = afterEvent;
-            this.components = components;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('Notification Sent', async function (assert) {
     assert.expect(9);
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'sms',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         id: 11,
         mail_message_id: 10,
         notification_status: 'sent',
@@ -117,39 +111,42 @@ QUnit.test('Notification Sent', async function (assert) {
 QUnit.test('Notification Error', async function (assert) {
     assert.expect(8);
 
-    const openResendActionDef = makeDeferred();
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action,
-            'sms.sms_resend_action',
-            "action should be the one to resend sms"
-        );
-        assert.strictEqual(
-            payload.options.additional_context.default_mail_message_id,
-            10,
-            "action should have correct message id"
-        );
-        openResendActionDef.resolve();
-    });
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'sms',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         id: 11,
         mail_message_id: 10,
         notification_status: 'exception',
         notification_type: 'sms',
         res_partner_id: 12,
     });
-    const { createThreadViewComponent } = await this.start({ env: { bus } });
+
+    const openResendActionDef = makeDeferred();
+    const { createThreadViewComponent } = await this.start({
+        services: {
+            action: makeFakeActionService((action, options) => {
+                assert.step('do_action');
+                assert.strictEqual(
+                    action,
+                    'sms.sms_resend_action',
+                    "action should be the one to resend sms"
+                );
+                assert.strictEqual(
+                    options.additional_context.default_mail_message_id,
+                    10,
+                    "action should have correct message id"
+                );
+                openResendActionDef.resolve();
+            }),
+        },
+    });
     const threadViewer = this.messaging.models['ThreadViewer'].create({
         hasThreadView: true,
         qunitTest: insertAndReplace(),

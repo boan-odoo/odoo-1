@@ -2,7 +2,6 @@
 
 import { makeDeferred } from '@mail/utils/deferred/deferred';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     nextAnimationFrame,
@@ -17,24 +16,21 @@ QUnit.module('discuss_sidebar_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('sidebar find shows channels matching search term', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'channel',
         id: 20,
         members: [],
@@ -44,11 +40,9 @@ QUnit.test('sidebar find shows channels matching search term', async function (a
     const searchReadDef = makeDeferred();
     await this.start({
         async mockRPC(route, args) {
-            const res = await this._super(...arguments);
             if (args.method === 'search_read') {
                 searchReadDef.resolve();
             }
-            return res;
         },
     });
     await afterNextRender(() =>
@@ -86,21 +80,19 @@ QUnit.test('sidebar find shows channels matching search term', async function (a
 QUnit.test('sidebar find shows channels matching search term even when user is member', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'channel',
         id: 20,
-        members: [this.data.currentPartnerId],
+        members: [this.TEST_USER_IDS.currentPartnerId],
         name: 'test',
         public: 'public',
     });
     const searchReadDef = makeDeferred();
     await this.start({
         async mockRPC(route, args) {
-            const res = await this._super(...arguments);
             if (args.method === 'search_read') {
                 searchReadDef.resolve();
             }
-            return res;
         },
     });
     await afterNextRender(() =>
@@ -138,7 +130,7 @@ QUnit.test('sidebar find shows channels matching search term even when user is m
 QUnit.test('sidebar channels should be ordered case insensitive alphabetically', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 19, name: "Xyz" },
         { id: 20, name: "abc" },
         { id: 21, name: "Abc" },

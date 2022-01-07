@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, nextTick, start } from '@mail/utils/test_utils';
+import { beforeEach, nextTick, start } from '@mail/utils/test_utils';
 import Timer from '@mail/utils/timer/timer';
 
 const { TimerClearedError } = Timer;
@@ -14,11 +14,11 @@ QUnit.module('timer_tests.js', {
         this.timers = [];
 
         this.start = async (params) => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
     },
     afterEach() {
@@ -27,7 +27,6 @@ QUnit.module('timer_tests.js', {
         for (const timer of this.timers) {
             timer.clear();
         }
-        afterEach(this);
     },
 });
 

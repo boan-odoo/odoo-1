@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
 import throttle from '@mail/utils/throttle/throttle';
 import { nextTick } from '@mail/utils/utils';
 
@@ -15,11 +15,11 @@ QUnit.module('throttle_tests.js', {
         this.throttles = [];
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
     },
     afterEach() {
@@ -28,7 +28,6 @@ QUnit.module('throttle_tests.js', {
         for (const t of this.throttles) {
             t.clear();
         }
-        afterEach(this);
     },
 });
 

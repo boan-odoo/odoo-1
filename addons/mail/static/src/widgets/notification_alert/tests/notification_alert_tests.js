@@ -1,8 +1,7 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
-
-import FormView from 'web.FormView';
+import { beforeEach, start } from '@mail/utils/test_utils';
+import { patchWithCleanup } from '@web/../tests/helpers/utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('widgets', {}, function () {
@@ -11,42 +10,33 @@ QUnit.module('notification_alert_tests.js', {
     beforeEach() {
         beforeEach(this);
 
+        Object.assign(this.serverData.views, {
+            'mail.message,false,form':
+                `<form>
+                    <widget name="notification_alert"/>
+                </form>`,
+            'mail.message,false,search': '<search/>',
+        });
+
         this.start = async params => {
-            let { widget } = await start(Object.assign({
-                data: this.data,
-                hasView: true,
-                // View params
-                View: FormView,
-                model: 'mail.message',
-                arch: `
-                    <form>
-                        <widget name="notification_alert"/>
-                    </form>
-                `,
+            let { webClient } = await start(Object.assign({
+                serverData: this.serverData,
+                openViewAction: {
+                    id: 1,
+                    res_model: "mail.message",
+                    type: "ir.actions.act_window",
+                    views: [[false, "form"]],
+                },
             }, params));
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
-QUnit.skip('notification_alert widget: display blocked notification alert', async function (assert) {
-    // FIXME: Test should work, but for some reasons OWL always flags the
-    // component as not mounted, even though it is in the DOM and it's state
-    // is good for rendering... task-227947
+QUnit.test('notification_alert widget: display blocked notification alert', async function (assert) {
     assert.expect(1);
 
-    await this.start({
-        env: {
-            browser: {
-                Notification: {
-                    permission: 'denied',
-                },
-            },
-        },
-    });
+    await this.start();
 
     assert.containsOnce(
         document.body,
@@ -59,12 +49,8 @@ QUnit.test('notification_alert widget: no notification alert when granted', asyn
     assert.expect(1);
 
     await this.start({
-        env: {
-            browser: {
-                Notification: {
-                    permission: 'granted',
-                },
-            },
+        windowOptions: {
+            Notification: { permission: 'granted' },
         },
     });
 
@@ -79,12 +65,8 @@ QUnit.test('notification_alert widget: no notification alert when default', asyn
     assert.expect(1);
 
     await this.start({
-        env: {
-            browser: {
-                Notification: {
-                    permission: 'default',
-                },
-            },
+        windowOptions: {
+            Notification: { permission: 'default' },
         },
     });
 

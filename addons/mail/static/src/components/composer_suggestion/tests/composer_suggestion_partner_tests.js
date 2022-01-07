@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -10,22 +10,19 @@ QUnit.module('composer_suggestion_partner_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('partner mention suggestion displayed', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     const { createComposerSuggestionComponent } = await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
         id: 20,
@@ -52,7 +49,7 @@ QUnit.test('partner mention suggestion displayed', async function (assert) {
 QUnit.test('partner mention suggestion correct data', async function (assert) {
     assert.expect(6);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     const { createComposerSuggestionComponent } = await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
         id: 20,
@@ -105,7 +102,7 @@ QUnit.test('partner mention suggestion correct data', async function (assert) {
 QUnit.test('partner mention suggestion active', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     const { createComposerSuggestionComponent } = await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
         id: 20,

@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     beforeEach,
     createRootMessagingComponent,
     start,
@@ -17,36 +16,32 @@ QUnit.module('thread_icon_tests.js', {
         this.createThreadIcon = async thread => {
             await createRootMessagingComponent(this, "ThreadIcon", {
                 props: { threadLocalId: thread.localId },
-                target: this.widget.el
+                target: this.webClient.el
             });
         };
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('thread icon of a chat when correspondent is on leave & online', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 7,
         im_status: 'leave_online',
         name: 'Demo',
     });
-     this.data['mail.channel'].records.push({
+     this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 20,
-        members: [this.data.currentPartnerId, 7],
+        members: [this.TEST_USER_IDS.currentPartnerId, 7],
     });
     await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
@@ -70,15 +65,15 @@ QUnit.test('thread icon of a chat when correspondent is on leave & online', asyn
 QUnit.test('thread icon of a chat when correspondent is on leave & away', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 7,
         im_status: 'leave_away',
         name: 'Demo',
     });
-     this.data['mail.channel'].records.push({
+     this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 20,
-        members: [this.data.currentPartnerId, 7],
+        members: [this.TEST_USER_IDS.currentPartnerId, 7],
     });
     await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
@@ -102,15 +97,15 @@ QUnit.test('thread icon of a chat when correspondent is on leave & away', async 
 QUnit.test('thread icon of a chat when correspondent is on leave & offline', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 7,
         im_status: 'leave_offline',
         name: 'Demo',
     });
-     this.data['mail.channel'].records.push({
+     this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 20,
-        members: [this.data.currentPartnerId, 7],
+        members: [this.TEST_USER_IDS.currentPartnerId, 7],
     });
     await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({

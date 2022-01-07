@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('website_slides', {}, function () {
 QUnit.module('components', {}, function () {
@@ -9,28 +9,24 @@ QUnit.module('activity_tests.js', {
     beforeEach() {
         beforeEach(this);
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { components, env, widget } = res;
-            this.components = components;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('grant course access', async function (assert) {
     assert.expect(8);
 
-    this.data['res.partner'].records.push({ id: 5 });
-    this.data['slide.channel'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 5 });
+    this.serverData.models['slide.channel'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         can_write: true,
         id: 12,
         res_id: 100,
@@ -38,15 +34,15 @@ QUnit.test('grant course access', async function (assert) {
         res_model: 'slide.channel',
     });
     const { createChatterContainerComponent } = await this.start({
-        async mockRPC(route, args) {
+        mockRPC(route, args) {
             if (args.method === 'action_grant_access') {
                 assert.strictEqual(args.args.length, 1);
                 assert.strictEqual(args.args[0].length, 1);
                 assert.strictEqual(args.args[0][0], 100);
                 assert.strictEqual(args.kwargs.partner_id, 5);
                 assert.step('access_grant');
+                return true;
             }
-            return this._super(...arguments);
         },
     });
     await createChatterContainerComponent({
@@ -64,12 +60,12 @@ QUnit.test('grant course access', async function (assert) {
 QUnit.test('refuse course access', async function (assert) {
     assert.expect(8);
 
-    this.data['res.partner'].records.push({ id: 5 });
-    this.data['slide.channel'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 5 });
+    this.serverData.models['slide.channel'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         can_write: true,
         id: 12,
         res_id: 100,
@@ -77,15 +73,15 @@ QUnit.test('refuse course access', async function (assert) {
         res_model: 'slide.channel',
     });
     const { createChatterContainerComponent } = await this.start({
-        async mockRPC(route, args) {
+        mockRPC(route, args) {
             if (args.method === 'action_refuse_access') {
                 assert.strictEqual(args.args.length, 1);
                 assert.strictEqual(args.args[0].length, 1);
                 assert.strictEqual(args.args[0][0], 100);
                 assert.strictEqual(args.kwargs.partner_id, 5);
                 assert.step('access_refuse');
+                return true;
             }
-            return this._super(...arguments);
         },
     });
     await createChatterContainerComponent({

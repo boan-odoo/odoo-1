@@ -1,17 +1,14 @@
 /** @odoo-module **/
 
+import { Many2OneAvatarEmployee } from '@hr/js/m2x_avatar_employee';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
-    start,
+    start
 } from '@mail/utils/test_utils';
+import { dom } from 'web.test_utils';
+import { makeFakeNotificationService } from '@web/../tests/helpers/mock_services';
 
-import FormView from 'web.FormView';
-import KanbanView from 'web.KanbanView';
-import ListView from 'web.ListView';
-import { Many2OneAvatarEmployee } from '@hr/js/m2x_avatar_employee';
-import { dom, mock } from 'web.test_utils';
 
 QUnit.module('hr', {}, function () {
     QUnit.module('M2XAvatarEmployee', {
@@ -21,7 +18,7 @@ QUnit.module('hr', {}, function () {
             // reset the cache before each test
             Many2OneAvatarEmployee.prototype.partnerIds = {};
 
-            Object.assign(this.data, {
+            Object.assign(this.serverData.models, {
                 'foo': {
                     fields: {
                         employee_id: { string: "Employee", type: 'many2one', relation: 'hr.employee.public' },
@@ -35,50 +32,61 @@ QUnit.module('hr', {}, function () {
                     ],
                 },
             });
-            this.data['hr.employee.public'].records.push(
+
+            Object.assign(this.serverData.views, {
+                'foo,false,list': '<list/>',
+                'foo,false,search': '<search/>',
+            });
+
+            this.serverData.models['hr.employee.public'].records.push(
                 { id: 11, name: "Mario", user_id: 11, user_partner_id: 11 },
                 { id: 7, name: "Luigi", user_id: 12, user_partner_id: 12 },
                 { id: 23, name: "Yoshi", user_id: 13, user_partner_id: 13 }
             );
-            this.data['res.users'].records.push(
+            this.serverData.models['res.users'].records.push(
                 { id: 11, partner_id: 11 },
                 { id: 12, partner_id: 12 },
                 { id: 13, partner_id: 13 }
             );
-            this.data['res.partner'].records.push(
+            this.serverData.models['res.partner'].records.push(
                 { id: 11, display_name: "Mario" },
                 { id: 12, display_name: "Luigi" },
                 { id: 13, display_name: "Yoshi" }
             );
-        },
-        afterEach() {
-            afterEach(this);
         },
     });
 
     QUnit.test('many2one_avatar_employee widget in list view', async function (assert) {
         assert.expect(11);
 
-        const { widget: list } = await start({
-            hasChatWindow: true,
-            hasView: true,
-            View: ListView,
-            model: 'foo',
-            data: this.data,
-            arch: '<tree><field name="employee_id" widget="many2one_avatar_employee"/></tree>',
-            mockRPC(route, args) {
-                if (args.method === 'read') {
-                    assert.step(`read ${args.model} ${args.args[0]}`);
-                }
-                return this._super(...arguments);
-            },
-        });
+         this.serverData.views['foo,false,list'] =
+             '<tree><field name="employee_id" widget="many2one_avatar_employee"/></tree>';
 
-        assert.strictEqual(list.$('.o_data_cell span').text(), 'MarioLuigiMarioYoshi');
+         const { webClient } = await start({
+            hasChatWindow: true,
+            serverData: this.serverData,
+             openViewAction: {
+                 id: 1,
+                 res_model: "foo",
+                 type: "ir.actions.act_window",
+                 views: [[false, "list"]],
+             },
+             mockRPC(route, args) {
+                 if (args.method === 'read') {
+                     assert.step(`read ${args.model} ${args.args[0]}`);
+                 }
+             },
+         });
+
+        assert.strictEqual(
+            Array.from(webClient.el.querySelectorAll('.o_data_cell span'))
+                .map(span => span.innerText).reduce((prevCellValue, currentCellValue) => prevCellValue + currentCellValue),
+            'MarioLuigiMarioYoshi'
+        );
 
         // click on first employee
         await afterNextRender(() =>
-            dom.click(list.$('.o_data_cell:nth(0) .o_m2o_avatar > img'))
+            dom.click(webClient.el.querySelector('.o_data_cell .o_m2o_avatar > img'))
         );
         assert.verifySteps(
             ['read hr.employee.public 11'],
@@ -97,7 +105,7 @@ QUnit.module('hr', {}, function () {
 
         // click on second employee
         await afterNextRender(() =>
-            dom.click(list.$('.o_data_cell:nth(1) .o_m2o_avatar > img')
+            dom.click(webClient.el.querySelectorAll('.o_data_cell .o_m2o_avatar > img')[1]
         ));
         assert.verifySteps(
             ['read hr.employee.public 7'],
@@ -117,7 +125,7 @@ QUnit.module('hr', {}, function () {
 
         // click on third employee (same as first)
         await afterNextRender(() =>
-            dom.click(list.$('.o_data_cell:nth(2) .o_m2o_avatar > img'))
+            dom.click(webClient.el.querySelectorAll('.o_data_cell .o_m2o_avatar > img')[2])
         );
         assert.verifySteps(
             [],
@@ -130,119 +138,122 @@ QUnit.module('hr', {}, function () {
             "should still have only 2 chat windows because third is the same partner as first"
         );
 
-        list.destroy();
+        webClient.destroy();
     });
 
     QUnit.test('many2one_avatar_employee widget in kanban view', async function (assert) {
         assert.expect(6);
 
-        const { widget: kanban } = await start({
-            hasView: true,
-            View: KanbanView,
-            model: 'foo',
-            data: this.data,
-            arch: `
-                <kanban>
-                    <templates>
-                        <t t-name="kanban-box">
-                            <div>
-                                <field name="employee_id" widget="many2one_avatar_employee"/>
-                            </div>
-                        </t>
-                    </templates>
-                </kanban>`,
+        this.serverData.views['foo,false,kanban'] =
+            `<kanban>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div>
+                            <field name="employee_id" widget="many2one_avatar_employee"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>`;
+
+        const { webClient } = await start({
+            serverData: this.serverData,
+            openViewAction: {
+                id: 1,
+                res_model: "foo",
+                type: "ir.actions.act_window",
+                views: [[false, "kanban"]],
+            },
         });
 
-        assert.strictEqual(kanban.$('.o_kanban_record').text().trim(), '');
-        assert.containsN(kanban, '.o_m2o_avatar', 4);
-        assert.strictEqual(kanban.$('.o_m2o_avatar:nth(0) > img').data('src'), '/web/image/hr.employee.public/11/avatar_128');
-        assert.strictEqual(kanban.$('.o_m2o_avatar:nth(1) > img').data('src'), '/web/image/hr.employee.public/7/avatar_128');
-        assert.strictEqual(kanban.$('.o_m2o_avatar:nth(2) > img').data('src'), '/web/image/hr.employee.public/11/avatar_128');
-        assert.strictEqual(kanban.$('.o_m2o_avatar:nth(3) > img').data('src'), '/web/image/hr.employee.public/23/avatar_128');
+        assert.strictEqual(webClient.el.querySelector('.o_kanban_record').innerText.trim(), '');
+        assert.containsN(webClient.el, '.o_m2o_avatar', 4);
+        const many2oneAvatarSrc = Array.from(webClient.el.querySelectorAll('.o_m2o_avatar > img')).map(img => img.getAttribute('src'));
+        assert.strictEqual(many2oneAvatarSrc[0], '/web/image/hr.employee.public/11/avatar_128');
+        assert.strictEqual(many2oneAvatarSrc[1], '/web/image/hr.employee.public/7/avatar_128');
+        assert.strictEqual(many2oneAvatarSrc[2], '/web/image/hr.employee.public/11/avatar_128');
+        assert.strictEqual(many2oneAvatarSrc[3], '/web/image/hr.employee.public/23/avatar_128');
 
-        kanban.destroy();
+        webClient.destroy();
     });
 
     QUnit.test('many2one_avatar_employee: click on an employee not associated with a user', async function (assert) {
         assert.expect(6);
 
-        this.data['hr.employee.public'].records[0].user_id = false;
-        this.data['hr.employee.public'].records[0].user_partner_id = false;
-        const { widget: form } = await start({
-            hasView: true,
-            View: FormView,
-            model: 'foo',
-            data: this.data,
-            arch: '<form><field name="employee_id" widget="many2one_avatar_employee"/></form>',
+        this.serverData.models['hr.employee.public'].records[0].user_id = false;
+        this.serverData.models['hr.employee.public'].records[0].user_partner_id = false;
+        this.serverData.views['foo,false,form'] = '<form><field name="employee_id" widget="many2one_avatar_employee"/></form>';
+
+        const { webClient } = await start({
+            serverData: this.serverData,
+            openViewAction: {
+                id: 1,
+                res_model: "foo",
+                res_id: 1,
+                type: "ir.actions.act_window",
+                views: [[false, "form"]],
+            },
             mockRPC(route, args) {
                 if (args.method === 'read') {
                     assert.step(`read ${args.model} ${args.args[0]}`);
                 }
-                return this._super(...arguments);
             },
-            res_id: 1,
             services: {
-                notification: {
-                    notify(notification) {
-                        assert.ok(
-                            true,
-                            "should display a toast notification after failing to open chat"
-                        );
-                        assert.strictEqual(
-                            notification.message,
-                            "You can only chat with employees that have a dedicated user.",
-                            "should display the correct information in the notification"
-                        );
-                    },
-                },
+                notification: makeFakeNotificationService(message => {
+                    assert.ok(
+                        true,
+                        "should display a toast notification after failing to open chat"
+                    );
+                    assert.strictEqual(
+                        message,
+                        "You can only chat with employees that have a dedicated user.",
+                        "should display the correct information in the notification"
+                    );
+                }),
             },
         });
 
-        mock.intercept(form, 'call_service', (ev) => {
-            if (ev.data.service === 'notification') {
-                assert.step(`display notification "${ev.data.args[0].message}"`);
-            }
-        }, true);
+        assert.strictEqual(webClient.el.querySelector('.o_field_widget[name=employee_id]').innerText.trim(), 'Mario');
 
-        assert.strictEqual(form.$('.o_field_widget[name=employee_id]').text().trim(), 'Mario');
-
-        await dom.click(form.$('.o_m2o_avatar > img'));
+        await dom.click(webClient.el.querySelector('.o_m2o_avatar > img'));
 
         assert.verifySteps([
             'read foo 1',
             'read hr.employee.public 11',
         ]);
 
-        form.destroy();
+        webClient.destroy();
     });
 
     QUnit.test('many2many_avatar_employee widget in form view', async function (assert) {
         assert.expect(8);
 
-        const { widget: form } = await start({
+        this.serverData.views['foo,false,form'] = '<form><field name="employee_ids" widget="many2many_avatar_employee"/></form>';
+
+        const { webClient } = await start({
             hasChatWindow: true,
-            hasView: true,
-            View: FormView,
-            model: 'foo',
-            data: this.data,
-            arch: '<form><field name="employee_ids" widget="many2many_avatar_employee"/></form>',
+            serverData: this.serverData,
+            openViewAction: {
+                id: 1,
+                res_model: "foo",
+                res_id: 1,
+                type: "ir.actions.act_window",
+                views: [[false, "form"]],
+            },
             mockRPC(route, args) {
                 if (args.method === 'read') {
                     assert.step(`read ${args.model} ${args.args[0]}`);
                 }
-                return this._super(...arguments);
             },
-            res_id: 1,
         });
 
-        assert.containsN(form, '.o_field_many2manytags.avatar.o_field_widget .badge', 2,
+        assert.containsN(webClient.el, '.o_field_many2manytags.avatar.o_field_widget .badge', 2,
             "should have 2 records");
-        assert.strictEqual(form.$('.o_field_many2manytags.avatar.o_field_widget .badge:first img').data('src'),
+        assert.strictEqual(webClient.el.querySelector('.o_field_many2manytags.avatar.o_field_widget .badge img').getAttribute('src'),
             '/web/image/hr.employee.public/11/avatar_128',
             "should have correct avatar image");
 
-        await dom.click(form.$('.o_field_many2manytags.avatar .badge:first .o_m2m_avatar'));
-        await dom.click(form.$('.o_field_many2manytags.avatar .badge:nth(1) .o_m2m_avatar'));
+        await dom.click(webClient.el.querySelector('.o_field_many2manytags.avatar .badge .o_m2m_avatar'));
+        await dom.click(webClient.el.querySelectorAll('.o_field_many2manytags.avatar .badge .o_m2m_avatar')[1]);
 
         assert.verifySteps([
             "read foo 1",
@@ -258,33 +269,36 @@ QUnit.module('hr', {}, function () {
             "should have 2 chat windows"
         );
 
-        form.destroy();
+        webClient.destroy();
     });
 
     QUnit.test('many2many_avatar_employee widget in list view', async function (assert) {
         assert.expect(10);
 
-        const { widget: list } = await start({
+        this.serverData.views['foo,false,list'] = '<tree><field name="employee_ids" widget="many2many_avatar_employee"/></tree>';
+
+        const { webClient } = await start({
             hasChatWindow: true,
-            hasView: true,
-            View: ListView,
-            model: 'foo',
-            data: this.data,
-            arch: '<tree><field name="employee_ids" widget="many2many_avatar_employee"/></tree>',
+            serverData: this.serverData,
+            openViewAction: {
+                id: 1,
+                res_model: "foo",
+                type: "ir.actions.act_window",
+                views: [[false, "list"]],
+            },
             mockRPC(route, args) {
                 if (args.method === 'read') {
                     assert.step(`read ${args.model} ${args.args[0]}`);
                 }
-                return this._super(...arguments);
             },
         });
 
-        assert.containsN(list, '.o_data_cell:first .o_field_many2manytags > span', 2,
+        assert.containsN(webClient.el, '.o_data_cell .o_field_many2manytags > span', 2,
             "should have two avatar");
 
         // click on first employee badge
         await afterNextRender(() =>
-            dom.click(list.$('.o_data_cell:nth(0) .o_m2m_avatar:first'))
+            dom.click(webClient.el.querySelector('.o_data_cell .o_m2m_avatar'))
         );
         assert.verifySteps(
             ['read hr.employee.public 11,23', "read hr.employee.public 11"],
@@ -303,7 +317,7 @@ QUnit.module('hr', {}, function () {
 
         // click on second employee
         await afterNextRender(() =>
-            dom.click(list.$('.o_data_cell:nth(0) .o_m2m_avatar:nth(1)')
+            dom.click(webClient.el.querySelectorAll('.o_data_cell .o_m2m_avatar')[1]
             ));
         assert.verifySteps(
             ['read hr.employee.public 23'],
@@ -321,52 +335,58 @@ QUnit.module('hr', {}, function () {
             'chat window should be with clicked employee'
         );
 
-        list.destroy();
+        webClient.destroy();
     });
 
     QUnit.test('many2many_avatar_employee widget in kanban view', async function (assert) {
         assert.expect(7);
 
-        const { widget: kanban } = await start({
-            hasView: true,
-            View: KanbanView,
-            model: 'foo',
-            data: this.data,
-            arch: `
-                <kanban>
-                    <templates>
-                        <t t-name="kanban-box">
-                            <div>
-                                <div class="oe_kanban_footer">
-                                    <div class="o_kanban_record_bottom">
-                                        <div class="oe_kanban_bottom_right">
-                                            <field name="employee_ids" widget="many2many_avatar_employee"/>
-                                        </div>
+        this.serverData.views['foo,false,kanban'] =
+            `<kanban>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div>
+                            <div class="oe_kanban_footer">
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="employee_ids" widget="many2many_avatar_employee"/>
                                     </div>
                                 </div>
                             </div>
-                        </t>
-                    </templates>
-                </kanban>`,
+                        </div>
+                    </t>
+                </templates>
+            </kanban>`;
+
+        const { webClient } = await start({
+            serverData: this.serverData,
+            openViewAction: {
+                id: 1,
+                res_model: "foo",
+                type: "ir.actions.act_window",
+                views: [[false, "kanban"]],
+            },
             mockRPC(route, args) {
                 if (args.method === 'read') {
                     assert.step(`read ${args.model} ${args.args[0]}`);
                 }
-                return this._super(...arguments);
             },
         });
 
-        assert.containsN(kanban, '.o_kanban_record:first .o_field_many2manytags img.o_m2m_avatar', 2,
+        assert.containsN(webClient.el, '.o_kanban_record:first .o_field_many2manytags img.o_m2m_avatar', 2,
             "should have 2 avatar images");
-        assert.strictEqual(kanban.$('.o_kanban_record:first .o_field_many2manytags img.o_m2m_avatar:first').data('src'),
+        assert.strictEqual(
+            webClient.el.querySelector('.o_kanban_record .o_field_many2manytags img.o_m2m_avatar').getAttribute('src'),
             "/web/image/hr.employee.public/11/avatar_128",
-            "should have correct avatar image");
-        assert.strictEqual(kanban.$('.o_kanban_record:first .o_field_many2manytags img.o_m2m_avatar:eq(1)').data('src'),
+            "should have correct avatar image"
+        );
+        assert.strictEqual(
+            webClient.el.querySelectorAll('.o_kanban_record .o_field_many2manytags img.o_m2m_avatar')[1].getAttribute('src'),
             "/web/image/hr.employee.public/23/avatar_128",
             "should have correct avatar image");
 
-        await dom.click(kanban.$('.o_kanban_record:first .o_m2m_avatar:nth(0)'));
-        await dom.click(kanban.$('.o_kanban_record:first .o_m2m_avatar:nth(1)'));
+        await dom.click(webClient.el.querySelector('.o_kanban_record .o_field_many2manytags img.o_m2m_avatar'));
+        await dom.click(webClient.el.querySelectorAll('.o_kanban_record .o_field_many2manytags img.o_m2m_avatar')[1]);
 
         assert.verifySteps([
             "read hr.employee.public 11,23",
@@ -374,59 +394,54 @@ QUnit.module('hr', {}, function () {
             "read hr.employee.public 23"
         ]);
 
-        kanban.destroy();
+        webClient.destroy();
     });
 
     QUnit.test('many2many_avatar_employee: click on an employee not associated with a user', async function (assert) {
         assert.expect(10);
 
-        this.data['hr.employee.public'].records[0].user_id = false;
-        this.data['hr.employee.public'].records[0].user_partner_id = false;
-        const { widget: form } = await start({
+        this.serverData.models['hr.employee.public'].records[0].user_id = false;
+        this.serverData.models['hr.employee.public'].records[0].user_partner_id = false;
+        this.serverData.views['foo,false,form'] ='<form><field name="employee_ids" widget="many2many_avatar_employee"/></form>';
+        const { webClient } = await start({
             hasChatWindow: true,
-            hasView: true,
-            View: FormView,
-            model: 'foo',
-            data: this.data,
-            arch: '<form><field name="employee_ids" widget="many2many_avatar_employee"/></form>',
+            serverData: this.serverData,
+            openViewAction: {
+                id: 1,
+                res_model: "foo",
+                res_id: 1,
+                type: "ir.actions.act_window",
+                views: [[false, "form"]],
+            },
             mockRPC(route, args) {
                 if (args.method === 'read') {
                     assert.step(`read ${args.model} ${args.args[0]}`);
                 }
-                return this._super(...arguments);
             },
-            res_id: 1,
             services: {
-                notification: {
-                    notify(notification) {
-                        assert.ok(
-                            true,
-                            "should display a toast notification after failing to open chat"
-                        );
-                        assert.strictEqual(
-                            notification.message,
-                            "You can only chat with employees that have a dedicated user.",
-                            "should display the correct information in the notification"
-                        );
-                    },
-                },
+                notification: makeFakeNotificationService(message => {
+                    assert.ok(
+                        true,
+                        "should display a toast notification after failing to open chat"
+                    );
+                    assert.strictEqual(
+                        message,
+                        "You can only chat with employees that have a dedicated user.",
+                        "should display the correct information in the notification"
+                    );
+                }),
             },
         });
 
-        mock.intercept(form, 'call_service', (ev) => {
-            if (ev.data.service === 'notification') {
-                assert.step(`display notification "${ev.data.args[0].message}"`);
-            }
-        }, true);
-
-        assert.containsN(form, '.o_field_many2manytags.avatar.o_field_widget .badge', 2,
+        assert.containsN(webClient.el, '.o_field_many2manytags.avatar.o_field_widget .badge', 2,
             "should have 2 records");
-        assert.strictEqual(form.$('.o_field_many2manytags.avatar.o_field_widget .badge:first img').data('src'),
+        assert.strictEqual(
+            webClient.el.querySelector('.o_field_many2manytags.avatar.o_field_widget .badge img').getAttribute('src'),
             '/web/image/hr.employee.public/11/avatar_128',
             "should have correct avatar image");
 
-        await dom.click(form.$('.o_field_many2manytags.avatar .badge:first .o_m2m_avatar'));
-        await dom.click(form.$('.o_field_many2manytags.avatar .badge:nth(1) .o_m2m_avatar'));
+        await dom.click(webClient.el.querySelector('.o_field_many2manytags.avatar.o_field_widget .badge img'));
+        await dom.click(webClient.el.querySelectorAll('.o_field_many2manytags.avatar.o_field_widget .badge img')[1]);
 
         assert.verifySteps([
             'read foo 1',
@@ -438,6 +453,6 @@ QUnit.module('hr', {}, function () {
         assert.containsOnce(document.body, '.o_ChatWindowHeader_name',
             "should have 1 chat window");
 
-        form.destroy();
+        webClient.destroy();
     });
 });

@@ -2,14 +2,16 @@
 
 import { makeDeferred } from '@mail/utils/deferred/deferred';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     nextAnimationFrame,
     start,
+    makeFakeUiService,
 } from '@mail/utils/test_utils';
-
+import { patchWithCleanup } from "@web/../tests/helpers/utils";
+import { makeFakeLocalizationService } from "@web/../tests/helpers/mock_services";
 import { file, dom } from 'web.test_utils';
+
 const { createFile, inputFiles } = file;
 const { triggerEvent } = dom;
 
@@ -24,18 +26,15 @@ QUnit.module('chat_window_manager_tests.js', {
             const res = await start(Object.assign(
                 { hasChatWindow: true },
                 params,
-                { data: this.data }
+                { serverData: this.serverData }
             ));
-            const { afterEvent, env, widget } = res;
+            const { afterEvent, env, webClient } = res;
             this.debug = params && params.debug;
             this.afterEvent = afterEvent;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -250,25 +249,19 @@ QUnit.test('open chat from "new message" chat window should open chat in place o
      */
     assert.expect(11);
 
-    this.data['res.partner'].records.push({ id: 131, name: "Partner 131" });
-    this.data['res.users'].records.push({ partner_id: 131 });
-    this.data['mail.channel'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 131, name: "Partner 131" });
+    this.serverData.models['res.users'].records.push({ partner_id: 131 });
+    this.serverData.models['mail.channel'].records.push(
         { is_minimized: true },
         { is_minimized: true },
     );
+
     const imSearchDef = makeDeferred();
     const { createMessagingMenuComponent } = await this.start({
-        env: {
-            browser: {
-                innerWidth: 1920,
-            },
-        },
         async mockRPC(route, args) {
-            const res = await this._super(...arguments);
             if (args.method === 'im_search') {
                 imSearchDef.resolve();
             }
-            return res;
         }
     });
     await createMessagingMenuComponent();
@@ -360,13 +353,13 @@ QUnit.test('open chat from "new message" chat window should open chat in place o
 QUnit.test('new message chat window should close on selecting the user if chat with the user is already open', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 131, name: "Partner 131" });
-    this.data['res.users'].records.push({ id: 12, partner_id: 131 });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 131, name: "Partner 131" });
+    this.serverData.models['res.users'].records.push({ id: 12, partner_id: 131 });
+    this.serverData.models['mail.channel'].records.push({
         channel_type: "chat",
         id: 20,
         is_minimized: true,
-        members: [this.data.currentPartnerId, 131],
+        members: [this.TEST_USER_IDS.currentPartnerId, 131],
         name: "Partner 131",
         public: 'private',
         state: 'open',
@@ -374,11 +367,9 @@ QUnit.test('new message chat window should close on selecting the user if chat w
     const imSearchDef = makeDeferred();
     const { createMessagingMenuComponent } = await this.start({
         async mockRPC(route, args) {
-            const res = await this._super(...arguments);
             if (args.method === 'im_search') {
                 imSearchDef.resolve();
             }
-            return res;
         },
     });
     await createMessagingMenuComponent();
@@ -416,16 +407,14 @@ QUnit.test('new message chat window should close on selecting the user if chat w
 QUnit.test('new message autocomplete should automatically select first result', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({ id: 131, name: "Partner 131" });
-    this.data['res.users'].records.push({ partner_id: 131 });
+    this.serverData.models['res.partner'].records.push({ id: 131, name: "Partner 131" });
+    this.serverData.models['res.users'].records.push({ partner_id: 131 });
     const imSearchDef = makeDeferred();
     const { createMessagingMenuComponent } = await this.start({
         async mockRPC(route, args) {
-            const res = await this._super(...arguments);
             if (args.method === 'im_search') {
                 imSearchDef.resolve();
             }
-            return res;
         },
     });
     await createMessagingMenuComponent();
@@ -461,7 +450,7 @@ QUnit.test('chat window: basic rendering', async function (assert) {
 
     // channel that is expected to be found in the messaging menu
     // with random unique id and name that will be asserted during the test
-    this.data['mail.channel'].records.push({ id: 20, name: "General" });
+    this.serverData.models['mail.channel'].records.push({ id: 20, name: "General" });
     const { createMessagingMenuComponent } = await this.start();
     await createMessagingMenuComponent();
 
@@ -552,13 +541,12 @@ QUnit.test('chat window: fold', async function (assert) {
 
     // channel that is expected to be found in the messaging menu
     // with random UUID, will be asserted during the test
-    this.data['mail.channel'].records.push({ uuid: 'channel-uuid' });
+    this.serverData.models['mail.channel'].records.push({ uuid: 'channel-uuid' });
     const { createMessagingMenuComponent } = await this.start({
         mockRPC(route, args) {
             if (args.method === 'channel_fold') {
                 assert.step(`rpc:${args.method}/${args.kwargs.state}`);
             }
-            return this._super(...arguments);
         },
     });
     await createMessagingMenuComponent();
@@ -607,13 +595,12 @@ QUnit.test('chat window: open / close', async function (assert) {
 
     // channel that is expected to be found in the messaging menu
     // with random UUID, will be asserted during the test
-    this.data['mail.channel'].records.push({ uuid: 'channel-uuid' });
+    this.serverData.models['mail.channel'].records.push({ uuid: 'channel-uuid' });
     const { createMessagingMenuComponent } = await this.start({
         mockRPC(route, args) {
             if (args.method === 'channel_fold') {
                 assert.step(`rpc:channel_fold/${args.kwargs.state}`);
             }
-            return this._super(...arguments);
         },
     });
     await createMessagingMenuComponent();
@@ -667,17 +654,12 @@ QUnit.test('chat window: open / close', async function (assert) {
 QUnit.test('Mobile: opening a chat window should not update channel state on the server', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 20,
         state: 'closed',
     });
-    const { createMessagingMenuComponent } = await this.start({
-        env: {
-            device: {
-                isMobile: true,
-            },
-        },
-    });
+
+    const { createMessagingMenuComponent } = await this.start({ services: { ui: makeFakeUiService() }});
     await createMessagingMenuComponent();
     await afterNextRender(() => document.querySelector(`.o_MessagingMenu_toggler`).click());
     await afterNextRender(() => document.querySelector(`.o_NotificationList_preview`).click());
@@ -690,6 +672,7 @@ QUnit.test('Mobile: opening a chat window should not update channel state on the
         'mail.channel',
         [20]
     );
+
     assert.strictEqual(
         channels[0].state,
         'closed',
@@ -700,16 +683,13 @@ QUnit.test('Mobile: opening a chat window should not update channel state on the
 QUnit.test('Mobile: closing a chat window should not update channel state on the server', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 20,
         state: 'open',
     });
+
     const { createMessagingMenuComponent } = await this.start({
-        env: {
-            device: {
-                isMobile: true,
-            },
-        },
+        services: { ui: makeFakeUiService() },
     });
     await createMessagingMenuComponent();
     await afterNextRender(() => document.querySelector(`.o_MessagingMenu_toggler`).click());
@@ -740,25 +720,22 @@ QUnit.test('Mobile: closing a chat window should not update channel state on the
 QUnit.test("Mobile: chat window shouldn't open automatically after receiving a new message", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({ id: 10, name: "Demo" });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 10, name: "Demo" });
+    this.serverData.models['res.users'].records.push({
         id: 42,
         partner_id: 10,
     });
-    this.data['mail.channel'].records = [
+    this.serverData.models['mail.channel'].records = [
         {
             channel_type: "chat",
             id: 10,
-            members: [this.data.currentPartnerId, 10],
+            members: [this.TEST_USER_IDS.currentPartnerId, 10],
             uuid: 'channel-10-uuid',
         },
     ];
+
     await this.start({
-        env: {
-            device: {
-                isMobile: true,
-            },
-        },
+        services: { ui: makeFakeUiService() }
     });
 
     // simulate receiving a message
@@ -784,15 +761,14 @@ QUnit.test('chat window: close on ESCAPE', async function (assert) {
     assert.expect(10);
 
     // expected partner to be found by mention during the test
-    this.data['res.partner'].records.push({ name: "TestPartner" });
+    this.serverData.models['res.partner'].records.push({ name: "TestPartner" });
     // a chat window with thread is expected to be initially open for this test
-    this.data['mail.channel'].records.push({ is_minimized: true });
+    this.serverData.models['mail.channel'].records.push({ is_minimized: true });
     await this.start({
         mockRPC(route, args) {
             if (args.method === 'channel_fold') {
                 assert.step(`rpc:channel_fold/${args.kwargs.state}`);
             }
-            return this._super(...arguments);
         },
     });
     assert.containsOnce(
@@ -883,17 +859,12 @@ QUnit.test('focus next visible chat window when closing current chat window with
     assert.expect(4);
 
     // 2 chat windows with thread are expected to be initially open for this test
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { is_minimized: true, state: 'open' },
         { is_minimized: true, state: 'open' }
     );
-    await this.start({
-        env: {
-            browser: {
-                innerWidth: 1920,
-            },
-        },
-    });
+
+    await this.start();
     assert.containsN(
         document.body,
         '.o_ChatWindow .o_ComposerTextInput_textarea',
@@ -927,7 +898,8 @@ QUnit.test('chat window: composer state conservation on toggle discuss', async f
 
     // channel that is expected to be found in the messaging menu
     // with random unique id that is needed to link messages
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+
     const { createMessagingMenuComponent } = await this.start();
     const messagingMenuComponent = await createMessagingMenuComponent();
     await afterNextRender(() => document.querySelector(`.o_MessagingMenu_toggler`).click());
@@ -995,9 +967,9 @@ QUnit.test('chat window: composer state conservation on toggle discuss', async f
 QUnit.test('chat window: scroll conservation on toggle discuss', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     for (let i = 0; i < 10; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: "mail.channel",
             res_id: 20,
@@ -1078,14 +1050,8 @@ QUnit.test('open 2 different chat windows: enough screen width [REQUIRE FOCUS]',
 
     // 2 channels are expected to be found in the messaging menu, each with a
     // random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 10 }, { id: 20 });
-    const { createMessagingMenuComponent } = await this.start({
-        env: {
-            browser: {
-                innerWidth: 1920, // enough to fit at least 2 chat windows
-            },
-        },
-    });
+    this.serverData.models['mail.channel'].records.push({ id: 10 }, { id: 20 });
+    const { createMessagingMenuComponent } = await this.start();
     await createMessagingMenuComponent();
     await afterNextRender(() => document.querySelector(`.o_MessagingMenu_toggler`).click());
     await afterNextRender(() =>
@@ -1198,7 +1164,7 @@ QUnit.test('open 2 chat windows: check shift operations are available', async fu
 
     // 2 channels are expected to be found in the messaging menu
     // only their existence matters, data are irrelevant
-    this.data['mail.channel'].records.push({}, {});
+    this.serverData.models['mail.channel'].records.push({}, {});
     const { createMessagingMenuComponent } = await this.start();
     await createMessagingMenuComponent();
 
@@ -1293,7 +1259,7 @@ QUnit.test('open 2 folded chat windows: check shift operations are available', a
      */
     assert.expect(13);
 
-    this.data['res.partner'].records.push({ id: 7, name: "Demo" });
+    this.serverData.models['res.partner'].records.push({ id: 7, name: "Demo" });
     const channel = {
         channel_type: "channel",
         is_minimized: true,
@@ -1304,17 +1270,11 @@ QUnit.test('open 2 folded chat windows: check shift operations are available', a
         channel_type: "chat",
         is_minimized: true,
         is_pinned: true,
-        members: [this.data.currentPartnerId, 7],
+        members: [this.TEST_USER_IDS.currentPartnerId, 7],
         state: 'folded',
     };
-    this.data['mail.channel'].records.push(channel, chat);
-    await this.start({
-        env: {
-            browser: {
-                innerWidth: 900,
-            },
-        },
-    });
+    this.serverData.models['mail.channel'].records.push(channel, chat);
+    await this.start({ windowOptions: { innerWidth: 900 }});
 
     assert.containsN(
         document.body,
@@ -1425,14 +1385,9 @@ QUnit.test('open 3 different chat windows: not enough screen width', async funct
 
     // 3 channels are expected to be found in the messaging menu, each with a
     // random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 1 }, { id: 2 }, { id: 3 });
-    const { createMessagingMenuComponent } = await this.start({
-        env: {
-            browser: {
-                innerWidth: 900, // enough to fit 2 chat windows but not 3
-            },
-        },
-    });
+    this.serverData.models['mail.channel'].records.push({ id: 1 }, { id: 2 }, { id: 3 });
+
+    const { createMessagingMenuComponent } = await this.start({ windowOptions: { innerWidth: 900 }});
     await createMessagingMenuComponent();
 
     // open, from systray menu, chat windows of channels with Id 1, 2, then 3
@@ -1567,7 +1522,7 @@ QUnit.test('chat window: switch on TAB', async function (assert) {
 
     // 2 channels are expected to be found in the messaging menu
     // with random unique id and name that will be asserted during the test
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 1, name: "channel1" },
         { id: 2, name: "channel2" }
     );
@@ -1679,7 +1634,7 @@ QUnit.test('chat window: TAB cycle with 3 open chat windows [REQUIRE FOCUS]', as
      */
     assert.expect(6);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         {
             is_minimized: true,
             is_pinned: true,
@@ -1696,13 +1651,7 @@ QUnit.test('chat window: TAB cycle with 3 open chat windows [REQUIRE FOCUS]', as
             state: 'open',
         }
     );
-    await this.start({
-        env: {
-            browser: {
-                innerWidth: 1920,
-            },
-        },
-    });
+    await this.start();
     assert.containsN(
         document.body,
         '.o_ChatWindow .o_ComposerTextInput_textarea',
@@ -1769,9 +1718,9 @@ QUnit.test('chat window with a thread: keep scroll position in message list on f
 
     // channel that is expected to be found in the messaging menu
     // with a random unique id, needed to link messages
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     for (let i = 0; i < 10; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: "mail.channel",
             res_id: 20,
@@ -1849,13 +1798,13 @@ QUnit.test('chat window with a thread: keep scroll position in message list on f
 QUnit.test('chat window should scroll to the newly posted message just after posting it', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 20,
         is_minimized: true,
         state: 'open',
     });
     for (let i = 0; i < 10; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: "mail.channel",
             res_id: 20,
@@ -1887,16 +1836,13 @@ QUnit.test('chat window should scroll to the newly posted message just after pos
 QUnit.test('chat window: post message on non-mailing channel with "CTRL-Enter" keyboard shortcut for small screen size', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 20,
         is_minimized: true,
     });
+
     const { createMessagingMenuComponent } = await this.start({
-        env: {
-            device: {
-                isMobile: true, // here isMobile is used for the small screen size, not actually for the mobile devices
-            },
-        },
+        services: { ui: makeFakeUiService() },
     });
     await createMessagingMenuComponent();
 
@@ -1925,9 +1871,9 @@ QUnit.test('chat window with a thread: keep scroll position in message list on t
 
     // channel that is expected to be found in the messaging menu
     // with random unique id, needed to link messages
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     for (let i = 0; i < 10; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: "mail.channel",
             res_id: 20,
@@ -1996,9 +1942,9 @@ QUnit.test('chat window with a thread: keep scroll position in message list on t
 
     // channel that is expected to be found in the messaging menu
     // with random unique id, needed to link messages
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     for (let i = 0; i < 10; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: "mail.channel",
             res_id: 20,
@@ -2083,7 +2029,7 @@ QUnit.test('chat window does not fetch messages if hidden', async function (asse
 
     // 3 channels are expected to be found in the messaging menu, each with a
     // random unique id that will be referenced in the test
-    this.data['mail.channel'].records = [
+    this.serverData.models['mail.channel'].records = [
         {
             id: 10,
             is_minimized: true,
@@ -2103,19 +2049,15 @@ QUnit.test('chat window does not fetch messages if hidden', async function (asse
             state: 'open',
         },
     ];
+
     await this.start({
-        env: {
-            browser: {
-                innerWidth: 900,
-            },
-        },
         mockRPC(route, args) {
             if (route === '/mail/channel/messages') {
                 const { channel_id } = args;
                 assert.step(`rpc:/mail/channel/messages:${channel_id}`);
             }
-            return this._super(...arguments);
         },
+        windowOptions: { innerWidth: 900 },
     });
 
     assert.containsN(
@@ -2181,23 +2123,23 @@ QUnit.test('chat window does not fetch messages if hidden', async function (asse
 QUnit.test('new message separator is shown in a chat window of a chat on receiving new message if there is a history of conversation', async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({ id: 10, name: "Demo" });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 10, name: "Demo" });
+    this.serverData.models['res.users'].records.push({
         id: 42,
         name: "Foreigner user",
         partner_id: 10,
     });
-    this.data['mail.channel'].records = [
+    this.serverData.models['mail.channel'].records = [
         {
             channel_type: "chat",
             id: 10,
             is_minimized: true,
             is_pinned: false,
-            members: [this.data.currentPartnerId, 10],
+            members: [this.TEST_USER_IDS.currentPartnerId, 10],
             uuid: 'channel-10-uuid',
         },
     ];
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         model: 'mail.channel',
         res_id: 10,
@@ -2236,16 +2178,16 @@ QUnit.test('new message separator is shown in a chat window of a chat on receivi
 QUnit.test('new message separator is not shown in a chat window of a chat on receiving new message if there is no history of conversation', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({ id: 10, name: "Demo" });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 10, name: "Demo" });
+    this.serverData.models['res.users'].records.push({
         id: 42,
         name: "Foreigner user",
         partner_id: 10,
     });
-    this.data['mail.channel'].records = [{
+    this.serverData.models['mail.channel'].records = [{
         channel_type: "chat",
         id: 10,
-        members: [this.data.currentPartnerId, 10],
+        members: [this.TEST_USER_IDS.currentPartnerId, 10],
         uuid: 'channel-10-uuid',
     }];
     await this.start();
@@ -2271,24 +2213,24 @@ QUnit.test('new message separator is not shown in a chat window of a chat on rec
 QUnit.test('focusing a chat window of a chat should make new message separator disappear [REQUIRE FOCUS]', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 10, name: "Demo" });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 10, name: "Demo" });
+    this.serverData.models['res.users'].records.push({
         id: 42,
         name: "Foreigner user",
         partner_id: 10,
     });
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         {
             channel_type: "chat",
             id: 10,
             is_minimized: true,
             is_pinned: false,
-            members: [this.data.currentPartnerId, 10],
+            members: [this.TEST_USER_IDS.currentPartnerId, 10],
             message_unread_counter: 0,
             uuid: 'channel-10-uuid',
         },
     );
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         model: 'mail.channel',
         res_id: 10,
@@ -2333,7 +2275,7 @@ QUnit.test('focusing a chat window of a chat should make new message separator d
 QUnit.test('Textual representations of shift previous/next operations are correctly mapped to left/right in LTR locale', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { is_minimized: true },
         { is_minimized: true },
     );
@@ -2354,26 +2296,22 @@ QUnit.test('Textual representations of shift previous/next operations are correc
 QUnit.test('Textual representations of shift previous/next operations are correctly mapped to right/left in RTL locale', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { is_minimized: true },
         { is_minimized: true },
     );
+
     await this.start({
-        env: {
-            _t: Object.assign((s => s), {
-                database: {
-                    parameters: {
-                        code: "en_US",
-                        date_format: '%m/%d/%Y',
-                        decimal_point: ".",
-                        direction: 'rtl',
-                        grouping: [],
-                        thousands_sep: ",",
-                        time_format: '%H:%M:%S',
-                    },
-                },
+        services: {
+            localization: makeFakeLocalizationService({
+                dateFormat: '%m/%d/%Y',
+                timeFormat: '%H:%M:%S',
+                direction: 'rtl',
+                grouping: [],
+                thousandsSep: ',',
+                decimalPoint: '.',
             }),
-        }
+        },
     });
 
     assert.strictEqual(
@@ -2391,17 +2329,17 @@ QUnit.test('Textual representations of shift previous/next operations are correc
 QUnit.test('chat window should open when receiving a new DM', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 11,
         is_pinned: false,
-        members: [this.data.currentPartnerId, 11],
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
         uuid: 'channel11uuid',
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 11,
     });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.users'].records.push({
         id: 11,
         partner_id: 11,
     });
@@ -2428,19 +2366,19 @@ QUnit.test('chat window should open when receiving a new DM', async function (as
 QUnit.test('chat window should remain folded when new message is received', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({ id: 10, name: "Demo" });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 10, name: "Demo" });
+    this.serverData.models['res.users'].records.push({
         id: 42,
         name: "Foreigner user",
         partner_id: 10,
     });
-    this.data['mail.channel'].records = [
+    this.serverData.models['mail.channel'].records = [
         {
             channel_type: "chat",
             id: 10,
             is_minimized: true,
             is_pinned: false,
-            members: [this.data.currentPartnerId, 10],
+            members: [this.TEST_USER_IDS.currentPartnerId, 10],
             state: 'folded',
             uuid: 'channel-10-uuid',
         },

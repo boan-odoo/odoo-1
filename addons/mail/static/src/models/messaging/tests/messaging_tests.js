@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
+import { makeFakeNotificationService } from '@web/../tests/helpers/mock_services';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('models', {}, function () {
@@ -10,37 +11,32 @@ QUnit.module('messaging_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 }, function () {
 
 QUnit.test('openChat: display notification for partner without user', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 14 });
+    this.serverData.models['res.partner'].records.push({ id: 14 });
     await this.start({
         services: {
-            notification: {
-                notify(notification) {
-                    assert.ok(
-                        true,
-                        "should display a toast notification after failing to open chat"
-                    );
-                    assert.strictEqual(
-                        notification.message,
-                        "You can only chat with partners that have a dedicated user.",
-                        "should display the correct information in the notification"
-                    );
-                },
-            },
+            notification: makeFakeNotificationService(message => {
+                assert.ok(
+                    true,
+                    "should display a toast notification after failing to open chat"
+                );
+                assert.strictEqual(
+                    message,
+                    "You can only chat with partners that have a dedicated user.",
+                    "should display the correct information in the notification"
+                );
+            }),
         },
     });
 
@@ -52,31 +48,29 @@ QUnit.test('openChat: display notification for wrong user', async function (asse
 
     await this.start({
         services: {
-            notification: {
-                notify(notification) {
-                    assert.ok(
-                        true,
-                        "should display a toast notification after failing to open chat"
-                    );
-                    assert.strictEqual(
-                        notification.message,
-                        "You can only chat with existing users.",
-                        "should display the correct information in the notification"
-                    );
-                },
-            },
+            notification: makeFakeNotificationService(message => {
+                assert.ok(
+                    true,
+                    "should display a toast notification after failing to open chat"
+                );
+                assert.strictEqual(
+                    message,
+                    "You can only chat with existing users.",
+                    "should display the correct information in the notification"
+                );
+            }),
         },
     });
 
-    // user id not in this.data
+    // user id not in this.serverData.models
     await this.messaging.openChat({ userId: 14 });
 });
 
 QUnit.test('openChat: open new chat for user', async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({ id: 14 });
-    this.data['res.users'].records.push({ id: 11, partner_id: 14 });
+    this.serverData.models['res.partner'].records.push({ id: 14 });
+    this.serverData.models['res.users'].records.push({ id: 11, partner_id: 14 });
     await this.start();
 
     const existingChat = this.messaging.models['Thread'].find(thread =>
@@ -103,12 +97,12 @@ QUnit.test('openChat: open new chat for user', async function (assert) {
 QUnit.test('openChat: open existing chat for user', async function (assert) {
     assert.expect(5);
 
-    this.data['res.partner'].records.push({ id: 14 });
-    this.data['res.users'].records.push({ id: 11, partner_id: 14 });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 14 });
+    this.serverData.models['res.users'].records.push({ id: 11, partner_id: 14 });
+    this.serverData.models['mail.channel'].records.push({
         channel_type: "chat",
         id: 10,
-        members: [this.data.currentPartnerId, 14],
+        members: [this.TEST_USER_IDS.currentPartnerId, 14],
         public: 'private',
     });
     await this.start();

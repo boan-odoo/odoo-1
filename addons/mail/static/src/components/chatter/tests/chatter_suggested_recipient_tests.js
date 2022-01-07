@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
+import { afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -10,29 +10,24 @@ QUnit.module('chatter_suggested_recipients_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
-            const { env, widget } = res;
             this.env = env;
-            this.widget = widget;
-            return res;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test("suggest recipient on 'Send message' composer", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         email_cc: "john@test.be",
         partner_ids: [100],
@@ -55,12 +50,12 @@ QUnit.test("suggest recipient on 'Send message' composer", async function (asser
 QUnit.test("with 3 or less suggested recipients: no 'show more' button", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         email_cc: "john@test.be",
         partner_ids: [100],
@@ -83,12 +78,12 @@ QUnit.test("with 3 or less suggested recipients: no 'show more' button", async f
 QUnit.test("display reason for suggested recipient on mouse over", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         partner_ids: [100],
     });
@@ -111,7 +106,7 @@ QUnit.test("display reason for suggested recipient on mouse over", async functio
 QUnit.test("suggested recipient without partner are unchecked by default", async function (assert) {
     assert.expect(1);
 
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         email_cc: "john@test.be",
     });
@@ -133,12 +128,12 @@ QUnit.test("suggested recipient without partner are unchecked by default", async
 QUnit.test("suggested recipient with partner are checked by default", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         partner_ids: [100],
     });
@@ -160,27 +155,27 @@ QUnit.test("suggested recipient with partner are checked by default", async func
 QUnit.test("more than 3 suggested recipients: display only 3 and 'show more' button", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Jack Jone",
         email: "jack@jone.be",
         id: 1000,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "jolly Roger",
         email: "Roger@skullflag.com",
         id: 1001,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "jack sparrow",
         email: "jsparrow@blackpearl.bb",
         id: 1002,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         partner_ids: [100, 1000, 1001, 1002],
     });
@@ -203,27 +198,27 @@ QUnit.test("more than 3 suggested recipients: display only 3 and 'show more' but
 QUnit.test("more than 3 suggested recipients: show all of them on click 'show more' button", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Jack Jone",
         email: "jack@jone.be",
         id: 1000,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "jolly Roger",
         email: "Roger@skullflag.com",
         id: 1001,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "jack sparrow",
         email: "jsparrow@blackpearl.bb",
         id: 1002,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         partner_ids: [100, 1000, 1001, 1002],
     });
@@ -250,27 +245,27 @@ QUnit.test("more than 3 suggested recipients: show all of them on click 'show mo
 QUnit.test("more than 3 suggested recipients -> click 'show more' -> 'show less' button", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Jack Jone",
         email: "jack@jone.be",
         id: 1000,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "jolly Roger",
         email: "Roger@skullflag.com",
         id: 1001,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "jack sparrow",
         email: "jsparrow@blackpearl.bb",
         id: 1002,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         partner_ids: [100, 1000, 1001, 1002],
     });
@@ -296,27 +291,27 @@ QUnit.test("more than 3 suggested recipients -> click 'show more' -> 'show less'
 QUnit.test("suggested recipients list display 3 suggested recipient and 'show more' button when 'show less' button is clicked", async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Jack Jone",
         email: "jack@jone.be",
         id: 1000,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "jolly Roger",
         email: "Roger@skullflag.com",
         id: 1001,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "jack sparrow",
         email: "jsparrow@blackpearl.bb",
         id: 1002,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         partner_ids: [100, 1000, 1001, 1002],
     });
@@ -351,12 +346,12 @@ QUnit.test("suggested recipients list display 3 suggested recipient and 'show mo
 QUnit.test("suggested recipients should not be notified when posting an internal note", async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "John Jane",
         email: "john@jane.be",
         id: 100,
     });
-    this.data['res.fake'].records.push({
+    this.serverData.models['res.fake'].records.push({
         id: 10,
         partner_ids: [100],
     });
@@ -369,7 +364,6 @@ QUnit.test("suggested recipients should not be notified when posting an internal
                     "post data should not contain suggested recipients when posting an internal note"
                 );
             }
-            return this._super(...arguments);
         },
     });
     await createChatterContainerComponent({

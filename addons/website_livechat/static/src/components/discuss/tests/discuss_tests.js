@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     beforeEach,
     start,
 } from '@mail/utils/test_utils';
@@ -14,28 +13,25 @@ QUnit.module('discuss_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('rendering of visitor banner', async function (assert) {
     assert.expect(13);
 
-    this.data['res.country'].records.push({
+    this.serverData.models['res.country'].records.push({
         id: 11,
         code: 'FAKE',
     });
-    this.data['website.visitor'].records.push({
+    this.serverData.models['website.visitor'].records.push({
         id: 11,
         country_id: 11,
         display_name: 'Visitor #11',
@@ -44,18 +40,16 @@ QUnit.test('rendering of visitor banner', async function (assert) {
         lang_name: "English",
         website_name: "General website",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
         livechat_visitor_id: 11,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.channel_11',
-            },
+            default_active_id: 'mail.channel_11',
         },
     });
     assert.containsOnce(
@@ -69,7 +63,7 @@ QUnit.test('rendering of visitor banner', async function (assert) {
         "should show the visitor avatar in the banner",
     );
     assert.strictEqual(
-        document.querySelector('.o_VisitorBanner_avatar').dataset.src,
+        document.querySelector('.o_VisitorBanner_avatar').getAttribute('src'),
         "/mail/static/src/img/smiley/avatar.jpg",
         "should show the default avatar",
     );
@@ -79,7 +73,7 @@ QUnit.test('rendering of visitor banner', async function (assert) {
         "should show the visitor online status icon on the avatar",
     );
     assert.strictEqual(
-        document.querySelector('.o_VisitorBanner_country').dataset.src,
+        document.querySelector('.o_VisitorBanner_country').getAttribute('src'),
         "/base/static/img/country_flags/FAKE.png",
         "should show the flag of the country of the visitor",
     );
@@ -128,11 +122,11 @@ QUnit.test('rendering of visitor banner', async function (assert) {
 QUnit.test('livechat with non-logged visitor should show visitor banner', async function (assert) {
     assert.expect(1);
 
-    this.data['res.country'].records.push({
+    this.serverData.models['res.country'].records.push({
         id: 11,
         code: 'FAKE',
     });
-    this.data['website.visitor'].records.push({
+    this.serverData.models['website.visitor'].records.push({
         id: 11,
         country_id: 11,
         display_name: 'Visitor #11',
@@ -141,18 +135,16 @@ QUnit.test('livechat with non-logged visitor should show visitor banner', async 
         lang_name: "English",
         website_name: "General website",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
         livechat_visitor_id: 11,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.channel_11',
-            },
+            default_active_id: 'mail.channel_11',
         },
     });
     assert.containsOnce(
@@ -165,15 +157,15 @@ QUnit.test('livechat with non-logged visitor should show visitor banner', async 
 QUnit.test('livechat with logged visitor should show visitor banner', async function (assert) {
     assert.expect(2);
 
-    this.data['res.country'].records.push({
+    this.serverData.models['res.country'].records.push({
         id: 11,
         code: 'FAKE',
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 12,
         name: 'Partner Visitor',
     });
-    this.data['website.visitor'].records.push({
+    this.serverData.models['website.visitor'].records.push({
         id: 11,
         country_id: 11,
         display_name: 'Visitor #11',
@@ -183,18 +175,16 @@ QUnit.test('livechat with logged visitor should show visitor banner', async func
         partner_id: 12,
         website_name: "General website",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
         livechat_visitor_id: 11,
-        members: [this.data.currentPartnerId, 12],
+        members: [this.TEST_USER_IDS.currentPartnerId, 12],
     });
     await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.channel_11',
-            },
+            default_active_id: 'mail.channel_11',
         },
     });
     assert.containsOnce(
@@ -212,18 +202,16 @@ QUnit.test('livechat with logged visitor should show visitor banner', async func
 QUnit.test('livechat without visitor should not show visitor banner', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 11 });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 11 });
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, 11],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
     });
     await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.channel_11',
-            },
+            default_active_id: 'mail.channel_11',
         },
     });
     assert.containsOnce(
@@ -241,12 +229,10 @@ QUnit.test('livechat without visitor should not show visitor banner', async func
 QUnit.test('non-livechat channel should not show visitor banner', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({ id: 11, name: "General" });
+    this.serverData.models['mail.channel'].records.push({ id: 11, name: "General" });
     await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.channel_11',
-            },
+            default_active_id: 'mail.channel_11',
         },
     });
     assert.containsOnce(

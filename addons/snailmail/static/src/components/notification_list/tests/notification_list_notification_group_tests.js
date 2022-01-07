@@ -1,8 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
+import { beforeEach, start, makeFakeActionService } from '@mail/utils/test_utils';
 
 QUnit.module('snailmail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -13,16 +11,13 @@ QUnit.module('notification_list_notification_group_tests.js', {
 
         this.start = async params => {
             const res = await start(Object.assign({}, params, {
-                data: this.data,
+                serverData: this.serverData,
             }));
-            const { env, widget } = res;
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -30,38 +25,41 @@ QUnit.test('mark as read', async function (assert) {
     assert.expect(6);
 
     // message that is expected to have a failure
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         id: 11, // random unique id, will be used to link failure to message
         message_type: 'snailmail', // message must be snailmail (goal of the test)
         model: 'mail.channel', // expected value to link message to channel
         res_id: 31, // id of a random channel
     });
     // failure that is expected to be used in the test
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 11, // id of the related message
         notification_status: 'exception', // necessary value to have a failure
         notification_type: 'snail', // expected failure type for snailmail message
     });
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action,
-            'snailmail.snailmail_letter_cancel_action',
-            "action should be the one to cancel letter"
-        );
-        assert.strictEqual(
-            payload.options.additional_context.default_model,
-            'mail.channel',
-            "action should have the group model as default_model"
-        );
-        assert.strictEqual(
-            payload.options.additional_context.unread_counter,
-            1,
-            "action should have the group notification length as unread_counter"
-        );
-    });
-    const { createNotificationListComponent } = await this.start({ env: { bus } });
+
+    const { createNotificationListComponent } = await this.start({
+        services: {
+            action: makeFakeActionService((action, options) => {
+                assert.step('do_action');
+                assert.strictEqual(
+                    action,
+                    'snailmail.snailmail_letter_cancel_action',
+                    "action should be the one to cancel letter"
+                );
+                assert.strictEqual(
+                    options.additional_context.default_model,
+                    'mail.channel',
+                    "action should have the group model as default_model"
+                );
+                assert.strictEqual(
+                    options.additional_context.unread_counter,
+                    1,
+                    "action should have the group notification length as unread_counter"
+                );
+            }),
+        },
+     });
     await createNotificationListComponent();
 
     assert.containsOnce(
@@ -80,7 +78,7 @@ QUnit.test('mark as read', async function (assert) {
 QUnit.test('notifications grouped by notification_type', async function (assert) {
     assert.expect(11);
 
-    this.data['mail.message'].records.push(
+    this.serverData.models['mail.message'].records.push(
         // first message that is expected to have a failure
         {
             id: 11, // random unique id, will be used to link failure to message
@@ -98,7 +96,7 @@ QUnit.test('notifications grouped by notification_type', async function (assert)
             res_model_name: "Partner", // same related model name for consistency
         }
     );
-    this.data['mail.notification'].records.push(
+    this.serverData.models['mail.notification'].records.push(
         // first failure that is expected to be used in the test
         {
             mail_message_id: 11, // id of the related first message
@@ -180,7 +178,7 @@ QUnit.test('grouped notifications by document model', async function (assert) {
     // document model.
     assert.expect(12);
 
-    this.data['mail.message'].records.push(
+    this.serverData.models['mail.message'].records.push(
         // first message that is expected to have a failure
         {
             id: 11, // random unique id, will be used to link failure to message
@@ -198,7 +196,7 @@ QUnit.test('grouped notifications by document model', async function (assert) {
             res_model_name: "Partner", // same related model name for consistency
         }
     );
-    this.data['mail.notification'].records.push(
+    this.serverData.models['mail.notification'].records.push(
         // first failure that is expected to be used in the test
         {
             mail_message_id: 11, // id of the related first message
@@ -212,47 +210,49 @@ QUnit.test('grouped notifications by document model', async function (assert) {
             notification_type: 'snail', // expected failure type for snailmail message
         }
     );
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action.name,
-            "Snailmail Failures",
-            "action should have 'Snailmail Failures' as name",
-        );
-        assert.strictEqual(
-            payload.action.type,
-            'ir.actions.act_window',
-            "action should have the type act_window"
-        );
-        assert.strictEqual(
-            payload.action.view_mode,
-            'kanban,list,form',
-            "action should have 'kanban,list,form' as view_mode"
-        );
-        assert.strictEqual(
-            JSON.stringify(payload.action.views),
-            JSON.stringify([[false, 'kanban'], [false, 'list'], [false, 'form']]),
-            "action should have correct views"
-        );
-        assert.strictEqual(
-            payload.action.target,
-            'current',
-            "action should have 'current' as target"
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            'res.partner',
-            "action should have the group model as res_model"
-        );
-        assert.strictEqual(
-            JSON.stringify(payload.action.domain),
-            JSON.stringify([['message_ids.snailmail_error', '=', true]]),
-            "action should have 'message_has_sms_error' as domain"
-        );
-    });
 
-    const { createNotificationListComponent } = await this.start({ env: { bus } });
+    const { createNotificationListComponent } = await this.start({
+        services: {
+            action: makeFakeActionService((action, options) => {
+                assert.step('do_action');
+                assert.strictEqual(
+                    action.name,
+                    "Snailmail Failures",
+                    "action should have 'Snailmail Failures' as name",
+                );
+                assert.strictEqual(
+                    action.type,
+                    'ir.actions.act_window',
+                    "action should have the type act_window"
+                );
+                assert.strictEqual(
+                    action.view_mode,
+                    'kanban,list,form',
+                    "action should have 'kanban,list,form' as view_mode"
+                );
+                assert.strictEqual(
+                    JSON.stringify(action.views),
+                    JSON.stringify([[false, 'kanban'], [false, 'list'], [false, 'form']]),
+                    "action should have correct views"
+                );
+                assert.strictEqual(
+                    action.target,
+                    'current',
+                    "action should have 'current' as target"
+                );
+                assert.strictEqual(
+                    action.res_model,
+                    'res.partner',
+                    "action should have the group model as res_model"
+                );
+                assert.strictEqual(
+                    JSON.stringify(action.domain),
+                    JSON.stringify([['message_ids.snailmail_error', '=', true]]),
+                    "action should have 'message_has_sms_error' as domain"
+                );
+            }),
+        }
+     });
     await createNotificationListComponent();
 
     assert.containsOnce(

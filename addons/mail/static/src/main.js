@@ -7,16 +7,16 @@ import { systrayService } from '@mail/services/systray_service/systray_service';
 import { wowlEnvProviderService } from '@mail/services/wowl_env_provider_service/wowl_env_provider_service';
 
 const serviceRegistry = registry.category('services');
-const componnentsRegistry = registry.category('main_components');
+const componentsRegistry = registry.category('main_components');
 
 serviceRegistry.add("messaging", messagingService);
-serviceRegistry.add("systray_service", systrayService)
+serviceRegistry.add("systray_service", systrayService);
 serviceRegistry.add("wowlEnvProviderService", wowlEnvProviderService);
 
-componnentsRegistry.add('chat_window_manager', {
+componentsRegistry.add('chat_window_manager', {
     Component: getMessagingComponent("ChatWindowManager"),
 });
-componnentsRegistry.add('dialog_manager', {
+componentsRegistry.add('dialog_manager', {
     Component: getMessagingComponent('DialogManager'),
 });
 

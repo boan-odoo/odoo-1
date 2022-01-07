@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     nextAnimationFrame,
@@ -18,29 +17,26 @@ QUnit.module('discuss_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('livechat in the sidebar: basic rendering', async function (assert) {
     assert.expect(5);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     await this.start();
     assert.containsOnce(document.body, '.o_Discuss_sidebar',
@@ -78,21 +74,21 @@ QUnit.test('livechat in the sidebar: basic rendering', async function (assert) {
 QUnit.test('livechat in the sidebar: existing user with country', async function (assert) {
     assert.expect(3);
 
-    this.data['res.country'].records.push({
+    this.serverData.models['res.country'].records.push({
         code: 'be',
         id: 10,
         name: "Belgium",
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         country_id: 10,
         id: 10,
         name: "Jean",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, 10],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, 10],
     });
     await this.start();
     assert.containsOnce(
@@ -115,13 +111,13 @@ QUnit.test('livechat in the sidebar: existing user with country', async function
 QUnit.test('do not add livechat in the sidebar on visitor opening his chat', async function (assert) {
     assert.expect(2);
 
-    const currentUser = this.data['res.users'].records.find(user =>
-        user.id === this.data.currentUserId
+    const currentUser = this.serverData.models['res.users'].records.find(user =>
+        user.id === this.TEST_USER_IDS.currentUserId
     );
     currentUser.im_status = 'online';
-    this.data['im_livechat.channel'].records.push({
+    this.serverData.models['im_livechat.channel'].records.push({
         id: 10,
-        user_ids: [this.data.currentUserId],
+        user_ids: [this.TEST_USER_IDS.currentUserId],
     });
     await this.start();
     assert.containsNone(
@@ -151,21 +147,21 @@ QUnit.test('do not add livechat in the sidebar on visitor opening his chat', asy
 QUnit.test('do not add livechat in the sidebar on visitor typing', async function (assert) {
     assert.expect(2);
 
-    const currentUser = this.data['res.users'].records.find(user =>
-        user.id === this.data.currentUserId
+    const currentUser = this.serverData.models['res.users'].records.find(user =>
+        user.id === this.TEST_USER_IDS.currentUserId
     );
     currentUser.im_status = 'online';
-    this.data['im_livechat.channel'].records.push({
+    this.serverData.models['im_livechat.channel'].records.push({
         id: 10,
-        user_ids: [this.data.currentUserId],
+        user_ids: [this.TEST_USER_IDS.currentUserId],
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'livechat',
         id: 10,
         is_pinned: false,
         livechat_channel_id: 10,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.publicPartnerId, this.data.currentPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.publicPartnerId, this.TEST_USER_IDS.currentPartnerId],
     });
     await this.start();
     assert.containsNone(
@@ -175,12 +171,12 @@ QUnit.test('do not add livechat in the sidebar on visitor typing', async functio
     );
 
     // simulate livechat visitor typing
-    const channel = this.data['mail.channel'].records.find(channel => channel.id === 10);
+    const channel = this.serverData.models['mail.channel'].records.find(channel => channel.id === 10);
     await this.env.services.rpc(
         '/im_livechat/notify_typing',
         {
             context: {
-                mockedPartnerId: this.publicPartnerId,
+                mockedPartnerId: this.TEST_USER_IDS.publicPartnerId,
             },
             is_typing: true,
             uuid: channel.uuid,
@@ -197,28 +193,28 @@ QUnit.test('do not add livechat in the sidebar on visitor typing', async functio
 QUnit.test('add livechat in the sidebar on visitor sending first message', async function (assert) {
     assert.expect(4);
 
-    const currentUser = this.data['res.users'].records.find(user =>
-        user.id === this.data.currentUserId
+    const currentUser = this.serverData.models['res.users'].records.find(user =>
+        user.id === this.TEST_USER_IDS.currentUserId
     );
     currentUser.im_status = 'online';
-    this.data['res.country'].records.push({
+    this.serverData.models['res.country'].records.push({
         code: 'be',
         id: 10,
         name: "Belgium",
     });
-    this.data['im_livechat.channel'].records.push({
+    this.serverData.models['im_livechat.channel'].records.push({
         id: 10,
-        user_ids: [this.data.currentUserId],
+        user_ids: [this.TEST_USER_IDS.currentUserId],
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor (Belgium)",
         channel_type: 'livechat',
         country_id: 10,
         id: 10,
         is_pinned: false,
         livechat_channel_id: 10,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.publicPartnerId, this.data.currentPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.publicPartnerId, this.TEST_USER_IDS.currentPartnerId],
     });
     await this.start();
     assert.containsNone(
@@ -228,7 +224,7 @@ QUnit.test('add livechat in the sidebar on visitor sending first message', async
     );
 
     // simulate livechat visitor sending a message
-    const channel = this.data['mail.channel'].records.find(channel => channel.id === 10);
+    const channel = this.serverData.models['mail.channel'].records.find(channel => channel.id === 10);
     await afterNextRender(async () => this.env.services.rpc(
         '/mail/chat_post',
         {
@@ -259,21 +255,21 @@ QUnit.test('add livechat in the sidebar on visitor sending first message', async
 QUnit.test('livechats are sorted by last activity time in the sidebar: most recent at the top', async function (assert) {
     assert.expect(6);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         {
             anonymous_name: "Visitor 11",
             channel_type: 'livechat',
             id: 11,
-            livechat_operator_id: this.data.currentPartnerId,
-            members: [this.data.currentPartnerId, this.data.publicPartnerId],
+            livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+            members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
             last_interest_dt: datetime_to_str(new Date(2021, 0, 1)), // less recent one
         },
         {
             anonymous_name: "Visitor 12",
             channel_type: 'livechat',
             id: 12,
-            livechat_operator_id: this.data.currentPartnerId,
-            members: [this.data.currentPartnerId, this.data.publicPartnerId],
+            livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+            members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
             last_interest_dt: datetime_to_str(new Date(2021, 0, 2)), // more recent one
         },
     );
@@ -329,21 +325,19 @@ QUnit.test('livechats are sorted by last activity time in the sidebar: most rece
 QUnit.test('invite button should be present on livechat', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         {
             anonymous_name: "Visitor 11",
             channel_type: 'livechat',
             id: 11,
-            livechat_operator_id: this.data.currentPartnerId,
-            members: [this.data.currentPartnerId, this.data.publicPartnerId],
+            livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+            members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
         },
     );
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_11',
-            },
-        },
+            default_active_id: 'mail.channel_11'
+        }
     });
     assert.containsOnce(
         document.body,

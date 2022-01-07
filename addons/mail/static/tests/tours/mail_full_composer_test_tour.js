@@ -33,7 +33,7 @@ tour.register('mail/static/tests/tours/mail_full_composer_test_tour.js', {
             contentType: 'text/plain',
             name: 'text.txt',
         });
-        const messaging = await Component.env.services.messaging.get();
+        const messaging = await Component.wowlEnv.services.messaging.get();
         const uploaders = messaging.models['FileUploader'].all();
         inputFiles(
             uploaders[0].fileInput,

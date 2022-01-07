@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     createRootMessagingComponent,
@@ -18,36 +17,33 @@ QUnit.module('thread_icon_tests.js', {
         this.createThreadIcon = async thread => {
             await createRootMessagingComponent(this, "ThreadIcon", {
                 props: { threadLocalId: thread.localId },
-                target: this.widget.el
+                target: this.webClient.el
             });
         };
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
 
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('chat: correspondent is typing', async function (assert) {
     assert.expect(5);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 17,
         im_status: 'online',
         name: 'Demo',
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 20,
-        members: [this.data.currentPartnerId, 17],
+        members: [this.TEST_USER_IDS.currentPartnerId, 17],
     });
     await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
@@ -69,7 +65,7 @@ QUnit.test('chat: correspondent is typing', async function (assert) {
 
     // simulate receive typing notification from demo "is typing"
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel.partner/typing_status',
             payload: {
                 channel_id: 20,
@@ -92,7 +88,7 @@ QUnit.test('chat: correspondent is typing', async function (assert) {
 
     // simulate receive typing notification from demo "no longer is typing"
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel.partner/typing_status',
             payload: {
                 channel_id: 20,

@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -17,24 +16,21 @@ QUnit.module('discuss_sidebar_category_item_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('channel - avatar: should have correct avatar', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         avatarCacheKey: '100111',
         id: 20,
     });
@@ -56,7 +52,7 @@ QUnit.test('channel - avatar: should have correct avatar', async function (asser
     );
 
     assert.strictEqual(
-        channelItem.querySelector(`:scope .o_DiscussSidebarCategoryItem_image`).dataset.src,
+        channelItem.querySelector(`:scope .o_DiscussSidebarCategoryItem_image`).getAttribute('src'),
         '/web/image/mail.channel/20/avatar_128?unique=100111',
         'should link to the correct picture source'
     );
@@ -66,7 +62,7 @@ QUnit.test('channel - avatar: should have correct avatar', async function (asser
 QUnit.test('channel - avatar: should update avatar url from bus', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         avatarCacheKey: '101010',
         id: 20,
      });
@@ -83,20 +79,21 @@ QUnit.test('channel - avatar: should update avatar url from bus', async function
     `);
 
     assert.strictEqual(
-        channelItemAvatar.dataset.src,
+        channelItemAvatar.getAttribute('src'),
         '/web/image/mail.channel/20/avatar_128?unique=101010',
     );
 
     await afterNextRender(() => {
-        this.env.services.orm.call(
+        this.env.services.orm.write(
             'mail.channel',
-            'write',
-            [[20], { image_128: 'This field does not matter' }],
+            [20],
+            { image_128: 'This field does not matter' },
         );
     });
     const result = await this.env.services.orm.read(
         'mail.channel',
-        [[20], ['avatarCacheKey']],
+        [20],
+        ['avatarCacheKey'],
     );
     const newCacheKey = result[0]['avatarCacheKey'];
 
@@ -110,11 +107,11 @@ QUnit.test('channel - avatar: should update avatar url from bus', async function
 QUnit.test('chat - avatar: should have correct avatar', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 15, name: "Demo", im_status: 'offline' });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 15, name: "Demo", im_status: 'offline' });
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
-        members: [this.data.currentPartnerId, 15],
+        members: [this.TEST_USER_IDS.currentPartnerId, 15],
         public: 'private',
     });
     await this.start();
@@ -134,7 +131,7 @@ QUnit.test('chat - avatar: should have correct avatar', async function (assert) 
     );
 
     assert.strictEqual(
-        chatItem.querySelector(`:scope .o_DiscussSidebarCategoryItem_image`).dataset.src,
+        chatItem.querySelector(`:scope .o_DiscussSidebarCategoryItem_image`).getAttribute('src'),
         '/web/image/res.partner/15/avatar_128',
         'should link to the partner avatar'
     );
@@ -143,7 +140,7 @@ QUnit.test('chat - avatar: should have correct avatar', async function (assert) 
 QUnit.test('chat - sorting: should be sorted by last activity time', async function (assert) {
     assert.expect(6);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         public: 'private',

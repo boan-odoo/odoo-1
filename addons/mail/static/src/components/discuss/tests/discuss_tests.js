@@ -1,17 +1,15 @@
 /** @odoo-module **/
 
-import BusService from 'bus.BusService';
-
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     nextAnimationFrame,
-    start,
+    start
 } from '@mail/utils/test_utils';
+import { makeFakeNotificationService } from '@web/../tests/helpers/mock_services';
+import BusService from 'bus.BusService';
+import { file, makeTestPromise } from 'web.test_utils';
 
-import Bus from 'web.Bus';
-import { makeTestPromise, file } from 'web.test_utils';
 
 const { createFile, inputFiles } = file;
 
@@ -25,19 +23,15 @@ QUnit.module('discuss_tests.js', {
         this.start = async params => {
             const res = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
-            const { afterEvent, components, env, widget } = res;
+            const { afterEvent, env, webClient } = res;
             this.afterEvent = afterEvent;
-            this.components = components;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -72,9 +66,9 @@ QUnit.test('discuss should be marked as opened if the component is already rende
 QUnit.test('discuss should be marked as closed when the component is unmounted', async function (assert) {
     assert.expect(1);
 
-    const { widget } = await this.start();
+    const { webClient } = await this.start();
 
-    await afterNextRender(() => widget.destroy());
+    await afterNextRender(() => webClient.destroy());
     assert.notOk(
         this.messaging.discuss.discussView,
         "discuss should be marked as closed when the component is unmounted"
@@ -86,11 +80,9 @@ QUnit.test('messaging not initialized', async function (assert) {
 
     await this.start({
         async mockRPC(route) {
-            const _super = this._super.bind(this, ...arguments); // limitation of class.js
             if (route === '/mail/init_messaging') {
                 await makeTestPromise(); // simulate messaging never initialized
             }
-            return _super();
         },
         waitUntilMessagingCondition: 'created',
     });
@@ -108,11 +100,9 @@ QUnit.test('messaging becomes initialized', async function (assert) {
 
     await this.start({
         async mockRPC(route) {
-            const _super = this._super.bind(this, ...arguments); // limitation of class.js
             if (route === '/mail/init_messaging') {
                 await messagingInitializedProm;
             }
-            return _super();
         },
         waitUntilMessagingCondition: 'created',
     });
@@ -379,7 +369,7 @@ QUnit.test('sidebar: inbox with counter', async function (assert) {
     assert.expect(2);
 
     // notification expected to be counted at init_messaging
-    this.data['mail.notification'].records.push({ res_partner_id: this.data.currentPartnerId });
+    this.serverData.models['mail.notification'].records.push({ res_partner_id: this.TEST_USER_IDS.currentPartnerId });
     await this.start();
     assert.strictEqual(
         document.querySelectorAll(`
@@ -439,7 +429,7 @@ QUnit.test('sidebar: basic channel rendering', async function (assert) {
 
     // channel expected to be found in the sidebar,
     // with a random unique id and name that  will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20, name: "General" });
+    this.serverData.models['mail.channel'].records.push({ id: 20, name: "General" });
     await this.start();
     assert.strictEqual(
         document.querySelectorAll(`.o_DiscussSidebar_categoryChannel .o_DiscussSidebarCategory_item`).length,
@@ -518,18 +508,18 @@ QUnit.test('sidebar: channel rendering with needaction counter', async function 
 
     // channel expected to be found in the sidebar
     // with a random unique id that will be used to link message
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     // expected needaction message
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100, // random unique id, useful to link notification
         model: "mail.channel",
         res_id: 20,
     });
     // expected needaction notification
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100, // id of related message
-        res_partner_id: this.data.currentPartnerId, // must be for current partner
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId, // must be for current partner
     });
     await this.start();
     const channel = document.querySelector(`.o_DiscussSidebar_categoryChannel .o_DiscussSidebarCategory_item`);
@@ -565,7 +555,7 @@ QUnit.test('sidebar: public/private channel rendering', async function (assert) 
 
     // channels that are expected to be found in the sidebar (one public, one private)
     // with random unique id and name that will be referenced in the test
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 100, name: "channel1", public: 'public', },
         { id: 101, name: "channel2", public: 'private' }
     );
@@ -635,12 +625,12 @@ QUnit.test('sidebar: basic chat rendering', async function (assert) {
 
     // expected correspondent, with a random unique id that will be used to link
     // partner to chat and a random name that will be asserted in the test
-    this.data['res.partner'].records.push({ id: 17, name: "Demo" });
+    this.serverData.models['res.partner'].records.push({ id: 17, name: "Demo" });
     // chat expected to be found in the sidebar
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat', // testing a chat is the goal of the test
         id: 10, // random unique id, will be referenced in the test
-        members: [this.data.currentPartnerId, 17], // expected partners
+        members: [this.TEST_USER_IDS.currentPartnerId, 17], // expected partners
         public: 'private', // expected value for testing a chat
     });
     await this.start();
@@ -699,7 +689,7 @@ QUnit.test('sidebar: chat rendering with unread counter', async function (assert
     assert.expect(4);
 
     // chat expected to be found in the sidebar
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat', // testing a chat is the goal of the test
         id: 10, // random unique id, will be referenced in the test
         message_unread_counter: 100,
@@ -734,29 +724,29 @@ QUnit.test('sidebar: chat im_status rendering', async function (assert) {
 
     // expected correspondent, with a random unique id that will be used to link
     // partner to chat, and various im_status values to assert
-    this.data['res.partner'].records.push(
+    this.serverData.models['res.partner'].records.push(
         { id: 101, im_status: 'offline', name: "Partner1" },
         { id: 102, im_status: 'online', name: "Partner2" },
         { id: 103, im_status: 'away', name: "Partner3" }
     );
     // chats expected to be found in the sidebar
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         {
             channel_type: 'chat', // testing a chat is the goal of the test
             id: 11, // random unique id, will be referenced in the test
-            members: [this.data.currentPartnerId, 101], // expected partners
+            members: [this.TEST_USER_IDS.currentPartnerId, 101], // expected partners
             public: 'private', // expected value for testing a chat
         },
         {
             channel_type: 'chat', // testing a chat is the goal of the test
             id: 12, // random unique id, will be referenced in the test
-            members: [this.data.currentPartnerId, 102], // expected partners
+            members: [this.TEST_USER_IDS.currentPartnerId, 102], // expected partners
             public: 'private', // expected value for testing a chat
         },
         {
             channel_type: 'chat', // testing a chat is the goal of the test
             id: 13, // random unique id, will be referenced in the test
-            members: [this.data.currentPartnerId, 103], // expected partners
+            members: [this.TEST_USER_IDS.currentPartnerId, 103], // expected partners
             public: 'private', // expected value for testing a chat
         }
     );
@@ -854,12 +844,12 @@ QUnit.test('sidebar: chat custom name', async function (assert) {
 
     // expected correspondent, with a random unique id that will be used to link
     // partner to chat, and a random name not used in the scope of this test but set for consistency
-    this.data['res.partner'].records.push({ id: 101, name: "Marc Demo" });
+    this.serverData.models['res.partner'].records.push({ id: 101, name: "Marc Demo" });
     // chat expected to be found in the sidebar
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat', // testing a chat is the goal of the test
         custom_channel_name: "Marc", // testing a custom name is the goal of the test
-        members: [this.data.currentPartnerId, 101], // expected partners
+        members: [this.TEST_USER_IDS.currentPartnerId, 101], // expected partners
         public: 'private', // expected value for testing a chat
     });
     await this.start();
@@ -876,7 +866,7 @@ QUnit.test('default thread rendering', async function (assert) {
 
     // channel expected to be found in the sidebar,
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start();
     assert.strictEqual(
         document.querySelectorAll(`
@@ -925,6 +915,7 @@ QUnit.test('default thread rendering', async function (assert) {
         `).classList.contains('o-active'),
         "inbox mailbox should be active thread"
     );
+
     assert.strictEqual(
         document.querySelectorAll(`
             .o_Discuss_thread .o_ThreadView_messageList .o_MessageList_empty
@@ -932,6 +923,7 @@ QUnit.test('default thread rendering', async function (assert) {
         1,
         "should have empty thread in inbox"
     );
+
     assert.strictEqual(
         document.querySelector(`
             .o_Discuss_thread .o_ThreadView_messageList .o_MessageList_empty
@@ -1044,8 +1036,7 @@ QUnit.test('initially load messages from inbox', async function (assert) {
                     "should fetch up to 30 messages"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
     });
     assert.verifySteps(['/mail/channel/messages']);
 });
@@ -1055,9 +1046,7 @@ QUnit.test('default select thread in discuss params', async function (assert) {
 
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.box_starred',
-            },
+            default_active_id: 'mail.box_starred',
         }
     });
     assert.ok(
@@ -1075,9 +1064,7 @@ QUnit.test('auto-select thread in discuss context', async function (assert) {
 
     await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.box_starred',
-            },
+            default_active_id: 'mail.box_starred',
         },
     });
     assert.ok(
@@ -1094,8 +1081,8 @@ QUnit.test('load single message from channel initially', async function (assert)
     assert.expect(6);
 
     // channel expected to be rendered, with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         date: "2019-04-20 10:00:00",
         id: 100,
@@ -1104,9 +1091,7 @@ QUnit.test('load single message from channel initially', async function (assert)
     });
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
         async mockRPC(route, args) {
             if (route === '/mail/channel/messages') {
@@ -1116,8 +1101,7 @@ QUnit.test('load single message from channel initially', async function (assert)
                     "should fetch up to 30 messages"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
     });
     assert.strictEqual(
         document.querySelectorAll(`.o_Discuss_thread .o_ThreadView_messageList`).length,
@@ -1154,12 +1138,10 @@ QUnit.test('load single message from channel initially', async function (assert)
 QUnit.test('open channel from active_id as channel id', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start({
         discuss: {
-            context: {
-                active_id: 20,
-            },
+            default_active_id: 20,
         }
     });
     assert.containsOnce(
@@ -1178,11 +1160,11 @@ QUnit.test('basic rendering of message', async function (assert) {
     assert.expect(15);
 
     // channel expected to be rendered, with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     // partner to be set as author, with a random unique id that will be used to
     // link message and a random name that will be asserted in the test
-    this.data['res.partner'].records.push({ id: 11, name: "Demo" });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 11, name: "Demo" });
+    this.serverData.models['mail.message'].records.push({
         author_id: 11,
         body: "<p>body</p>",
         date: "2019-04-20 10:00:00",
@@ -1192,9 +1174,7 @@ QUnit.test('basic rendering of message', async function (assert) {
     });
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
     });
     const message = document.querySelector(`
@@ -1215,7 +1195,7 @@ QUnit.test('basic rendering of message', async function (assert) {
         "should have author avatar in sidebar of message"
     );
     assert.strictEqual(
-        message.querySelector(`:scope .o_Message_authorAvatar`).dataset.src,
+        message.querySelector(`:scope .o_Message_authorAvatar`).getAttribute('src'),
         "/mail/channel/20/partner/11/avatar_128",
         "should have url of message in author avatar sidebar"
     );
@@ -1287,12 +1267,10 @@ QUnit.test('basic rendering of message', async function (assert) {
 QUnit.test('should not be able to reply to temporary/transient messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
     });
     // these user interactions is to forge a transient message response from channel command "/who"
@@ -1320,10 +1298,10 @@ QUnit.test('basic rendering of squashed message', async function (assert) {
     assert.expect(12);
 
     // channel expected to be rendered, with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     // partner to be set as author, with a random unique id that will be used to link message
-    this.data['res.partner'].records.push({ id: 11 });
-    this.data['mail.message'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push(
         {
             author_id: 11, // must be same author as other message
             body: "<p>body1</p>", // random body, set for consistency
@@ -1345,9 +1323,7 @@ QUnit.test('basic rendering of squashed message', async function (assert) {
     );
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
     });
     assert.strictEqual(
@@ -1431,8 +1407,8 @@ QUnit.test('inbox messages are never squashed', async function (assert) {
     assert.expect(3);
 
     // partner to be set as author, with a random unique id that will be used to link message
-    this.data['res.partner'].records.push({ id: 11 });
-    this.data['mail.message'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push(
         {
             author_id: 11, // must be same author as other message
             body: "<p>body1</p>", // random body, set for consistency
@@ -1441,7 +1417,7 @@ QUnit.test('inbox messages are never squashed', async function (assert) {
             message_type: 'comment', // must be a squash-able type-
             model: 'mail.channel', // to link message to channel
             needaction: true,
-            needaction_partner_ids: [this.data.currentPartnerId], // for consistency
+            needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId], // for consistency
             res_id: 20, // id of related channel
         },
         {
@@ -1452,21 +1428,21 @@ QUnit.test('inbox messages are never squashed', async function (assert) {
             message_type: 'comment', // must be a squash-able type
             model: 'mail.channel', // to link message to channel
             needaction: true,
-            needaction_partner_ids: [this.data.currentPartnerId], // for consistency
+            needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId], // for consistency
             res_id: 20, // id of related channel
         }
     );
-    this.data['mail.notification'].records.push(
+    this.serverData.models['mail.notification'].records.push(
         {
             mail_message_id: 100,
             notification_status: 'sent',
             notification_type: 'inbox',
-            res_partner_id: this.data.currentPartnerId,
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId,
         }, {
             mail_message_id: 101,
             notification_status: 'sent',
             notification_type: 'inbox',
-            res_partner_id: this.data.currentPartnerId,
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId,
         },
     );
     await this.start({
@@ -1519,11 +1495,11 @@ QUnit.test('load all messages from channel initially, less than fetch limit (29 
     assert.expect(5);
 
     // channel expected to be rendered, with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     // partner to be set as author, with a random unique id that will be used to link message
-    this.data['res.partner'].records.push({ id: 11 });
+    this.serverData.models['res.partner'].records.push({ id: 11 });
     for (let i = 28; i >= 0; i--) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             date: "2019-04-20 10:00:00",
             model: 'mail.channel',
@@ -1532,16 +1508,13 @@ QUnit.test('load all messages from channel initially, less than fetch limit (29 
     }
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
         async mockRPC(route, args) {
             if (route === '/mail/channel/messages') {
                 assert.strictEqual(args.limit, 30, "should fetch up to 30 messages");
             }
-            return this._super(...arguments);
-        },
+                    },
     });
     assert.strictEqual(
         document.querySelectorAll(`
@@ -1578,11 +1551,11 @@ QUnit.test('load more messages from channel', async function (assert) {
     assert.expect(6);
 
     // channel expected to be rendered, with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     // partner to be set as author, with a random unique id that will be used to link message
-    this.data['res.partner'].records.push({ id: 11 });
+    this.serverData.models['res.partner'].records.push({ id: 11 });
     for (let i = 0; i < 40; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             date: "2019-04-20 10:00:00",
             model: 'mail.channel',
@@ -1591,9 +1564,7 @@ QUnit.test('load more messages from channel', async function (assert) {
     }
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
     });
     assert.strictEqual(
@@ -1651,9 +1622,9 @@ QUnit.test('auto-scroll to bottom of thread', async function (assert) {
     assert.expect(2);
 
     // channel expected to be rendered, with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     for (let i = 1; i <= 25; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: 'mail.channel',
             res_id: 20,
@@ -1661,9 +1632,7 @@ QUnit.test('auto-scroll to bottom of thread', async function (assert) {
     }
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
         waitUntilEvent: {
             eventName: 'o-component-message-list-scrolled',
@@ -1698,9 +1667,9 @@ QUnit.test('load more messages from channel (auto-load on scroll)', async functi
     // AKU TODO: thread specific test
     assert.expect(3);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     for (let i = 0; i < 40; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: 'mail.channel',
             res_id: 20,
@@ -1708,9 +1677,7 @@ QUnit.test('load more messages from channel (auto-load on scroll)', async functi
     }
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
         waitUntilEvent: {
             eventName: 'o-component-message-list-scrolled',
@@ -1770,24 +1737,24 @@ QUnit.test('new messages separator [REQUIRE FOCUS]', async function (assert) {
     assert.expect(6);
 
     // Needed partner & user to allow simulation of message reception
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 11,
         name: "Foreigner partner",
     });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.users'].records.push({
         id: 42,
         name: "Foreigner user",
         partner_id: 11,
     });
     // channel expected to be rendered, with a random unique id that will be
     // referenced in the test and the seen_message_id value set to last message
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 20,
         seen_message_id: 125,
         uuid: 'randomuuid',
     });
     for (let i = 1; i <= 25; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             id: 100 + i, // for setting proper value for seen_message_id
             model: 'mail.channel',
@@ -1796,9 +1763,7 @@ QUnit.test('new messages separator [REQUIRE FOCUS]', async function (assert) {
     }
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
         waitUntilEvent: {
             eventName: 'o-component-message-list-scrolled',
@@ -1902,7 +1867,7 @@ QUnit.test('new messages separator [REQUIRE FOCUS]', async function (assert) {
 QUnit.test('restore thread scroll position', async function (assert) {
     assert.expect(6);
     // channels expected to be rendered, with random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         {
             id: 11,
         },
@@ -1911,14 +1876,14 @@ QUnit.test('restore thread scroll position', async function (assert) {
         },
     );
     for (let i = 1; i <= 25; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: 'mail.channel',
             res_id: 11,
         });
     }
     for (let i = 1; i <= 24; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: 'mail.channel',
             res_id: 12,
@@ -1926,9 +1891,7 @@ QUnit.test('restore thread scroll position', async function (assert) {
     }
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_11',
-            },
+            default_active_id: 'mail.channel_11',
         },
         waitUntilEvent: {
             eventName: 'o-component-message-list-scrolled',
@@ -2074,9 +2037,9 @@ QUnit.test('redirect to author (open chat)', async function (assert) {
 
     // expected correspondent, with a random unique id that will be used to link
     // partner to chat and a random name that will be asserted in the test
-    this.data['res.partner'].records.push({ id: 7, name: "Demo" });
-    this.data['res.users'].records.push({ partner_id: 7 });
-    this.data['mail.channel'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 7, name: "Demo" });
+    this.serverData.models['res.users'].records.push({ partner_id: 7 });
+    this.serverData.models['mail.channel'].records.push(
         // channel expected to be found in the sidebar
         {
             id: 1, // random unique id, will be referenced in the test
@@ -2086,11 +2049,11 @@ QUnit.test('redirect to author (open chat)', async function (assert) {
         {
             channel_type: 'chat', // testing a chat is the goal of the test
             id: 10, // random unique id, will be referenced in the test
-            members: [this.data.currentPartnerId, 7], // expected partners
+            members: [this.TEST_USER_IDS.currentPartnerId, 7], // expected partners
             public: 'private', // expected value for testing a chat
         }
     );
-    this.data['mail.message'].records.push(
+    this.serverData.models['mail.message'].records.push(
         {
             author_id: 7,
             body: "not empty",
@@ -2101,9 +2064,7 @@ QUnit.test('redirect to author (open chat)', async function (assert) {
     );
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_1',
-            },
+            default_active_id: 'mail.channel_1',
         },
     });
     assert.ok(
@@ -2185,7 +2146,7 @@ QUnit.test('sidebar quick search', async function (assert) {
     assert.expect(6);
 
     for (let id = 1; id <= 20; id++) {
-        this.data['mail.channel'].records.push({ id, name: `channel${id}` });
+        this.serverData.models['mail.channel'].records.push({ id, name: `channel${id}` });
     }
     await this.start();
     assert.strictEqual(
@@ -2251,7 +2212,7 @@ QUnit.test('basic top bar rendering', async function (assert) {
 
     // channel expected to be found in the sidebar
     // with a random unique id and name that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20, name: "General" });
+    this.serverData.models['mail.channel'].records.push({ id: 20, name: "General" });
     await this.start();
     assert.strictEqual(
         document.querySelector(`
@@ -2323,8 +2284,8 @@ QUnit.test('inbox: mark all messages as read', async function (assert) {
 
     // channel expected to be found in the sidebar,
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['mail.message'].records.push(
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.message'].records.push(
         // first expected message
         {
             body: "not empty",
@@ -2342,16 +2303,16 @@ QUnit.test('inbox: mark all messages as read', async function (assert) {
             res_id: 20,
         }
     );
-    this.data['mail.notification'].records.push(
+    this.serverData.models['mail.notification'].records.push(
         // notification to have first message in inbox
         {
             mail_message_id: 100, // id of related message
-            res_partner_id: this.data.currentPartnerId, // must be for current partner
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId, // must be for current partner
         },
         // notification to have second message in inbox
         {
             mail_message_id: 101, // id of related message
-            res_partner_id: this.data.currentPartnerId, // must be for current partner
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId, // must be for current partner
         }
     );
     await this.start();
@@ -2429,15 +2390,13 @@ QUnit.test('starred: unstar all', async function (assert) {
     assert.expect(6);
 
     // messages expected to be starred
-    this.data['mail.message'].records.push(
-        { body: "not empty", starred_partner_ids: [this.data.currentPartnerId] },
-        { body: "not empty", starred_partner_ids: [this.data.currentPartnerId] }
+    this.serverData.models['mail.message'].records.push(
+        { body: "not empty", starred_partner_ids: [this.TEST_USER_IDS.currentPartnerId] },
+        { body: "not empty", starred_partner_ids: [this.TEST_USER_IDS.currentPartnerId] }
     );
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.box_starred',
-            },
+            default_active_id: 'mail.box_starred',
         },
     });
     assert.strictEqual(
@@ -2489,8 +2448,8 @@ QUnit.test('toggle_star message', async function (assert) {
 
     // channel expected to be initially rendered
     // with a random unique id, will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
@@ -2498,9 +2457,7 @@ QUnit.test('toggle_star message', async function (assert) {
     });
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
         async mockRPC(route, args) {
             if (args.method === 'toggle_message_starred') {
@@ -2511,8 +2468,7 @@ QUnit.test('toggle_star message', async function (assert) {
                     "should have message Id in args"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
     });
     assert.strictEqual(
         document.querySelectorAll(`
@@ -2593,15 +2549,13 @@ QUnit.test('composer state: text save and restore', async function (assert) {
 
     // channels expected to be found in the sidebar,
     // with random unique id and name that will be referenced in the test
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 20, name: "General" },
         { id: 21, name: "Special" }
     );
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
     });
     // Write text in composer for #general
@@ -2645,15 +2599,13 @@ QUnit.test('composer state: attachments save and restore', async function (asser
 
     // channels expected to be found in the sidebar
     // with random unique id and name that will be referenced in the test
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 20, name: "General" },
         { id: 21, name: "Special" }
     );
-    const { discussWidget } = await this.start({
+    await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
     });
     const channels = document.querySelectorAll(`
@@ -2667,7 +2619,7 @@ QUnit.test('composer state: attachments save and restore', async function (asser
             name: 'text.txt',
         });
         inputFiles(
-            discussWidget.discuss.threadView.composerView.fileUploader.fileInput,
+            this.messaging.discuss.threadView.composerView.fileUploader.fileInput,
             [file]
         );
     });
@@ -2693,7 +2645,7 @@ QUnit.test('composer state: attachments save and restore', async function (asser
     ];
     await afterNextRender(() =>
         inputFiles(
-            discussWidget.discuss.threadView.composerView.fileUploader.fileInput,
+            this.messaging.discuss.threadView.composerView.fileUploader.fileInput,
             files
         )
     );
@@ -2741,17 +2693,16 @@ QUnit.test('post a simple message', async function (assert) {
 
     // channel expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     let postedMessageId;
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
-        async mockRPC(route, args) {
-            const res = await this._super(...arguments);
+        async mockRPC(route, args, performRPC) {
+            const res = await performRPC(route, args);
             if (route === '/mail/message/post') {
+                postedMessageId = res.id;
                 assert.step('message_post');
                 assert.strictEqual(
                     args.thread_model,
@@ -2778,7 +2729,6 @@ QUnit.test('post a simple message', async function (assert) {
                     "mail.mt_comment",
                     "should set subtype_xmlid as 'comment'"
                 );
-                postedMessageId = res.id;
             }
             return res;
         },
@@ -2824,6 +2774,7 @@ QUnit.test('post a simple message', async function (assert) {
         1,
         "should display a message after posting message"
     );
+    // todo : before post was retrieved by rpc mock
     const message = document.querySelector(`.o_Message`);
     assert.strictEqual(
         message.dataset.messageLocalId,
@@ -2847,12 +2798,10 @@ QUnit.test('post message on channel with "Enter" keyboard shortcut', async funct
 
     // channel expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
     });
     assert.containsNone(
@@ -2885,12 +2834,10 @@ QUnit.test('do not post message on channel with "SHIFT-Enter" keyboard shortcut'
 
     // channel expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
     });
     assert.containsNone(
@@ -2917,11 +2864,11 @@ QUnit.test('rendering of inbox message', async function (assert) {
     // AKU TODO: kinda message specific test
     assert.expect(8);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 20,
         name: "Refactoring",
     });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'res.partner',
@@ -2929,11 +2876,11 @@ QUnit.test('rendering of inbox message', async function (assert) {
         needaction_partner_ids: [this.data.currentPartnerId], // for consistency
         res_id: 20,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -2997,8 +2944,8 @@ QUnit.test('mark channel as seen on last message visible [REQUIRE FOCUS]', async
 
     // channel expected to be found in the sidebar, with the expected message_unread_counter
     // and a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 10, message_unread_counter: 1 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.channel'].records.push({ id: 10, message_unread_counter: 1 });
+    this.serverData.models['mail.message'].records.push({
         id: 12,
         body: "not empty",
         model: 'mail.channel',
@@ -3100,7 +3047,7 @@ QUnit.test('receive new needaction messages', async function (assert) {
 
     // simulate receiving a new needaction message
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.message/inbox',
             payload: {
                 body: "not empty",
@@ -3143,7 +3090,7 @@ QUnit.test('receive new needaction messages', async function (assert) {
 
     // simulate receiving another new needaction message
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.message/inbox',
             payload: {
                 body: "not empty",
@@ -3197,7 +3144,7 @@ QUnit.test('reply to message from inbox (message linked to document)', async fun
         name: "Refactoring",
     });
     // message that is expected to be found in Inbox
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "<p>Test</p>",
         date: "2019-04-20 11:00:00",
         id: 100, // random unique id, will be used to link notification to message
@@ -3207,9 +3154,9 @@ QUnit.test('reply to message from inbox (message linked to document)', async fun
         res_id: 20,
     });
     // notification to have message in Inbox
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100, // id of related message
-        res_partner_id: this.data.currentPartnerId, // must be for current partner
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId, // must be for current partner
     });
     await this.start({
         async mockRPC(route, args) {
@@ -3236,22 +3183,19 @@ QUnit.test('reply to message from inbox (message linked to document)', async fun
                     "should set message type as 'comment'"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
         services: {
-            notification: {
-                notify(notification) {
-                    assert.ok(
-                        true,
-                        "should display a notification after posting reply"
-                    );
-                    assert.strictEqual(
-                        notification.message,
-                        "Message posted on \"Refactoring\"",
-                        "notification should tell that message has been posted to the record 'Refactoring'"
-                    );
-                }
-            }
+            notification: makeFakeNotificationService(message => {
+                assert.ok(
+                    true,
+                    "should display a notification after posting reply"
+                );
+                assert.strictEqual(
+                    message,
+                    "Message posted on \"Refactoring\"",
+                    "notification should tell that message has been posted to the record 'Refactoring'"
+                );
+            }),
         },
     });
     assert.strictEqual(
@@ -3325,9 +3269,9 @@ QUnit.test('messages marked as read move to "History" mailbox', async function (
 
     // channel expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     // expected messages
-    this.data['mail.message'].records.push(
+    this.serverData.models['mail.message'].records.push(
         {
             body: "not empty",
             id: 100, // random unique id, useful to link notification
@@ -3343,23 +3287,21 @@ QUnit.test('messages marked as read move to "History" mailbox', async function (
             res_id: 20, // id of related channel
         }
     );
-    this.data['mail.notification'].records.push(
+    this.serverData.models['mail.notification'].records.push(
         // notification to have first message in inbox
         {
             mail_message_id: 100, // id of related message
-            res_partner_id: this.data.currentPartnerId, // must be for current partner
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId, // must be for current partner
         },
         // notification to have second message in inbox
         {
             mail_message_id: 101, // id of related message
-            res_partner_id: this.data.currentPartnerId, // must be for current partner
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId, // must be for current partner
         }
     );
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.box_history',
-            },
+            default_active_id: 'mail.box_history',
         },
     });
     assert.ok(
@@ -3449,35 +3391,33 @@ QUnit.test('messages marked as read move to "History" mailbox', async function (
 QUnit.test('mark a single message as read should only move this message to "History" mailbox', async function (assert) {
     assert.expect(9);
 
-    this.data['mail.message'].records.push(
+    this.serverData.models['mail.message'].records.push(
         {
             body: "not empty",
             id: 1,
             needaction: true,
-            needaction_partner_ids: [this.data.currentPartnerId],
+            needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         },
         {
             body: "not empty",
             id: 2,
             needaction: true,
-            needaction_partner_ids: [this.data.currentPartnerId],
+            needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         }
     );
-    this.data['mail.notification'].records.push(
+    this.serverData.models['mail.notification'].records.push(
         {
             mail_message_id: 1,
-            res_partner_id: this.data.currentPartnerId,
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId,
         },
         {
             mail_message_id: 2,
-            res_partner_id: this.data.currentPartnerId,
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId,
         }
     );
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.box_history',
-            },
+            default_active_id: 'mail.box_history',
         },
     });
     assert.hasClass(
@@ -3581,15 +3521,15 @@ QUnit.test('all messages in "Inbox" in "History" after marked all as read', asyn
     const messageOffset = 200;
     for (let id = messageOffset; id < messageOffset + 40; id++) {
         // message expected to be found in Inbox
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             id, // will be used to link notification to message
             needaction: true,
         });
         // notification to have message in Inbox
-        this.data['mail.notification'].records.push({
+        this.serverData.models['mail.notification'].records.push({
             mail_message_id: id, // id of related message
-            res_partner_id: this.data.currentPartnerId, // must be for current partner
+            res_partner_id: this.TEST_USER_IDS.currentPartnerId, // must be for current partner
         });
 
     }
@@ -3668,16 +3608,9 @@ QUnit.test('receive new chat message: out of odoo focus (notification, channel)'
 
     // channel expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20, channel_type: 'chat' });
-    const bus = new Bus();
-    bus.on('set_title_part', null, payload => {
-        assert.step('set_title_part');
-        assert.strictEqual(payload.part, '_chat');
-        assert.strictEqual(payload.title, "1 Message");
-    });
+    this.serverData.models['mail.channel'].records.push({ id: 20, channel_type: 'chat' });
     await this.start({
-        env: { bus },
-        services: {
+        legacyServices: {
             bus_service: BusService.extend({
                 _beep() {}, // Do nothing
                 _poll() {}, // Do nothing
@@ -3687,10 +3620,15 @@ QUnit.test('receive new chat message: out of odoo focus (notification, channel)'
             }),
         },
     });
+    this.webClient.env.bus.on('set_title_part', null, payload => {
+        assert.step('set_title_part');
+        assert.strictEqual(payload.part, '_chat');
+        assert.strictEqual(payload.title, "1 Message");
+    });
 
     // simulate receiving a new message with odoo focused
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel/new_message',
             payload: {
                 id: 20,
@@ -3710,16 +3648,9 @@ QUnit.test('receive new chat message: out of odoo focus (notification, chat)', a
 
     // chat expected to be found in the sidebar with the proper channel_type
     // and a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ channel_type: "chat", id: 10 });
-    const bus = new Bus();
-    bus.on('set_title_part', null, payload => {
-        assert.step('set_title_part');
-        assert.strictEqual(payload.part, '_chat');
-        assert.strictEqual(payload.title, "1 Message");
-    });
+    this.serverData.models['mail.channel'].records.push({ channel_type: "chat", id: 10 });
     await this.start({
-        env: { bus },
-        services: {
+        legacyServices: {
             bus_service: BusService.extend({
                 _beep() {}, // Do nothing
                 _poll() {}, // Do nothing
@@ -3729,10 +3660,15 @@ QUnit.test('receive new chat message: out of odoo focus (notification, chat)', a
             }),
         },
     });
+    this.webClient.env.bus.on('set_title_part', null, payload => {
+        assert.step('set_title_part');
+        assert.strictEqual(payload.part, '_chat');
+        assert.strictEqual(payload.title, "1 Message");
+    });
 
     // simulate receiving a new message with odoo focused
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel/new_message',
             payload: {
                 id: 10,
@@ -3750,15 +3686,25 @@ QUnit.test('receive new chat message: out of odoo focus (notification, chat)', a
 QUnit.test('receive new chat messages: out of odoo focus (tab title)', async function (assert) {
     assert.expect(12);
 
-    let step = 0;
     // channel and chat expected to be found in the sidebar
     // with random unique id and name that will be referenced in the test
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { channel_type: 'chat', id: 20, public: 'private' },
         { channel_type: 'chat', id: 10, public: 'private' },
     );
-    const bus = new Bus();
-    bus.on('set_title_part', null, payload => {
+    await this.start({
+        legacyServices: {
+            bus_service: BusService.extend({
+                _beep() {}, // Do nothing
+                _poll() {}, // Do nothing
+                _registerWindowUnload() {}, // Do nothing
+                isOdooFocused: () => false,
+                updateOption() {},
+            }),
+        },
+    });
+    let step = 0;
+    this.webClient.env.bus.on('set_title_part', null, payload => {
         step++;
         assert.step('set_title_part');
         assert.strictEqual(payload.part, '_chat');
@@ -3772,22 +3718,10 @@ QUnit.test('receive new chat messages: out of odoo focus (tab title)', async fun
             assert.strictEqual(payload.title, "3 Messages");
         }
     });
-    await this.start({
-        env: { bus },
-        services: {
-            bus_service: BusService.extend({
-                _beep() {}, // Do nothing
-                _poll() {}, // Do nothing
-                _registerWindowUnload() {}, // Do nothing
-                isOdooFocused: () => false,
-                updateOption() {},
-            }),
-        },
-    });
 
     // simulate receiving a new message in chat 20 with odoo focused
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel/new_message',
             payload: {
                 id: 20,
@@ -3803,7 +3737,7 @@ QUnit.test('receive new chat messages: out of odoo focus (tab title)', async fun
 
     // simulate receiving a new message in chat 10 with odoo focused
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel/new_message',
             payload: {
                 id: 10,
@@ -3819,7 +3753,7 @@ QUnit.test('receive new chat messages: out of odoo focus (tab title)', async fun
 
     // simulate receiving another new message in chat 10 with odoo focused
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel/new_message',
             payload: {
                 id: 10,
@@ -3839,8 +3773,8 @@ QUnit.test('auto-focus composer on opening thread', async function (assert) {
 
     // expected correspondent, with a random unique id that will be used to link
     // partner to chat and a random name that will be asserted in the test
-    this.data['res.partner'].records.push({ id: 7, name: "Demo User" });
-    this.data['mail.channel'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 7, name: "Demo User" });
+    this.serverData.models['mail.channel'].records.push(
         // channel expected to be found in the sidebar
         {
             id: 20, // random unique id, will be referenced in the test
@@ -3850,7 +3784,7 @@ QUnit.test('auto-focus composer on opening thread', async function (assert) {
         {
             channel_type: 'chat', // testing a chat is the goal of the test
             id: 10, // random unique id, will be referenced in the test
-            members: [this.data.currentPartnerId, 7], // expected partners
+            members: [this.TEST_USER_IDS.currentPartnerId, 7], // expected partners
             public: 'private', // expected value for testing a chat
         }
     );
@@ -3950,11 +3884,11 @@ QUnit.test('auto-focus composer on opening thread', async function (assert) {
 QUnit.test('mark channel as seen if last message is visible when switching channels when the previous channel had a more recent last message than the current channel [REQUIRE FOCUS]', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 10, message_unread_counter: 1, name: 'Bla' },
         { id: 11, message_unread_counter: 1, name: 'Blu' },
     );
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: 'oldest message',
         id: 10,
         model: "mail.channel",
@@ -3967,9 +3901,7 @@ QUnit.test('mark channel as seen if last message is visible when switching chann
     });
     await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.channel_11',
-            },
+            default_active_id: 'mail.channel_11',
         },
         waitUntilEvent: {
             eventName: 'o-thread-view-hint-processed',
@@ -4021,37 +3953,31 @@ QUnit.test('mark channel as seen if last message is visible when switching chann
 QUnit.test('warning on send with shortcut when attempting to post message with still-uploading attachments', async function (assert) {
     assert.expect(7);
 
-    this.data['mail.channel'].records.push({ id: 10 });
-    const { discussWidget } = await this.start({
+    this.serverData.models['mail.channel'].records.push({ id: 10 });
+    await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.channel_10',
-            },
+            default_active_id: 'mail.channel_10',
         },
-        async mockFetch(resource, init) {
-            const res = this._super(...arguments);
-            if (resource === '/mail/attachment/upload') {
+        async mockRPC(route, args) {
+            if (route === '/mail/attachment/upload') {
                 // simulates attachment is never finished uploading
                 await new Promise(() => {});
             }
-            return res;
         },
         services: {
-            notification: {
-                notify(params) {
-                    assert.strictEqual(
-                        params.message,
-                        "Please wait while the file is uploading.",
-                        "notification content should be about the uploading file"
-                    );
-                    assert.strictEqual(
-                        params.type,
-                        'warning',
-                        "notification should be a warning"
-                    );
-                    assert.step('notification');
-                }
-            }
+            notification: makeFakeNotificationService((message, { type }) => {
+                assert.strictEqual(
+                    message,
+                    "Please wait while the file is uploading.",
+                    "notification content should be about the uploading file"
+                );
+                assert.strictEqual(
+                    type,
+                    'warning',
+                    "notification should be a warning"
+                );
+                assert.step('notification');
+            }),
         },
     });
     const file = await createFile({
@@ -4059,9 +3985,10 @@ QUnit.test('warning on send with shortcut when attempting to post message with s
         contentType: 'text/plain',
         name: 'text.txt',
     });
+
     await afterNextRender(() =>
         inputFiles(
-            discussWidget.discuss.threadView.composerView.fileUploader.fileInput,
+            this.messaging.discuss.threadView.composerView.fileUploader.fileInput,
             [file]
         )
     );
@@ -4094,18 +4021,15 @@ QUnit.test('warning on send with shortcut when attempting to post message with s
 QUnit.test('send message only once when enter is pressed twice quickly', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start({
         discuss: {
-            context: {
-                active_id: 'mail.channel_20',
-            },
+            default_active_id: 'mail.channel_20',
         },
         async mockRPC(route, args) {
             if (route === '/mail/message/post') {
                 assert.step('message_post');
             }
-            return this._super(...arguments);
         },
     });
     // Type message

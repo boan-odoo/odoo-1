@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
 
 import { file } from 'web.test_utils';
 
@@ -11,26 +11,21 @@ QUnit.module('file_uploader', {}, function () {
 QUnit.module('file_uploader_tests.js', {
     beforeEach() {
         beforeEach(this);
-        this.components = [];
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { components, env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { env, webClient } = res;
             this.env = env;
-            this.components = components;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('no conflicts between file uploaders', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 100 }, { id: 101 });
+    this.serverData.models['res.partner'].records.push({ id: 100 }, { id: 101 });
     const { afterNextRender, createChatterContainerComponent } = await this.start();
     const firstChatterContainerComponent = await createChatterContainerComponent({
         threadId: 100,

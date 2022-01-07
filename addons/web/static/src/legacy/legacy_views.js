@@ -40,7 +40,6 @@ function registerView(name, LegacyView) {
             this.Widget = Widget; // fool the ComponentAdapter with a simple Widget
             this.View = LegacyView;
             this.viewInfo = {};
-
             let resIds;
             let searchModel;
             let searchPanel;
@@ -50,13 +49,11 @@ function registerView(name, LegacyView) {
                 searchModel = searchModelStateToLegacy(globalState.searchModel);
                 searchPanel = globalState.searchPanel;
             }
-
             // always add user context to the action context
             this.user = useService("user");
             const action = Object.assign({}, this.props.action, {
                 context: Object.assign({}, this.user.context, this.props.action.context),
             });
-
             const { actionFlags, breadcrumbs } = this.env.config;
             this.viewParams = Object.assign({}, actionFlags, {
                 action,
@@ -81,7 +78,6 @@ function registerView(name, LegacyView) {
                 this.viewParams.currentId = undefined;
                 this.viewParams.controllerState.currentId = undefined;
             }
-
             // Only add mode to viewParams if it is specified to avoid overwriting the default mode in some view (eg graph)
             if (this.props.mode) {
                 this.viewParams.mode = this.props.mode;

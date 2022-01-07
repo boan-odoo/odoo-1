@@ -104,7 +104,7 @@ registerModel({
          * Delete the record from database and locally.
          */
         async deleteServerRecord() {
-            await this.async(() => this.env.services.unlink(
+            await this.async(() => this.env.services.orm.unlink(
                 'mail.activity',
                 [this.id],
             ));

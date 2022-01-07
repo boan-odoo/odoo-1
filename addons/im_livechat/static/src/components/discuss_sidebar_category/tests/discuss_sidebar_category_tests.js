@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -15,29 +14,26 @@ QUnit.module('discuss_sidebar_category_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('livechat - counter: should not have a counter if the category is unfolded and without unread messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     await this.start();
     assert.containsNone(
@@ -50,12 +46,12 @@ QUnit.test('livechat - counter: should not have a counter if the category is unf
 QUnit.test('livechat - counter: should not have a counter if the category is unfolded and with unread messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
         message_unread_counter: 10,
     });
     await this.start();
@@ -69,15 +65,15 @@ QUnit.test('livechat - counter: should not have a counter if the category is unf
 QUnit.test('livechat - counter: should not have a counter if category is folded and without unread messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_livechat_open: false,
     });
     await this.start();
@@ -92,16 +88,16 @@ QUnit.test('livechat - counter: should not have a counter if category is folded 
 QUnit.test('livechat - counter: should have correct value of unread threads if category is folded and with unread messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
         message_unread_counter: 10,
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_livechat_open: false,
     });
     await this.start();
@@ -116,15 +112,15 @@ QUnit.test('livechat - counter: should have correct value of unread threads if c
 QUnit.test('livechat - states: close manually by clicking the title', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_livechat_open: true,
     });
     await this.start();
@@ -161,15 +157,15 @@ QUnit.test('livechat - states: close manually by clicking the title', async func
 QUnit.test('livechat - states: open manually by clicking the title', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_livechat_open: false,
     });
     await this.start();
@@ -206,18 +202,18 @@ QUnit.test('livechat - states: open manually by clicking the title', async funct
 QUnit.test('livechat - states: close should update the value on the server', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_livechat_open: true,
     });
-    const currentUserId = this.data.currentUserId;
+    const currentUserId = this.TEST_USER_IDS.currentUserId;
     await this.start();
 
     const initalSettings = await this.env.services.orm.call(
@@ -252,18 +248,18 @@ QUnit.test('livechat - states: close should update the value on the server', asy
 QUnit.test('livechat - states: open should update the value on the server', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_livechat_open: false,
     });
-    const currentUserId = this.data.currentUserId;
+    const currentUserId = this.TEST_USER_IDS.currentUserId;
     await this.start();
 
     const initalSettings = await this.env.services.orm.call(
@@ -298,12 +294,12 @@ QUnit.test('livechat - states: open should update the value on the server', asyn
 QUnit.test('livechat - states: close from the bus', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     await this.start();
 
@@ -318,7 +314,7 @@ QUnit.test('livechat - states: close from the bus', async function (assert) {
     );
 
     await afterNextRender(() => {
-        this.env.services.bus_service.trigger('notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: "res.users.settings/changed",
             payload: {
                 is_discuss_sidebar_category_livechat_open: false,
@@ -340,15 +336,15 @@ QUnit.test('livechat - states: close from the bus', async function (assert) {
 QUnit.test('livechat - states: open from the bus', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_livechat_open: false,
     });
     await this.start();
@@ -364,7 +360,7 @@ QUnit.test('livechat - states: open from the bus', async function (assert) {
     );
 
     await afterNextRender(() => {
-        this.env.services.bus_service.trigger('notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: "res.users.settings/changed",
             payload: {
                 is_discuss_sidebar_category_livechat_open: true,
@@ -387,12 +383,12 @@ QUnit.test('livechat - states: open from the bus', async function (assert) {
 QUnit.test('livechat - states: category item should be invisible if the catgory is closed', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     await this.start();
 
@@ -428,12 +424,12 @@ QUnit.test('livechat - states: category item should be invisible if the catgory 
 QUnit.test('livechat - states: the active category item should be visble even if the category is closed', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     await this.start();
 

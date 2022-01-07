@@ -4,7 +4,7 @@ import { getMessagingComponent } from "@mail/utils/messaging_component";
 import FormRenderer from 'web.FormRenderer';
 import { ComponentWrapper } from 'web.OwlCompatibility';
 
-class ChatterContainerWrapperComponent extends ComponentWrapper {
+export class ChatterContainerWrapperComponent extends ComponentWrapper {
     constructor(parent, Component, props, wowlEnv) {
         super(parent, Component, props);
         owl.hooks.useSubEnv(wowlEnv);

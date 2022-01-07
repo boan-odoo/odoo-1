@@ -18,13 +18,15 @@ export class Discuss extends Component {
         this._onMobileAddItemHeaderInputSource = this._onMobileAddItemHeaderInputSource.bind(this);
         useUpdate({ func: () => this._update() });
         this._onHideMobileAddItemHeader = this._onHideMobileAddItemHeader.bind(this);
-        this.discuss.update({ initActiveId: this.props.actionId });
     }
 
     _update() {
         if (!this.discussView) {
             return;
         }
+        this.discuss.update({
+            initActiveId: this.props.actionId,
+        });
         if (this.discussView.discuss.thread) {
             this.env.services.router.pushState({
                 action: this.props.actionId,
@@ -159,7 +161,7 @@ export class Discuss extends Component {
 Object.assign(Discuss, {
     props: {
         action: Object,
-        actionId: Number,
+        actionId: Number | String,
         globalState: { type: Object, optional: 1 },
     },
     template: 'mail.Discuss',

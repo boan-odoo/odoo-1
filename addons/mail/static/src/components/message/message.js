@@ -303,8 +303,8 @@ export class Message extends Component {
                 case 'date':
                 case 'datetime':
                     const dateParser = parsers.get(fieldType);
-                    value.old_value = dateParser(value.old_value);
-                    value.new_value = dateParser(value.new_value);
+                    value.old_value = value.old_value && dateParser(value.old_value);
+                    value.new_value = value.new_value && dateParser(value.new_value);
                     break;
                 case 'monetary':
                     options['currencyId'] = value.currency_id;

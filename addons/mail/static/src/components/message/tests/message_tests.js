@@ -3,15 +3,13 @@
 import { insert, insertAndReplace, link, replace } from '@mail/model/model_field_command';
 import { makeDeferred } from '@mail/utils/deferred/deferred';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     createRootMessagingComponent,
     nextAnimationFrame,
-    start,
+    makeFakeActionService,
+    start
 } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -21,17 +19,13 @@ QUnit.module('message_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { afterEvent, components, env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { afterEvent, env, webClient } = res;
             this.afterEvent = afterEvent;
-            this.components = components;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -73,7 +67,7 @@ QUnit.test('basic rendering', async function (assert) {
         "message author avatar should be an image"
     );
     assert.strictEqual(
-        messageEl.querySelector(`:scope .o_Message_authorAvatar`).dataset.src,
+        messageEl.querySelector(`:scope .o_Message_authorAvatar`).getAttribute('src'),
         '/web/image/res.partner/7/avatar_128',
         "message author avatar should GET image of the related partner"
     );
@@ -113,16 +107,16 @@ QUnit.test('basic rendering', async function (assert) {
 QUnit.test('Notification Sent', async function (assert) {
     assert.expect(9);
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'email',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         id: 11,
         mail_message_id: 10,
         notification_status: 'sent',
@@ -196,39 +190,49 @@ QUnit.test('Notification Error', async function (assert) {
     assert.expect(8);
 
     const openResendActionDef = makeDeferred();
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action,
-            'mail.mail_resend_message_action',
-            "action should be the one to resend email"
-        );
-        assert.strictEqual(
-            payload.options.additional_context.mail_message_to_resend,
-            10,
-            "action should have correct message id"
-        );
-        openResendActionDef.resolve();
-    });
+    const fakeActionService = {
+        start() {
+            return {
+                doAction(action, options) {
+                    assert.step('do_action');
+                    assert.strictEqual(
+                        action,
+                        'mail.mail_resend_message_action',
+                        "action should be the one to resend email"
+                    );
+                    assert.strictEqual(
+                        options.additional_context.mail_message_to_resend,
+                        10,
+                        "action should have correct message id"
+                    );
+                    openResendActionDef.resolve();
+                },
+                loadState() {},
+            }
+        },
+    };
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'email',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         id: 11,
         mail_message_id: 10,
         notification_status: 'exception',
         notification_type: 'email',
         res_partner_id: 12,
     });
-    const { createThreadViewComponent } = await this.start({ env: { bus } });
+    const { createThreadViewComponent } = await this.start({
+        services: {
+            action: fakeActionService,
+        }
+    });
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
         id: 11,
         model: 'mail.channel',
@@ -271,14 +275,14 @@ QUnit.test('Notification Error', async function (assert) {
 QUnit.test("'channel_fetch' notification received is correctly handled", async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Recipient",
         id: 11,
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 11,
-        members: [this.data.currentPartnerId, 11],
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
     });
     const { createThreadViewComponent } = await this.start();
     const currentPartner = this.messaging.models['Partner'].insert({
@@ -316,7 +320,7 @@ QUnit.test("'channel_fetch' notification received is correctly handled", async f
 
     // Simulate received channel fetched notification
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel.partner/fetched',
             payload: {
                 channel_id: 11,
@@ -336,14 +340,14 @@ QUnit.test("'channel_fetch' notification received is correctly handled", async f
 QUnit.test("'channel_seen' notification received is correctly handled", async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Recipient",
         id: 11,
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 11,
-        members: [this.data.currentPartnerId, 11],
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
     });
     const { createThreadViewComponent } = await this.start();
     const currentPartner = this.messaging.models['Partner'].insert({
@@ -380,7 +384,7 @@ QUnit.test("'channel_seen' notification received is correctly handled", async fu
 
     // Simulate received channel seen notification
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel.partner/seen',
             payload: {
                 channel_id: 11,
@@ -400,14 +404,14 @@ QUnit.test("'channel_seen' notification received is correctly handled", async fu
 QUnit.test("'channel_fetch' notification then 'channel_seen' received  are correctly handled", async function (assert) {
     assert.expect(4);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Recipient",
         id: 11,
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 11,
-        members: [this.data.currentPartnerId, 11],
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
     });
     const { createThreadViewComponent } = await this.start();
     const currentPartner = this.messaging.models['Partner'].insert({
@@ -444,7 +448,7 @@ QUnit.test("'channel_fetch' notification then 'channel_seen' received  are corre
 
     // Simulate received channel fetched notification
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel.partner/fetched',
             payload: {
                 channel_id: 11,
@@ -461,7 +465,7 @@ QUnit.test("'channel_fetch' notification then 'channel_seen' received  are corre
 
     // Simulate received channel seen notification
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel.partner/seen',
             payload: {
                 channel_id: 11,
@@ -573,7 +577,7 @@ QUnit.test('do not show messaging seen indicator if before last seen by all mess
     ]);
     await createRootMessagingComponent(this, "Message", {
         props: { localId: threadViewer.threadView.messageViews[0].localId },
-        target: this.widget.el,
+        target: this.webClient.el,
     });
 
     assert.containsOnce(
@@ -654,7 +658,13 @@ QUnit.test('only show messaging seen indicator if authored by me, after last see
 QUnit.test('allow attachment delete on authored message', async function (assert) {
     assert.expect(5);
 
-    const { createMessageComponent } = await this.start();
+    const { createMessageComponent } = await this.start({
+        mockRPC: (route, args) => {
+            if (args.method === 'unlink') {
+                return { result: true }; // mocked unlink result
+            }
+        },
+    });
     const message = this.messaging.models['Message'].create({
         attachments: insertAndReplace({
             filename: "BLAH.jpg",
@@ -777,26 +787,35 @@ QUnit.test('subtype description should not be displayed if it is similar to body
 QUnit.test('data-oe-id & data-oe-model link redirection on click', async function (assert) {
     assert.expect(7);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.strictEqual(
-            payload.action.type,
-            'ir.actions.act_window',
-            "action should open view"
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            'some.model',
-            "action should open view on 'some.model' model"
-        );
-        assert.strictEqual(
-            payload.action.res_id,
-            250,
-            "action should open view on 250"
-        );
-        assert.step('do-action:openFormView_some.model_250');
+    const fakeActionService = {
+        start() {
+            return {
+                doAction(action) {
+                    assert.strictEqual(
+                        action.type,
+                        'ir.actions.act_window',
+                        "action should open view"
+                    );
+                    assert.strictEqual(
+                        action.res_model,
+                        'some.model',
+                        "action should open view on 'some.model' model"
+                    );
+                    assert.strictEqual(
+                        action.res_id,
+                        250,
+                        "action should open view on 250"
+                    );
+                    assert.step('do-action:openFormView_some.model_250');
+                },
+                loadState() {},
+            }
+        },
+    };
+
+    const { createMessageComponent } = await this.start({
+        services: { action: fakeActionService },
     });
-    const { createMessageComponent } = await this.start({ env: { bus } });
     const message = this.messaging.models['Message'].create({
         body: `<p><a href="#" data-oe-id="250" data-oe-model="some.model">some.model_250</a></p>`,
         id: 100,
@@ -823,8 +842,8 @@ QUnit.test('data-oe-id & data-oe-model link redirection on click', async functio
 QUnit.test('chat with author should be opened after clicking on his avatar', async function (assert) {
     assert.expect(4);
 
-    this.data['res.partner'].records.push({ id: 10 });
-    this.data['res.users'].records.push({ partner_id: 10 });
+    this.serverData.models['res.partner'].records.push({ id: 10 });
+    this.serverData.models['res.users'].records.push({ partner_id: 10 });
     const { createMessageComponent } = await this.start({
         hasChatWindow: true,
     });
@@ -862,8 +881,8 @@ QUnit.test('chat with author should be opened after clicking on his avatar', asy
 QUnit.test('chat with author should be opened after clicking on his im status icon', async function (assert) {
     assert.expect(4);
 
-    this.data['res.partner'].records.push({ id: 10 });
-    this.data['res.users'].records.push({ partner_id: 10 });
+    this.serverData.models['res.partner'].records.push({ id: 10 });
+    this.serverData.models['res.users'].records.push({ partner_id: 10 });
     const { createMessageComponent } = await this.start({
         hasChatWindow: true,
     });
@@ -901,15 +920,15 @@ QUnit.test('chat with author should be opened after clicking on his im status ic
 QUnit.test('open chat with author on avatar click should be disabled when currently chatting with the author', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 11,
         channel_type: 'chat',
-        members: [this.data.currentPartnerId, 10],
+        members: [this.TEST_USER_IDS.currentPartnerId, 10],
         public: 'private',
     });
-    this.data['res.partner'].records.push({ id: 10 });
-    this.data['res.users'].records.push({ partner_id: 10 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 10 });
+    this.serverData.models['res.users'].records.push({ partner_id: 10 });
+    this.serverData.models['mail.message'].records.push({
         author_id: 10,
         body: 'not empty',
         id: 10,
@@ -1447,13 +1466,8 @@ QUnit.test('rendering of tracked field of type many2one: from no related record 
 QUnit.test('basic rendering of tracking value (monetary type)', async function (assert) {
     assert.expect(8);
 
-    const { createMessageComponent } = await this.start({
-        env: {
-            session: {
-                currencies: { 1: { symbol: '$', position: 'before' } },
-            },
-        },
-    });
+    const { createMessageComponent } = await this.start();
+
     const message = this.messaging.models['Message'].create({
         id: 11,
         tracking_value_ids: [{
@@ -1489,8 +1503,8 @@ QUnit.test('basic rendering of tracking value (monetary type)', async function (
     );
     assert.strictEqual(
         document.querySelector('.o_Message_trackingValueOldValue').innerHTML,
-        "$ 1000.00",
-        "should display the correct old value with the currency symbol ($ 1000.00)",
+        "$ 1,000.00",
+        "should display the correct old value with the currency symbol ($ 1,000.00)",
     );
     assert.containsOnce(
         document.body,
@@ -1511,6 +1525,11 @@ QUnit.test('basic rendering of tracking value (monetary type)', async function (
 
 QUnit.test('message should not be considered as "clicked" after clicking on its author name', async function (assert) {
     assert.expect(1);
+
+    Object.assign(this.serverData.views, {
+        'res.partner,false,form': '<form/>',
+        'res.partner,false,search': '<search/>',
+    });
 
     const { createMessageComponent } = await this.start();
     const message = this.messaging.models['Message'].create({
@@ -1550,20 +1569,22 @@ QUnit.test('message should not be considered as "clicked" after clicking on its 
 QUnit.test('message should not be considered as "clicked" after clicking on notification failure icon', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 10 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.channel'].records.push({ id: 10 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         id: 11,
         mail_message_id: 10,
         notification_status: 'exception',
         notification_type: 'email',
     });
-    const { createThreadViewComponent } = await this.start();
+    const { createThreadViewComponent } = await this.start({
+        services: { action: makeFakeActionService(() => {}) },
+    });
     const threadViewer = this.messaging.models['ThreadViewer'].create({
         hasThreadView: true,
         qunitTest: insertAndReplace(),

@@ -2,7 +2,6 @@
 
 import { link } from '@mail/model/model_field_command';
 import {
-    afterEach,
     beforeEach,
     start,
 } from '@mail/utils/test_utils';
@@ -15,17 +14,13 @@ QUnit.module('attachment_image_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { afterEvent, components, env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { afterEvent, env, webClient } = res;
             this.afterEvent = afterEvent;
-            this.components = components;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 

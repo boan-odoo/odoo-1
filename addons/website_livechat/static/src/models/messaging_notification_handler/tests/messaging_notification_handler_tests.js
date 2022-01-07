@@ -1,14 +1,13 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
-    start,
+    start
 } from '@mail/utils/test_utils';
+import { ViewAdapter } from '@web/legacy/action_adapters';
+import { patchWithCleanup } from '@web/../tests/helpers/utils';
 
-import FormView from 'web.FormView';
-import { mock } from 'web.test_utils';
 
 QUnit.module('website_livechat', {}, function () {
 QUnit.module('models', {}, function () {
@@ -18,52 +17,59 @@ QUnit.module('messaging_notification_handler_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, {
+                serverData: this.serverData,
             }, params));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('should open chat window on send chat request to website visitor', async function (assert) {
     assert.expect(3);
 
-    this.data['website.visitor'].records.push({
+    this.serverData.models['website.visitor'].records.push({
         display_name: "Visitor #11",
         id: 11,
     });
-    await this.start({
-        data: this.data,
-        hasChatWindow: true,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'website.visitor',
-        arch: `
-            <form>
+    Object.assign(this.serverData.views,{
+        'website.visitor,false,form':
+            `<form>
                 <header>
                     <button name="action_send_chat_request" string="Send chat request" class="btn btn-primary" type="button"/>
                 </header>
                 <field name="name"/>
-            </form>
-        `,
-        res_id: 11,
+            </form>`,
+        'website.visitor,false,search': '<search/>',
     });
-    mock.intercept(this.widget, 'execute_action', payload => {
-        this.env.services.rpc(
-            '/web/dataset/call_button',
-            {
-                args: [payload.data.env.resIDs],
-                kwargs: { context: payload.data.env.context },
-                method: payload.data.action_data.name,
-                model: payload.data.env.model,
+
+    await this.start({
+        hasChatWindow: true,
+        serverData: this.serverData,
+        openViewAction: {
+            id: 1,
+            res_model: 'website.visitor',
+            res_id: 11,
+            type: 'ir.actions.act_window',
+            views: [[false, 'form']],
+        },
+    });
+
+    patchWithCleanup(ViewAdapter.prototype, {
+        _trigger_up: async function({ name, data }) {
+            if (name === 'execute_action') {
+                this.env.services.rpc({
+                    route: '/web/dataset/call_button',
+                    params: {
+                        args: [data.env.resIDs],
+                        kwargs: { context: data.env.context },
+                        method: data.action_data.name,
+                        model: data.env.model,
+                    }
+                });
             }
-        );
+        },
     });
 
     await afterNextRender(() =>

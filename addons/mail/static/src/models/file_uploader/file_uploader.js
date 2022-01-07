@@ -99,9 +99,8 @@ registerModel({
          */
         _onAttachmentUploaded({ attachmentData, composer, thread }) {
             if (attachmentData.error || !attachmentData.id) {
-                this.env.services['notification'].notify({
+                this.env.services['notification'].add(attachmentData.error, {
                     type: 'danger',
-                    message: attachmentData.error,
                 });
                 return;
             }
@@ -145,7 +144,7 @@ registerModel({
                     return;
                 }
                 try {
-                    const response = await this.env.browser.fetch('/mail/attachment/upload', {
+                    const response = await this.messaging.browser.fetch('/mail/attachment/upload', {
                         method: 'POST',
                         body: this._createFormData({ composer, file, thread }),
                         signal: uploadingAttachment.uploadingAbortController.signal,

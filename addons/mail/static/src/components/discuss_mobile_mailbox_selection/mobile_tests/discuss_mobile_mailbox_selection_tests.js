@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -15,29 +14,18 @@ QUnit.module('discuss_mobile_mailbox_selection_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign(
+            const { env, webClient } = await start(Object.assign(
                 {
                     autoOpenDiscuss: true,
-                    data: this.data,
-                    env: {
-                        browser: {
-                            innerHeight: 640,
-                            innerWidth: 360,
-                        },
-                        device: {
-                            isMobile: true,
-                        },
-                    },
+                    serverData: this.serverData,
                     hasDiscuss: true,
+                    windowOptions: { innerHeight: 640, innerWidth: 360 },
                 },
                 params,
             ));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -93,13 +81,11 @@ QUnit.test('select another mailbox', async function (assert) {
 QUnit.test('auto-select "Inbox" when discuss had channel as active thread', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start({
         discuss: {
-            context: {
-                active_id: 20,
-            },
-        }
+            default_active_id: 20,
+        },
     });
     assert.hasClass(
         document.querySelector('.o_MobileMessagingNavbar_tab[data-tab-id="channel"]'),

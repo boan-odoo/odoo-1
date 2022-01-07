@@ -3,7 +3,6 @@
 import { link } from '@mail/model/model_field_command';
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -17,17 +16,13 @@ QUnit.module('attachment_list_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { afterEvent, components, env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { afterEvent, env, webClient } = res;
             this.afterEvent = afterEvent;
-            this.components = components;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -104,7 +99,6 @@ QUnit.test('simplest layout + editable', async function (assert) {
                     "should fetch image with 200x200 pixels ratio");
                 assert.step('fetch_image');
             }
-            return this._super(...arguments);
         },
     });
     const attachment = this.messaging.models['Attachment'].create({
@@ -273,11 +267,10 @@ QUnit.test('clicking on the delete attachment button multiple times should do th
 
     const { createMessageComponent } = await this.start({
         async mockRPC(route, args) {
-            if (route === '/mail/attachment/delete') {
+            if (args.method === 'unlink' && args.model === 'ir.attachment') {
                 assert.step('attachment_unlink');
-                return;
+                return { result: true };
             }
-            return this._super(...arguments);
         },
     });
     const attachment = this.messaging.models['Attachment'].create({

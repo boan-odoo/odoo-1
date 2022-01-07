@@ -86,6 +86,5 @@ export const makeView = async (params) => {
 
     const withSearch = Object.values(view.__owl__.children)[0];
     const concreteView = Object.values(withSearch.__owl__.children)[0];
-
     return concreteView;
 };

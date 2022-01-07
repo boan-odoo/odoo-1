@@ -2,7 +2,6 @@
 
 import { insertAndReplace, link } from '@mail/model/model_field_command';
 import {
-    afterEach,
     beforeEach,
     start,
 } from '@mail/utils/test_utils';
@@ -15,17 +14,13 @@ QUnit.module('thread_view_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { afterEvent, components, env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { afterEvent, env, webClient } = res;
             this.afterEvent = afterEvent;
-            this.components = components;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -35,15 +30,15 @@ QUnit.test('out of office message on direct chat with out of office partner', as
     // Returning date of the out of office partner, simulates he'll be back in a month
     const returningDate = moment.utc().add(1, 'month');
     // Needed partner & user to allow simulation of message reception
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 11,
         name: "Foreigner partner",
         out_of_office_date_end: returningDate.format("YYYY-MM-DD"),
     });
-    this.data['mail.channel'].records = [{
+    this.serverData.models['mail.channel'].records = [{
         channel_type: 'chat',
         id: 20,
-        members: [this.data.currentPartnerId, 11],
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
     }];
     const { createThreadViewComponent } = await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
@@ -56,6 +51,7 @@ QUnit.test('out of office message on direct chat with out of office partner', as
         thread: link(thread),
     });
     await createThreadViewComponent(threadViewer.threadView);
+
     assert.containsOnce(
         document.body,
         '.o_ThreadView_outOfOffice',

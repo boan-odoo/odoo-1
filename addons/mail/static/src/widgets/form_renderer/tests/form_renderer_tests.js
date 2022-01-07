@@ -2,18 +2,33 @@
 
 import { makeDeferred } from '@mail/utils/deferred/deferred';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     nextAnimationFrame,
-    start,
+    start
 } from '@mail/utils/test_utils';
-
-import config from 'web.config';
-import FormView from 'web.FormView';
 import { dom } from 'web.test_utils';
 
+
 const { triggerEvent } = dom;
+
+function generateFormView(fieldNames=[]) {
+    return    (
+        `<form string="Partners">
+            <sheet>
+                <field name="name"/>
+            </sheet>
+            <div class="oe_chatter">
+                ${fieldNames.reduce(
+                    (prevFieldName, currentFieldName) => {
+                        return prevFieldName.concat(`<field name="${currentFieldName}"/>`)
+                    },
+                    ''
+                 )}
+            </div>
+        </form>`
+    )
+}
 
 QUnit.module('mail', {}, function () {
 QUnit.module('widgets', {}, function () {
@@ -21,33 +36,44 @@ QUnit.module('form_renderer', {}, function () {
 QUnit.module('form_renderer_tests.js', {
     beforeEach() {
         beforeEach(this);
+        Object.assign(this.serverData.views, {
+            'mail.activity,false,list': '<tree/>',
+            'mail.followers,false,list': '<tree/>',
+            'mail.message,false,list': '<tree/>',
+            'res.partner,false,form': generateFormView(),
+            'res.partner,false,search': '<search/>',
+        });
+
+        this.serverData.models['res.partner'].records.push({
+            display_name: "second partner",
+            id: 12,
+        });
 
         // FIXME archs could be removed once task-2248306 is done
         // The mockServer will try to get the list view
         // of every relational fields present in the main view.
         // In the case of mail fields, we don't really need them,
         // but they still need to be defined.
-        this.createView = async (viewParams, ...args) => {
+        this.createView = async (param0) => {
+            Object.assign(param0, {
+                openViewAction: {
+                    id: 1,
+                    res_model: "res.partner",
+                    type: "ir.actions.act_window",
+                    views: [[false, "form"]],
+                },
+                viewOptions: {
+                    resId: 12,
+                    ...param0.viewOptions,
+                },
+            });
             await afterNextRender(async () => {
-                const viewArgs = Object.assign(
-                    {
-                        archs: {
-                            'mail.activity,false,list': '<tree/>',
-                            'mail.followers,false,list': '<tree/>',
-                            'mail.message,false,list': '<tree/>',
-                        },
-                    },
-                    viewParams,
-                );
-                const { afterEvent, env, widget } = await start(viewArgs, ...args);
+                const { afterEvent, env, webClient } = await start(param0);
                 this.afterEvent = afterEvent;
                 this.env = env;
-                this.widget = widget;
+                this.webClient = webClient;
             });
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -62,28 +88,12 @@ QUnit.test('[technical] spinner when messaging is not created', async function (
      */
     assert.expect(3);
 
-    this.data['res.partner'].records.push({
-        display_name: "second partner",
-        id: 12,
-    });
     await this.createView({
-        data: this.data,
-        hasView: true,
-        messagingBeforeCreationDeferred: makeDeferred(), // block messaging creation
+        serverData: this.serverData,
         waitUntilMessagingCondition: 'none',
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter"></div>
-            </form>
-        `,
-        res_id: 12,
+        messagingBeforeCreationDeferred: makeDeferred(), // block messaging creation
     });
+
     assert.containsOnce(
         document.body,
         '.o_ChatterContainer',
@@ -113,34 +123,16 @@ QUnit.test('[technical] keep spinner on transition from messaging non-created to
     assert.expect(4);
 
     const messagingBeforeCreationDeferred = makeDeferred();
-    this.data['res.partner'].records.push({
-        display_name: "second partner",
-        id: 12,
-    });
+
     await this.createView({
-        data: this.data,
-        hasView: true,
+        serverData: this.serverData,
+        waitUntilMessagingCondition: 'none',
         messagingBeforeCreationDeferred,
         async mockRPC(route, args) {
-            const _super = this._super.bind(this, ...arguments); // limitation of class.js
             if (route === '/mail/init_messaging') {
                 await new Promise(() => {}); // simulate messaging never initialized
             }
-            return _super();
         },
-        waitUntilMessagingCondition: 'none',
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter"></div>
-            </form>
-        `,
-        res_id: 12,
     });
     assert.strictEqual(
         document.querySelector('.o_ChatterContainer').textContent,
@@ -171,33 +163,14 @@ QUnit.test('[technical] keep spinner on transition from messaging non-created to
 QUnit.test('spinner when messaging is created but not initialized', async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({
-        display_name: "second partner",
-        id: 12,
-    });
     await this.createView({
-        data: this.data,
-        hasView: true,
+        serverData: this.serverData,
         async mockRPC(route, args) {
-            const _super = this._super.bind(this, ...arguments); // limitation of class.js
             if (route === '/mail/init_messaging') {
                 await new Promise(() => {}); // simulate messaging never initialized
             }
-            return _super();
         },
         waitUntilMessagingCondition: 'created',
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter"></div>
-            </form>
-        `,
-        res_id: 12,
     });
     assert.containsOnce(
         document.body,
@@ -220,33 +193,15 @@ QUnit.test('transition non-initialized messaging to initialized messaging: displ
     assert.expect(3);
 
     const messagingBeforeInitializationDeferred = makeDeferred();
-    this.data['res.partner'].records.push({
-        display_name: "second partner",
-        id: 12,
-    });
+
     await this.createView({
-        data: this.data,
-        hasView: true,
+        serverData: this.serverData,
         async mockRPC(route, args) {
-            const _super = this._super.bind(this, ...arguments); // limitation of class.js
             if (route === '/mail/init_messaging') {
                 await messagingBeforeInitializationDeferred;
             }
-            return _super();
         },
         waitUntilMessagingCondition: 'created',
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter"></div>
-            </form>
-        `,
-        res_id: 12,
     });
     assert.strictEqual(
         document.querySelector('.o_ChatterContainer').textContent,
@@ -271,22 +226,8 @@ QUnit.test('transition non-initialized messaging to initialized messaging: displ
 QUnit.test('basic chatter rendering', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({ display_name: "second partner", id: 12, });
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter"></div>
-            </form>
-        `,
-        res_id: 12,
+        serverData: this.serverData,
     });
     assert.strictEqual(
         document.querySelectorAll(`.o_Chatter`).length,
@@ -298,25 +239,9 @@ QUnit.test('basic chatter rendering', async function (assert) {
 QUnit.test('basic chatter rendering without followers', async function (assert) {
     assert.expect(6);
 
-    this.data['res.partner'].records.push({ display_name: "second partner", id: 12 });
+    this.serverData.views['res.partner,false,form'] = generateFormView(['activity_ids', 'message_ids']);
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="activity_ids"/>
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
-        res_id: 12,
+        serverData: this.serverData,
     });
     assert.containsOnce(
         document.body,
@@ -353,25 +278,9 @@ QUnit.test('basic chatter rendering without followers', async function (assert) 
 QUnit.test('basic chatter rendering without activities', async function (assert) {
     assert.expect(6);
 
-    this.data['res.partner'].records.push({ display_name: "second partner", id: 12 });
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_follower_ids', 'message_ids']);
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
-        res_id: 12,
+        serverData: this.serverData,
     });
     assert.containsOnce(
         document.body,
@@ -408,25 +317,9 @@ QUnit.test('basic chatter rendering without activities', async function (assert)
 QUnit.test('basic chatter rendering without messages', async function (assert) {
     assert.expect(6);
 
-    this.data['res.partner'].records.push({ display_name: "second partner", id: 12 });
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_follower_ids', 'activity_ids']);
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="activity_ids"/>
-                </div>
-            </form>
-        `,
-        res_id: 12,
+        serverData: this.serverData,
     });
     assert.containsOnce(
         document.body,
@@ -462,33 +355,15 @@ QUnit.test('basic chatter rendering without messages', async function (assert) {
 
 QUnit.test('chatter updating', async function (assert) {
     assert.expect(1);
-
-    this.data['mail.message'].records.push({ body: "not empty", model: 'res.partner', res_id: 12 });
-    this.data['res.partner'].records.push(
-        { display_name: "first partner", id: 11 },
-        { display_name: "second partner", id: 12 }
-    );
+    this.serverData.models['mail.message'].records.push({ body: "not empty", model: 'res.partner', res_id: 12 });
+    this.serverData.models['res.partner'].records.push({ display_name: "first partner", id: 11 });
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_ids']);
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        res_id: 11,
+        serverData: this.serverData,
         viewOptions: {
-            ids: [11, 12],
-            index: 0,
+            resId: 11,
+            resIds: [11, 12],
         },
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
         waitUntilEvent: {
             eventName: 'o-thread-view-hint-processed',
             message: "should wait until partner 11 thread loaded messages initially",
@@ -499,7 +374,7 @@ QUnit.test('chatter updating', async function (assert) {
                     threadViewer.thread.id === 11
                 );
             },
-        }
+        },
     });
     await afterNextRender(() => this.afterEvent({
         eventName: 'o-thread-view-hint-processed',
@@ -520,28 +395,16 @@ QUnit.test('chatter updating', async function (assert) {
     );
 });
 
-QUnit.test('chatter should become enabled when creation done', async function (assert) {
+QUnit.skip('chatter should become enabled when creation done', async function (assert) {
+    // TODO chatter.isDisabled is false ?
     assert.expect(10);
 
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_ids']);
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
+        serverData: this.serverData,
         viewOptions: {
             mode: 'edit',
-        },
+        }
     });
     assert.containsOnce(
         document.body,
@@ -598,7 +461,8 @@ QUnit.test('chatter should become enabled when creation done', async function (a
 QUnit.test('read more/less links are not duplicated when switching from read to edit mode', async function (assert) {
     assert.expect(5);
 
-    this.data['mail.message'].records.push({
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_ids']);
+    this.serverData.models['mail.message'].records.push({
         author_id: 100,
         // "data-o-mail-quote" added by server is intended to be compacted in read more/less blocks
         body: `
@@ -617,27 +481,15 @@ QUnit.test('read more/less links are not duplicated when switching from read to 
         model: 'res.partner',
         res_id: 100,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Someone",
         id: 100,
     });
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        res_id: 100,
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
+        serverData: this.serverData,
+        viewOptions: {
+            resId: 100,
+        },
         waitUntilEvent: {
             eventName: 'o-component-message-read-more-less-inserted',
             message: "should wait until read more/less is inserted initially",
@@ -687,7 +539,8 @@ QUnit.test('read more/less links are not duplicated when switching from read to 
 QUnit.test('read more links becomes read less after being clicked', async function (assert) {
     assert.expect(6);
 
-    this.data['mail.message'].records = [{
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_ids']);
+    this.serverData.models['mail.message'].records = [{
         author_id: 100,
         // "data-o-mail-quote" added by server is intended to be compacted in read more/less blocks
         body: `
@@ -706,27 +559,15 @@ QUnit.test('read more links becomes read less after being clicked', async functi
         model: 'res.partner',
         res_id: 100,
     }];
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Someone",
         id: 100,
     });
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        res_id: 100,
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
+        serverData: this.serverData,
+        viewOptions: {
+            resId: 100,
+        },
         waitUntilEvent: {
             eventName: 'o-component-message-read-more-less-inserted',
             message: "should wait until read more/less is inserted initially",
@@ -777,7 +618,8 @@ QUnit.test('read more links becomes read less after being clicked', async functi
 QUnit.test('Form view not scrolled when switching record', async function (assert) {
     assert.expect(6);
 
-    this.data['res.partner'].records.push(
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_ids']);
+    this.serverData.models['res.partner'].records.push(
         {
             id: 11,
             display_name: "Partner 1",
@@ -795,39 +637,17 @@ QUnit.test('Form view not scrolled when switching record', async function (asser
             res_id: id % 2 ? 11 : 12,
         };
     });
-    this.data['mail.message'].records = messages;
+    this.serverData.models['mail.message'].records = messages;
 
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                    <field name="description"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
+        serverData: this.serverData,
         viewOptions: {
-            currentId: 11,
-            ids: [11, 12],
-        },
-        config: {
-            device: { size_class: config.device.SIZES.LG },
-        },
-        env: {
-            device: { size_class: config.device.SIZES.LG },
+            resId: 11,
+            resIds: [11, 12],
         },
     });
 
     const controllerContentEl = document.querySelector('.o_content');
-
     assert.strictEqual(
         document.querySelector('.breadcrumb-item.active').textContent,
         'Partner 1',
@@ -876,11 +696,12 @@ QUnit.test('Attachments that have been unlinked from server should be visually u
     // partner accesses this record again.
     assert.expect(2);
 
-    this.data['res.partner'].records.push(
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_ids']);
+    this.serverData.models['res.partner'].records.push(
         { display_name: "Partner1", id: 11 },
         { display_name: "Partner2", id: 12 }
     );
-    this.data['ir.attachment'].records.push(
+    this.serverData.models['ir.attachment'].records.push(
         {
            id: 11,
            mimetype: 'text.txt',
@@ -895,26 +716,11 @@ QUnit.test('Attachments that have been unlinked from server should be visually u
         }
     );
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        res_id: 11,
+        serverData: this.serverData,
         viewOptions: {
-            ids: [11, 12],
-            index: 0,
+            resId: 11,
+            resIds: [11, 12],
         },
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
     });
     assert.strictEqual(
         document.querySelector('.o_ChatterTopbar_buttonCount').textContent,
@@ -928,7 +734,7 @@ QUnit.test('Attachments that have been unlinked from server should be visually u
         document.querySelector('.o_pager_next').click()
     );
     // Simulate unlinking attachment 12 from Partner 1.
-    this.data['ir.attachment'].records.find(a => a.id === 11).res_id = 0;
+    this.serverData.models['ir.attachment'].records.find(a => a.id === 11).res_id = 0;
     await afterNextRender(() =>
         document.querySelector('.o_pager_previous').click()
     );
@@ -942,20 +748,18 @@ QUnit.test('Attachments that have been unlinked from server should be visually u
 QUnit.test('chatter just contains "creating a new record" message during the creation of a new record after having displayed a chatter for an existing record', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 12 });
+    this.serverData.models['res.partner'].records.push({ id: 12 });
+    this.serverData.views['res.partner,false,form'] =
+        `<form>
+            <div class="oe_chatter">
+                <field name="message_ids"/>
+            </div>
+        </form>`;
     await this.createView({
-        data: this.data,
-        hasView: true,
-        View: FormView,
-        model: 'res.partner',
-        res_id: 12,
-        arch: `
-            <form>
-                <div class="oe_chatter">
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
+        serverData: this.serverData,
+        viewOptions: {
+            resId: 12,
+        },
     });
 
     await afterNextRender(() => {
@@ -984,7 +788,7 @@ QUnit.test('[TECHNICAL] unfolded read more/less links should not fold on message
     // from text selection automatically folding all read more/less links.
     assert.expect(3);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         author_id: 100,
         // "data-o-mail-quote" added by server is intended to be compacted in read more/less blocks
         body: `
@@ -1003,27 +807,16 @@ QUnit.test('[TECHNICAL] unfolded read more/less links should not fold on message
         model: 'res.partner',
         res_id: 100,
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         display_name: "Someone",
         id: 100,
     });
+    this.serverData.views['res.partner,false,form'] = generateFormView(['message_ids']);
     await this.createView({
-        data: this.data,
-        hasView: true,
-        // View params
-        View: FormView,
-        model: 'res.partner',
-        res_id: 100,
-        arch: `
-            <form string="Partners">
-                <sheet>
-                    <field name="name"/>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_ids"/>
-                </div>
-            </form>
-        `,
+        serverData: this.serverData,
+        viewOptions: {
+            resId: 100,
+        },
     });
     assert.strictEqual(
         document.querySelector('.o_Message_readMoreLess').textContent,

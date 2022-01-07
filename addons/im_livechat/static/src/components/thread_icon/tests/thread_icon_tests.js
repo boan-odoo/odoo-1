@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     createRootMessagingComponent,
@@ -18,32 +17,29 @@ QUnit.module('thread_icon_tests.js', {
         this.createThreadIcon = async thread => {
             await createRootMessagingComponent(this, "ThreadIcon", {
                 props: { threadLocalId: thread.localId },
-                target: this.widget.el,
+                target: this.webClient.el,
             });
         };
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('livechat: public website visitor is typing', async function (assert) {
     assert.expect(4);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 20",
         channel_type: 'livechat',
         id: 20,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     await this.start();
     const thread = this.messaging.models['Thread'].findFromIdentifyingData({
@@ -64,7 +60,7 @@ QUnit.test('livechat: public website visitor is typing', async function (assert)
 
     // simulate receive typing notification from livechat visitor "is typing"
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel.partner/typing_status',
             payload: {
                 channel_id: 20,

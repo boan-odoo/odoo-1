@@ -2,7 +2,6 @@
 
 import { insert, link } from '@mail/model/model_field_command';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     createRootMessagingComponent,
@@ -23,20 +22,17 @@ QUnit.module('follower_subtype_tests.js', {
             };
             await createRootMessagingComponent(this, "FollowerSubtype", {
                 props,
-                target: this.widget.el,
+                target: this.webClient.el,
             });
         };
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 

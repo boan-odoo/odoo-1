@@ -1,10 +1,22 @@
 /** @odoo-module **/
 
 import '@im_livechat/../tests/helpers/mock_server'; // ensure mail overrides are applied first
+import { MockModels } from '@mail/../tests/helpers/mock_models';
+import { MockServer } from "@web/../tests/helpers/mock_server";
+import { patch } from "@web/core/utils/patch";
 
-import MockServer from 'web.MockServer';
+const { currentPartnerId, publicPartnerId } = MockModels.TEST_USER_IDS;
 
-MockServer.include({
+patch(MockServer.prototype, 'website_livechat', {
+    /**
+     * @override
+     */
+     async _performRPC(route, args) {
+        if (route === '/web/dataset/call_button') {
+            return this._mockCallButton(args);
+        }
+        return this._super(route, args);
+    },
     /**
      * Simulate a 'call_button' operation from a view.
      *
@@ -24,10 +36,10 @@ MockServer.include({
     _mockMailChannelChannelInfo(ids) {
         const channelInfos = this._super(...arguments);
         for (const channelInfo of channelInfos) {
-            const channel = this._getRecords('mail.channel', [['id', '=', channelInfo.id]])[0];
+            const channel = this.getRecords('mail.channel', [['id', '=', channelInfo.id]])[0];
             if (channel.channel_type === 'livechat' && channelInfo.livechat_visitor_id) {
-                const visitor = this._getRecords('website.visitor', [['id', '=', channelInfo.livechat_visitor_id]])[0];
-                const country = this._getRecords('res.country', [['id', '=', visitor.country_id]])[0];
+                const visitor = this.getRecords('website.visitor', [['id', '=', channelInfo.livechat_visitor_id]])[0];
+                const country = this.getRecords('res.country', [['id', '=', visitor.country_id]])[0];
                 channelInfo.visitor = {
                     country_code: country && country.code,
                     country_id: country && country.id,
@@ -48,27 +60,27 @@ MockServer.include({
      * @param {integer[]} ids
      */
     _mockWebsiteVisitorActionSendChatRequest(ids) {
-        const visitors = this._getRecords('website.visitor', [['id', 'in', ids]]);
+        const visitors = this.getRecords('website.visitor', [['id', 'in', ids]]);
         for (const visitor of visitors) {
             const country = visitor.country_id
-                ? this._getRecords('res.country', [['id', '=', visitor.country_id]])
+                ? this.getRecords('res.country', [['id', '=', visitor.country_id]])
                 : undefined;
             const visitor_name = `${visitor.display_name}${country ? `(${country.name})` : ''}`;
-            const members = [this.currentPartnerId];
+            const members = [currentPartnerId];
             if (visitor.partner_id) {
                 members.push(visitor.partner_id);
             } else {
-                members.push(this.publicPartnerId);
+                members.push(publicPartnerId);
             }
-            const livechatId = this._mockCreate('mail.channel', {
+            const livechatId = this.mockCreate('mail.channel', {
                 anonymous_name: visitor_name,
                 channel_type: 'livechat',
-                livechat_operator_id: this.currentPartnerId,
+                livechat_operator_id: currentPartnerId,
                 members,
                 public: 'private',
             });
             // notify operator
-            this._widget.call('bus_service', 'trigger', 'notification', [{
+            owl.Component.env.services.bus_service.trigger('notification', [{
                 type: 'website_livechat.send_chat_request',
                 payload: this._mockMailChannelChannelInfo([livechatId])[0],
             }]);

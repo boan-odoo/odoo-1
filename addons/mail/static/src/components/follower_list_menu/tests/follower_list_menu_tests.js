@@ -2,14 +2,11 @@
 
 import { insert, link } from '@mail/model/model_field_command';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     createRootMessagingComponent,
     start,
 } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -22,20 +19,17 @@ QUnit.module('follower_list_menu_tests.js', {
             const props = Object.assign({ threadLocalId: thread.localId }, otherProps);
             await createRootMessagingComponent(this, "FollowerListMenu", {
                 props,
-                target: this.widget.el,
+                target: this.webClient.el,
             });
         };
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -119,37 +113,45 @@ QUnit.test('base rendering editable', async function (assert) {
 QUnit.test('click on "add followers" button', async function (assert) {
     assert.expect(15);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('action:open_view');
-        assert.strictEqual(
-            payload.action.context.default_res_model,
-            'res.partner',
-            "'The 'add followers' action should contain thread model in context'"
-        );
-        assert.strictEqual(
-            payload.action.context.default_res_id,
-            100,
-            "The 'add followers' action should contain thread id in context"
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            'mail.wizard.invite',
-            "The 'add followers' action should be a wizard invite of mail module"
-        );
-        assert.strictEqual(
-            payload.action.type,
-            "ir.actions.act_window",
-            "The 'add followers' action should be of type 'ir.actions.act_window'"
-        );
-        const partner = this.data['res.partner'].records.find(
-            partner => partner.id === payload.action.context.default_res_id
-        );
-        partner.message_follower_ids.push(1);
-        payload.options.on_close();
-    });
-    this.data['res.partner'].records.push({ id: 100 });
-    this.data['mail.followers'].records.push({
+    const self = this;
+    const fakeActionService = {
+        start() {
+            return {
+                doAction(action, options) {
+                    assert.step('action:open_view');
+                    assert.strictEqual(
+                        action.context.default_res_model,
+                        'res.partner',
+                        "'The 'add followers' action should contain thread model in context'"
+                    );
+                    assert.strictEqual(
+                        action.context.default_res_id,
+                        100,
+                        "The 'add followers' action should contain thread id in context"
+                    );
+                    assert.strictEqual(
+                        action.res_model,
+                        'mail.wizard.invite',
+                        "The 'add followers' action should be a wizard invite of mail module"
+                    );
+                    assert.strictEqual(
+                        action.type,
+                        "ir.actions.act_window",
+                        "The 'add followers' action should be of type 'ir.actions.act_window'"
+                    );
+                    const partner = self.serverData.models['res.partner'].records.find(
+                        partner => partner.id === action.context.default_res_id
+                    );
+                    partner.message_follower_ids.push(1);
+                    options.onClose();
+                },
+                loadState() {}
+            }
+        },
+    };
+
+    this.serverData.models['res.partner'].records.push({ id: 100 });
+    this.serverData.models['mail.followers'].records.push({
         partner_id: 42,
         email: "bla@bla.bla",
         id: 1,
@@ -159,8 +161,9 @@ QUnit.test('click on "add followers" button', async function (assert) {
         res_id: 100,
         res_model: 'res.partner',
     });
+
     await this.start({
-        env: { bus },
+        services: { action: fakeActionService },
     });
     const thread = this.messaging.models['Thread'].create({
         id: 100,
@@ -245,8 +248,7 @@ QUnit.test('click on remove follower', async function (assert) {
                     "message_unsubscribe should be called with right argument"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
     });
     const thread = this.messaging.models['Thread'].create({
         id: 100,

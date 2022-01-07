@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -15,17 +14,14 @@ QUnit.module('discuss_pinned_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -34,7 +30,7 @@ QUnit.test('sidebar: pinned channel 1: init with one pinned channel', async func
 
     // channel that is expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start();
     assert.containsOnce(
         document.body,
@@ -58,7 +54,7 @@ QUnit.test('sidebar: pinned channel 2: open pinned channel', async function (ass
 
     // channel that is expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start();
 
     const threadGeneral = this.messaging.models['Thread'].findFromIdentifyingData({
@@ -82,7 +78,7 @@ QUnit.test('sidebar: pinned channel 3: open channel and leave it', async functio
 
     // channel that is expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 20,
         is_minimized: true,
         state: 'open',
@@ -95,8 +91,7 @@ QUnit.test('sidebar: pinned channel 3: open channel and leave it', async functio
                     "The right id is sent to the server to remove"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
     });
 
     const threadGeneral = this.messaging.models['Thread'].findFromIdentifyingData({
@@ -135,7 +130,7 @@ QUnit.test('sidebar: unpin channel from bus', async function (assert) {
 
     // channel that is expected to be found in the sidebar
     // with a random unique id that will be referenced in the test
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start();
     const threadGeneral = this.messaging.models['Thread'].findFromIdentifyingData({
         id: 20,
@@ -167,7 +162,7 @@ QUnit.test('sidebar: unpin channel from bus', async function (assert) {
     // Simulate receiving a leave channel notification
     // (e.g. from user interaction from another device or browser tab)
     await afterNextRender(() => {
-        this.env.services.bus_service.trigger('notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel/unpin',
             payload: {
                 channel_type: 'channel',
@@ -199,7 +194,7 @@ QUnit.test('[technical] sidebar: channel group_based_subscription: mandatorily p
     // task-2284357
 
     // channel that is expected to be found in the sidebar
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         group_based_subscription: true, // expected value for this test
         id: 20, // random unique id, will be referenced in the test
         is_pinned: false, // expected value for this test

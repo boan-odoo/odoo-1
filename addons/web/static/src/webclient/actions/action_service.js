@@ -697,7 +697,6 @@ function makeActionManager(env) {
         if (controller.exportedState) {
             controller.props.state = controller.exportedState;
         }
-
         // TODO DAM Remarks:
         // this thing seems useless for client actions.
         // restore and switchView (at least) use this --> cannot be done in switchView only

@@ -2,13 +2,11 @@
 
 import { insert, insertAndReplace } from '@mail/model/model_field_command';
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
+    makeFakeActionService,
     start,
 } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
 
 QUnit.module('snailmail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -18,33 +16,29 @@ QUnit.module('message_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { afterEvent, components, env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { afterEvent, env, webClient } = res;
             this.afterEvent = afterEvent;
-            this.components = components;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('Sent', async function (assert) {
     assert.expect(8);
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'snailmail',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         id: 11,
         mail_message_id: 10,
         notification_status: 'sent',
@@ -111,16 +105,16 @@ QUnit.test('Sent', async function (assert) {
 QUnit.test('Canceled', async function (assert) {
     assert.expect(8);
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'snailmail',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         id: 11,
         mail_message_id: 10,
         notification_status: 'canceled',
@@ -187,16 +181,16 @@ QUnit.test('Canceled', async function (assert) {
 QUnit.test('Pending', async function (assert) {
     assert.expect(8);
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'snailmail',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         id: 11,
         mail_message_id: 10,
         notification_status: 'ready',
@@ -263,16 +257,16 @@ QUnit.test('Pending', async function (assert) {
 QUnit.test('No Price Available', async function (assert) {
     assert.expect(10);
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'snailmail',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         failure_type: 'sn_price',
         id: 11,
         mail_message_id: 10,
@@ -284,8 +278,8 @@ QUnit.test('No Price Available', async function (assert) {
         async mockRPC(route, args) {
             if (args.method === 'cancel_letter' && args.model === 'mail.message' && args.args[0][0] === 10) {
                 assert.step(args.method);
+                return true;
             }
-            return this._super(...arguments);
         },
     });
     const threadViewer = this.messaging.models['ThreadViewer'].create({
@@ -355,16 +349,16 @@ QUnit.test('No Price Available', async function (assert) {
 QUnit.test('Credit Error', async function (assert) {
     assert.expect(11);
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'snailmail',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         failure_type: 'sn_credit',
         id: 11,
         mail_message_id: 10,
@@ -377,7 +371,6 @@ QUnit.test('Credit Error', async function (assert) {
             if (args.method === 'send_letter' && args.model === 'mail.message' && args.args[0][0] === 10) {
                 assert.step(args.method);
             }
-            return this._super(...arguments);
         },
     });
     const threadViewer = this.messaging.models['ThreadViewer'].create({
@@ -452,16 +445,16 @@ QUnit.test('Credit Error', async function (assert) {
 QUnit.test('Trial Error', async function (assert) {
     assert.expect(11);
 
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'snailmail',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         failure_type: 'sn_trial',
         id: 11,
         mail_message_id: 10,
@@ -474,7 +467,6 @@ QUnit.test('Trial Error', async function (assert) {
             if (args.method === 'send_letter' && args.model === 'mail.message' && args.args[0][0] === 10) {
                 assert.step(args.method);
             }
-            return this._super(...arguments);
         },
     });
     const threadViewer = this.messaging.models['ThreadViewer'].create({
@@ -549,30 +541,16 @@ QUnit.test('Trial Error', async function (assert) {
 QUnit.test('Format Error', async function (assert) {
     assert.expect(8);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action,
-            'snailmail.snailmail_letter_format_error_action',
-            "action should be the one for format error"
-        );
-        assert.strictEqual(
-            payload.options.additional_context.message_id,
-            10,
-            "action should have correct message id"
-        );
-    });
-    this.data['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
-    this.data['mail.channel'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 12, name: "Someone", partner_share: true });
+    this.serverData.models['mail.channel'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10,
         message_type: 'snailmail',
         model: 'mail.channel',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         failure_type: 'sn_format',
         id: 11,
         mail_message_id: 10,
@@ -580,7 +558,23 @@ QUnit.test('Format Error', async function (assert) {
         notification_type: 'snail',
         res_partner_id: 12,
     });
-    const { createThreadViewComponent } = await this.start({ env: { bus } });
+    const { createThreadViewComponent } = await this.start({
+        services: {
+            action: makeFakeActionService((action, options) => {
+                assert.step('do_action');
+                assert.strictEqual(
+                    action,
+                    'snailmail.snailmail_letter_format_error_action',
+                    "action should be the one for format error"
+                );
+                assert.strictEqual(
+                    options.additional_context.message_id,
+                    10,
+                    "action should have correct message id"
+                );
+            }),
+        },
+     });
     const threadViewer = this.messaging.models['ThreadViewer'].create({
         hasThreadView: true,
         qunitTest: insertAndReplace(),
@@ -624,40 +618,40 @@ QUnit.test('Format Error', async function (assert) {
 QUnit.test('Missing Required Fields', async function (assert) {
     assert.expect(8);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         id: 10, // random unique id, useful to link letter and notification
         message_type: 'snailmail',
         res_id: 20, // non 0 id, necessary to fetch failure at init
         model: 'res.partner', // not mail.compose.message, necessary to fetch failure at init
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         failure_type: 'sn_fields',
         mail_message_id: 10,
         notification_status: 'exception',
         notification_type: 'snail',
     });
-    this.data['snailmail.letter'].records.push({
+    this.serverData.models['snailmail.letter'].records.push({
         id: 22, // random unique id, will be asserted in the test
         message_id: 10, // id of related message
     });
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action,
-            'snailmail.snailmail_letter_missing_required_fields_action',
-            "action should be the one for missing fields"
-        );
-        assert.strictEqual(
-            payload.options.additional_context.default_letter_id,
-            22,
-            "action should have correct letter id"
-        );
-    });
 
     const { createThreadViewComponent } = await this.start({
-        env: { bus },
+        services: {
+            action: makeFakeActionService((action, options) => {
+                assert.step('do_action');
+                assert.strictEqual(
+                    action,
+                    'snailmail.snailmail_letter_missing_required_fields_action',
+                    "action should be the one for missing fields"
+                );
+                assert.strictEqual(
+                    options.additional_context.default_letter_id,
+                    22,
+                    "action should have correct letter id"
+                );
+            }),
+        },
     });
     const threadViewer = this.messaging.models['ThreadViewer'].create({
         hasThreadView: true,

@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
+import { afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -11,27 +11,24 @@ QUnit.module('notification_list_tests.js', {
 
         this.start = async params => {
             const res = await start(Object.assign({}, params, {
-                data: this.data,
+                serverData: this.serverData,
             }));
-            const { env, widget } = res;
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('marked as read thread notifications are ordered by last message date', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 100, name: "Channel 2019" },
         { id: 200, name: "Channel 2020" }
     );
-    this.data['mail.message'].records.push(
+    this.serverData.models['mail.message'].records.push(
         {
             date: "2019-01-01 00:00:00",
             id: 42,
@@ -69,11 +66,11 @@ QUnit.test('marked as read thread notifications are ordered by last message date
 QUnit.test('thread notifications are re-ordered on receiving a new message', async function (assert) {
     assert.expect(4);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 100, name: "Channel 2019" },
         { id: 200, name: "Channel 2020" }
     );
-    this.data['mail.message'].records.push(
+    this.serverData.models['mail.message'].records.push(
         {
             date: "2019-01-01 00:00:00",
             id: 42,
@@ -97,7 +94,7 @@ QUnit.test('thread notifications are re-ordered on receiving a new message', asy
     );
 
     await afterNextRender(() => {
-        this.widget.call('bus_service', 'trigger', 'notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: 'mail.channel/new_message',
             payload: {
                 id: 100,

@@ -2,7 +2,6 @@
 
 import { makeDeferred } from '@mail/utils/deferred/deferred';
 import {
-    afterEach,
     beforeEach,
     nextAnimationFrame,
     start,
@@ -16,17 +15,14 @@ QUnit.module('dialog_manager_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign(
+            const { env, webClient } = await start(Object.assign(
                 { hasDialog: true },
                 params,
-                { data: this.data }
+                { serverData: this.serverData }
             ));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 

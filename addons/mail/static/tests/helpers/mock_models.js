@@ -10,6 +10,16 @@ import { datetime_to_str } from 'web.time';
  */
 export class MockModels {
 
+    static get TEST_USER_IDS() {
+        return {
+            currentUserId: 2,
+            partnerRootId: 2,
+            currentPartnerId: 3,
+            publicUserId: 3,
+            publicPartnerId: 4,
+        };
+    }
+
     //--------------------------------------------------------------------------
     // Public
     //--------------------------------------------------------------------------
@@ -21,6 +31,7 @@ export class MockModels {
      * @returns {Object}
      */
     static generateData() {
+        const { currentPartnerId } = MockModels.TEST_USER_IDS;
         return {
             'ir.attachment': {
                 fields: {
@@ -89,7 +100,7 @@ export class MockModels {
                     last_interest_dt: { string: "Last Interest", type: "datetime", default() {
                         return datetime_to_str(new Date());
                     } },
-                    members: { string: "Members", type: 'many2many', relation: 'res.partner', default() { return [this.currentPartnerId]; } },
+                    members: { string: "Members", type: 'many2many', relation: 'res.partner', default() { return [currentPartnerId]; } },
                     message_unread_counter: { string: "# unread messages", type: 'integer' },
                     name: { string: "Name", type: "char", required: true },
                     public: { string: "Public", type: "boolean", default: 'groups' },
@@ -119,7 +130,7 @@ export class MockModels {
             'mail.message': {
                 fields: {
                     attachment_ids: { string: "Attachments", type: 'many2many', relation: 'ir.attachment', default: [] },
-                    author_id: { string: "Author", type: 'many2one', relation: 'res.partner', default() { return this.currentPartnerId; } },
+                    author_id: { string: "Author", type: 'many2one', relation: 'res.partner', default() { return currentPartnerId; } },
                     body: { string: "Contents", type: 'html', default: "<p></p>" },
                     date: { string: "Date", type: 'datetime', default() { return moment.utc().format("YYYY-MM-DD HH:mm:ss"); } },
                     email_from: { string: "From", type: 'char' },

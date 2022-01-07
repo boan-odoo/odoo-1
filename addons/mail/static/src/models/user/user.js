@@ -42,11 +42,9 @@ registerModel({
         async performRpcRead({ context, fields, ids }) {
             const usersData = await this.env.services.orm.silent.read(
                 'res.users',
-                [ids],
-                {
-                    context,
-                    fields,
-                },
+                ids,
+                fields,
+                context,
             );
             return this.messaging.models['User'].insert(usersData.map(userData =>
                 this.messaging.models['User'].convertData(userData)

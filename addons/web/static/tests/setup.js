@@ -191,7 +191,7 @@ function patchSessionInfo() {
 }
 
 export async function setupTests() {
-    QUnit.testStart(() => {
+    QUnit.testStart((e) => {
         checkGlobalObjectsIntegrity();
         prepareRegistriesWithCleanup();
         prepareLegacyRegistriesWithCleanup();

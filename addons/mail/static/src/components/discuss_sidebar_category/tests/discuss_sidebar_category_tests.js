@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -15,24 +14,21 @@ QUnit.module('discuss_sidebar_category_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('channel - counter: should not have a counter if the category is unfolded and without needaction messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
 
     await this.start();
     assert.strictEqual(
@@ -45,11 +41,11 @@ QUnit.test('channel - counter: should not have a counter if the category is unfo
 QUnit.test('channel - counter: should not have a counter if the category is unfolded and with needaction messagens', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 20 },
         { id: 30 },
     );
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "message 1",
         id: 100,
         model: "mail.channel",
@@ -60,12 +56,12 @@ QUnit.test('channel - counter: should not have a counter if the category is unfo
         model: "mail.channel",
         res_id: 30,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     }, {
         mail_message_id: 200,
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start();
     assert.strictEqual(
@@ -78,9 +74,9 @@ QUnit.test('channel - counter: should not have a counter if the category is unfo
 QUnit.test('channel - counter: should not have a counter if category is folded and without needaction messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: false,
     });
 
@@ -96,11 +92,11 @@ QUnit.test('channel - counter: should not have a counter if category is folded a
 QUnit.test('channel - counter: should have correct value of needaction threads if category is folded and with needaction messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         { id: 20 },
         { id: 30 },
     );
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "message 1",
         id: 100,
         model: "mail.channel",
@@ -111,15 +107,15 @@ QUnit.test('channel - counter: should have correct value of needaction threads i
         model: "mail.channel",
         res_id: 30,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     }, {
         mail_message_id: 200,
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: false,
     });
     await this.start();
@@ -146,8 +142,8 @@ QUnit.test('channel - command: should have view command when category is unfolde
 QUnit.test('channel - command: should have view command when category is folded', async function (assert) {
     assert.expect(1);
 
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: false,
     });
     await this.start();
@@ -177,8 +173,8 @@ QUnit.test('channel - command: should have add command when category is unfolded
 QUnit.test('channel - command: should not have add command when category is folded', async function (assert) {
     assert.expect(1);
 
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: false,
     });
     await this.start();
@@ -193,9 +189,9 @@ QUnit.test('channel - command: should not have add command when category is fold
 QUnit.test('channel - states: close manually by clicking the title', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: true,
     });
     await this.start();
@@ -218,9 +214,9 @@ QUnit.test('channel - states: close manually by clicking the title', async funct
 QUnit.test('channel - states: open manually by clicking the title', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: false,
     });
     await this.start();
@@ -243,12 +239,12 @@ QUnit.test('channel - states: open manually by clicking the title', async functi
 QUnit.test('channel - states: close should update the value on the server', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: true,
     });
-    const currentUserId = this.data.currentUserId;
+    const currentUserId = this.TEST_USER_IDS.currentUserId;
     await this.start();
 
     const initalSettings = await this.env.services.orm.call(
@@ -280,12 +276,12 @@ QUnit.test('channel - states: close should update the value on the server', asyn
 QUnit.test('channel - states: open should update the value on the server', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: false,
     });
-    const currentUserId = this.data.currentUserId;
+    const currentUserId = this.TEST_USER_IDS.currentUserId;
     await this.start();
 
     const initalSettings = await this.env.services.orm.call(
@@ -317,15 +313,15 @@ QUnit.test('channel - states: open should update the value on the server', async
 QUnit.test('channel - states: close from the bus', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: true,
     });
     await this.start();
 
     await afterNextRender(() => {
-        this.env.services.bus_service.trigger('notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: "res.users.settings/changed",
             payload: {
                 is_discuss_sidebar_category_channel_open: false,
@@ -347,15 +343,15 @@ QUnit.test('channel - states: close from the bus', async function (assert) {
 QUnit.test('channel - states: open from the bus', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_channel_open: false,
     });
     await this.start();
 
     await afterNextRender(() => {
-        this.env.services.bus_service.trigger('notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: "res.users.settings/changed",
             payload: {
                 is_discuss_sidebar_category_channel_open: true,
@@ -377,7 +373,7 @@ QUnit.test('channel - states: open from the bus', async function (assert) {
 QUnit.test('channel - states: the active category item should be visble even if the category is closed', async function (assert) {
     assert.expect(4);
 
-    this.data['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
     await this.start();
 
     assert.containsOnce(
@@ -437,7 +433,7 @@ QUnit.test('channel - states: the active category item should be visble even if 
 QUnit.test('chat - counter: should not have a counter if the category is unfolded and without unread messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 0,
@@ -455,7 +451,7 @@ QUnit.test('chat - counter: should not have a counter if the category is unfolde
 QUnit.test('chat - counter: should not have a counter if the category is unfolded and with unread messagens', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 10,
@@ -472,7 +468,7 @@ QUnit.test('chat - counter: should not have a counter if the category is unfolde
 QUnit.test('chat - counter: should not have a counter if category is folded and without unread messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 0,
@@ -494,7 +490,7 @@ QUnit.test('chat - counter: should not have a counter if category is folded and 
 QUnit.test('chat - counter: should have correct value of unread threads if category is folded and with unread messages', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 10,
@@ -531,8 +527,8 @@ QUnit.test('chat - command: should have add command when category is unfolded', 
 QUnit.test('chat - command: should not have add command when category is folded', async function (assert) {
     assert.expect(1);
 
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_chat_open: false,
     });
     await this.start();
@@ -547,14 +543,14 @@ QUnit.test('chat - command: should not have add command when category is folded'
 QUnit.test('chat - states: close manually by clicking the title', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 0,
         public: 'private',
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_chat_open: true,
     });
     await this.start();
@@ -577,14 +573,14 @@ QUnit.test('chat - states: close manually by clicking the title', async function
 QUnit.test('chat - states: open manually by clicking the title', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 0,
         public: 'private',
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_chat_open: false,
     });
     await this.start();
@@ -607,12 +603,12 @@ QUnit.test('chat - states: open manually by clicking the title', async function 
 QUnit.test('chat - states: close should call update server data', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_chat_open: true,
     });
-    const currentUserId = this.data.currentUserId;
+    const currentUserId = this.TEST_USER_IDS.currentUserId;
     await this.start();
 
     const initalSettings = await this.env.services.orm.call(
@@ -644,12 +640,12 @@ QUnit.test('chat - states: close should call update server data', async function
 QUnit.test('chat - states: open should call update server data', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_chat_open: false,
     });
-    const currentUserId = this.data.currentUserId;
+    const currentUserId = this.TEST_USER_IDS.currentUserId;
     await this.start();
 
     const initalSettings = await this.env.services.orm.call(
@@ -681,20 +677,20 @@ QUnit.test('chat - states: open should call update server data', async function 
 QUnit.test('chat - states: close from the bus', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 0,
         public: 'private',
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_chat_open: true,
     });
     await this.start();
 
     await afterNextRender(() => {
-        this.env.services.bus_service.trigger('notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: "res.users.settings/changed",
             payload: {
                 is_discuss_sidebar_category_chat_open: false,
@@ -716,20 +712,20 @@ QUnit.test('chat - states: close from the bus', async function (assert) {
 QUnit.test('chat - states: open from the bus', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 0,
         public: 'private',
     });
-    this.data['res.users.settings'].records.push({
-        user_id: this.data.currentUserId,
+    this.serverData.models['res.users.settings'].records.push({
+        user_id: this.TEST_USER_IDS.currentUserId,
         is_discuss_sidebar_category_chat_open: false,
     });
     await this.start();
 
     await afterNextRender(() => {
-        this.env.services.bus_service.trigger('notification', [{
+        owl.Component.env.services.bus_service.trigger('notification', [{
             type: "res.users.settings/changed",
             payload: {
                 is_discuss_sidebar_category_chat_open: true,
@@ -751,7 +747,7 @@ QUnit.test('chat - states: open from the bus', async function (assert) {
 QUnit.test('chat - states: the active category item should be visble even if the category is closed', async function (assert) {
     assert.expect(4);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 10,
         message_unread_counter: 0,

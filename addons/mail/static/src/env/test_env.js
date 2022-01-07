@@ -1,6 +1,8 @@
 /** @odoo-module **/
 
 import { nextTick } from '@mail/utils/utils';
+import { patchWithCleanup } from "@web/../tests/helpers/utils";
+import { browser } from '@web/core/browser/browser';
 
 /**
  * @param {Object} [providedEnv={}]
@@ -30,16 +32,12 @@ export function addMessagingToEnv(providedEnv = {}) {
  * @param {Object} [providedEnv={}]
  * @returns {Object}
  */
-export function addTimeControlToEnv(providedEnv = {}) {
-    const env = { ...providedEnv };
-    if (!env.browser) {
-        env.browser = {};
-    }
+export function addTimeControlToEnv(env) {
     // list of timeout ids that have timed out.
     let timedOutIds = [];
     // key: timeoutId, value: func + remaining duration
     const timeouts = new Map();
-    Object.assign(env.browser, {
+    patchWithCleanup(browser, {
         clearTimeout: id => {
             timeouts.delete(id);
             timedOutIds = timedOutIds.filter(i => i !== id);

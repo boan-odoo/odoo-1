@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     createRootMessagingComponent,
@@ -18,20 +17,17 @@ QUnit.module('partner_im_status_icon_tests.js', {
         this.createPartnerImStatusIcon = async partner => {
             await createRootMessagingComponent(this, "PartnerImStatusIcon", {
                 props: { partnerLocalId: partner.localId },
-                target: this.widget.el
+                target: this.webClient.el
             });
         };
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 

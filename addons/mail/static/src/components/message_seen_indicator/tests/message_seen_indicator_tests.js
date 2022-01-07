@@ -2,7 +2,6 @@
 
 import { insert, insertAndReplace, link } from '@mail/model/model_field_command';
 import {
-    afterEach,
     beforeEach,
     createRootMessagingComponent,
     start,
@@ -22,20 +21,17 @@ QUnit.module('message_seen_indicator_tests.js', {
             );
             await createRootMessagingComponent(this, "MessageSeenIndicator", {
                 props,
-                target: this.widget.el,
+                target: this.webClient.el,
             });
         };
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 

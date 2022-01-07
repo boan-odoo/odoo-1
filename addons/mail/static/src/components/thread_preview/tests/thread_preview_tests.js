@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
+import { afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -11,27 +11,24 @@ QUnit.module('thread_preview_tests.js', {
 
         this.start = async params => {
             const res = await start(Object.assign({}, params, {
-                data: this.data,
+                serverData: this.serverData,
             }));
-            const { env, widget } = res;
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('mark as read', async function (assert) {
     assert.expect(8);
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 11,
         message_unread_counter: 1,
         seen_message_id: 99,
     });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         id: 100,
         model: 'mail.channel',
         res_id: 11,
@@ -43,8 +40,7 @@ QUnit.test('mark as read', async function (assert) {
             if (route.includes('set_last_seen_message')) {
                 assert.step('set_last_seen_message');
             }
-            return this._super(...arguments);
-        },
+                    },
     });
     await createMessagingMenuComponent();
     await click('.o_MessagingMenu_toggler');

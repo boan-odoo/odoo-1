@@ -1,14 +1,12 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     nextAnimationFrame,
     start,
 } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
+import { actionService } from "@web/webclient/actions/action_service";
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -17,18 +15,20 @@ QUnit.module('discuss_inbox_tests.js', {
     beforeEach() {
         beforeEach(this);
 
+        Object.assign(this.serverData.views, {
+            'some.model,false,form': '<form/>',
+            'some.model,false,search': '<search/>',
+        });
+
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -36,25 +36,25 @@ QUnit.test('reply: discard on pressing escape', async function (assert) {
     assert.expect(9);
 
     // partner expected to be found by mention
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         email: "testpartnert@odoo.com",
         id: 11,
         name: "TestPartner",
     });
     // message expected to be found in inbox
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 20,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -161,19 +161,19 @@ QUnit.test('reply: discard on pressing escape', async function (assert) {
 QUnit.test('reply: discard on discard button click', async function (assert) {
     assert.expect(4);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 20,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -222,19 +222,19 @@ QUnit.test('reply: discard on discard button click', async function (assert) {
 QUnit.test('reply: discard on reply button toggle', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 20,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -277,19 +277,19 @@ QUnit.test('reply: discard on reply button toggle', async function (assert) {
 QUnit.test('reply: discard on click away', async function (assert) {
     assert.expect(7);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 20,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -364,20 +364,20 @@ QUnit.test('reply: discard on click away', async function (assert) {
 QUnit.test('"reply to" composer should log note if message replied to is a note', async function (assert) {
     assert.expect(6);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         is_discussion: false,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 20,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         async mockRPC(route, args) {
@@ -394,8 +394,7 @@ QUnit.test('"reply to" composer should log note if message replied to is a note'
                     "should set subtype_xmlid as 'note'"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
         waitUntilEvent: {
             eventName: 'o-thread-view-hint-processed',
             message: "should wait until inbox displayed its messages",
@@ -436,20 +435,20 @@ QUnit.test('"reply to" composer should log note if message replied to is a note'
 QUnit.test('"reply to" composer should send message if message replied to is not a note', async function (assert) {
     assert.expect(6);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         is_discussion: true,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 20,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         async mockRPC(route, args) {
@@ -466,8 +465,7 @@ QUnit.test('"reply to" composer should send message if message replied to is not
                     "should set subtype_xmlid as 'comment'"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
         waitUntilEvent: {
             eventName: 'o-thread-view-hint-processed',
             message: "should wait until inbox displayed its messages",
@@ -508,21 +506,33 @@ QUnit.test('"reply to" composer should send message if message replied to is not
 QUnit.test('error notifications should not be shown in Inbox', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 20,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100, // id of related message
         notification_status: 'exception',
         notification_type: 'email',
-        res_partner_id: this.data.currentPartnerId, // must be for current partner
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId, // must be for current partner
     });
-    await this.start();
+    await this.start({
+        waitUntilEvent: {
+            eventName: 'o-thread-view-hint-processed',
+            message: "should wait until inbox displayed its messages",
+            predicate: ({ hint, threadViewer }) => {
+                return (
+                    hint.type === 'messages-loaded' &&
+                    threadViewer.thread.model === 'mail.box' &&
+                    threadViewer.thread.id === 'inbox'
+                );
+            },
+        },
+    });
     assert.containsOnce(
         document.body,
         '.o_Message',
@@ -543,19 +553,19 @@ QUnit.test('error notifications should not be shown in Inbox', async function (a
 QUnit.test('show subject of message in Inbox', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel', // random existing model
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId], // not needed, for consistency
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId], // not needed, for consistency
         subject: "Salutations, voyageur", // will be asserted in the test
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -590,25 +600,23 @@ QUnit.test('show subject of message in Inbox', async function (assert) {
 QUnit.test('show subject of message in history', async function (assert) {
     assert.expect(3);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         history_partner_ids: [3], // not needed, for consistency
         id: 100,
         model: 'mail.channel', // random existing model
         subject: "Salutations, voyageur", // will be asserted in the test
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         is_read: true,
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         discuss: {
-            params: {
-                default_active_id: 'mail.box_history',
-            },
+            default_active_id: 'mail.box_history',
         },
         waitUntilEvent: {
             eventName: 'o-thread-view-hint-processed',
@@ -642,35 +650,47 @@ QUnit.test('show subject of message in history', async function (assert) {
 QUnit.test('click on (non-channel/non-partner) origin thread link should redirect to form view', async function (assert) {
     assert.expect(9);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        // Callback of doing an action (action manager).
-        // Expected to be called on click on origin thread link,
-        // which redirects to form view of record related to origin thread
-        assert.step('do-action');
-        assert.strictEqual(
-            payload.action.type,
-            'ir.actions.act_window',
-            "action should open a view"
-        );
-        assert.deepEqual(
-            payload.action.views,
-            [[false, 'form']],
-            "action should open form view"
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            'some.model',
-            "action should open view with model 'some.model' (model of message origin thread)"
-        );
-        assert.strictEqual(
-            payload.action.res_id,
-            10,
-            "action should open view with id 10 (id of message origin thread)"
-        );
-    });
-    this.data['some.model'] = { fields: {}, records: [{ id: 10, name: "Some record" }] };
-    this.data['mail.message'].records.push({
+    const fakeActionService = {
+        ...actionService,
+        start() {
+            const realService = actionService.start(...arguments);
+            return {
+                ...realService,
+                doAction(action) {
+                    if (action.id !== 'mail.box_inbox') {
+                        // Callback of doing an action (action manager).
+                        // Expected to be called on click on origin thread link,
+                        // which redirects to form view of record related to origin thread
+                        assert.step('do-action');
+                        assert.strictEqual(
+                            action.type,
+                            'ir.actions.act_window',
+                            "action should open a view"
+                        );
+                        assert.deepEqual(
+                            action.views,
+                            [[false, 'form']],
+                            "action should open form view"
+                        );
+                        assert.strictEqual(
+                            action.res_model,
+                            'some.model',
+                            "action should open view with model 'some.model' (model of message origin thread)"
+                        );
+                        assert.strictEqual(
+                            action.res_id,
+                            10,
+                            "action should open view with id 10 (id of message origin thread)"
+                        );
+                    }
+                    realService.doAction(...arguments);
+                },
+            };
+        },
+    };
+
+    this.serverData.models['some.model'] = { fields: {}, records: [{ id: 10 }] };
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'some.model',
@@ -678,16 +698,14 @@ QUnit.test('click on (non-channel/non-partner) origin thread link should redirec
         needaction_partner_ids: [this.data.currentPartnerId],
         res_id: 10,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
-        env: {
-            bus,
-        },
+        services: { action: fakeActionService },
         waitUntilEvent: {
             eventName: 'o-thread-view-hint-processed',
             message: "should wait until inbox displayed its messages",
@@ -723,7 +741,7 @@ QUnit.test('click on (non-channel/non-partner) origin thread link should redirec
 QUnit.test('subject should not be shown when subject is the same as the thread name', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
@@ -731,15 +749,15 @@ QUnit.test('subject should not be shown when subject is the same as the thread n
         needaction: true,
         subject: "Salutations, voyageur",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 100,
         name: "Salutations, voyageur",
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -764,7 +782,7 @@ QUnit.test('subject should not be shown when subject is the same as the thread n
 QUnit.test('subject should not be shown when subject is the same as the thread name and both have the same prefix', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
@@ -772,15 +790,15 @@ QUnit.test('subject should not be shown when subject is the same as the thread n
         needaction: true,
         subject: "Re: Salutations, voyageur",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 100,
         name: "Re: Salutations, voyageur",
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -805,7 +823,7 @@ QUnit.test('subject should not be shown when subject is the same as the thread n
 QUnit.test('subject should not be shown when subject differs from thread name only by the "Re:" prefix', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
@@ -813,15 +831,15 @@ QUnit.test('subject should not be shown when subject differs from thread name on
         needaction: true,
         subject: "Re: Salutations, voyageur",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 100,
         name: "Salutations, voyageur",
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -846,7 +864,7 @@ QUnit.test('subject should not be shown when subject differs from thread name on
 QUnit.test('subject should not be shown when subject differs from thread name only by the "Fw:" and "Re:" prefix', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
@@ -854,15 +872,15 @@ QUnit.test('subject should not be shown when subject differs from thread name on
         needaction: true,
         subject: "Fw: Re: Salutations, voyageur",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 100,
         name: "Salutations, voyageur",
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -887,7 +905,7 @@ QUnit.test('subject should not be shown when subject differs from thread name on
 QUnit.test('subject should be shown when the thread name has an extra prefix compared to subject', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
@@ -895,15 +913,15 @@ QUnit.test('subject should be shown when the thread name has an extra prefix com
         needaction: true,
         subject: "Salutations, voyageur",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 100,
         name: "Re: Salutations, voyageur",
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -928,7 +946,7 @@ QUnit.test('subject should be shown when the thread name has an extra prefix com
 QUnit.test('subject should not be shown when subject differs from thread name only by the "fw:" prefix and both contain another common prefix', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
@@ -936,15 +954,15 @@ QUnit.test('subject should not be shown when subject differs from thread name on
         needaction: true,
         subject: "fw: re: Salutations, voyageur",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 100,
         name: "Re: Salutations, voyageur",
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {
@@ -969,7 +987,7 @@ QUnit.test('subject should not be shown when subject differs from thread name on
 QUnit.test('subject should not be shown when subject differs from thread name only by the "Re: Re:" prefix', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'mail.channel',
@@ -977,15 +995,15 @@ QUnit.test('subject should not be shown when subject differs from thread name on
         needaction: true,
         subject: "Re: Re: Salutations, voyageur",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         id: 100,
         name: "Salutations, voyageur",
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 100,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     await this.start({
         waitUntilEvent: {

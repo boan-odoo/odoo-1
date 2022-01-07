@@ -1,6 +1,8 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
+import { patchWithCleanup } from '@web/../tests/helpers/utils';
+import session from 'web.session';
 
 QUnit.module('mail_bot', {}, function () {
 QUnit.module('models', {}, function () {
@@ -10,15 +12,12 @@ QUnit.module('messaging_initializer_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
@@ -28,17 +27,15 @@ QUnit.test('OdooBot initialized at init', async function (assert) {
     // implementing _mockMailChannelInitOdooBot task-2300480
     assert.expect(2);
 
+    patchWithCleanup(session, {
+        odoobot_initialized: false,
+    });
+
     await this.start({
-        env: {
-            session: {
-                odoobot_initialized: false,
-            },
-        },
-        async mockRPC(route, args) {
+        mockRPC(route, args) {
             if (args.method === 'init_odoobot') {
                 assert.step('init_odoobot');
             }
-            return this._super(...arguments);
         },
     });
 

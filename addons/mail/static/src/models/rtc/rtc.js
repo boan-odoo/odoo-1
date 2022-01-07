@@ -61,7 +61,6 @@ registerModel({
              *  timeoutId for the push to talk release delay.
              */
             this._pushToTalkTimeoutId = undefined;
-
             this.messaging.browser.addEventListener('keydown', this._onKeyDown);
             this.messaging.browser.addEventListener('keyup', this._onKeyUp);
             // Disconnects the RTC session if the page is closed or reloaded.

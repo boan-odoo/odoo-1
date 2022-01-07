@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -15,42 +14,37 @@ QUnit.module('channel_invitation_form_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('should display the channel invitation form after clicking on the invite button of a chat', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 11,
         email: "testpartner@odoo.com",
         name: "TestPartner",
     });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.users'].records.push({
         partner_id: 11,
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 13,
-        members: [this.data.currentPartnerId, 11],
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
         public: 'private',
     });
     await this.start({
         discuss: {
-            context: {
-                active_id: 13,
-            },
+            default_active_id: 13,
         },
     });
     await afterNextRender(() => document.querySelector(`.o_ThreadViewTopbar_inviteButton`).click());
@@ -64,34 +58,32 @@ QUnit.test('should display the channel invitation form after clicking on the inv
 QUnit.test('should be able to search for a new user to invite from an existing chat', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 11,
         email: "testpartner@odoo.com",
         name: "TestPartner",
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 12,
         email: "testpartner2@odoo.com",
         name: "TestPartner2",
     });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.users'].records.push({
         partner_id: 11,
     });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.users'].records.push({
         partner_id: 12,
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 13,
-        members: [this.data.currentPartnerId, 11],
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
         public: 'private',
     });
     await this.start({
         discuss: {
-            context: {
-                active_id: 13,
-            },
-        },
+            default_active_id: 13,
+        }
     });
     await afterNextRender(() => document.querySelector(`.o_ThreadViewTopbar_inviteButton`).click());
     await afterNextRender(() => document.execCommand('insertText', false, "TestPartner2"));
@@ -105,34 +97,32 @@ QUnit.test('should be able to search for a new user to invite from an existing c
 QUnit.test('should be able to create a new group chat from an existing chat', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 11,
         email: "testpartner@odoo.com",
         name: "TestPartner",
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 12,
         email: "testpartner2@odoo.com",
         name: "TestPartner2",
     });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.users'].records.push({
         partner_id: 11,
     });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.users'].records.push({
         partner_id: 12,
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'chat',
         id: 13,
-        members: [this.data.currentPartnerId, 11],
+        members: [this.TEST_USER_IDS.currentPartnerId, 11],
         public: 'private',
     });
     await this.start({
         discuss: {
-            context: {
-                active_id: 13,
-            },
-        },
+            default_active_id: 13,
+        }
     });
 
     await afterNextRender(() => document.querySelector(`.o_ThreadViewTopbar_inviteButton`).click());

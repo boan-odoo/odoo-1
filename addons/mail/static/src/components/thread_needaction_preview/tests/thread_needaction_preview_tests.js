@@ -1,8 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
+import { afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -13,35 +11,32 @@ QUnit.module('thread_needaction_preview_tests.js', {
 
         this.start = async params => {
             const res = await start(Object.assign({}, params, {
-                data: this.data,
+                serverData: this.serverData,
             }));
-            const { afterEvent, env, widget } = res;
+            const { afterEvent, env, webClient } = res;
             this.afterEvent = afterEvent;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('mark as read', async function (assert) {
     assert.expect(5);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         id: 21,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 21,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     const { createMessagingMenuComponent } = await this.start({
         hasChatWindow: true,
@@ -57,8 +52,7 @@ QUnit.test('mark as read', async function (assert) {
                     "should mark all as read the correct thread"
                 );
             }
-            return this._super(...arguments);
-        },
+                    },
     });
     await createMessagingMenuComponent();
     await afterNextRender(() => this.afterEvent({
@@ -92,22 +86,22 @@ QUnit.test('mark as read', async function (assert) {
 QUnit.test('click on preview should mark as read and open the thread', async function (assert) {
     assert.expect(6);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         id: 21,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 21,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     const { createMessagingMenuComponent } = await this.start({
         hasChatWindow: true,
-        async mockRPC(route, args) {
+        mockRPC(route, args) {
             if (route.includes('mark_all_as_read')) {
                 assert.step('mark_all_as_read');
                 assert.deepEqual(
@@ -119,7 +113,6 @@ QUnit.test('click on preview should mark as read and open the thread', async fun
                     "should mark all as read the correct thread"
                 );
             }
-            return this._super(...arguments);
         },
     });
     await createMessagingMenuComponent();
@@ -159,35 +152,42 @@ QUnit.test('click on preview should mark as read and open the thread', async fun
 QUnit.test('click on expand from chat window should close the chat window and open the form view', async function (assert) {
     assert.expect(8);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action.res_id,
-            11,
-            "should redirect to the id of the thread"
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            'res.partner',
-            "should redirect to the model of the thread"
-        );
-    });
-    this.data['mail.message'].records.push({
+    const fakeActionService = {
+        start() {
+            return {
+                doAction(action, options) {
+                    assert.step('do_action');
+                    assert.strictEqual(
+                        action.res_id,
+                        11,
+                        "should redirect to the id of the thread"
+                    );
+                    assert.strictEqual(
+                        action.res_model,
+                        'res.partner',
+                        "should redirect to the model of the thread"
+                    );
+                },
+                loadState() {},
+            }
+        },
+    }
+
+    this.serverData.models['mail.message'].records.push({
         id: 21,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 21,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     const { createMessagingMenuComponent } = await this.start({
-        env: { bus },
+        services: { action: fakeActionService },
         hasChatWindow: true,
     });
     await createMessagingMenuComponent();
@@ -237,18 +237,18 @@ QUnit.test('[technical] opening a non-channel chat window should not call channe
     // window, because there is no server sync of fold state for them.
     assert.expect(3);
 
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         id: 21,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 21,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     const { createMessagingMenuComponent } = await this.start({
         hasChatWindow: true,
@@ -259,8 +259,7 @@ QUnit.test('[technical] opening a non-channel chat window should not call channe
                 console.error(message);
                 throw Error(message);
             }
-            return this._super(...arguments);
-        },
+                    },
     });
     await createMessagingMenuComponent();
     await afterNextRender(() => this.afterEvent({
@@ -295,31 +294,31 @@ QUnit.test('[technical] opening a non-channel chat window should not call channe
 QUnit.test('preview should display last needaction message preview even if there is a more recent message that is not needaction in the thread', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 11,
         name: "Stranger",
     });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         author_id: 11,
         body: "I am the oldest but needaction",
         id: 21,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 11,
     });
-    this.data['mail.message'].records.push({
-        author_id: this.data.currentPartnerId,
+    this.serverData.models['mail.message'].records.push({
+        author_id: this.TEST_USER_IDS.currentPartnerId,
         body: "I am more recent",
         id: 22,
         model: 'res.partner',
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 21,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     const { createMessagingMenuComponent } = await this.start({ hasChatWindow: true });
     await createMessagingMenuComponent();
@@ -346,21 +345,21 @@ QUnit.test('preview should display last needaction message preview even if there
 QUnit.test('chat window header should not have unread counter for non-channel thread', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 11 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 11 });
+    this.serverData.models['mail.message'].records.push({
         author_id: 11,
         body: 'not empty',
         id: 21,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 11,
     });
-    this.data['mail.notification'].records.push({
+    this.serverData.models['mail.notification'].records.push({
         mail_message_id: 21,
         notification_status: 'sent',
         notification_type: 'inbox',
-        res_partner_id: this.data.currentPartnerId,
+        res_partner_id: this.TEST_USER_IDS.currentPartnerId,
     });
     const { createMessagingMenuComponent } = await this.start({ hasChatWindow: true });
     await createMessagingMenuComponent();

@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, afterNextRender, beforeEach, nextAnimationFrame, start } from '@mail/utils/test_utils';
+import { afterNextRender, beforeEach, nextAnimationFrame, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -10,24 +10,21 @@ QUnit.module('chatter_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { env, widget } = res;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('base rendering when chatter has no attachment', async function (assert) {
     assert.expect(6);
 
-    this.data['res.partner'].records.push({ id: 100 });
+    this.serverData.models['res.partner'].records.push({ id: 100 });
     for (let i = 0; i < 60; i++) {
-        this.data['mail.message'].records.push({
+        this.serverData.models['mail.message'].records.push({
             body: "not empty",
             model: 'res.partner',
             res_id: 100,
@@ -138,8 +135,8 @@ QUnit.test('base rendering when chatter has no record', async function (assert) 
 QUnit.test('base rendering when chatter has attachments', async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({ id: 100 });
-    this.data['ir.attachment'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 100 });
+    this.serverData.models['ir.attachment'].records.push(
         {
             mimetype: 'text/plain',
             name: 'Blah.txt',
@@ -178,8 +175,8 @@ QUnit.test('base rendering when chatter has attachments', async function (assert
 QUnit.test('show attachment box', async function (assert) {
     assert.expect(6);
 
-    this.data['res.partner'].records.push({ id: 100 });
-    this.data['ir.attachment'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 100 });
+    this.serverData.models['ir.attachment'].records.push(
         {
             mimetype: 'text/plain',
             name: 'Blah.txt',
@@ -237,7 +234,7 @@ QUnit.test('show attachment box', async function (assert) {
 QUnit.test('composer show/hide on log note/send message [REQUIRE FOCUS]', async function (assert) {
     assert.expect(10);
 
-    this.data['res.partner'].records.push({ id: 100 });
+    this.serverData.models['res.partner'].records.push({ id: 100 });
     const { createChatterContainerComponent } = await this.start();
     await createChatterContainerComponent({
         threadId: 100,
@@ -318,8 +315,8 @@ QUnit.test('composer show/hide on log note/send message [REQUIRE FOCUS]', async 
 QUnit.test('should display subject when subject is not the same as the thread name', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 100 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 100 });
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         model: 'res.partner',
         res_id: 100,
@@ -346,11 +343,11 @@ QUnit.test('should display subject when subject is not the same as the thread na
 QUnit.test('should not display subject when subject is the same as the thread name', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 100,
         name: "Salutations, voyageur",
     });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.message'].records.push({
         body: "not empty",
         model: 'res.partner',
         res_id: 100,
@@ -372,8 +369,8 @@ QUnit.test('should not display subject when subject is the same as the thread na
 QUnit.test('should not display user notification messages in chatter', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({ id: 100 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 100 });
+    this.serverData.models['mail.message'].records.push({
         id: 102,
         message_type: 'user_notification',
         model: 'res.partner',
@@ -395,7 +392,7 @@ QUnit.test('should not display user notification messages in chatter', async fun
 QUnit.test('post message with "CTRL-Enter" keyboard shortcut', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 100 });
+    this.serverData.models['res.partner'].records.push({ id: 100 });
     const { createChatterContainerComponent } = await this.start();
     await createChatterContainerComponent({
         threadId: 100,
@@ -428,7 +425,7 @@ QUnit.test('post message with "CTRL-Enter" keyboard shortcut', async function (a
 QUnit.test('post message with "META-Enter" keyboard shortcut', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 100 });
+    this.serverData.models['res.partner'].records.push({ id: 100 });
     const { createChatterContainerComponent } = await this.start();
     await createChatterContainerComponent({
         threadId: 100,
@@ -464,7 +461,7 @@ QUnit.test('do not post message with "Enter" keyboard shortcut', async function 
     // programmatically crafted events...
     assert.expect(2);
 
-    this.data['res.partner'].records.push({ id: 100 });
+    this.serverData.models['res.partner'].records.push({ id: 100 });
     const { createChatterContainerComponent } = await this.start();
     await createChatterContainerComponent({
         threadId: 100,

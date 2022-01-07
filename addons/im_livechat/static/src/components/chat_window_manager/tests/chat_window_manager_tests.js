@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -18,35 +17,32 @@ QUnit.module('chat_window_manager_tests.js', {
             const res = await start(Object.assign(
                 { hasChatWindow: true },
                 params,
-                { data: this.data }
+                { serverData: this.serverData }
             ));
-            const { afterEvent, env, widget } = res;
+            const { afterEvent, env, webClient } = res;
             this.debug = params && params.debug;
             this.afterEvent = afterEvent;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('closing a chat window with no message from admin side unpins it', async function (assert) {
     assert.expect(1);
 
-    this.data['res.partner'].records.push({ id: 10, name: "Demo" });
-    this.data['res.users'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 10, name: "Demo" });
+    this.serverData.models['res.users'].records.push({
         id: 42,
         partner_id: 10,
     });
-    this.data['mail.channel'].records.push(
+    this.serverData.models['mail.channel'].records.push(
         {
             channel_type: "livechat",
             id: 10,
             is_pinned: true,
-            members: [this.data.currentPartnerId, 10],
+            members: [this.TEST_USER_IDS.currentPartnerId, 10],
             uuid: 'channel-10-uuid',
         },
     );

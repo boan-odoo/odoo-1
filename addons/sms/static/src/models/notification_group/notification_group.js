@@ -12,15 +12,15 @@ patchRecordMethods('NotificationGroup', {
         if (this.notification_type !== 'sms') {
             return this._super(...arguments);
         }
-        this.env.bus.trigger('do-action', {
-            action: 'sms.sms_cancel_action',
-            options: {
+        this.env.services.action.doAction(
+            'sms.sms_cancel_action',
+            {
                 additional_context: {
                     default_model: this.res_model,
                     unread_counter: this.notifications.length,
                 },
             },
-        });
+        );
     },
     /**
      * @override
@@ -29,8 +29,7 @@ patchRecordMethods('NotificationGroup', {
         if (this.notification_type !== 'sms') {
             return this._super(...arguments);
         }
-        this.env.bus.trigger('do-action', {
-            action: {
+        this.env.services.action.doAction({
                 name: this.env._t("SMS Failures"),
                 type: 'ir.actions.act_window',
                 view_mode: 'kanban,list,form',
@@ -39,9 +38,8 @@ patchRecordMethods('NotificationGroup', {
                 res_model: this.res_model,
                 domain: [['message_has_sms_error', '=', true]],
                 context: { create: false },
-            },
         });
-        if (this.messaging.device.isMobile) {
+        if (this.messaging.device.isSmall) {
             // messaging menu has a higher z-index than views so it must
             // be closed to ensure the visibility of the view
             this.messaging.messagingMenu.close();

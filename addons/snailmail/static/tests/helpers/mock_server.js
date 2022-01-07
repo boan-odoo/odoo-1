@@ -1,8 +1,10 @@
 /** @odoo-module **/
 
-import MockServer from 'web.MockServer';
+import '@mail/../tests/helpers/mock_server'; // ensure mail overrides are applied first
+import { MockServer } from "@web/../tests/helpers/mock_server";
+import { patch } from "@web/core/utils/patch";
 
-MockServer.include({
+patch(MockServer.prototype, 'snailmail', {
     //--------------------------------------------------------------------------
     // Private
     //--------------------------------------------------------------------------
@@ -10,7 +12,7 @@ MockServer.include({
     /**
      * @override
      */
-    async _performRpc(route, args) {
+    async performRPC(route, args) {
         if (args.model === 'mail.message' && args.method === 'cancel_letter') {
             const ids = args.args[0];
             return this._mockMailMessageCancelLetter(ids);
@@ -18,6 +20,9 @@ MockServer.include({
         if (args.model === 'mail.message' && args.method === 'send_letter') {
             const ids = args.args[0];
             return this._mockMailMessageSendLetter(ids);
+        }
+        if (args.method === 'get_credits_url') {
+            return true;
         }
         return this._super(...arguments);
     },
@@ -33,6 +38,7 @@ MockServer.include({
      * @param {integer[]} ids
      */
     _mockMailMessageCancelLetter(ids) {
+        return true;
         // TODO implement this mock and improve related tests (task-2300496)
     },
     /**
@@ -42,6 +48,7 @@ MockServer.include({
      * @param {integer[]} ids
      */
     _mockMailMessageSendLetter(ids) {
+        return true;
         // TODO implement this mock and improve related tests (task-2300496)
     },
 });

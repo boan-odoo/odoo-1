@@ -1,8 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
+import { beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -12,27 +10,23 @@ QUnit.module('activity_mark_done_popover_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { components, env, widget } = res;
-            this.components = components;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('activity mark done popover simplest layout', async function (assert) {
     assert.expect(6);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'not_upload_file',
         can_write: true,
         id: 12,
@@ -81,11 +75,11 @@ QUnit.test('activity mark done popover simplest layout', async function (assert)
 QUnit.test('activity with force next mark done popover simplest layout', async function (assert) {
     assert.expect(6);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'not_upload_file',
         can_write: true,
         chaining_type: 'trigger',
@@ -135,11 +129,11 @@ QUnit.test('activity with force next mark done popover simplest layout', async f
 QUnit.test('activity mark done popover mark done without feedback', async function (assert) {
     assert.expect(7);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'not_upload_file',
         can_write: true,
         id: 12,
@@ -155,13 +149,12 @@ QUnit.test('activity mark done popover mark done without feedback', async functi
                 assert.strictEqual(args.args[0][0], 12);
                 assert.strictEqual(args.kwargs.attachment_ids.length, 0);
                 assert.notOk(args.kwargs.feedback);
-                return;
+                return Promise.resolve(true);
             }
             if (route === '/web/dataset/call_kw/mail.activity/unlink') {
                 // 'unlink' on non-existing record raises a server crash
                 throw new Error("'unlink' RPC on activity must not be called (already unlinked from mark as done)");
             }
-            return this._super(...arguments);
         },
     });
     await createChatterContainerComponent({
@@ -179,11 +172,11 @@ QUnit.test('activity mark done popover mark done without feedback', async functi
 QUnit.test('activity mark done popover mark done with feedback', async function (assert) {
     assert.expect(7);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'not_upload_file',
         can_write: true,
         id: 12,
@@ -199,13 +192,12 @@ QUnit.test('activity mark done popover mark done with feedback', async function 
                 assert.strictEqual(args.args[0][0], 12);
                 assert.strictEqual(args.kwargs.attachment_ids.length, 0);
                 assert.strictEqual(args.kwargs.feedback, 'This task is done');
-                return;
+                return Promise.resolve(true);
             }
             if (route === '/web/dataset/call_kw/mail.activity/unlink') {
                 // 'unlink' on non-existing record raises a server crash
                 throw new Error("'unlink' RPC on activity must not be called (already unlinked from mark as done)");
             }
-            return this._super(...arguments);
         },
     });
     await createChatterContainerComponent({
@@ -227,22 +219,29 @@ QUnit.test('activity mark done popover mark done with feedback', async function 
 QUnit.test('activity mark done popover mark done and schedule next', async function (assert) {
     assert.expect(6);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('activity_action');
-        throw new Error("The do-action event should not be triggered when the route doesn't return an action");
-    });
-    this.data['res.partner'].records.push({
+
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'not_upload_file',
         can_write: true,
         id: 12,
         res_id: 100,
         res_model: 'res.partner',
     });
+    const fakeActionService = {
+        start() {
+            return {
+                doAction() {
+                    assert.step('activity_action');
+                    throw new Error("The do-action event should not be triggered when the route doesn't return an action");
+                },
+                loadState() {}
+            }
+        },
+    };
     const { click, createChatterContainerComponent } = await this.start({
         async mockRPC(route, args) {
             if (route === '/web/dataset/call_kw/mail.activity/action_feedback_schedule_next') {
@@ -251,15 +250,14 @@ QUnit.test('activity mark done popover mark done and schedule next', async funct
                 assert.strictEqual(args.args[0].length, 1);
                 assert.strictEqual(args.args[0][0], 12);
                 assert.strictEqual(args.kwargs.feedback, 'This task is done');
-                return false;
+                return Promise.resolve(false);
             }
             if (route === '/web/dataset/call_kw/mail.activity/unlink') {
                 // 'unlink' on non-existing record raises a server crash
                 throw new Error("'unlink' RPC on activity must not be called (already unlinked from mark as done)");
             }
-            return this._super(...arguments);
         },
-        env: { bus },
+        services: { action: fakeActionService },
     });
     await createChatterContainerComponent({
         threadId: 100,
@@ -280,34 +278,42 @@ QUnit.test('activity mark done popover mark done and schedule next', async funct
 QUnit.test('[technical] activity mark done & schedule next with new action', async function (assert) {
     assert.expect(3);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('activity_action');
-        assert.deepEqual(
-            payload.action,
-            { type: 'ir.actions.act_window' },
-            "The content of the action should be correct"
-        );
-    });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'not_upload_file',
         can_write: true,
         id: 12,
         res_id: 100,
         res_model: 'res.partner',
     });
+
+    const fakeActionService = {
+        start() {
+            return {
+                doAction(action) {
+                    assert.step('activity_action');
+                    assert.deepEqual(
+                        action,
+                        { type: 'ir.actions.act_window' },
+                        "The content of the action should be correct"
+                    );
+                },
+                loadState() {},
+            }
+        },
+    };
     const { click, createChatterContainerComponent } = await this.start({
-        env: { bus },
         async mockRPC(route, args) {
             if (route === '/web/dataset/call_kw/mail.activity/action_feedback_schedule_next') {
-                return { type: 'ir.actions.act_window' };
+                return Promise.resolve({ type: 'ir.actions.act_window' });
             }
-            return this._super(...arguments);
         },
+        services: {
+            action: fakeActionService,
+        }
     });
     await createChatterContainerComponent({
         threadId: 100,

@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -11,25 +11,22 @@ QUnit.module('discuss_message_edit_tests.js', {
 
         this.start = async params => {
             const res = await start(Object.assign({}, params, {
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
-            const { env, widget } = res;
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('click on message edit button should open edit composer', async function (assert) {
     assert.expect(1);
 
-    this.data['mail.channel'].records.push({ id: 20 });
-    this.data['mail.message'].records.push({
+    this.serverData.models['mail.channel'].records.push({ id: 20 });
+    this.serverData.models['mail.message'].records.push({
         body: 'not empty',
         message_type: 'comment',
         model: 'mail.channel',
@@ -37,9 +34,7 @@ QUnit.test('click on message edit button should open edit composer', async funct
     });
     const { click, openDiscuss } = await this.start({
         discuss: {
-            params: {
                 default_active_id: 'mail.channel_20',
-            },
         },
     });
     await openDiscuss();

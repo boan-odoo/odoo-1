@@ -417,7 +417,7 @@ registerModel({
          * @returns {Thread[]}
          */
         async performRpcChannelInfo({ ids }) {
-            const channelInfos = await this.env.services.orm.silent(
+            const channelInfos = await this.env.services.orm.silent.call(
                 'mail.channel',
                 'channel_info',
                 [ids],
@@ -1659,7 +1659,7 @@ registerModel({
         _computeUrl() {
             const baseHref = url('/web');
             if (this.model === 'mail.channel') {
-                return `${baseHref}#action=mail.action_discuss&active_id=${this.model}_${this.id}`;
+                return `${baseHref}#action=mail.discuss&active_id=${this.model}_${this.id}`;
             }
             return `${baseHref}#model=${this.model}&id=${this.id}`;
         },

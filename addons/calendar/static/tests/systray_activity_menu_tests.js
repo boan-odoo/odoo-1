@@ -1,16 +1,16 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
 import ActivityMenu from '@mail/js/systray/systray_activity_menu';
-
+import { beforeEach, start } from '@mail/utils/test_utils';
 import testUtils from 'web.test_utils';
+
 
 QUnit.module('calendar', {}, function () {
 QUnit.module('ActivityMenu', {
     beforeEach() {
         beforeEach(this);
 
-        Object.assign(this.data, {
+        Object.assign(this.serverData.models, {
             'calendar.event': {
                 fields: { // those are all fake, this is the mock of a formatter
                     meetings: { type: 'binary' },
@@ -39,27 +39,23 @@ QUnit.module('ActivityMenu', {
             },
         });
     },
-    afterEach() {
-        afterEach(this);
-    },
 });
 
 QUnit.test('activity menu widget:today meetings', async function (assert) {
     assert.expect(6);
-    var self = this;
 
-    const { widget } = await start({
-        data: this.data,
-        mockRPC: function (route, args) {
+    const { widget: activityMenu } = await start({
+        serverData: this.serverData,
+        Widget: ActivityMenu,
+        mockRPC:  (route, args) => {
             if (args.method === 'systray_get_activities') {
-                return Promise.resolve(self.data['calendar.event']['records']);
+                return Promise.resolve(
+                    // quick copy to prevent ensure records integrity
+                    JSON.parse(JSON.stringify(this.serverData.models['calendar.event']['records']))
+                );
             }
-            return this._super(route, args);
         },
     });
-
-    const activityMenu = new ActivityMenu(widget);
-    await activityMenu.appendTo($('#qunit-fixture'));
 
     assert.hasClass(activityMenu.$el, 'o_mail_systray_item', 'should be the instance of widget');
 
@@ -74,6 +70,5 @@ QUnit.test('activity menu widget:today meetings', async function (assert) {
     assert.containsN(activityMenu, '.o_meeting_filter', 2, 'there should be 2 meetings');
     assert.hasClass(activityMenu.$('.o_meeting_filter').eq(0), 'o_meeting_bold', 'this meeting is yet to start');
     assert.doesNotHaveClass(activityMenu.$('.o_meeting_filter').eq(1), 'o_meeting_bold', 'this meeting has been started');
-    widget.destroy();
 });
 });

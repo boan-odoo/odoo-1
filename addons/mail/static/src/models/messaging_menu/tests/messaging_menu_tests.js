@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
 
 QUnit.module('mail', {}, function () {
 QUnit.module('models', {}, function () {
@@ -10,12 +10,9 @@ QUnit.module('messaging_menu_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env } = await start({ data: this.data, ...params });
+            const { env } = await start({ serverData: this.serverData, ...params });
             this.env = env;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 

@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     start,
@@ -16,28 +15,25 @@ QUnit.module('messaging_menu_tests.js', {
 
         this.start = async params => {
             const res = await start(Object.assign({}, params, {
-                data: this.data,
+                serverData: this.serverData,
             }));
-            const { env, widget } = res;
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('livechats should be in "chat" filter', async function (assert) {
     assert.expect(7);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.publicPartnerId],
     });
     const { createMessagingMenuComponent } = await this.start();
     await createMessagingMenuComponent();

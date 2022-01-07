@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import ActivityMenu from '@mail/js/systray/systray_activity_menu';
-import { afterEach, beforeEach, start } from '@mail/utils/test_utils';
+import { beforeEach, start } from '@mail/utils/test_utils';
 
 import testUtils from 'web.test_utils';
 
@@ -10,7 +10,7 @@ QUnit.module("ActivityMenu", {
     beforeEach() {
         beforeEach(this);
 
-        Object.assign(this.data, {
+        Object.assign(this.serverData.models, {
             'mail.activity.menu': {
                 fields: {
                     name: { type: "char" },
@@ -31,20 +31,18 @@ QUnit.module("ActivityMenu", {
             }
         });
     },
-    afterEach() {
-        afterEach(this);
-    },
 });
 
-QUnit.test('note activity menu widget: create note from activity menu', async function (assert) {
+QUnit.test('note activity menu webClient: create note from activity menu', async function (assert) {
     assert.expect(15);
     var self = this;
 
-    const { widget } = await start({
-        data: this.data,
+    const { widget: activityMenu } = await start({
+        serverData: this.serverData,
+        Widget: ActivityMenu,
         mockRPC: function (route, args) {
             if (args.method === 'systray_get_activities') {
-                return Promise.resolve(self.data['mail.activity.menu'].records);
+                return self.serverData.models['mail.activity.menu'].records;
             }
             if (route === '/note/new') {
                 if (args.date_deadline) {
@@ -53,9 +51,9 @@ QUnit.test('note activity menu widget: create note from activity menu', async fu
                         memo: args.note,
                         date_deadline: args.date_deadline
                     };
-                    self.data['note.note'].records.push(note);
-                    if (_.isEmpty(self.data['mail.activity.menu'].records)) {
-                        self.data['mail.activity.menu'].records.push({
+                    self.serverData.models['note.note'].records.push(note);
+                    if (_.isEmpty(self.serverData.models['mail.activity.menu'].records)) {
+                        self.serverData.models['mail.activity.menu'].records.push({
                             name: "Note",
                             model: "note.note",
                             type: "activity",
@@ -65,19 +63,16 @@ QUnit.test('note activity menu widget: create note from activity menu', async fu
                             total_count: 0,
                         });
                     }
-                    self.data['mail.activity.menu'].records[0].today_count++;
-                    self.data['mail.activity.menu'].records[0].total_count++;
+                    self.serverData.models['mail.activity.menu'].records[0].today_count++;
+                    self.serverData.models['mail.activity.menu'].records[0].total_count++;
                 }
-                return Promise.resolve();
+                return true;
             }
-            return this._super(route, args);
         },
     });
 
-    const activityMenu = new ActivityMenu(widget);
-    await activityMenu.appendTo($('#qunit-fixture'));
     assert.hasClass(activityMenu.$el, 'o_mail_systray_item',
-        'should be the instance of widget');
+        'should be the instance of webClient');
     assert.strictEqual(activityMenu.$('.o_notification_counter').text(), '0',
         "should not have any activity notification initially");
 
@@ -122,6 +117,5 @@ QUnit.test('note activity menu widget: create note from activity menu', async fu
         'ActivityMenu add note button should be displayed');
     assert.hasClass(activityMenu.$('.o_note'), 'd-none',
         'ActivityMenu add note input should be hidden');
-    widget.destroy();
 });
 });

@@ -47,7 +47,7 @@ registerModel({
          * @param {integer[]} param0.ids
          */
         async performRpcRead({ context, fields, ids }) {
-            const employeesData = await this.env.services.orm.read('hr.employee.public', [ids], fields, context);
+            const employeesData = await this.env.services.orm.read('hr.employee.public', ids, fields, context);
             this.messaging.models['Employee'].insert(employeesData.map(employeeData =>
                 this.messaging.models['Employee'].convertData(employeeData)
             ));

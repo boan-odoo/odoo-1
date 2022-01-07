@@ -61,6 +61,7 @@ Component.env = legacyEnv;
     env.qweb.addTemplates(templates);
     mapLegacyEnvToWowlEnv(Component.env, env);
     odoo.isReady = true;
+    env.bus.trigger('WEB_CLIENT_READY');
     createAndMountDiscussPublicView(env);
 })();
 

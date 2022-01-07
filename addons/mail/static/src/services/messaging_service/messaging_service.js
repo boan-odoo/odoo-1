@@ -4,10 +4,11 @@ import { ModelManager } from '@mail/model/model_manager';
 
 export const messagingService = {
     dependencies: ['user', 'localization', 'orm', 'rpc', 'router', 'effect', 'ui'],
+    messagingValues: {},
 
     start(env) {
-        this.modelManager = new ModelManager(env);
-        this.modelManager.start(this.messagingValues);
+        const modelManager = new ModelManager(env);
+        env.bus.on('WEB_CLIENT_READY', null, () => this._startModelManager(modelManager));
 
         return {
             /**
@@ -18,9 +19,17 @@ export const messagingService = {
              * @returns {mail.messaging}
              **/
             async get() {
-                return this.modelManager.getMessaging();
+                return modelManager.getMessaging();
             },
-            modelManager: this.modelManager,
-        }
+            modelManager: modelManager,
+        };
+    },
+    /**
+     * Separate method to control creation delay in tests.
+     *
+     * @private
+     */
+    _startModelManager(modelManager) {
+        modelManager.start(this.messagingValues);
     },
 };

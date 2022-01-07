@@ -1,9 +1,9 @@
 /** @odoo-module **/
 
-import { afterEach, afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
-
-import Bus from 'web.Bus';
+import { afterNextRender, beforeEach, start } from '@mail/utils/test_utils';
 import { date_to_str } from 'web.time';
+import { makeFakeActionService } from '../../../utils/test_utils';
+
 
 QUnit.module('mail', {}, function () {
 QUnit.module('components', {}, function () {
@@ -13,27 +13,23 @@ QUnit.module('activity_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start({ ...params, data: this.data });
-            const { components, env, widget } = res;
-            this.components = components;
+            const res = await start({ ...params, serverData: this.serverData });
+            const { env, webClient } = res;
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
             return res;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('activity simplest layout', async function (assert) {
     assert.expect(12);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         id: 12,
         res_id: 100,
         res_model: 'res.partner',
@@ -108,11 +104,11 @@ QUnit.test('activity simplest layout', async function (assert) {
 QUnit.test('activity with note layout', async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         id: 12,
         note: 'There is no good or bad note',
         res_id: 100,
@@ -146,11 +142,11 @@ QUnit.test('activity info layout when planned after tomorrow', async function (a
     const today = new Date();
     const fiveDaysFromNow = new Date();
     fiveDaysFromNow.setDate(today.getDate() + 5);
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         date_deadline: date_to_str(fiveDaysFromNow),
         id: 12,
         res_id: 100,
@@ -189,11 +185,11 @@ QUnit.test('activity info layout when planned tomorrow', async function (assert)
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         date_deadline: date_to_str(tomorrow),
         id: 12,
         res_id: 100,
@@ -229,11 +225,11 @@ QUnit.test('activity info layout when planned tomorrow', async function (assert)
 QUnit.test('activity info layout when planned today', async function (assert) {
     assert.expect(4);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         date_deadline: date_to_str(new Date()),
         id: 12,
         res_id: 100,
@@ -272,11 +268,11 @@ QUnit.test('activity info layout when planned yesterday', async function (assert
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         date_deadline: date_to_str(yesterday),
         id: 12,
         res_id: 100,
@@ -315,11 +311,11 @@ QUnit.test('activity info layout when planned before yesterday', async function 
     const today = new Date();
     const fiveDaysBeforeNow = new Date();
     fiveDaysBeforeNow.setDate(today.getDate() - 5);
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         date_deadline: date_to_str(fiveDaysBeforeNow),
         id: 12,
         res_id: 100,
@@ -355,11 +351,11 @@ QUnit.test('activity info layout when planned before yesterday', async function 
 QUnit.test('activity with a summary layout', async function (assert) {
     assert.expect(4);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         id: 12,
         res_id: 100,
         res_model: 'res.partner',
@@ -395,11 +391,11 @@ QUnit.test('activity with a summary layout', async function (assert) {
 QUnit.test('activity without summary layout', async function (assert) {
     assert.expect(5);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_type_id: 1,
         id: 12,
         res_id: 100,
@@ -443,11 +439,11 @@ QUnit.test('activity details toggle', async function (assert) {
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         create_date: date_to_str(today),
         create_uid: 1,
         date_deadline: date_to_str(tomorrow),
@@ -501,15 +497,15 @@ QUnit.test('activity details layout', async function (assert) {
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
-    this.data['res.users'].records.push({
+    this.serverData.models['res.users'].records.push({
         id: 10,
         name: 'Pauvre pomme',
     });
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_type_id: 1,
         create_date: date_to_str(today),
         create_uid: 2,
@@ -589,15 +585,15 @@ QUnit.test('activity details layout', async function (assert) {
 QUnit.test('activity with mail template layout', async function (assert) {
     assert.expect(8);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.template'].records.push({
+    this.serverData.models['mail.template'].records.push({
         id: 1,
         name: "Dummy mail template",
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_type_id: 1,
         id: 12,
         mail_template_ids: [1],
@@ -654,56 +650,58 @@ QUnit.test('activity with mail template layout', async function (assert) {
 QUnit.test('activity with mail template: preview mail', async function (assert) {
     assert.expect(10);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action.context.default_res_id,
-            42,
-            'Action should have the activity res id as default res id in context'
-        );
-        assert.strictEqual(
-            payload.action.context.default_model,
-            'res.partner',
-            'Action should have the activity res model as default model in context'
-        );
-        assert.ok(
-            payload.action.context.default_use_template,
-            'Action should have true as default use_template in context'
-        );
-        assert.strictEqual(
-            payload.action.context.default_template_id,
-            1,
-            'Action should have the selected mail template id as default template id in context'
-        );
-        assert.strictEqual(
-            payload.action.type,
-            "ir.actions.act_window",
-            'Action should be of type "ir.actions.act_window"'
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            "mail.compose.message",
-            'Action should have "mail.compose.message" as res_model'
-        );
-    });
-
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 42,
     });
-    this.data['mail.template'].records.push({
+    this.serverData.models['mail.template'].records.push({
         id: 1,
         name: "Dummy mail template",
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_type_id: 1,
         id: 12,
         mail_template_ids: [1],
         res_id: 42,
         res_model: 'res.partner',
     });
-    const { createChatterContainerComponent } = await this.start({ env: { bus } });
+
+    const fakeActionService = makeFakeActionService(action => {
+        assert.step('do_action');
+        assert.strictEqual(
+            action.context.default_res_id,
+            42,
+            'Action should have the activity res id as default res id in context'
+        );
+        assert.strictEqual(
+            action.context.default_model,
+            'res.partner',
+            'Action should have the activity res model as default model in context'
+        );
+        assert.ok(
+            action.context.default_use_template,
+            'Action should have true as default use_template in context'
+        );
+        assert.strictEqual(
+            action.context.default_template_id,
+            1,
+            'Action should have the selected mail template id as default template id in context'
+        );
+        assert.strictEqual(
+            action.type,
+            "ir.actions.act_window",
+            'Action should be of type "ir.actions.act_window"'
+        );
+        assert.strictEqual(
+            action.res_model,
+            "mail.compose.message",
+            'Action should have "mail.compose.message" as res_model'
+        );
+    });
+
+    const { createChatterContainerComponent } = await this.start({
+        services: { action: fakeActionService },
+    });
     await createChatterContainerComponent({
         threadId: 42,
         threadModel: 'res.partner',
@@ -729,15 +727,15 @@ QUnit.test('activity with mail template: preview mail', async function (assert) 
 QUnit.test('activity with mail template: send mail', async function (assert) {
     assert.expect(7);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 42,
     });
-    this.data['mail.template'].records.push({
+    this.serverData.models['mail.template'].records.push({
         id: 1,
         name: "Dummy mail template",
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_type_id: 1,
         id: 12,
         mail_template_ids: [1],
@@ -751,9 +749,7 @@ QUnit.test('activity with mail template: send mail', async function (assert) {
                 assert.strictEqual(args.args[0].length, 1);
                 assert.strictEqual(args.args[0][0], 42);
                 assert.strictEqual(args.args[1], 1);
-                return;
-            } else {
-                return this._super(...arguments);
+                return Promise.resolve(true);
             }
         },
     });
@@ -782,11 +778,11 @@ QUnit.test('activity with mail template: send mail', async function (assert) {
 QUnit.test('activity upload document is available', async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'upload_file',
         activity_type_id: 1,
         can_write: true,
@@ -818,11 +814,11 @@ QUnit.test('activity upload document is available', async function (assert) {
 QUnit.test('activity click on mark as done', async function (assert) {
     assert.expect(4);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'default',
         activity_type_id: 1,
         can_write: true,
@@ -868,11 +864,11 @@ QUnit.test('activity click on mark as done', async function (assert) {
 QUnit.test('activity mark as done popover should focus feedback input on open [REQUIRE FOCUS]', async function (assert) {
     assert.expect(3);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'default',
         activity_type_id: 1,
         can_write: true,
@@ -909,45 +905,51 @@ QUnit.test('activity mark as done popover should focus feedback input on open [R
 QUnit.test('activity click on edit', async function (assert) {
     assert.expect(9);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action.context.default_res_id,
-            42,
-            'Action should have the activity res id as default res id in context'
-        );
-        assert.strictEqual(
-            payload.action.context.default_res_model,
-            'res.partner',
-            'Action should have the activity res model as default res model in context'
-        );
-        assert.strictEqual(
-            payload.action.type,
-            "ir.actions.act_window",
-            'Action should be of type "ir.actions.act_window"'
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            "mail.activity",
-            'Action should have "mail.activity" as res_model'
-        );
-        assert.strictEqual(
-            payload.action.res_id,
-            12,
-            'Action should have activity id as res_id'
-        );
-    });
+    const fakeActionService = {
+        start() {
+            return {
+                doAction(action, options) {
+                    assert.step('do_action');
+                    assert.strictEqual(
+                        action.context.default_res_id,
+                        42,
+                        'Action should have the activity res id as default res id in context'
+                    );
+                    assert.strictEqual(
+                        action.context.default_res_model,
+                        'res.partner',
+                        'Action should have the activity res model as default res model in context'
+                    );
+                    assert.strictEqual(
+                        action.type,
+                        "ir.actions.act_window",
+                        'Action should be of type "ir.actions.act_window"'
+                    );
+                    assert.strictEqual(
+                        action.res_model,
+                        "mail.activity",
+                        'Action should have "mail.activity" as res_model'
+                    );
+                    assert.strictEqual(
+                        action.res_id,
+                        12,
+                        'Action should have activity id as res_id'
+                    );
+                },
+                loadState() {},
+            }
+        }
+    };
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 42,
     });
-    this.data['mail.template'].records.push({
+    this.serverData.models['mail.template'].records.push({
         id: 1,
         name: "Dummy mail template",
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_type_id: 1,
         can_write: true,
         id: 12,
@@ -955,7 +957,11 @@ QUnit.test('activity click on edit', async function (assert) {
         res_id: 42,
         res_model: 'res.partner',
     });
-    const { createChatterContainerComponent } = await this.start({ env: { bus } });
+    const { createChatterContainerComponent } = await this.start({
+        services: {
+            action: fakeActionService,
+        },
+     });
     await createChatterContainerComponent({
         threadId: 42,
         threadModel: 'res.partner',
@@ -981,49 +987,63 @@ QUnit.test('activity click on edit', async function (assert) {
 QUnit.test('activity edition', async function (assert) {
     assert.expect(14);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 42,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         can_write: true,
         icon: 'fa-times',
         id: 12,
         res_id: 42,
         res_model: 'res.partner',
     });
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.step('do_action');
-        assert.strictEqual(
-            payload.action.context.default_res_id,
-            42,
-            'Action should have the activity res id as default res id in context'
-        );
-        assert.strictEqual(
-            payload.action.context.default_res_model,
-            'res.partner',
-            'Action should have the activity res model as default res model in context'
-        );
-        assert.strictEqual(
-            payload.action.type,
-            'ir.actions.act_window',
-            'Action should be of type "ir.actions.act_window"'
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            'mail.activity',
-            'Action should have "mail.activity" as res_model'
-        );
-        assert.strictEqual(
-            payload.action.res_id,
-            12,
-            'Action should have activity id as res_id'
-        );
-        this.data['mail.activity'].records[0].icon = 'fa-check';
-        payload.options.on_close();
+    this.serverData.views['mail.activity,false,form'] = '<form/>';
+
+    var self = this;
+    const fakeActionService = {
+        start() {
+            return {
+                doAction(action, options) {
+                    assert.step('do_action');
+                    assert.strictEqual(
+                        action.context.default_res_id,
+                        42,
+                        'Action should have the activity res id as default res id in context'
+                    );
+                    assert.strictEqual(
+                        action.context.default_res_model,
+                        'res.partner',
+                        'Action should have the activity res model as default res model in context'
+                    );
+                    assert.strictEqual(
+                        action.type,
+                        'ir.actions.act_window',
+                        'Action should be of type "ir.actions.act_window"'
+                    );
+                    assert.strictEqual(
+                        action.res_model,
+                        'mail.activity',
+                        'Action should have "mail.activity" as res_model'
+                    );
+                    assert.strictEqual(
+                        action.res_id,
+                        12,
+                        'Action should have activity id as res_id'
+                    );
+                    self.serverData.models['mail.activity'].records[0].icon = 'fa-check';
+                    options.onClose();
+                },
+                loadState() {},
+            }
+        },
+    };
+
+    const { createChatterContainerComponent } = await this.start({
+        services: {
+            action: fakeActionService,
+        }
     });
-    const { createChatterContainerComponent } = await this.start({ env: { bus } });
     await createChatterContainerComponent({
         threadId: 42,
         threadModel: 'res.partner',
@@ -1076,11 +1096,11 @@ QUnit.test('activity edition', async function (assert) {
 QUnit.test('activity click on cancel', async function (assert) {
     assert.expect(7);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_type_id: 1,
         can_write: true,
         id: 12,
@@ -1093,9 +1113,7 @@ QUnit.test('activity click on cancel', async function (assert) {
                 assert.step('unlink');
                 assert.strictEqual(args.args[0].length, 1);
                 assert.strictEqual(args.args[0][0], 12);
-                return;
-            } else {
-                return this._super(...arguments);
+                return Promise.resolve(true);
             }
         },
     });
@@ -1132,11 +1150,11 @@ QUnit.test('activity mark done popover close on ESCAPE', async function (assert)
     // This test is not in activity_mark_done_popover_tests.js as it requires the activity mark done
     // component to have a parent in order to allow testing interactions the popover.
     assert.expect(2);
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'default',
         activity_type_id: 1,
         can_write: true,
@@ -1175,11 +1193,11 @@ QUnit.test('activity mark done popover click on discard', async function (assert
     // component to have a parent in order to allow testing interactions the popover.
     assert.expect(3);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'default',
         activity_type_id: 1,
         can_write: true,
@@ -1219,31 +1237,37 @@ QUnit.test('activity mark done popover click on discard', async function (assert
 QUnit.test('data-oe-id & data-oe-model link redirection on click', async function (assert) {
     assert.expect(7);
 
-    const bus = new Bus();
-    bus.on('do-action', null, payload => {
-        assert.strictEqual(
-            payload.action.type,
-            'ir.actions.act_window',
-            "action should open view"
-        );
-        assert.strictEqual(
-            payload.action.res_model,
-            'some.model',
-            "action should open view on 'some.model' model"
-        );
-        assert.strictEqual(
-            payload.action.res_id,
-            250,
-            "action should open view on 250"
-        );
-        assert.step('do-action:openFormView_some.model_250');
-    });
+    const fakeActionService = {
+        start() {
+            return {
+                doAction(action) {
+                    assert.strictEqual(
+                        action.type,
+                        'ir.actions.act_window',
+                        "action should open view"
+                    );
+                    assert.strictEqual(
+                        action.res_model,
+                        'some.model',
+                        "action should open view on 'some.model' model"
+                    );
+                    assert.strictEqual(
+                        action.res_id,
+                        250,
+                        "action should open view on 250"
+                    );
+                    assert.step('do-action:openFormView_some.model_250');
+                },
+                loadState() {}
+            }
+        },
+    };
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         activity_ids: [12],
         id: 100,
     });
-    this.data['mail.activity'].records.push({
+    this.serverData.models['mail.activity'].records.push({
         activity_category: 'default',
         activity_type_id: 1,
         can_write: true,
@@ -1252,7 +1276,11 @@ QUnit.test('data-oe-id & data-oe-model link redirection on click', async functio
         res_id: 100,
         res_model: 'res.partner',
     });
-    const { createChatterContainerComponent } = await this.start({ env: { bus } });
+    const { createChatterContainerComponent } = await this.start({
+        services: {
+            action: fakeActionService,
+        },
+    });
     await createChatterContainerComponent({
         threadId: 100,
         threadModel: 'res.partner',

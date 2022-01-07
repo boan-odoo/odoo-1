@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     afterNextRender,
     beforeEach,
     dragenterFiles,
@@ -21,23 +20,19 @@ QUnit.module('attachment_box_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const res = await start(Object.assign({}, params, {
-                data: this.data,
+            const { env, webClient } = await start(Object.assign({}, params, {
+                serverData: this.serverData,
             }));
-            this.env = res.env;
-            this.widget = res.widget;
-            return res;
+            this.env = env;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('base empty rendering', async function (assert) {
     assert.expect(4);
 
-    this.data['res.partner'].records.push({ id: 100 });
+    this.serverData.models['res.partner'].records.push({ id: 100 });
     const { createChatterContainerComponent } = await this.start();
     const chatterContainerComponent = await createChatterContainerComponent({
         isAttachmentBoxVisibleInitially: true,
@@ -68,8 +63,8 @@ QUnit.test('base empty rendering', async function (assert) {
 QUnit.test('base non-empty rendering', async function (assert) {
     assert.expect(4);
 
-    this.data['res.partner'].records.push({ id: 100 });
-    this.data['ir.attachment'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 100 });
+    this.serverData.models['ir.attachment'].records.push(
         {
             mimetype: 'text/plain',
             name: 'Blah.txt',
@@ -113,7 +108,7 @@ QUnit.test('base non-empty rendering', async function (assert) {
 QUnit.test('attachment box: drop attachments', async function (assert) {
     assert.expect(5);
 
-    this.data['res.partner'].records.push({ id: 100 });
+    this.serverData['res.partner'].records.push({ id: 100 });
     const { createChatterContainerComponent } = await this.start();
     await createChatterContainerComponent({
         isAttachmentBoxVisibleInitially: true,
@@ -188,8 +183,8 @@ QUnit.test('attachment box: drop attachments', async function (assert) {
 QUnit.test('view attachments', async function (assert) {
     assert.expect(7);
 
-    this.data['res.partner'].records.push({ id: 100 });
-    this.data['ir.attachment'].records.push(
+    this.serverData.models['res.partner'].records.push({ id: 100 });
+    this.serverData.models['ir.attachment'].records.push(
         {
             id: 143,
             mimetype: 'text/plain',
@@ -269,8 +264,8 @@ QUnit.test('view attachments', async function (assert) {
 QUnit.test('remove attachment should ask for confirmation', async function (assert) {
     assert.expect(5);
 
-    this.data['res.partner'].records.push({ id: 100 });
-    this.data['ir.attachment'].records.push({
+    this.serverData.models['res.partner'].records.push({ id: 100 });
+    this.serverData.models['ir.attachment'].records.push({
         id: 143,
         mimetype: 'text/plain',
         name: 'Blah.txt',

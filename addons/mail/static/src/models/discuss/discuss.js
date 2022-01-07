@@ -198,7 +198,7 @@ registerModel({
             }
             if (!this.discussView) {
                 this.env.services.action.doAction(
-                    'mail.action_discuss',
+                    'mail.discuss',
                     {
                         active_id: this.threadToActiveId(this),
                         clear_breadcrumbs: false,

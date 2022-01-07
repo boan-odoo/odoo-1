@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import {
-    afterEach,
     beforeEach,
     start,
 } from '@mail/utils/test_utils';
@@ -14,29 +13,26 @@ QUnit.module('discuss_sidebar_category_item_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, widget } = await start(Object.assign({}, params, {
+            const { env, webClient } = await start(Object.assign({}, params, {
                 autoOpenDiscuss: true,
-                data: this.data,
+                serverData: this.serverData,
                 hasDiscuss: true,
             }));
             this.env = env;
-            this.widget = widget;
+            this.webClient = webClient;
         };
-    },
-    afterEach() {
-        afterEach(this);
     },
 });
 
 QUnit.test('livechat - avatar: should have a smiley face avatar for an anonymous livechat item', async function (assert) {
     assert.expect(2);
 
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         anonymous_name: "Visitor 11",
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, this.data.currentPartnerId],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, this.TEST_USER_IDS.currentPartnerId],
     });
     await this.start();
 
@@ -53,8 +49,9 @@ QUnit.test('livechat - avatar: should have a smiley face avatar for an anonymous
         `.o_DiscussSidebarCategoryItem_image`,
         "should have an avatar"
     );
+
     assert.strictEqual(
-        livechatItem.querySelector(`:scope .o_DiscussSidebarCategoryItem_image`).dataset.src,
+        livechatItem.querySelector(`:scope .o_DiscussSidebarCategoryItem_image`).getAttribute('src'),
         '/mail/static/src/img/smiley/avatar.jpg',
         'should have the smiley face as the avatar for anonymous users'
     );
@@ -63,15 +60,15 @@ QUnit.test('livechat - avatar: should have a smiley face avatar for an anonymous
 QUnit.test('livechat - avatar: should have a partner profile picture for a livechat item linked with a partner', async function (assert) {
     assert.expect(2);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 10,
         name: "Jean",
     });
-    this.data['mail.channel'].records.push({
+    this.serverData.models['mail.channel'].records.push({
         channel_type: 'livechat',
         id: 11,
-        livechat_operator_id: this.data.currentPartnerId,
-        members: [this.data.currentPartnerId, 10],
+        livechat_operator_id: this.TEST_USER_IDS.currentPartnerId,
+        members: [this.TEST_USER_IDS.currentPartnerId, 10],
     });
     await this.start();
 
@@ -89,7 +86,7 @@ QUnit.test('livechat - avatar: should have a partner profile picture for a livec
         "should have an avatar"
     );
     assert.strictEqual(
-        livechatItem.querySelector(`:scope .o_DiscussSidebarCategoryItem_image`).dataset.src,
+        livechatItem.querySelector(`:scope .o_DiscussSidebarCategoryItem_image`).getAttribute('src'),
         '/web/image/res.partner/10/avatar_128',
         'should have the partner profile picture as the avatar for partners'
     );
