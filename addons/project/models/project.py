@@ -1455,12 +1455,13 @@ class Task(models.Model):
     def copy(self, default=None):
         if default is None:
             default = {}
-        if not default.get('name'):
+        has_default_name = bool(default.get('name', ''))
+        if not has_default_name:
             default['name'] = _("%s (copy)", self.name)
         if self.recurrence_id:
             default['recurrence_id'] = self.recurrence_id.copy().id
         if self.allow_subtasks:
-            default['child_ids'] = [child.copy().id for child in self.child_ids]
+            default['child_ids'] = [child.copy({'name': child.name} if has_default_name else None).id for child in self.child_ids]
         return super(Task, self).copy(default)
 
     @api.model
