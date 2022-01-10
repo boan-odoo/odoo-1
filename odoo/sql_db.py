@@ -42,8 +42,6 @@ def undecimalize(symb, cr):
         return None
     return float(symb)
 
-psycopg2.extensions.register_type(psycopg2.extensions.new_type((700, 701, 1700,), 'float', undecimalize))
-
 
 from . import tools
 from .tools.func import frame_codeinfo
