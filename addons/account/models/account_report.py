@@ -22,7 +22,7 @@ class AccountReport(models.Model):
     filter_unfold_all = fields.Boolean(string="Allow Unfolding All Lines", default=False) # TODO OCO on pourrait le calculer: si le rapport compte au moins une ligne unfoldable, on l'affiche (why not ?)
     allow_comparison = fields.Boolean(string="Allow Comparison", default=True)
     #TODO OCO filter_journals
-    #TODO OCO filter_analytic
+    #TODO OCO filter_analytic (analytic sur les financial reports)
     #TODO OCO filter_hierarchy
     #TODO OCO filter_partner
     filter_fiscal_position = fields.Boolean(string="Use Foreign VAT Fiscal Positions", default=False) # TODO OCO renommer ce truc serait bien
@@ -53,7 +53,6 @@ class AccountReport(models.Model):
 
     def write(self, vals):
         #TODO OCO reDOC: tax tag management
-
         if 'country_id' in vals:
             tags_cache = {}
             impacted_reports = self.filtered(lambda x: x.country_id.id != vals['country_id'])
