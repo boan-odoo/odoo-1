@@ -671,11 +671,7 @@ const Wysiwyg = Widget.extend({
         this.trigger_up('ready_to_save', {defs: defs});
         await Promise.all(defs);
 
-        this._cleanForSave();
-
-        if (this.snippetsMenu) {
-            await this.snippetsMenu.cleanForSave();
-        }
+        await this.cleanForSave();
 
         const editables = this.options.getContentEditableAreas();
         await this.saveModifiedImages(editables.length ? $(editables) : this.$editable);
@@ -791,6 +787,14 @@ const Wysiwyg = Widget.extend({
             const selection = this.odooEditor.document.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
+        }
+    },
+    cleanForSave: async function () {
+        this.odooEditor.clean();
+        this.$editable.find('.oe_edited_link').removeClass('oe_edited_link');
+
+        if (this.snippetsMenu) {
+            await this.snippetsMenu.cleanForSave();
         }
     },
     /**
@@ -1559,10 +1563,6 @@ const Wysiwyg = Widget.extend({
                 noContextKeys: 'lang',
             });
         }
-    },
-    _cleanForSave: function () {
-        this.odooEditor.clean();
-        this.$editable.find('.oe_edited_link').removeClass('oe_edited_link');
     },
     _getCommands: function () {
         const commands = [
