@@ -352,6 +352,42 @@ QUnit.test('invite button should be present on livechat', async function (assert
     );
 });
 
+QUnit.test('reply and reaction buttons should not be present on livechat', async function (assert) {
+    assert.expect(2);
+
+    this.data['mail.channel'].records.push({
+        channel_type: 'livechat',
+        id: 10,
+        livechat_operator_id: this.data.currentPartnerId,
+        members: [this.data.currentPartnerId, this.data.publicPartnerId],
+    });
+    await this.start({
+        discuss: {
+            params: {
+                default_active_id: 'mail.channel_10',
+            },
+        },
+    });
+    await afterNextRender(() => {
+        document.querySelector(`.o_ComposerTextInput_textarea`).focus();
+        document.execCommand('insertText', false, "Test");
+    });
+    await afterNextRender(() =>
+        document.querySelector('.o_Composer_buttonSend').click()
+    );
+    await afterNextRender(() => document.querySelector('.o_Message').click());
+    assert.containsNone(
+        document.body,
+        '.o_MessageActionList_actionReply',
+        "should not have reply action"
+    );
+    assert.containsNone(
+        document.body,
+        '.o_MessageActionList_actionReaction',
+        "should not have action to add a reaction"
+    );
+});
+
 });
 });
 });
