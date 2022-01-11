@@ -31,6 +31,9 @@ a dependency towards website editing and customization capabilities.""",
         'web._assets_frontend_helpers': [
             ('prepend', 'portal/static/src/scss/bootstrap_overridden.scss'),
         ],
+        'web.assets_backend': [
+            'portal/static/src/scss/portal_wizard.scss',
+        ],
         'web.assets_frontend': [
             'portal/static/src/scss/bootstrap.extend.scss',
             'portal/static/src/scss/portal.scss',
