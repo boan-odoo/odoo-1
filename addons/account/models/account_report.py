@@ -117,20 +117,36 @@ class AccountReportExpression(models.Model):
     engine = fields.Selection(
         string="Computation Engine",
         selection = [
-            ('domain', 'Odoo Domain'),
-            ('tax_tags', 'Tax Tags'),
-            ('custom', 'Custom Code'),
-            ('aggregation', 'Aggregate Other Formulas'),
-            ('account_codes', 'Prefix of Account Codes'),
+            ('domain', "Odoo Domain"),
+            ('tax_tags', "Tax Tags"),
+            ('custom', "Custom Code"),
+            ('aggregation', "Aggregate Other Formulas"),
+            ('account_codes', "Prefix of Account Codes"),
+            ('other_report', "Line from another report"),
         ],
         required=True
     )
+    """
+    TODO OCO
+    Un nouveau moteur:
+      > référencie une ligne de rapport externe
+      > Il ajoute à l'évaluation TOUTES les formules dont dépend la ligne en en forçant le special_date_changer à celui de l'expression courante
+      > Il se calcule juste avant aggregate,  au cas où
+      > Si on a un cas où ce n'est pas une bonne idée de forcer sur toutes les lignes dont on dépend, il suffit de scinder le calcul
+        en plusieurs expressions, avec des special_date_changers différents. Plus manuel, c'est sûr mais c'est un cas qui à mon avis
+        restera théorique dans la vraie vie, et il y a un workaround simple. Ce serait pas mal de mettre ça en commentaire quelque part.
+
+    <field name="expression_ids" eval="[(5, 0, 0),
+                (0, 0, {'total': 'balance', 'engine': 'other_report', 'formula': 'NEP.balance', 'date_scope': 'normal'}),
+            ]"/>
+    """
+
 
     formula = fields.Char(string="Formula")
     subformula = fields.Char(string="Subformula")
     date_scope = fields.Selection(
         string="Date Scope",
-        #TODO OCO rename, redoc selection. This all could be clearer IMO :p
+        #TODO OCO rename, redoc selection ? This all could be clearer IMO :p
         selection=[
             ('from_beginning', 'From the beginning'),
             ('to_beginning_of_period', 'At the beginning of the period'),
