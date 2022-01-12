@@ -5,21 +5,21 @@
         <div class="clientlist-screen screen" t-on-activate-edit-mode="activateEditMode">
             <div class="screen-content">
                 <div class="top-content">
-                    <div class="button back" t-on-click="back">
-                        <i class="fa fa-angle-double-left"/>
-                        <t t-if="!env.isMobile"> Discard</t>
+                    <div class="button highlight" t-if="state.detailIsShown" t-on-click="() => this.trigger('click-save')">
+                        <i t-if="env.isMobile" class="fa fa-floppy-o"/>
+                        <t t-if="!env.isMobile">
+                            <span> Save</span>
+                        </t>
                     </div>
                     <div t-if="!state.detailIsShown" class="button new-customer" role="img" aria-label="Add a customer"
                             t-on-click="() => this.trigger('activate-edit-mode', { isNewClient: true })"
                             title="Add a customer">
-                        <i class="fa fa-plus"/>
+                        <i t-if="env.isMobile" class="fa fa-plus"/>
                         <t t-if="!env.isMobile"> Create</t>
                     </div>
-                    <div class="button" t-if="state.detailIsShown" t-on-click="() => this.trigger('click-save')">
-                        <i class="fa fa-floppy-o"/>
-                        <t t-if="!env.isMobile">
-                            <span> Save</span>
-                        </t>
+                    <div class="button back" t-on-click="back">
+                        <i t-if="env.isMobile" class="fa fa-angle-double-left"/>
+                        <t t-if="!env.isMobile"> Discard</t>
                     </div>
                     <div t-if="!state.detailIsShown" class="searchbox-client top-content-center">
                         <input placeholder="Search Customers..." size="1" t-on-keyup="updateClientList" />
