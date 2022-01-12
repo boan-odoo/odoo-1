@@ -91,7 +91,6 @@ class CalendarLeaves(models.Model):
             approved_leaves.action_draft()
             previous_durations = [leave.number_of_days for leave in leaves]
             leaves._compute_number_of_days()
-            duration_differences = []
             for previous_duration, leave in zip(previous_durations, leaves):
                 duration_difference = previous_duration - leave.number_of_days
                 if duration_difference > 0:
