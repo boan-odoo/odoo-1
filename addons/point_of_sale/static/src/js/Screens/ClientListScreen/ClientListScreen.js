@@ -129,8 +129,7 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
                 });
                 await this.env.pos.load_new_partners();
                 this.state.selectedClient = this.env.pos.db.get_partner_by_id(partnerId);
-                this.state.detailIsShown = false;
-                this.render();
+                this.confirm();
             } catch (error) {
                 if (isConnectionError(error)) {
                     await this.showPopup('OfflineErrorPopup', {
