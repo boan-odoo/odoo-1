@@ -1,6 +1,11 @@
 odoo.define('web_unsplash.image_widgets', function (require) {
 'use strict';
 
+const session = require('web.session');
+if (!session.is_admin) {
+    return;
+}
+
 var core = require('web.core');
 var UnsplashAPI = require('unsplash.api');
 const {UploadProgressToast} = require('@web_editor/js/wysiwyg/widgets/upload_progress_toast');

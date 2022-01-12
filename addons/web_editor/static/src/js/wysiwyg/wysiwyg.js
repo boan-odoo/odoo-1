@@ -1612,47 +1612,55 @@ const Wysiwyg = Widget.extend({
                     this.odooEditor.execCommand('setTag', 'pre');
                 },
             },
-            {
-                groupName: 'Navigation',
-                title: 'Link',
-                description: 'Add a link.',
-                fontawesome: 'fa-link',
-                callback: () => {
-                    this.toggleLinkTools({forceDialog: true});
-                },
-            },
-            {
-                groupName: 'Navigation',
-                title: 'Button',
-                description: 'Add a button.',
-                fontawesome: 'fa-link',
-                callback: () => {
-                    this.toggleLinkTools({forceDialog: true});
-                    // Force the button style after the link modal is open.
-                    setTimeout(() => {
-                        $(".o_link_dialog .link-style[value=primary]").click();
-                    }, 150);
-                },
-            },
-            {
-                groupName: 'Medias',
-                title: 'Image',
-                description: 'Insert an image.',
-                fontawesome: 'fa-file-image-o',
-                callback: () => {
-                    this.openMediaDialog();
-                },
-            },
-            {
-                groupName: 'Medias',
-                title: 'Video',
-                description: 'Insert a video.',
-                fontawesome: 'fa-file-video-o',
-                callback: () => {
-                    this.openMediaDialog({noVideos: false, noImages: true, noIcons: true, noDocuments: true});
-                },
-            },
         ];
+        if (!this.options.plugins || this.options.plugins.LinkPlugin !== false) {
+            commands.push(
+                {
+                    groupName: 'Navigation',
+                    title: 'Link',
+                    description: 'Add a link.',
+                    fontawesome: 'fa-link',
+                    callback: () => {
+                        this.toggleLinkTools({forceDialog: true});
+                    },
+                },
+                {
+                    groupName: 'Navigation',
+                    title: 'Button',
+                    description: 'Add a button.',
+                    fontawesome: 'fa-link',
+                    callback: () => {
+                        this.toggleLinkTools({forceDialog: true});
+                        // Force the button style after the link modal is open.
+                        setTimeout(() => {
+                            $(".o_link_dialog .link-style[value=primary]").click();
+                        }, 150);
+                    },
+                },
+            );
+        }
+        if (!this.options.plugins || this.options.plugins.MediaPlugin !== false) {
+            commands.push(
+                {
+                    groupName: 'Medias',
+                    title: 'Image',
+                    description: 'Insert an image.',
+                    fontawesome: 'fa-file-image-o',
+                    callback: () => {
+                        this.openMediaDialog();
+                    },
+                },
+                {
+                    groupName: 'Medias',
+                    title: 'Video',
+                    description: 'Insert a video.',
+                    fontawesome: 'fa-file-video-o',
+                    callback: () => {
+                        this.openMediaDialog({noVideos: false, noImages: true, noIcons: true, noDocuments: true});
+                    },
+                },
+            );
+        }
         if (this.options.snippets) {
             commands.push(...this._getSnippetsCommands());
         }

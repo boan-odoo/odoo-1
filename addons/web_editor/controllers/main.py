@@ -223,6 +223,12 @@ class Web_Editor(http.Controller):
         attachment = self._attachment_create(url=url, res_id=res_id, res_model=res_model)
         return attachment._get_media_info()
 
+    @http.route('/web_editor/attachment/fetch', type='json', auth='user', methods=['POST'], website=True)
+    def fetch_attachments(self, domain=None, fields=None, offset=0, limit=None, order=None, **read_kwargs):
+        if not request.env.user.has_group('base.group_user'):
+            return []
+        return request.env['ir.attachment'].search_read(domain, fields, offset, limit, order, **read_kwargs)
+
     @http.route('/web_editor/attachment/remove', type='json', auth='user', website=True)
     def remove(self, ids, **kwargs):
         """ Removes a web-based image attachment if it is used by no view (template)
@@ -317,7 +323,17 @@ class Web_Editor(http.Controller):
         else:
             raise UserError(_("You need to specify either data or url to create an attachment."))
 
-        attachment = request.env['ir.attachment'].create(attachment_data)
+        env = request.env['ir.attachment']
+        if request.env.user.has_group('base.group_portal'):
+            request.env[res_model].check_access_rights('write')
+            if res_id:
+                request.env[res_model].browse(res_id).check_access_rule('write')
+            env = env.sudo()
+        attachment = env.create(attachment_data)
+
+        if not attachment_data['public']:
+            attachment.sudo().generate_access_token()
+
         return attachment
 
     def _clean_context(self):
