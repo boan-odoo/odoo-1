@@ -91,7 +91,9 @@ class CalendarLeaves(models.Model):
             approved_leaves.action_draft()
             previous_durations = [leave.number_of_days for leave in leaves]
             leaves._compute_number_of_days()
+            duration_differences = []
             for previous_duration, leave in zip(previous_durations, leaves):
+                duration_differences.append(previous_duration - leave.number_of_days)
                 if leave.number_of_days > previous_duration\
                         and leave['holiday_status_id']['name'] != 'Sick Time Off':
                     new_leaves = self._split_leave(leave, time_domain_dict)
@@ -104,11 +106,11 @@ class CalendarLeaves(models.Model):
             approved_leaves.action_approve()
             leaves_to_validate = validated_leaves.filtered(lambda l: l.number_of_days > 0 and l.state != 'validate')
             leaves_to_validate.action_validate()
-            for leave in leaves:
+            for i, leave in enumerate(leaves):
                 if leave.number_of_days == 0.0:
                     leave.force_cancel(_("a new public holiday completely overrides this leave"), 1)
                 else:
-                    leave.message_post(body=_("Due to a change in global time offs, this time off duration has been modified"), subtype_id=1)
+                    leave.message_post(body=_("Due to a change in global time offs, you have been granted %s day(s) back", duration_differences[i]), subtype_id=1)
         return True
 
     @api.model_create_multi
