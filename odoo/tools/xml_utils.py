@@ -2,10 +2,17 @@
 """Utilities for generating, parsing and checking XML/XSD files on top of the lxml.etree module."""
 
 import base64
+import logging
+import requests
+import zipfile
 from io import BytesIO
 from lxml import etree
+from lxml.etree import XMLSyntaxError
 
 from odoo.exceptions import UserError
+
+
+_logger = logging.getLogger(__name__)
 
 
 class odoo_resolver(etree.Resolver):
@@ -83,3 +90,94 @@ def create_xml_node(parent_node, node_name, node_value=None):
     :returns (etree._Element):
     """
     return create_xml_node_chain(parent_node, [node_name], node_value)[0]
+
+
+def load_xsd_from_url(env, url, module_name, file_name=None, zip_file_names=None, to_be_cached=False):
+    """Load xsd file(s) from given url and potentially cache them as ir.attachment.
+
+    NOTE: XSD validation should be restricted to the development process, for testing purposes.
+          Refrain from using this method on production.
+
+    :param env: environment of calling module (odoo.api.Environment)
+    :param url: url of xsd file/archive (str)
+    :param module_name: name of calling module (str)
+    :param file_name: if provided, gives this name to the cached file, in case of a single xsd file (str)
+    :param zip_file_names: list of file names to be extracted from zip archive. If not provided, extract all .xsd files (list of str)
+    :param to_be_cached: if True, the raw xsd files will be cached and thus saved as ir.attachment (bool)
+    :returns: list of raw xsd files (bytes) or None if error
+    """
+
+    def get_response_content():
+        response = requests.get(url, timeout=10)
+        if not response.ok:
+            _logger.warning("HTTP error (status code %s) with the given URL: %s", response.status_code, url)
+            return
+        return response.content
+
+    def check_xsd_content(xsd_content, xsd_file_name):
+        try:
+            return etree.fromstring(xsd_content)
+        except XMLSyntaxError:
+            _logger.warning("Failed to parse response's content (wrong XML structure) for file with name %s" % xsd_file_name)
+            return
+
+    def load_xsd():
+        fname = file_name or url.split('/')[-1].replace('.', '_')
+        xsd_fname = 'xsd_cached_%s_%s' % (module_name, fname)
+        attachment = env['ir.attachment'].search([('name', '=', xsd_fname)])
+        if attachment:
+            return [attachment.raw]
+        content = get_response_content()
+        if not content:
+            return
+
+        if check_xsd_content(content, fname) is None:
+            return
+
+        if to_be_cached:
+            env['ir.attachment'].create({
+                'res_model': module_name,
+                'name': xsd_fname,
+                'raw': content,
+            })
+        return [content]
+
+    def load_zip():
+        # Extract and parse the archive for xsd files
+        content = get_response_content()
+        if not content:
+            return
+        archive = zipfile.ZipFile(BytesIO(content))
+        zip_xsd_list = []
+        for file_path in archive.namelist():
+            # If zip_file_names are provided, file_path needs to match one
+            if (not zip_file_names or file_path in zip_file_names) and file_path.endswith('.xsd'):
+                file = file_path
+                attachment = env['ir.attachment'].search([('name', '=', file)])
+                if attachment:
+                    zip_xsd_list.append(attachment.raw)
+                    continue
+                try:
+                    content = archive.open(file).read()
+                    if check_xsd_content(content, file) is None:
+                        continue
+                    zip_xsd_list.append(content)
+                    if to_be_cached:
+                        env['ir.attachment'].create({
+                            'res_model': module_name,
+                            'name': file,
+                            'raw': content,
+                        })
+                except KeyError:
+                    _logger.warning("Failed to retrieve XSD file with name %s from ZIP archive" % file)
+        return zip_xsd_list
+
+    if url.lower().endswith('.xsd'):
+        xsd_list = load_xsd()
+    elif url.lower().endswith('.zip'):
+        xsd_list = load_zip()
+    else:
+        _logger.warning("File should be an XSD file or a ZIP archive")
+        return
+
+    return xsd_list
