@@ -26,9 +26,9 @@
         margin-top: $o-sheet-cancel-tpadding + 33px;
     }
     .o_mail_add_emoji {
-        float: none;
         display: inline-block;
-        bottom: 0;
+        bottom: 0.3rem;
+        right: 14%;
     }
     input.o_field_char.o_field_widget {
         min-width: 86%;
