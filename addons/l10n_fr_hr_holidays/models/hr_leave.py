@@ -46,8 +46,11 @@ class HrLeave(models.Model):
                 return {'days': 0.5, 'hours': attendance.hour_to - attendance.hour_from}
         # Check calendars for working days until we find the right target, start at date_to + 1 day
         # Postpone date_target until the next working day
+        date_start = date_from
         date_target = date_to + relativedelta(days=1)
         counter = 0
+        while not calendar_works_on_date(CalendarAttendance, employee_calendar, date_start):
+            date_start += relativedelta(days=1)
         while not calendar_works_on_date(CalendarAttendance, employee_calendar, date_target):
             date_target += relativedelta(days=1)
             counter += 1
@@ -56,13 +59,13 @@ class HrLeave(models.Model):
             # Allow up to 14 days for two weeks calendars.
             if counter > 14:
                 # Default behaviour
-                result = employee._get_work_days_data_batch(date_from, date_to, calendar=employee_calendar)[employee.id]
+                result = employee._get_work_days_data_batch(date_start, date_to, calendar=employee_calendar)[employee.id]
                 if self.request_unit_half and result['hours'] > 0:
                     result['days'] = 0.5
                 return result
         date_target = datetime.combine(date_target.date(), datetime.min.time())
         self.l10n_fr_date_to = date_target
-        return employee._get_work_days_data_batch(date_from, date_target, calendar=company_calendar)[employee.id]
+        return employee._get_work_days_data_batch(date_start, date_target, calendar=company_calendar)[employee.id]
 
     def _get_number_of_days(self, date_from, date_to, employee_id):
         """
@@ -75,11 +78,14 @@ class HrLeave(models.Model):
 
         Returns a dict containing two keys: 'days' and 'hours' with the value being the duration for the requested time period.
         """
-        if employee_id:
+        basic_amount = super()._get_number_of_days(date_from, date_to, employee_id)
+        if not basic_amount['days'] and not basic_amount['hours']:
+            return basic_amount
+        if employee_id and super()._get_number_of_days(date_from, date_to, employee_id):
             employee = self.env['hr.employee'].browse(employee_id).sudo()
             company = employee.company_id
             if company.country_id.code == 'FR' and company.time_off_reference_calendar:
                 calendar = self._get_calendar()
                 if calendar and calendar != company.time_off_reference_calendar:
                     return self._compute_fr_number_of_days(employee, date_from, date_to, calendar, company.time_off_reference_calendar)
-        return super()._get_number_of_days(date_from, date_to, employee_id)
+        return basic_amount
