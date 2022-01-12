@@ -45,6 +45,7 @@
                                                 <th t-if="!env.isMobile">Address</th>
                                                 <th t-if="!env.isMobile" class="client-line-email">Contact</th>
                                                 <th t-if="env.isMobile">ZIP</th>
+                                                <th class="pos-right-align" t-if="isBalanceDisplayed">Balance</th>
                                                 <th class="client-line-details"></th>
                                                 <th class="client-line-last-column-placeholder oe_invisible"></th>
                                             </tr>
@@ -55,6 +56,7 @@
                                                 <ClientLine partner="partner"
                                                             selectedClient="state.selectedClient"
                                                             detailIsShown="state.detailIsShown"
+                                                            isBalanceDisplayed="isBalanceDisplayed"
                                                             onClickEdit.bind="activateEditMode"
                                                             onClickClient.bind="clickClient"/>
                                             </t>

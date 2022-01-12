@@ -82,6 +82,9 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
         get isEveryPartnerLoadedAfterStartOfSession() {
             return !this.env.pos.config.limited_partners_loading || this.env.pos.config.partner_load_background;
         }
+        get isBalanceDisplayed() {
+            return this.env.pos.config.module_pos_loyalty;
+        }
 
         // Methods
 

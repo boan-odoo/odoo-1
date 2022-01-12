@@ -21,6 +21,7 @@
                 <t t-esc="props.partner.zip or ''" />
                 <span t-if="highlight"><br/></span>
             </td>
+            <td class="client-line-balance" t-if="props.isBalanceDisplayed"></td>
             <td>
                 <button class="edit-client-button" t-on-click.stop="() => this.props.onClickEdit({detail: {partner: props.partner}})">DETAILS</button>
             </td>
