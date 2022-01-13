@@ -235,8 +235,9 @@ class AccountReportExpression(models.Model):
 
             expression_terms = re.split('[-+/*]', expression.formula.replace(' ', '')) # TODO une constante pour les opérateurs admis à l'aggrégation ?
             for term in expression_terms:
-                line_code, total_name = term.split('.')
-                totals_by_code[line_code].add(total_name)
+                if term: # term might be empty if the formula contains a negative term
+                    line_code, total_name = term.split('.')
+                    totals_by_code[line_code].add(total_name)
 
         return totals_by_code
 
