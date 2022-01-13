@@ -2,8 +2,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 from odoo.osv import expression
 
+from collections import defaultdict
+import itertools
+import re
 
 class AccountReport(models.Model):
     _name = 'account.report'
@@ -107,6 +111,42 @@ class AccountReportLine(models.Model):
         ('code_uniq', 'unique (code)', "A report line with the same code already exists."),
     ]
 
+    @api.constrains('expression_ids')
+    def _validate_formula(self):
+        # TODO OCO vérifier l'impact sur le temps d'installation :/
+        # TODO OCO compléter pour les autres moteurs serait pas mal
+        aggregation_to_check = []
+        for expression in self.expression_ids:
+            if expression.engine == 'aggregation':
+                term_line_codes = expression._get_aggregation_terms_details()
+                aggregation_to_check.append((expression, term_line_codes))
+
+        if aggregation_to_check:
+            report_lines = self.env['account.report.line'].search([
+                ('code', 'in', list(itertools.chain(*[term_line_codes.keys() for expression, term_line_code in aggregation_to_check]))),
+            ])
+            lines_by_code = {line.code: line for line in report_lines}
+
+            for expression, term_line_codes in aggregation_to_check:
+                for line_code, expression_totals in term_line_codes.items():
+                    for total_name in expression_totals:
+                        if line_code not in lines_by_code:
+                            #raise ValidationError(_("No report line could be found for term '%s' of expression '%s'.", line_code, expression.formula))
+                            continue # TODO OCO temporaire: ça ne marche pas à cause des lignes de niveaux supérieurs qui utilisent des lignes qui sont déclarées après ... ==> Que faire ? :/
+                            # TODO OCO en fait, ce qu'il faudrait, c'est faire tourner ce check une fois le fichier loadé, quoi ... Pas comme une contrainte à l'installation
+                            # Mais du coup, il faudrait quand même que depuis l'UI, ça marche comme une contrainte si on ajoute une ligne. hmmm ... Y'a une clé de contexte ?
+                            # TODO OCO ====> Encore mieux: on pourrait ne pas le faire tourner à l'installation, mais dans un test, sur tous les rapports ! (à ajouter dans les l10n d'une façon ou d'une autre, donc)
+
+                        target_line = lines_by_code[line_code]
+                        if target_line.report_id != expression.report_line_id.report_id and expression.subformula != 'cross_report':
+                            raise ValidationError(_("Term '%s' seems to be cross-report, while expression '%s' is not.", line_code, expression.formula))
+
+                        if not target_line.expression_ids.filtered(lambda x: x.total == total_name):
+                            raise ValidationError(_(
+                                "Total '%s', used on term '%s' of expression '%s' is not defined.",
+                                total_name, line_code, expression.formula
+                            ))
+
 class AccountReportExpression(models.Model):
     _name = 'account.report.expression' #TODO OCO ou rebaptiser line.cell pour éviter la confusion avec le champ formula ?
     _description = "Accounting Report Expression"
@@ -122,26 +162,9 @@ class AccountReportExpression(models.Model):
             ('custom', "Custom Code"),
             ('aggregation', "Aggregate Other Formulas"),
             ('account_codes', "Prefix of Account Codes"),
-            ('other_report', "Line from another report"),
         ],
         required=True
     )
-    """
-    TODO OCO
-    Un nouveau moteur:
-      > référencie une ligne de rapport externe
-      > Il ajoute à l'évaluation TOUTES les formules dont dépend la ligne en en forçant le special_date_changer à celui de l'expression courante
-      > Il se calcule juste avant aggregate,  au cas où
-      > Si on a un cas où ce n'est pas une bonne idée de forcer sur toutes les lignes dont on dépend, il suffit de scinder le calcul
-        en plusieurs expressions, avec des special_date_changers différents. Plus manuel, c'est sûr mais c'est un cas qui à mon avis
-        restera théorique dans la vraie vie, et il y a un workaround simple. Ce serait pas mal de mettre ça en commentaire quelque part.
-
-    <field name="expression_ids" eval="[(5, 0, 0),
-                (0, 0, {'total': 'balance', 'engine': 'other_report', 'formula': 'NEP.balance', 'date_scope': 'normal'}),
-            ]"/>
-    """
-
-
     formula = fields.Char(string="Formula")
     subformula = fields.Char(string="Subformula")
     date_scope = fields.Selection(
@@ -202,6 +225,20 @@ class AccountReportExpression(models.Model):
                     self.env['account.account.tag'].create(tag_vals)
 
         return rslt
+
+    def _get_aggregation_terms_details(self):
+        # TODO OCO DOC
+        totals_by_code = defaultdict(lambda: set()) # e.g. {'A': {'balance', 'other'}, 'B': {'balance'}} if we the expression does formula=A.balance + B.balance + A.other
+        for expression in self:
+            if expression.engine != 'aggregation':
+                raise UserError(_("Cannot get aggregation details from a line not using 'aggregation' engine"))
+
+            expression_terms = re.split('[-+/*]', expression.formula.replace(' ', '')) # TODO une constante pour les opérateurs admis à l'aggrégation ?
+            for term in expression_terms:
+                line_code, total_name = term.split('.')
+                totals_by_code[line_code].add(total_name)
+
+        return totals_by_code
 
     def _get_matching_tags(self):
         # TODO OCO DOC
