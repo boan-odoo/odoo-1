@@ -205,6 +205,9 @@ function factory(dependencies) {
             if ('group_based_subscription' in data) {
                 data2.group_based_subscription = data.group_based_subscription;
             }
+            if ('guestMembers' in data) {
+                data2.guestMembers = data.guestMembers;
+            }
             if ('id' in data) {
                 data2.id = data.id;
             }
@@ -1385,8 +1388,12 @@ function factory(dependencies) {
             if (this.channel_type === 'chat' && this.correspondent) {
                 return this.custom_channel_name || this.correspondent.nameOrDisplayName;
             }
-            if (this.channel_type === 'group') {
-                return this.name || this.members.map(partner => partner.nameOrDisplayName).join(', ');
+            if (this.channel_type === 'group' && !this.name) {
+                let groupName = this.members.map(partner => partner.nameOrDisplayName);
+                if (this.guestMembers.length) {
+                    groupName = groupName.concat(this.guestMembers.map(guest => guest.name));
+                }
+                return groupName.sort().join(', ');
             }
             return this.name;
         }

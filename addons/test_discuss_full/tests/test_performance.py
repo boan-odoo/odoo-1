@@ -289,6 +289,7 @@ class TestDiscussFullPerformance(TransactionCase):
                     'defaultDisplayMode': False,
                     'description': False,
                     'group_based_subscription': False,
+                    'guestMembers': [('insert', [])],
                     'id': channel_group_1.id,
                     'invitedGuests': [('insert', [])],
                     'invitedPartners': [('insert', [])],
