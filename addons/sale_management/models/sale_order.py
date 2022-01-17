@@ -163,8 +163,8 @@ class SaleOrder(models.Model):
         # i.e. to make sure the discount is correctly reset
         # if pricelist discount_policy is different than when the price was first computed.
         self.sale_order_option_ids.discount = 0.0
-        # self.sale_order_option_ids._compute_price_unit()
-        # self.sale_order_option_ids._compute_discount()
+        self.sale_order_option_ids._compute_price_unit()
+        self.sale_order_option_ids._compute_discount()
 
 
 class SaleOrderLine(models.Model):
