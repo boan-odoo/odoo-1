@@ -24,7 +24,7 @@ from werkzeug import urls
 from xmlrpc import client as xmlrpclib
 
 from odoo import _, api, exceptions, fields, models, tools, registry, SUPERUSER_ID, Command
-from odoo.exceptions import MissingError
+from odoo.exceptions import AccessError, MissingError, UserError
 from odoo.osv import expression
 
 from odoo.tools.misc import clean_context, split_every
@@ -1645,6 +1645,17 @@ class MailThread(models.AbstractModel):
     # ------------------------------------------------------
     # MESSAGE POST API
     # ------------------------------------------------------
+
+    def _message_post_check_attachments(self, attachment_ids, attachment_tokens):
+        """This method relies on access rules/rights through _document_check_access and therefore it
+        should not be called from a sudo env."""
+        if len(attachment_tokens) != len(attachment_ids):
+            raise UserError(_("An access token must be provided for each attachment."))
+        for (attachment_id, access_token) in zip(attachment_ids, attachment_tokens):
+            try:
+                self.env['ir.http']._document_check_access('ir.attachment', attachment_id, access_token)
+            except (AccessError, MissingError):
+                raise UserError(_("The attachment %s does not exist or you do not have the rights to access it.", attachment_id))
 
     def _message_post_process_attachments(self, attachments, attachment_ids, message_values):
         """ Preprocess attachments for mail_thread.message_post() or mail_mail.create().

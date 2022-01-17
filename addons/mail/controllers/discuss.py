@@ -196,6 +196,8 @@ class DiscussController(http.Controller):
 
     @http.route('/mail/message/post', methods=['POST'], type='json', auth='public')
     def mail_message_post(self, thread_model, thread_id, post_data, **kwargs):
+        attachment_ids = post_data.get('attachment_ids', [])
+        request.env['mail.thread']._message_post_check_attachments(attachment_ids=attachment_ids, attachment_tokens=post_data.get('attachment_tokens', [None] * len(attachment_ids)))
         if thread_model == 'mail.channel':
             channel_partner_sudo = request.env['mail.channel.partner']._get_as_sudo_from_request_or_raise(request=request, channel_id=int(thread_id))
             thread = channel_partner_sudo.channel_id
@@ -205,7 +207,8 @@ class DiscussController(http.Controller):
         return thread.message_post(**{key: value for key, value in post_data.items() if key in allowed_params}).message_format()[0]
 
     @http.route('/mail/message/update_content', methods=['POST'], type='json', auth='public')
-    def mail_message_update_content(self, message_id, body, attachment_ids):
+    def mail_message_update_content(self, message_id, body, attachment_ids, attachment_tokens=None):
+        request.env['mail.thread']._message_post_check_attachments(attachment_ids=attachment_ids, attachment_tokens=attachment_tokens or ([None] * len(attachment_ids)))
         guest = request.env['mail.guest']._get_guest_from_request(request)
         message_sudo = guest.env['mail.message'].browse(message_id).sudo().exists()
         if not message_sudo.is_current_user_or_guest_author and not guest.env.user.has_group('base.group_system'):

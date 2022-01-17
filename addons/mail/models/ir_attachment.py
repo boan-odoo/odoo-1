@@ -44,7 +44,7 @@ class IrAttachment(models.Model):
                 })
         self.unlink()
 
-    def _attachment_format(self, commands=False):
+    def _attachment_format(self, commands=False, format_token=False):
         safari = request and request.httprequest.user_agent and request.httprequest.user_agent.browser == 'safari'
         res_list = []
         for attachment in self:
@@ -56,11 +56,15 @@ class IrAttachment(models.Model):
                 'mimetype': 'application/octet-stream' if safari and attachment.mimetype and 'video' in attachment.mimetype else attachment.mimetype,
             }
             if commands:
+                if format_token:
+                    res['accessToken'] = attachment.access_token
                 res['originThread'] = [('insert', {
                     'id': attachment.res_id,
                     'model': attachment.res_model,
                 })]
             else:
+                if format_token:
+                    res['access_token'] = attachment.access_token
                 res.update({
                     'res_id': attachment.res_id,
                     'res_model': attachment.res_model,

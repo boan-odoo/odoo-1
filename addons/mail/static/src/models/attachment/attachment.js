@@ -28,6 +28,9 @@ function factory(dependencies) {
          */
         static convertData(data) {
             const data2 = {};
+            if ('access_token' in data) {
+                data2.accessToken = data.access_token;
+            }
             if ('filename' in data) {
                 data2.filename = data.filename;
             }

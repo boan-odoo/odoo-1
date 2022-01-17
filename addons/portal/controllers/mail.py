@@ -104,13 +104,7 @@ class PortalChatter(http.Controller):
         return ['token', 'hash', 'pid']
 
     def _portal_post_check_attachments(self, attachment_ids, attachment_tokens):
-        if len(attachment_tokens) != len(attachment_ids):
-            raise UserError(_("An access token must be provided for each attachment."))
-        for (attachment_id, access_token) in zip(attachment_ids, attachment_tokens):
-            try:
-                CustomerPortal._document_check_access(self, 'ir.attachment', attachment_id, access_token)
-            except (AccessError, MissingError):
-                raise UserError(_("The attachment %s does not exist or you do not have the rights to access it.", attachment_id))
+        request.env['mail.thread']._message_post_check_attachments(attachment_ids=attachment_ids, attachment_tokens=attachment_tokens)
 
     @http.route(['/mail/chatter_post'], type='json', methods=['POST'], auth='public', website=True)
     def portal_chatter_post(self, res_model, res_id, message, attachment_ids=None, attachment_tokens=None, **kw):

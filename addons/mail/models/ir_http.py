@@ -2,9 +2,11 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import odoo
-from odoo import models
+from odoo import models, SUPERUSER_ID, _
 from odoo.addons.web.controllers.main import HomeStaticTemplateHelpers
+from odoo.exceptions import AccessError, MissingError
 from odoo.http import request
+from odoo.tools import consteq
 
 
 class IrHttp(models.AbstractModel):
@@ -29,3 +31,18 @@ class IrHttp(models.AbstractModel):
                 'user_context': user_context,
             })
         return result
+
+    def _document_check_access(self, model_name, document_id, access_token=None):
+        """This method relies on access rules/rights and therefore it should not be called from a
+        sudo env."""
+        document = self.env[model_name].browse([document_id])
+        document_sudo = document.with_user(SUPERUSER_ID).exists()
+        if not document_sudo:
+            raise MissingError(_("This document does not exist."))
+        try:
+            document.check_access_rights('read')
+            document.check_access_rule('read')
+        except AccessError:
+            if not access_token or not document_sudo.access_token or not consteq(document_sudo.access_token, access_token):
+                raise
+        return document_sudo

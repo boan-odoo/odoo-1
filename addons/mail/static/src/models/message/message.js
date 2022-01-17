@@ -292,12 +292,13 @@ function factory(dependencies) {
          * @param {Object} param0
          * @param {string} param0.body the new body of the message
          */
-        async updateContent({ body, attachment_ids }) {
+        async updateContent({ body, attachment_ids, attachment_tokens }) {
             const messageData = await this.env.services.rpc({
                 route: '/mail/message/update_content',
                 params: {
                     body,
                     attachment_ids,
+                    attachment_tokens,
                     message_id: this.id,
                 },
             });

@@ -820,7 +820,7 @@ class Message(models.Model):
     # MESSAGE READ / FETCH / FAILURE API
     # ------------------------------------------------------
 
-    def _message_format(self, fnames, format_reply=True):
+    def _message_format(self, fnames, format_reply=True, format_attachments_token=False):
         """Reads values from messages and formats them for the web client."""
         self.check_access_rule('read')
         vals_list = self._read_format(fnames)
@@ -843,7 +843,7 @@ class Message(models.Model):
             main_attachment = self.env['ir.attachment']
             if message_sudo.attachment_ids and message_sudo.res_id and issubclass(self.pool[message_sudo.model], self.pool['mail.thread']):
                 main_attachment = self.env[message_sudo.model].sudo().browse(message_sudo.res_id).message_main_attachment_id
-            attachments_formatted = message_sudo.attachment_ids._attachment_format()
+            attachments_formatted = message_sudo.attachment_ids._attachment_format(format_token=format_attachments_token == 'if-author' and message_sudo.is_current_user_or_guest_author)
             for attachment in attachments_formatted:
                 attachment['is_main'] = attachment['id'] == main_attachment.id
             # Tracking values
@@ -911,9 +911,9 @@ class Message(models.Model):
             domain = expression.AND([domain, [('id', '<', max_id)]])
         if min_id:
             domain = expression.AND([domain, [('id', '>', min_id)]])
-        return self.search(domain, limit=limit).message_format()
+        return self.search(domain, limit=limit).message_format(format_attachments_token='if-author' if self.env.user.share else False)
 
-    def message_format(self, format_reply=True):
+    def message_format(self, format_reply=True, format_attachments_token=False):
         """ Get the message values in the format for web client. Since message values can be broadcasted,
             computed fields MUST NOT BE READ and broadcasted.
             :returns list(dict).
@@ -954,7 +954,7 @@ class Message(models.Model):
                     'parentMessage': {...}, # formatted message that this message is a reply to. Only present if format_reply is True
                 }
         """
-        vals_list = self._message_format(self._get_message_format_fields(), format_reply=format_reply)
+        vals_list = self._message_format(self._get_message_format_fields(), format_reply=format_reply, format_attachments_token=format_attachments_token)
 
         com_id = self.env['ir.model.data']._xmlid_to_res_id('mail.mt_comment')
         note_id = self.env['ir.model.data']._xmlid_to_res_id('mail.mt_note')

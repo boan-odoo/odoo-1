@@ -34,13 +34,13 @@ class MailMessage(models.Model):
             return ['&', ('notification_ids.notification_status', '=', 'exception'), ('notification_ids.notification_type', '=', 'sms')]
         raise NotImplementedError()
 
-    def message_format(self, format_reply=True):
+    def message_format(self, format_reply=True, format_attachments_token=False):
         """ Override in order to retrieves data about SMS (recipient name and
             SMS status)
 
         TDE FIXME: clean the overall message_format thingy
         """
-        message_values = super(MailMessage, self).message_format(format_reply=format_reply)
+        message_values = super(MailMessage, self).message_format(format_reply=format_reply, format_attachments_token=format_attachments_token)
         all_sms_notifications = self.env['mail.notification'].sudo().search([
             ('mail_message_id', 'in', [r['id'] for r in message_values]),
             ('notification_type', '=', 'sms')
