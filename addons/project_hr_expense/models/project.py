@@ -39,3 +39,47 @@ class Project(models.Model):
             action["views"] = [[False, 'form']]
             action["res_id"] = expenses.id
         return action
+
+    # ----------------------------
+    #  Project Update
+    # ----------------------------
+    def _get_expenses_profitability_items(self):
+        if not self.analytic_account_id:
+            return {}
+        can_see_expense = self.user_has_groups('hr_expense.group_hr_expense_team_approver')
+        expenses_read_group = self.env['hr.expense'].read_group(
+            [('analytic_account_id', 'in', self.analytic_account_id.ids),
+             ('is_refused', '=', False),
+             ('state', 'in', ['approved', 'done'])],
+            ['unit_amount', 'quantity', 'expense_sheet', 'ids:array_agg(id)'],
+            ['expense_sheet'],
+        )
+        expense_ids = []
+        if can_see_expense:
+            expense_data_per_sheet = {}
+            for expense_data in expenses_read_group:
+                expense_ids += expense_data['ids']
+                expense_data_per_sheet[expense_data['expense_sheet'][0]] = expense_data['quantity'] * expense_data['unit_amount']
+        else:
+            expense_data_per_sheet = {res['expense_sheet'][0]: res['quantity'] * res['unit_amount'] for res in expenses_read_group}
+        amount_billed = sum(expense_data_per_sheet.values())
+        return {
+            'revenues': {},
+            'costs': {'id': 'expenses', 'name': _('Expenses'), 'billed': -amount_billed, 'to_bill': 0.0, 'record_ids': expense_ids},
+        }
+
+    def _get_profitability_items(self):
+        profitability_data = super()._get_profitability_items()
+        expenses_data = self._get_expenses_profitability_items()
+        if expenses_data:
+            if expenses_data['revenues']:
+                revenues = profitability_data['revenues']
+                revenues['data'].append(expenses_data['revenues'])
+                revenues['total'] = {k: revenues['total'][k] + expenses_data['revenues'][k] for k in ['invoiced', 'to_invoice']}
+            costs = profitability_data['costs']
+            costs['data'].append(expenses_data['costs'])
+            costs['total'] = {k: costs['total'][k] + expenses_data['costs'][k] for k in ['billed', 'to_bill']}
+        return profitability_data
+
+    def _recompute_project_other_costs_billed(self, costs_data, cost_ids_to_reduce=None):
+        super()._recompute_project_other_costs_billed(costs_data, (cost_ids_to_reduce or []) + ['expenses'])

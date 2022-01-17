@@ -294,11 +294,13 @@ class Project(models.Model):
 
     def get_panel_data(self):
         panel_data = super(Project, self).get_panel_data()
+        profitability_items = self._get_profitability_items()
+        self._recompute_project_other_costs_billed(profitability_items['costs']['data'])
         return {
             **panel_data,
             'currency_id': self.currency_id.id,
             'analytic_account_id': self.analytic_account_id.id,
-            'profitability_items': self._get_profitability_items(),
+            'profitability_items': profitability_items,
         }
 
     def _get_all_sale_order_items_query(self):
@@ -423,6 +425,8 @@ class Project(models.Model):
 
         profitability_items['revenues'] = merge_profitability_data(profitability_items['revenues'], aal_profitability_items['revenues'])
         profitability_items['costs'] = merge_profitability_data(profitability_items['costs'], aal_profitability_items['costs'])
+        return profitability_items
+
     def _get_profitability_common(self):
         # FIXME: used in project update model
         self.ensure_one()
