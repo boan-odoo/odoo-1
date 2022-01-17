@@ -48,7 +48,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr t-foreach="revenue_items" t-as="revenue" t-key="revenue.name">
+                <tr t-foreach="revenue_items" t-as="revenue" t-key="revenue.name" t-if="revenue.invoiced !== 0 || revenue.to_invoice !== 0">
                     <td><t t-esc="revenue.name"/></td>
                     <td><t t-esc="formatMonetary(revenue.invoiced)"/></td>
                     <td><t t-esc="formatMonetary(revenue.to_invoice)"/></td>
@@ -80,7 +80,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr t-foreach="cost_items" t-as="cost" t-key="cost.name">
+                <tr t-foreach="cost_items" t-as="cost" t-key="cost.name" t-if="cost.billed !== 0 || cost.to_bill !== 0">
                     <td><t t-esc="cost.name"/></td>
                     <td><t t-esc="formatMonetary(cost.billed)"/></td>
                     <td><t t-esc="formatMonetary(cost.to_bill)"/></td>
