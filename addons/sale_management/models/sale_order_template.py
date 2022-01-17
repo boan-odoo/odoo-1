@@ -47,7 +47,6 @@ class SaleOrderTemplate(models.Model):
         string="Optional Products",
         copy=True)
 
-
     #=== COMPUTE METHODS ===#
 
     @api.depends('company_id')

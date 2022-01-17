@@ -63,8 +63,6 @@ class SaleOrder(models.Model):
         return res
 
     def _get_reward_lines(self):
-        # arj todo: _get_reward_lines is called from _get_invoiceable_lines which is not ensure one...
-        # self.ensure_one()
         return self.order_line.filtered(lambda line: line.is_reward_line)
 
     def _is_reward_in_order_lines(self, program):
@@ -464,7 +462,6 @@ class SaleOrder(models.Model):
         iff at least another 'basic' lines is also invoiceable.
         """
         invoiceable_lines = super()._get_invoiceable_lines(final)
-
         reward_lines = self._get_reward_lines()
         if invoiceable_lines <= reward_lines:
             return self.env['sale.order.line'].browse()

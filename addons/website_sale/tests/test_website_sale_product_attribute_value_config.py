@@ -192,6 +192,14 @@ class TestWebsiteSaleProductPricelist(TestSaleProductAttributeValueCommon):
             'product_id': test_product.product_variant_id.id,
             'order_id': so.id,
         })
+        # arj fixme: remove if not needed anymore
+        # # Some modules force the discount display
+        # if self.env.user.has_group('product.group_discount_per_so_line'):
+        #     price_total = 55
+        # else:
+        #     price_total = 110
+        #
+
         self.assertEqual(round(sol.price_total), 55.0, "110$ with 50% discount 10% included tax")
         self.assertEqual(round(sol.price_tax), 5.0, "110$ with 50% discount 10% included tax")
         so.pricelist_id = pricelist

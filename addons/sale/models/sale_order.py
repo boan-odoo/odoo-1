@@ -730,8 +730,8 @@ class SaleOrder(models.Model):
     def _get_invoice_grouping_keys(self):
         return ['company_id', 'partner_id', 'currency_id']
 
-    @api.model
     def _nothing_to_invoice_error(self):
+        self.ensure_one()
         return _(
             "There is nothing to invoice!\n\n"
             "Reason(s) of this behavior could be:\n"
@@ -823,7 +823,7 @@ class SaleOrder(models.Model):
             invoice_vals_list.append(invoice_vals)
 
         if not invoice_vals_list:
-            raise UserError(self._nothing_to_invoice_error())
+            raise UserError(order._nothing_to_invoice_error())
 
         # 2) Manage 'grouped' parameter: group by (partner_id, currency_id).
         if not grouped:

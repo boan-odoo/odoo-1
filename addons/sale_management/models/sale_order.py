@@ -268,13 +268,11 @@ class SaleOrderOption(models.Model):
             if not option.product_id or not option.order_id.pricelist_id:
                 continue
 
-            # # To compute the price_unit a so line is created in cache
+            # To compute the price_unit a so line is created in cache
             values = option._get_values_to_add_to_order()
             new_sol = self.env['sale.order.line'].new(values)
             new_sol._compute_price_unit()
             option.price_unit = new_sol.price_unit
-            # Avoid attaching the new line when called on template change
-            new_sol.order_id = False
 
     @api.depends('product_id', 'uom_id', 'quantity')
     def _compute_discount(self):
@@ -286,8 +284,6 @@ class SaleOrderOption(models.Model):
             new_sol = self.env['sale.order.line'].new(values)
             new_sol._compute_discount()
             option.discount = new_sol.discount
-            # Avoid attaching the new line when called on template change
-            new_sol.order_id = False
 
     def _get_values_to_add_to_order(self):
         self.ensure_one()
