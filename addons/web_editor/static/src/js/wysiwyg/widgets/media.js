@@ -64,6 +64,7 @@ var MediaWidget = Widget.extend({
 
 var SearchableMediaWidget = MediaWidget.extend({
     events: _.extend({}, MediaWidget.prototype.events || {}, {
+        'submit form': '_onSubmitForm',
         'input .o_we_search': '_onSearchInput',
     }),
 
@@ -104,6 +105,12 @@ var SearchableMediaWidget = MediaWidget.extend({
     // Handlers
     //--------------------------------------------------------------------------
 
+    /**
+     * @private
+     */
+    _onSubmitForm: function (ev) {
+        ev.preventDefault();
+    },
     /**
      * @private
      */
@@ -1189,7 +1196,6 @@ var IconWidget = SearchableMediaWidget.extend({
     //--------------------------------------------------------------------------
     // Handlers
     //--------------------------------------------------------------------------
-
     /**
      * @private
      */

@@ -303,7 +303,7 @@
 
     <!-- Icon choosing part of the Media Dialog -->
     <t t-name="wysiwyg.widgets.font-icons">
-        <form action="#">
+        <form>
             <div class="form-inline align-items-center py-4">
                 <t t-call="wysiwyg.widgets.media.search">
                     <t t-set="searchPlaceholder">Search a pictogram</t>
