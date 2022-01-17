@@ -62,3 +62,24 @@ class Project(models.Model):
                 'sequence': 36,
             })
         return buttons
+
+    def _get_profitability_items(self):
+        profitability_items = super()._get_profitability_items()
+        if self.analytic_account_id and self.user_has_groups('purchase.group_purchase_user'):
+            purchase_order_line_read = self.env['purchase.order.line'].search_read([
+                ('account_analytic_id', 'in', self.analytic_account_id.ids),
+                ('state', '!=', 'cancel'),
+            ], ['qty_invoiced', 'qty_to_invoice', 'price_unit'])
+            amount_invoiced = amount_to_invoice = 0.0
+            for pol_read in purchase_order_line_read:
+                price_unit = pol_read['price_unit']
+                amount_invoiced -= price_unit * pol_read['qty_invoiced'] if pol_read['qty_invoiced'] > 0 else 0.0
+                amount_to_invoice -= price_unit * pol_read['qty_to_invoice'] if pol_read['qty_to_invoice'] > 0 else 0.0
+            costs = profitability_items['costs']
+            costs['data'].append({'id': 'purchase_order', 'name': _('Purchase Order'), 'billed': amount_invoiced, 'to_bill': amount_to_invoice})
+            costs['total']['billed'] += amount_invoiced
+            costs['total']['to_bill'] += amount_to_invoice
+        return profitability_items
+
+    def _recompute_project_other_costs_billed(self, costs_data, cost_ids_to_reduce=None):
+        super()._recompute_project_other_costs_billed(costs_data, (cost_ids_to_reduce or []) + ['purchase_order'])
