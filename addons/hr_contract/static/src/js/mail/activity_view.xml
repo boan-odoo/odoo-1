@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<div t-name="hr_contract.ActivityRenderer" t-inherit="mail.ActivityRenderer" t-inherit-mode="primary" class="o_activity_view" owl="1">
+    <xpath expr="//t[@t-call='mail.ActivityViewFooter']" position="attributes">
+        <attribute name="t-if">false</attribute>
+    </xpath>
+</div>
+</templates>

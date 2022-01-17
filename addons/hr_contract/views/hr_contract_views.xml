@@ -132,7 +132,7 @@
             <field name="name">hr.contract.form</field>
             <field name="model">hr.contract</field>
             <field name="arch" type="xml">
-                <form string="Current Contract">
+                <form string="Current Contract" js_class="hr_contract_form">
                     <header>
                         <field name="state" widget="statusbar" options="{'clickable': '1'}"/>
                     </header>
@@ -177,7 +177,7 @@
                             </group>
                         </group>
                         <notebook>
-                            <page string="Contract Details" name="other">
+                            <page string="Contract Details" name="other" groups="hr_contract.group_hr_contract_manager">
                                 <group><group name="contract_details"/></group>
                                 <group name="notes_group" string="Notes">
                                     <field name="notes" nolabel="1"/>
@@ -238,7 +238,7 @@
                     <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_card oe_kanban_global_click">
-                            <div class="o_dropdown_kanban dropdown" t-if="!selection_mode" groups="base.group_user">
+                            <div class="o_dropdown_kanban dropdown" t-if="!selection_mode" groups="hr_contract.group_hr_contract_manager">
                                 <a class="dropdown-toggle o-no-caret btn" role="button" data-toggle="dropdown" data-display="static" href="#" aria-label="Dropdown menu" title="Dropdown menu">
                                     <span class="fa fa-ellipsis-v"/>
                                 </a>
@@ -277,7 +277,7 @@
             <field name="name">hr.contract.activity</field>
             <field name="model">hr.contract</field>
             <field name="arch" type="xml">
-                <activity string="Contracts">
+                <activity string="Contracts" js_class="hr_contract_activity">
                     <field name="employee_id"/>
                     <templates>
                         <div t-name="activity-box">
