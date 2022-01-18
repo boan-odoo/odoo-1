@@ -236,7 +236,7 @@ class TestFields(TransactionCaseWithUserDemo):
     @mute_logger('odoo.fields')
     def test_10_computed_stored_x_name(self):
         # create a custom model with two fields
-        self.env["ir.model"].create({
+        ir_model = self.env["ir.model"].create({
             "name": "x_test_10_compute_store_x_name",
             "model": "x_test_10_compute_store_x_name",
             "field_id": [
@@ -244,6 +244,7 @@ class TestFields(TransactionCaseWithUserDemo):
                 (0, 0, {'name': 'x_stuff_id', 'ttype': 'many2one', 'relation': 'ir.model'}),
             ],
         })
+        ir_model.invalidate_cache()
         # set 'x_stuff_id' refer to a model not loaded yet
         self.cr.execute("""
             UPDATE ir_model_fields
@@ -2084,7 +2085,6 @@ class TestFields(TransactionCaseWithUserDemo):
 
         # See YTI FIXME
         discussion.invalidate_cache()
-        demo_discussion.invalidate_cache()
 
         # add a message as user demo
         messages = demo_discussion.messages
@@ -2105,7 +2105,7 @@ class TestFields(TransactionCaseWithUserDemo):
         line = self.env['test_new_api.move_line'].create({'move_id': move1.id})
         line.flush()
 
-        self.env.cache.invalidate()
+        line.invalidate_cache()
         line.with_context(prefetch_fields=False).move_id
 
         # Setting 'move_id' updates the one2many field that is based on it,
