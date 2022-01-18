@@ -330,6 +330,9 @@ var MassMailingFieldHtml = FieldHtml.extend({
      * @override
      */
     _onLoadWysiwyg: function () {
+        // Bind the textarea document to the global hotkey manager.
+        this.call('hotkey', 'bindDocument', this.wysiwyg.odooEditor.options.document);
+
         if (this.snippetsLoaded) {
             this._onSnippetsLoaded(this.snippetsLoaded);
         }

@@ -33,10 +33,19 @@ export const hotkeyService = {
         let nextToken = 0;
         let overlaysVisible = false;
 
-        browser.addEventListener("keydown", onKeydown);
-        browser.addEventListener("keyup", removeHotkeyOverlays);
-        browser.addEventListener("blur", removeHotkeyOverlays);
-        browser.addEventListener("click", removeHotkeyOverlays);
+        bindDocument(browser);
+
+        /**
+         * Bind events to a document.
+         *
+         * @param {Document} document
+         */
+        function bindDocument(document) {
+            document.addEventListener("keydown", onKeydown);
+            document.addEventListener("keyup", removeHotkeyOverlays);
+            document.addEventListener("blur", removeHotkeyOverlays);
+            document.addEventListener("click", removeHotkeyOverlays);
+        }
 
         /**
          * Handler for keydown events.
@@ -352,6 +361,7 @@ export const hotkeyService = {
                     unregisterHotkey(token);
                 };
             },
+            bindDocument,
         };
     },
 };

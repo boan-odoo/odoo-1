@@ -1,6 +1,5 @@
 /** @odoo-module **/
 
-import Wysiwyg from 'web_editor.wysiwyg'
 import { registry } from '@web/core/registry'
 import { HotkeyCommandItem } from '@web/core/commands/default_providers'
 
@@ -9,6 +8,10 @@ let lastWysiwygAndRange;
 const commandProviderRegistry = registry.category("command_provider");
 commandProviderRegistry.add("link dialog", {
     async provide() {
+        const Wysiwyg = odoo.__DEBUG__.services['web_editor.wysiwyg'] || odoo.__DEBUG__.services['mass_mailing.wysiwyg'];
+        if (!Wysiwyg) {
+            return [];
+        }
         let wysiwyg;
         let range;
 
