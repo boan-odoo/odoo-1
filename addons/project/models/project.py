@@ -732,6 +732,9 @@ class Project(models.Model):
             'is_project_user': self.user_has_groups('project.group_project_user'),
         }
 
+    def _get_profitability_aal_domain(self):
+        return [('account_id', 'in', self.analytic_account_id.ids)]
+
     def _get_profitability_items(self):
         return {
             'revenues': {'data': [], 'total': {'invoiced': 0.0, 'to_invoice': 0.0}},

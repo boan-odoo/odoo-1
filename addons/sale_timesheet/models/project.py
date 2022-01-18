@@ -331,11 +331,18 @@ class Project(models.Model):
         domain = self._get_sale_items_domain([('is_service', '=', True), ('is_downpayment', '=', False)])
         return self.env['sale.order.line'].search(domain)
 
+    def _get_profitability_aal_domain(self):
+        domain = [('so_line', 'in', self._get_all_sale_order_items().ids)]
+        if not self.allow_billable:  # Then useless to compute the revenues since the project should gains no money since it is not billable
+            domain = expression.AND([domain, [('amount', '<', 0)]])
+        return expression.OR([
+            super()._get_profitability_aal_domain(),
+            domain,
+        ])
+
     def _get_profitability_items_from_aal(self):
         aa_line_read_group = self.env['account.analytic.line'].read_group(
-            ['|',
-             ('so_line', 'in', self._get_all_sale_order_items().ids),
-             ('account_id', 'in', self.analytic_account_id.ids)],
+            self._get_profitability_aal_domain(),
             ['timesheet_invoice_type', 'timesheet_invoice_id', 'so_line', 'product_id', 'unit_amount', 'amount', 'ids:array_agg(id)'],
             ['timesheet_invoice_type', 'timesheet_invoice_id', 'so_line', 'product_id'],
             lazy=False)
