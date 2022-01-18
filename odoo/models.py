@@ -6009,29 +6009,20 @@ Fields:
 
     @api.model
     def invalidate_cache(self, fnames=None, ids=None):
-        """ Invalidate the record caches after some records have been modified.
+        """ Invalidate the record caches, and flush the fields being invalidated.
             If both ``fnames`` and ``ids`` are ``None``, the whole cache is cleared.
 
             :param fnames: the list of modified fields, or ``None`` for all fields
             :param ids: the list of modified record ids, or ``None`` for all
         """
+        self.flush(fnames, None if ids is None else self.browse(ids))
+
         if fnames is None:
             if ids is None:
-                if self.env.all.towrite:
-                    _logger.warning("Cache invalidation with pending updates", stack_info=True)
                 return self.env.cache.invalidate()
             fields = list(self._fields.values())
         else:
-            fnames = list(fnames)
             fields = [self._fields[n] for n in fnames]
-
-        # check for pending updates
-        id_vals = self.env.all.towrite.get(self._name)
-        if id_vals:
-            has_update = bool if fnames is None else lambda vals: not vals.keys().isdisjoint(fnames)
-            has_ids = (lambda id_: True) if ids is None else set(ids).__contains__
-            if any(has_ids(id_) and has_update(vals) for id_, vals in id_vals.items()):
-                _logger.warning("Cache invalidation with pending updates", stack_info=True)
 
         # invalidate fields and inverse fields, too
         spec = [(f, ids) for f in fields] + \
@@ -6577,7 +6568,6 @@ Fields:
         snapshot1 = Snapshot(record, nametree)
 
         # determine values that have changed by comparing snapshots
-        self.flush()
         self.invalidate_cache()
         result['value'] = snapshot1.diff(snapshot0, force=first_call)
 
