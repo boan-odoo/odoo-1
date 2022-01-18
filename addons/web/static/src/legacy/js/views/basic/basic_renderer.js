@@ -447,6 +447,7 @@ var BasicRenderer = AbstractRenderer.extend(WidgetAdapterMixin, {
      */
     _getTooltipOptions: function (widget) {
         return {
+            html: true,
             title: function () {
                 let help = widget.attrs.help || widget.field.help || '';
                 if (session.display_switch_company_menu && widget.field.company_dependent) {
