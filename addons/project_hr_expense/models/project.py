@@ -87,6 +87,3 @@ class Project(models.Model):
             costs['data'].append(expenses_data['costs'])
             costs['total'] = {k: costs['total'][k] + expenses_data['costs'][k] for k in ['billed', 'to_bill']}
         return profitability_data
-
-    def _recompute_project_other_costs_billed(self, costs_data, cost_ids_to_reduce=None):
-        super()._recompute_project_other_costs_billed(costs_data, (cost_ids_to_reduce or []) + ['expenses'])

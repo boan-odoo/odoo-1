@@ -741,19 +741,6 @@ class Project(models.Model):
             'costs': {'data': [], 'total': {'billed': 0.0, 'to_bill': 0.0}},
         }
 
-    def _recompute_project_other_costs_billed(self, costs_data, cost_ids_to_reduce=None):
-        if not cost_ids_to_reduce or not costs_data:
-            return
-        amount_billed = 0.0
-        other_costs = None
-        for cost in costs_data:
-            if cost['id'] in cost_ids_to_reduce:
-                amount_billed += cost['billed']
-            elif cost['id'] == 'other_costs':
-                other_costs = cost
-        if other_costs and amount_billed != 0.0:
-            other_costs['billed'] -= amount_billed
-
     def _get_milestones(self):
         self.ensure_one()
         return {

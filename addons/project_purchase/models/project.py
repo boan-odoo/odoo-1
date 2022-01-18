@@ -87,6 +87,3 @@ class Project(models.Model):
             costs['total']['billed'] += amount_invoiced
             costs['total']['to_bill'] += amount_to_invoice
         return profitability_items
-
-    def _recompute_project_other_costs_billed(self, costs_data, cost_ids_to_reduce=None):
-        super()._recompute_project_other_costs_billed(costs_data, (cost_ids_to_reduce or []) + ['purchase_order'])

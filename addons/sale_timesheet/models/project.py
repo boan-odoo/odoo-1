@@ -295,7 +295,6 @@ class Project(models.Model):
     def get_panel_data(self):
         panel_data = super(Project, self).get_panel_data()
         profitability_items = self._get_profitability_items()
-        self._recompute_project_other_costs_billed(profitability_items['costs']['data'])
         return {
             **panel_data,
             'currency_id': self.currency_id.id,
