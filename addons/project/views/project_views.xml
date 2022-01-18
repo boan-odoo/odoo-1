@@ -899,7 +899,8 @@
                                 </tree>
                             </field>
                         </page>
-                        <page name="recurrence" string="Recurrence" attrs="{'invisible': [('recurring_task', '=', False)]}">
+                        <page name="recurrence" string="Recurrence" attrs="{'invisible': [('recurring_task', '=', False)]}"
+                            groups="project.group_project_recurring_tasks">
                             <group>
                                 <group>
                                     <label for="repeat_interval" />

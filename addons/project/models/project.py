@@ -1601,6 +1601,14 @@ class Task(models.Model):
             if field not in self.SELF_WRITABLE_FIELDS:
                 raise AccessError(_('You have not write access of %s field.') % field)
 
+    def _load_records_create(self, vals_list):
+        if self.user_has_groups('project.group_project_recurring_tasks'):
+            for vals in vals_list:
+                if not vals.get('recurrence_id') and vals.get('recurring_task'):
+                    default_val = self.default_get(self._get_recurrence_fields())
+                    vals.update(**default_val)
+        return super()._load_records_create(vals_list)
+
     @api.model_create_multi
     def create(self, vals_list):
         is_portal_user = self.env.user.has_group('base.group_portal')
