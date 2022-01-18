@@ -9,7 +9,7 @@ import { debounce } from "@web/core/utils/timing";
 import { _lt } from "@web/core/l10n/translation";
 
 const { Component, hooks } = owl;
-const { useState } = hooks;
+const { useState, onWillUnmount } = hooks;
 
 const DEFAULT_PLACEHOLDER = _lt("Search...");
 const DEFAULT_EMPTY_MESSAGE = _lt("No results found");
@@ -98,6 +98,14 @@ export class CommandPalette extends Component {
          */
         this.state = useState({
             commands: [],
+        });
+
+        onWillUnmount(() => {
+            for (const provider of this.props.config.providers) {
+                if (provider.onClose) {
+                    provider.onClose();
+                }
+            }
         });
 
         this.setCommandPaletteConfig(this.props.config);

@@ -415,6 +415,7 @@ var EditPageMenu = websiteNavbarData.WebsiteNavbarActionWidget.extend({
             isRootEditable: false,
             controlHistoryFromDocument: true,
             getContentEditableAreas: this._getContentEditableAreas.bind(this),
+            bindLinkTool: true,
         }, collaborationConfig);
         return wysiwygLoader.createWysiwyg(this,
             Object.assign(params, this.wysiwygOptions),

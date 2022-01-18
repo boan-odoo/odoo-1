@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 
 const commandCategoryRegistry = registry.category("command_categories");
 commandCategoryRegistry
+    .add("shortcut_conflict", {}, { sequence: 5 })
     .add("app", {}, { sequence: 10 })
     .add("smart_action", {}, { sequence: 15 })
     .add("actions", {}, { sequence: 30 })
