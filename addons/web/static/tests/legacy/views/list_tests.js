@@ -12759,6 +12759,28 @@ QUnit.module('Views', {
         list.destroy();
     });
 
+    QUnit.test('FieldColorPicker: dont overflow color picker in list', async function (assert) {
+        assert.expect(1);
+
+        const list = await createView({
+            View: ListView,
+            model: 'foo',
+            data: this.data,
+            arch: `
+                <tree editable="top" string="Partners">
+                    <field name="date"/>
+                    <field name="int_field" widget="color_picker"/>
+                </tree>`,
+            domain: [['id', '<', 0]],
+       });
+        const result = list.renderer._getColumnWidth(list.renderer.columns[1])
+        await testUtils.dom.click(list.el.querySelector('.o_list_button_add'))
+        assert.strictEqual(result ,"1",
+            "colorpicker should display properly (Horizontly)");
+
+        list.destroy();
+    });
+
 });
 
 });

@@ -784,8 +784,8 @@ ListRenderer.include({
             return widget.widthInList;
         }
         const field = this.state.fields[name];
-        if (!field) {
-            // this is not a field. Probably a button or something of unknown
+        if (!field || fieldsInfo[name].widget == "color_picker") {
+            // this is not a field. Probably a button, color picker or something of unknown
             // width.
             return '1';
         }
