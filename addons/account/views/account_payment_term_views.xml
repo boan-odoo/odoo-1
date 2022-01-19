@@ -13,6 +13,7 @@
                     <field name="days"/>
                     <field name="option" string=""/>
                     <field name="day_of_the_month" string="Day of the month"/>
+                    <!-- <field name="computation_method"/> -->
                 </tree>
             </field>
         </record>
@@ -34,6 +35,9 @@
                                 <field name="value_amount" class="oe_inline"/>
                                 <span class="o_form_label oe_inline" attrs="{'invisible':[('value','!=','percent')]}">%</span>
                             </div>
+                            <!-- <div attrs="{'invisible':[('value','=', 'balance')]}" class="o_row">
+                                <field name="computation_method"/>
+                            </div> -->
                         </group>
                     </group>
 
@@ -92,6 +96,7 @@
                             <group>
                                 <field name="active" invisible="1"/>
                                 <field name="name"/>
+                                <field name="display_on_invoice"/>
                                 <field name="company_id" options="{'no_create': True}" groups="base.group_multi_company"/>
                             </group>
                         </group>
