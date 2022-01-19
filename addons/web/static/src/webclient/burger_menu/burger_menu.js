@@ -63,6 +63,9 @@ export class BurgerMenu extends Component {
     }
     _onMenuClicked(menu) {
         this.menuRepo.selectMenu(menu);
+        if (this.state.isBurgerOpened) {
+            this._closeBurger();
+        }
     }
     _onSwipeStart(ev) {
         this.swipeStartX = ev.changedTouches[0].clientX;
