@@ -39,11 +39,11 @@ odoo.define('point_of_sale.AbstractAwaitablePopup', function (require) {
         }
         async confirm() {
             this.props.resolve({ confirmed: true, payload: await this.getPayload() });
-            this.trigger('close-popup');
+            this.env.posbus.trigger('close-popup', this.props.id);
         }
         cancel() {
             this.props.resolve({ confirmed: false, payload: null });
-            this.trigger('close-popup');
+            this.env.posbus.trigger('close-popup', this.props.id);
         }
         _cancelAtEscape(event) {
             if (event.key === 'Escape') {

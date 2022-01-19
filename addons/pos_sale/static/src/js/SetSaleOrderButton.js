@@ -26,7 +26,7 @@ odoo.define('pos_sale.SetSaleOrderButton', function(require) {
                   args: [[]],
                   kwargs: { context: this.env.session.user_context },
               });
-              this.trigger('close-popup');
+              this.trigger('close-control-button-popup');
               this.showScreen('SaleOrderManagementScreen');
           } catch (error) {
               if (isConnectionError(error)) {

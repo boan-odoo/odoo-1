@@ -3,6 +3,8 @@ odoo.define('point_of_sale.PosComponent', function (require) {
 
     const { Component, onRendered } = owl;
 
+    let nextId = 0;
+
     class PosComponent extends Component {
         setup() {
             onRendered(() => {
@@ -35,7 +37,7 @@ odoo.define('point_of_sale.PosComponent', function (require) {
          */
         showPopup(name, props) {
             return new Promise((resolve) => {
-                this.trigger('show-popup', { name, props, resolve });
+                this.env.posbus.trigger('show-popup', { name, props, resolve, id: nextId++ });
             });
         }
         showTempScreen(name, props) {
