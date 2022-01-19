@@ -846,7 +846,7 @@
         <button t-if="!widget.readonly" class="btn btn-sm btn-primary o_domain_add_first_node_button"><i class="fa fa-plus"/> Add filter</button>
     </t>
     <t t-else="">
-        <div class="o_domain_tree_header">
+        <div class="o_domain_tree_header oe_edit_only">
             <t t-if="widget.children.length === 1">Match records with the following rule:</t>
             <t t-else="">
                 <span>Match records with</span>
