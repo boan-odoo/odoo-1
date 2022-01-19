@@ -53,6 +53,16 @@
             width: 135px;
         }
     }
+    // Align the model / domain container with subject field in large devices
+    // and provide better tap area to the filter
+    @include media-breakpoint-up(md) {
+        div[name="mailing_model_id_container"] {
+            width: 86%;
+        }
+        div[name="mailing_filter_id"] {
+            width: 85%;
+        }
+    }
 }
 
 .o_kanban_view {

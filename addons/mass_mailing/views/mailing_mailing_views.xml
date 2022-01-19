@@ -176,11 +176,11 @@
                             <label for="mailing_model_id" string="Recipients"/>
                             <div name="mailing_model_id_container">
                                 <div class="row">
-                                    <div class="col-xs-12 col-md-3" >
+                                    <div class="col-xs-12 col-md-2">
                                         <field name="mailing_model_id" options="{'no_open': True, 'no_create': True}"
                                             attrs="{'readonly': [('state', 'in', ('sending', 'done'))]}"/>
                                     </div>
-                                    <div attrs="{'invisible': [('mailing_model_name', '!=', 'mailing.list')]}" class="col-xs-12 col-md-9 pt-1">
+                                    <div attrs="{'invisible': [('mailing_model_name', '!=', 'mailing.list')]}" class="col-xs-12 col-md-auto pt-1">
                                         <label for="contact_list_ids" string="Select mailing lists:" class="oe_edit_only"/>
                                         <field name="contact_list_ids" widget="many2many_tags"
                                             placeholder="Select mailing lists..." class="oe_inline"
@@ -190,26 +190,21 @@
                                                 'readonly': [('state', 'in', ('sending', 'done'))]
                                         }"/>
                                     </div>
-                                    <div attrs="{'invisible': [('mailing_model_name', '=', 'mailing.list')]}" class="col-xs-12 col-md-9 o_td_label">
-                                        <!-- We don't want to display label in edit mode, unless mailing is in sending or done state (where filter will be readonly) -->
-                                        <label for="mailing_filter_id" string="Filter" class="oe_read_only mr-4"
-                                               attrs="{'invisible': ['|', ('state', 'in', ('sending', 'done')), ('mailing_filter_id', '=', False)]}"/>
-                                        <label for="mailing_filter_id" string="Filter" class="mr-4"
-                                               attrs="{'invisible': ['|', ('state', 'not in', ('sending', 'done')), ('mailing_filter_id', '=', False)]}"/>
+                                    <div attrs="{'invisible': [('mailing_model_name', '=', 'mailing.list')]}" class="col-xs-12 col-md-3">
                                         <field name="mailing_filter_id" placeholder="Reload a favorite filter"
-                                               class="w-auto" widget="mailing_filter"
+                                               widget="mailing_filter"
                                                options="{'no_create': 1, 'no_open': 1, 'domain_field': 'mailing_domain', 'model_field': 'mailing_model_id'}"
                                                attrs="{'readonly': [('state', 'in', ('sending', 'done'))]}"/>
+                                    </div>
+                                    <div attrs="{'invisible': [('mailing_model_name', '=', 'mailing.list')]}" class="col-xs-12 col-md-7">
+                                        <field name="mailing_domain" widget="domain" options="{'model': 'mailing_model_real'}"
+                                        attrs="{'readonly': [('state', 'in', ('sending', 'done'))]}"/>
                                     </div>
                                     <field name="mailing_filter_domain" invisible="1"/>
                                 </div>
 
                                 <field name="mailing_model_name" invisible="1"/>
                                 <field name="mailing_model_real" invisible="1"/>
-                                <div attrs="{'invisible': [('mailing_model_name', '=', 'mailing.list')]}">
-                                    <field name="mailing_domain" widget="domain" options="{'model': 'mailing_model_real'}"
-                                    attrs="{'readonly': [('state', 'in', ('sending', 'done'))]}"/>
-                                </div>
                             </div>
                         </group>
                         <notebook>
