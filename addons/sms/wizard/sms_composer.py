@@ -62,7 +62,7 @@ class SendSMS(models.TransientModel):
     recipient_single_number_itf = fields.Char(
         'Recipient Number', compute='_compute_recipient_single',
         readonly=False, compute_sudo=False, store=True,
-        help='UX field allowing to edit the recipient number. If changed it will be stored onto the recipient.')
+        help='Phone number of the recipient. If changed, it will be recorded on recipient\'s profile.')
     recipient_single_valid = fields.Boolean("Is valid", compute='_compute_recipient_single_valid', compute_sudo=False)
     number_field_name = fields.Char('Number Field')
     numbers = fields.Char('Recipients (Numbers)')
@@ -71,7 +71,7 @@ class SendSMS(models.TransientModel):
     template_id = fields.Many2one('sms.template', string='Use Template', domain="[('model', '=', res_model)]")
     body = fields.Text(
         'Message', compute='_compute_body',
-        precompute=True, readonly=False, store=True, required=True)
+        precompute=True, readonly=False, store=True)
 
     @api.depends('res_ids_count', 'active_domain_count')
     @api.depends_context('sms_composition_mode')
