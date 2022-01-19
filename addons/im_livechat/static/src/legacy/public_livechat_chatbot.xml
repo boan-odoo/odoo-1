@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<templates xml:space="preserve">
+    <t t-extend="im_livechat.legacy.mail.widget.Thread.Message">
+        <t t-jquery='div.o_thread_message_content' t-operation="append">
+            <t t-if="message.getChatbotStepAnswers()">
+                <ul class="o_livechat_chatbot_options" t-att-data-chatbot-step-id="message.getChatbotStepId()">
+                    <li t-foreach="message.getChatbotStepAnswers()" t-as="stepAnswer"
+                        t-att-data-chatbot-step-answer-id="stepAnswer.id"
+                        t-attf-class="d-inline-block border rounded p-2 mr-3 mb-1 font-weight-bold #{message.getChatbotAnswerClass(stepAnswer)}">
+                        <t t-out="stepAnswer.label"/>
+                    </li>
+                </ul>
+            </t>
+        </t>
+    </t>
+</templates>

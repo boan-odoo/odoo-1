@@ -91,7 +91,7 @@ var LivechatButton = Widget.extend({
         if (this._history) {
             this._history.forEach(m => this._addMessage(m));
             this._openChat();
-        } else if (!config.device.isMobile && this._rule.action === 'auto_popup') {
+        } else if (!config.device.isMobile && this._isAutoPopup()) {
             var autoPopupCookie = utils.get_cookie('im_livechat_auto_popup');
             if (!autoPopupCookie || JSON.parse(autoPopupCookie)) {
                 this._autoPopupTimeout =
@@ -226,6 +226,12 @@ var LivechatButton = Widget.extend({
     /**
      * @private
      */
+    _isAutoPopup: function () {
+        return this._rule.action === 'auto_popup';
+    },
+    /**
+     * @private
+     */
     _loadQWebTemplate: function () {
         return session.rpc('/im_livechat/load_templates').then(function (templates) {
             _.each(templates, function (template) {
@@ -249,11 +255,11 @@ var LivechatButton = Widget.extend({
             def = Promise.resolve(JSON.parse(cookie));
         } else {
             this._messages = []; // re-initialize messages cache
-            def = session.rpc('/im_livechat/get_session', {
-                channel_id: this.options.channel_id,
-                anonymous_name: this.options.default_username,
-                previous_operator_id: this._get_previous_operator_id(),
-            }, { shadow: true });
+            def = session.rpc(
+                '/im_livechat/get_session',
+                this._prepareGetSessionParameters(),
+                { shadow: true }
+            );
         }
         def.then(function (livechatData) {
             if (!livechatData || !livechatData.operator_pid) {
@@ -343,6 +349,16 @@ var LivechatButton = Widget.extend({
     /**
      * @private
      */
+    _prepareGetSessionParameters: function () {
+        return {
+            channel_id: this.options.channel_id,
+            anonymous_name: this.options.default_username,
+            previous_operator_id: this._get_previous_operator_id(),
+        };
+    },
+    /**
+     * @private
+     */
     _renderMessages: function () {
         var shouldScroll = !this._chatWindow.isFolded() && this._chatWindow.isAtBottom();
         this._livechat.setMessages(this._messages);
@@ -354,14 +370,24 @@ var LivechatButton = Widget.extend({
     /**
      * @private
      * @param {Object} message
+     * @param {Object} [additionalParameters]
      * @return {Promise}
      */
-    _sendMessage: function (message) {
+    _sendMessage: function (message, additionalParameters=false) {
         var self = this;
         this._livechat._notifyMyselfTyping({ typing: false });
+
+        let chatPostParameters = {
+            uuid: this._livechat.getUUID(),
+            message_content: message.content,
+        };
+
+        if (additionalParameters) {
+            chatPostParameters = Object.assign(chatPostParameters, additionalParameters);
+        }
+
         return session
-            .rpc('/mail/chat_post', { uuid: this._livechat.getUUID(), message_content: message.content })
-            .then(function (messageId) {
+            .rpc('/mail/chat_post', chatPostParameters).then(function (messageId) {
                 if (!messageId) {
                     try {
                         self.displayNotification({

@@ -53,11 +53,10 @@ class MailChatController(BusController):
             author_id = False
             email_from = mail_channel.anonymous_name or mail_channel.create_uid.company_id.catchall_formatted
         # post a message without adding followers to the channel. email_from=False avoid to get author from email data
-        body = tools.plaintext2html(message_content)
         message = mail_channel.with_context(mail_create_nosubscribe=True).message_post(
             author_id=author_id,
             email_from=email_from,
-            body=body,
+            body=self._chat_post_prepare_message_content(message_content, **kwargs),
             message_type='comment',
             subtype_xmlid='mail.mt_comment'
         )
@@ -70,3 +69,11 @@ class MailChatController(BusController):
             return []
         else:
             return channel._channel_fetch_message(last_id, limit)
+
+    # --------------------------
+    # Tools/Mic
+    # --------------------------
+    def _chat_post_prepare_message_content(self, message_content, **kwargs):
+        """ Simply transform the content from plain text to html.
+        This can be used as a hooking point for other modules. """
+        return tools.plaintext2html(message_content)
