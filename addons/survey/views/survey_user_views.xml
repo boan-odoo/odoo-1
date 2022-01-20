@@ -39,11 +39,23 @@
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
-                    <div class="oe_button_box" name="button_box"/>
+                    <field name="attempts_count" invisible="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_redirect_to_attempts"
+                            type="object"
+                            class="oe_stat_button"
+                            attrs="{'invisible': [('attempts_count', '=', 1)]}"
+                            icon="fa-files-o">
+                            <field string="Attempts" name="attempts_count" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Failed" bg_color="bg-danger" attrs="{'invisible': ['|', ('scoring_type', '=', 'no_scoring'), ('scoring_success', '=', True)]}"/>
+                    <widget name="web_ribbon" title="Passed" attrs="{'invisible': ['|', ('scoring_type', '=', 'no_scoring'), ('scoring_success', '=', False)]}"/>
                     <group col="2">
                         <group>
                             <field name="survey_id"/>
                             <field name="create_date"/>
+                            <field name="deadline" attrs="{'invisible': [('state', '=', 'done'), ('deadline', '=', False)]}"/>
                             <field name="is_attempts_limited" invisible="1"/>
                             <label for="attempts_number" string="Attempt n°" attrs="{'invisible': ['|', ('is_attempts_limited', '=', False), '|', ('test_entry', '=', True), ('state', '!=', 'done')]}"/>
                             <div attrs="{'invisible': ['|', ('is_attempts_limited', '=', False), '|', ('test_entry', '=', True), ('state', '!=', 'done')]}">
@@ -51,31 +63,38 @@
                                  / 
                                 <field name="attempts_limit" nolabel="1" />
                             </div>
-                            <field name="access_token" groups="base.group_no_one"/>
                         </group>
                         <group>
-                            <field name="deadline"/>
+                            <field name="scoring_type" invisible="1"/>
+                            <field name="scoring_success" invisible="1"/>
+                            <field name="scoring_percentage" attrs="{'invisible': [('scoring_type', '=', 'no_scoring')]}"/>
                             <field name="partner_id"/>
                             <field name="email" widget="email"/>
                             <field name="test_entry" groups="base.group_no_one"/>
-                            <field name="scoring_type" invisible="1"/>
-                            <field name="scoring_percentage" attrs="{'invisible': [('scoring_type', '=', 'no_scoring')]}"/>
-                            <field name="scoring_success" attrs="{'invisible': [('scoring_type', '=', 'no_scoring')]}"/>
+                            <field name="access_token" groups="base.group_no_one"/>
                         </group>
                     </group>
-                    <field name="user_input_line_ids" mode="tree" attrs="{'readonly': True}">
-                        <tree>
-                            <field name="question_sequence" invisible="1"/>
-                            <field name="question_id"/>
-                            <field name="page_id"/>
-                            <field name="answer_type"/>
-                            <field name="skipped"/>
-                            <field name="create_date"/>
-                            <field name="answer_is_correct"/>
-                            <field name="answer_score"/>
-                        </tree>
-                    </field>
+                    <notebook>
+                        <page string="Answers">
+                            <field name="user_input_line_ids" mode="tree" attrs="{'readonly': True}" no_label="1">
+                                <tree>
+                                    <field name="question_sequence" invisible="1"/>
+                                    <field name="create_date" optional="hidden"/>
+                                    <field name="page_id" optional="hidden"/>
+                                    <field name="question_id"/>
+                                    <field name="answer_type" optional="hidden"/>
+                                    <field name="skipped" optional="hidden"/>
+                                    <field name="answer_display_name"/>
+                                    <field name="answer_is_correct"/>
+                                    <field name="answer_score" sum="Score"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
+                <div class="oe_chatter">
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>

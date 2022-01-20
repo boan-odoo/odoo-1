@@ -19,6 +19,7 @@ class SurveyUserInput(models.Model):
     _description = "Survey User Input"
     _rec_name = "survey_id"
     _order = "create_date desc"
+    _inherit = ['mail.thread']
 
     # answer description
     survey_id = fields.Many2one('survey.survey', string='Survey', required=True, readonly=True, ondelete='cascade')
@@ -35,12 +36,13 @@ class SurveyUserInput(models.Model):
     # attempts management
     is_attempts_limited = fields.Boolean("Limited number of attempts", related='survey_id.is_attempts_limited')
     attempts_limit = fields.Integer("Number of attempts", related='survey_id.attempts_limit')
-    attempts_number = fields.Integer("Attempt n°", compute='_compute_attempts_number')
+    attempts_count = fields.Integer("Attempts Count", compute='_compute_attempts_info')
+    attempts_number = fields.Integer("Attempt n°", compute='_compute_attempts_info')
     survey_time_limit_reached = fields.Boolean("Survey Time Limit Reached", compute='_compute_survey_time_limit_reached')
     # identification / access
     access_token = fields.Char('Identification token', default=lambda self: str(uuid.uuid4()), readonly=True, required=True, copy=False)
     invite_token = fields.Char('Invite token', readonly=True, copy=False)  # no unique constraint, as it identifies a pool of attempts
-    partner_id = fields.Many2one('res.partner', string='Partner', readonly=True)
+    partner_id = fields.Many2one('res.partner', string='Contact', readonly=True)
     email = fields.Char('Email', readonly=True)
     nickname = fields.Char('Nickname', help="Attendee nickname, mainly used to identify him in the survey session leaderboard.")
     # questions / answers
@@ -116,15 +118,18 @@ class SurveyUserInput(models.Model):
                 user_input.question_time_limit_reached = False
 
     @api.depends('state', 'test_entry', 'survey_id.is_attempts_limited', 'partner_id', 'email', 'invite_token')
-    def _compute_attempts_number(self):
+    def _compute_attempts_info(self):
         attempts_to_compute = self.filtered(
             lambda user_input: user_input.state == 'done' and not user_input.test_entry and user_input.survey_id.is_attempts_limited
         )
 
         for user_input in (self - attempts_to_compute):
+            user_input.attempts_count = 1
             user_input.attempts_number = 1
 
         if attempts_to_compute:
+            self.env['survey.user_input'].flush()
+
             self.env.cr.execute("""SELECT user_input.id, (COUNT(previous_user_input.id) + 1) AS attempts_number
                 FROM survey_user_input user_input
                 LEFT OUTER JOIN survey_user_input previous_user_input
@@ -148,6 +153,30 @@ class SurveyUserInput(models.Model):
                         break
 
                 user_input.attempts_number = attempts_number
+
+            self.env.cr.execute("""
+                SELECT user_input.id, COUNT(all_attempts_user_input.id) AS attempts_count
+                FROM survey_user_input user_input
+                LEFT OUTER JOIN survey_user_input all_attempts_user_input
+                ON user_input.survey_id = all_attempts_user_input.survey_id
+                AND all_attempts_user_input.state = 'done'
+                AND all_attempts_user_input.test_entry IS NOT TRUE
+                AND (user_input.invite_token IS NULL OR user_input.invite_token = all_attempts_user_input.invite_token)
+                AND (user_input.partner_id = all_attempts_user_input.partner_id OR user_input.email = all_attempts_user_input.email)
+                WHERE user_input.id IN %s
+                GROUP BY user_input.id;
+            """, (tuple(attempts_to_compute.ids),))
+
+            attempts_count_results = self.env.cr.dictfetchall()
+
+            for user_input in attempts_to_compute:
+                attempts_count = 1
+                for attempts_count_result in attempts_count_results:
+                    if attempts_count_result['id'] == user_input.id:
+                        attempts_count = attempts_count_result['attempts_count']
+                        break
+
+                user_input.attempts_count = attempts_count
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -186,6 +215,22 @@ class SurveyUserInput(models.Model):
             'target': 'self',
             'url': '/survey/print/%s?answer_token=%s' % (self.survey_id.access_token, self.access_token)
         }
+
+    def action_redirect_to_attempts(self):
+        self.ensure_one()
+
+        action = self.env['ir.actions.act_window']._for_xml_id('survey.action_survey_user_input')
+        context = dict(self.env.context or {})
+
+        context['search_default_survey_id'] = self.survey_id.id
+        context['search_default_group_by_survey'] = False
+        if self.partner_id:
+            context['search_default_partner_id'] = self.partner_id.id
+        elif self.email:
+            context['search_default_email'] = self.email
+
+        action['context'] = context
+        return action
 
     @api.model
     def _generate_invite_token(self):
@@ -591,9 +636,34 @@ class SurveyUserInputLine(models.Model):
     value_text_box = fields.Text('Free Text answer')
     suggested_answer_id = fields.Many2one('survey.question.answer', string="Suggested answer")
     matrix_row_id = fields.Many2one('survey.question.answer', string="Row answer")
+    answer_display_name = fields.Char('Answer', compute="_compute_answer_display_name",
+        help="Helper field that shows the user's answer as readable text for any type of question")
     # scoring
     answer_score = fields.Float('Score')
     answer_is_correct = fields.Boolean('Correct')
+
+    @api.depends('answer_type')
+    def _compute_answer_display_name(self):
+        for line in self:
+            if line.answer_type == 'char_box':
+                line.answer_display_name = line.value_char_box
+            elif line.answer_type == 'text_box':
+                line.answer_display_name = line.value_text_box[:50]
+            elif line.answer_type == 'numerical_box':
+                line.answer_display_name = line.value_numerical_box
+            elif line.answer_type == 'date':
+                line.answer_display_name = fields.Date.to_string(line.value_date)
+            elif line.answer_type == 'datetime':
+                line.answer_display_name = fields.Datetime.to_string(line.value_datetime)
+            elif line.answer_type == 'suggestion':
+                if line.matrix_row_id:
+                    line.answer_display_name = '%s: %s' % (
+                        line.suggested_answer_id.value,
+                        line.matrix_row_id.value)
+                else:
+                    line.answer_display_name = line.suggested_answer_id.value
+            else:
+                line.answer_display_name = False
 
     @api.constrains('skipped', 'answer_type')
     def _check_answer_type_skipped(self):
