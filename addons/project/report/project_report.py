@@ -45,12 +45,16 @@ class ReportProjectTaskUser(models.Model):
     company_id = fields.Many2one('res.company', string='Company', readonly=True)
     partner_id = fields.Many2one('res.partner', string='Customer', readonly=True)
     stage_id = fields.Many2one('project.task.type', string='Stage', readonly=True)
+    is_closed = fields.Boolean(related="task_id.is_closed", string="Closing Stage")
     task_id = fields.Many2one('project.task', string='Tasks', readonly=True)
     active = fields.Boolean(readonly=True)
     tag_ids = fields.Many2many('project.tags', relation='project_tags_project_task_rel',
         column1='project_task_id', column2='project_tags_id',
         string='Tags', readonly=True)
     parent_id = fields.Many2one('project.task', string='Parent Task', readonly=True)
+    rating_last_text = fields.Selection(string="Rating Text", groups='base.group_user', related="task_id.rating_last_text")
+    personal_stage_type_ids = fields.Many2many('project.task.type', 'project_task_user_rel', column1='task_id', column2='stage_id',
+                                                string="Personal Stage", readonly=True)
 
     def _select(self):
         return """

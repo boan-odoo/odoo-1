@@ -326,16 +326,18 @@ class Task(models.Model):
     def action_view_subtask_timesheet(self):
         self.ensure_one()
         tasks = self.with_context(active_test=False)._get_all_subtasks()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Timesheets'),
-            'res_model': 'account.analytic.line',
-            'view_mode': 'list,form',
-            'context': {
-                'default_project_id': self.project_id.id
-            },
+        action = self.env["ir.actions.actions"]._for_xml_id("hr_timesheet.timesheet_action_all")
+        new_views = []
+        for view in action['views']:
+            new_views.insert(0, view) if view[1] == 'tree' else new_views.append(view)
+        action.update({
+            'display_name': _('Timesheets'),
+            'context': {'default_project_id': self.project_id.id},
             'domain': [('project_id', '!=', False), ('task_id', 'in', tasks.ids)],
-        }
+            'views': new_views,
+        })
+
+        return action
 
     def _get_timesheet(self):
         # Is override in sale_timesheet

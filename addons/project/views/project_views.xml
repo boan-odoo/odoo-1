@@ -669,7 +669,7 @@
                                     <div class="o_kanban_card_content mw-100">
                                         <div class="o_kanban_primary_left">
                                             <div class="o_primary">
-                                                <span class="o_text_overflow"><t t-esc="record.display_name.value"/></span>
+                                                <span class="o_text_overflow" t-att-title="record.display_name.value"><t t-esc="record.display_name.value"/></span>
                                                 <span class="o_text_overflow text-muted" t-if="record.partner_id.value">
                                                     <span class="fa fa-user mr-2" aria-label="Partner" title="Partner"></span><t t-esc="record.partner_id.value"/>
                                                 </span>
@@ -1075,7 +1075,7 @@
                 <form>
                     <group>
                         <field name="name" string = "Task Title" placeholder="e.g. New Design"/>
-                        <field name="user_ids" options="{'no_open': True,'no_create': True}" domain="[('share', '=', False), ('active', '=', True)]"
+                        <field name="user_ids" options="{'no_open': True}" domain="[('share', '=', False), ('active', '=', True)]"
                             widget="many2many_tags"/>
                         <field name="company_id" invisible="1"/>
                         <field name="parent_id" invisible="1" groups="base.group_no_one"/>
