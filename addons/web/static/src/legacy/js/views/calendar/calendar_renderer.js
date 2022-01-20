@@ -231,7 +231,6 @@ return AbstractRenderer.extend({
         // this.$el.height($(window).height() - this.$el.offset().top);
         this.calendar.render();
         this._renderCalendar();
-        window.addEventListener('keydown', this._handleKeyboardShortcuts.bind(this).bind(this))
         window.addEventListener('click', this._onWindowClick.bind(this));
     },
     /**
@@ -240,7 +239,6 @@ return AbstractRenderer.extend({
     on_detach_callback: function () {
         this._super(...arguments);
         this._isInDOM = false;
-        window.removeEventListener('keydown', this._handleKeyboardShortcuts.bind(this))
         window.removeEventListener('click', this._onWindowClick);
     },
     /**
@@ -367,27 +365,6 @@ return AbstractRenderer.extend({
             }
         }
         return event;
-    },
-    /** 
-     * Handler when a button is pressed in calendar view
-     * @private
-     * @param {Event} event
-    */
-     _handleKeyboardShortcuts(event) {
-        if (!this.hasScale) { return };
-        const shortcuts = {
-            68: 'day',
-            87: 'week',
-            77: 'month',
-            89: 'year',
-        }
-        if (!/^(?:input|textarea|select|button)$/i.test(event.target.tagName)) { // prevent writeable tags like input from changing the scale
-            if (event.keyCode in shortcuts) {
-                const controller = this.getParent();
-                controller.model.setScale(shortcuts[event.keyCode]);
-                controller.reload();
-            }
-        }
     },
     /**
      * @param {any} event

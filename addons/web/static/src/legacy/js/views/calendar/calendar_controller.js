@@ -89,10 +89,7 @@ var CalendarController = AbstractController.extend({
      *   inserts them into this.options.$buttons or into a div of its template
      */
     renderButtons: function ($node) {
-        const buttonParameters = this._renderButtonsParameters();
-        this.renderer.hasScale = !buttonParameters.scaleDrop || false;
-
-        this.$buttons = $(QWeb.render('CalendarView.buttons', buttonParameters));
+        this.$buttons = $(QWeb.render('CalendarView.buttons', this._renderButtonsParameters()));
 
         this.$buttons.find('.o_calendar_button_' + this.mode).addClass('active');
 
