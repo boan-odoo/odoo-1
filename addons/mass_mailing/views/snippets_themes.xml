@@ -285,18 +285,19 @@
 
 <template id="social_links">
 
-    <t t-set="social_links" t-value="company_id._get_social_media_links()"/>
-
-    <a t-if="social_links.get('social_facebook')" t-att-href="social_links.get('social_facebook')" aria-label="Facebook" title="Facebook">
+    <a href="/company/social/facebook" style="margin-left:10px" aria-label="Facebook" title="Facebook">
         <span class="fa fa-facebook"></span>
-    </a>&amp;nbsp;&amp;nbsp;
-    <a t-if="social_links.get('social_linkedin')" t-att-href="social_links.get('social_linkedin')" style="margin-left:10px" aria-label="LinkedIn" title="LinkedIn">
+    </a>
+    <a href="/company/social/youtube" style="margin-left:10px" aria-label="Youtube" title="Youtube">
+        <span class="fa fa-youtube"></span>
+    </a>
+    <a href="/company/social/linkedin" style="margin-left:10px" aria-label="LinkedIn" title="LinkedIn">
         <span class="fa fa-linkedin"></span>
-    </a>&amp;nbsp;&amp;nbsp;
-    <a t-if="social_links.get('social_twitter')" t-att-href="social_links.get('social_twitter')" style="margin-left:10px" aria-label="Twitter" title="Twitter">
+    </a>
+    <a href="/company/social/twitter" style="margin-left:10px" aria-label="Twitter" title="Twitter">
         <span class="fa fa-twitter"></span>
-    </a>&amp;nbsp;&amp;nbsp;
-    <a t-if="social_links.get('social_instagram')" t-att-href="social_links.get('social_instagram')" style="margin-left:10px" aria-label="Instagram" title="Instagram">
+    </a>
+    <a href="/company/social/instagram" style="margin-left:10px" aria-label="Instagram" title="Instagram">
         <span class="fa fa-instagram"></span>
     </a>
 </template>
@@ -523,6 +524,13 @@
                        data-select-class="align-items-stretch"
                        data-img="/mass_mailing/static/src/img/snippets_options/align_stretch.svg"/>
         </we-button-group>
+    </div>
+    <div data-js="SocialMediaMassMailing"
+         data-selector=".o_mail_footer_social">
+            <we-list string="Social Networks" data-add-item-title="Add New Social Network"
+                data-render-list-items="" data-has-default="multiple"
+                data-default-value="https://www.example.com" data-id-mode="name"
+                data-generate-id-for-new-items= "true" data-new-elements-toggled="true" />
     </div>
 </template>
 </odoo>

@@ -38,7 +38,7 @@ options.registry.SocialMedia = options.Class.extend({
                 websiteId = ctx['website_id'];
             },
         });
-        this._rpc({
+        return this._rpc({
             model: 'website',
             method: 'write',
             args: [[websiteId], this.dbSocialValues],
@@ -133,6 +133,7 @@ options.registry.SocialMedia = options.Class.extend({
             };
             listEntries.push(entry);
         }
+        // console.log("listEntries:", listEntries);
         return JSON.stringify(listEntries);
     },
     /**
@@ -188,5 +189,5 @@ options.registry.SocialMedia = options.Class.extend({
 });
 
 export default {
-    SocialMedia: options.registry.SocialMedia,
+    SocialMediaWebsite: options.registry.SocialMediaWebsite,
 };

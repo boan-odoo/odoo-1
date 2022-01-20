@@ -312,6 +312,7 @@ var SnippetEditor = Widget.extend({
         const proms = _.map(this.styles, option => {
             return option.cleanForSave();
         });
+        console.log("proms:", proms);
         await Promise.all(proms);
     },
     /**

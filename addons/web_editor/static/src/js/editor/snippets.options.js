@@ -31,6 +31,26 @@ const {
 var qweb = core.qweb;
 var _t = core._t;
 
+// Patch ui.sortable to take into consideration the iframe of the wysiwyg.
+$.widget( "ui.sortable", $.ui.sortable, {
+    _generatePosition: function( event ) {
+        const pos = this._super(event);
+        if (this.options.wysiwygIframe) {
+            const offset = this.options.wysiwygIframe.offset();
+            pos.top -= offset.top;
+            pos.left -= offset.left;
+        }
+        return pos;
+    },
+    _mouseDistanceMet: function() {
+        if (this.options.wysiwygIframe) {
+            return true;
+        } else {
+            return this._super.call(this, arguments);
+        }
+    },
+});
+
 /**
  * @param {HTMLElement} el
  * @param {string} [title]
@@ -2079,14 +2099,24 @@ const ListUserValueWidget = UserValueWidget.extend({
         if (this.el.dataset.unsortable) {
             return;
         }
+        const wysiwyg = this.getParent().options.wysiwyg;
+
         $(this.listTable).sortable({
             axis: 'y',
             handle: '.o_we_drag_handle',
             items: 'tr',
             cursor: 'move',
             opacity: 0.6,
-            stop: (event, ui) => {
-                this._notifyCurrentState();
+            wysiwygIframe: wysiwyg && wysiwyg.$iframe,
+            start: () => {
+                if (wysiwyg && wysiwyg.$iframe) {
+                    wysiwyg.$iframe.css('pointer-events', 'none');
+                }
+            },
+            stop: () => {
+                if (wysiwyg && wysiwyg.$iframe) {
+                    wysiwyg.$iframe.css('pointer-events', '');
+                }
             },
         });
     },
