@@ -2032,6 +2032,8 @@ const ListUserValueWidget = UserValueWidget.extend({
         inputEl.type = this.el.dataset.inputType || 'text';
         if (value) {
             inputEl.value = value;
+        } else {
+            inputEl.classList.add('highlight_red');
         }
         if (id) {
             inputEl.name = id;
@@ -2052,8 +2054,11 @@ const ListUserValueWidget = UserValueWidget.extend({
         if (this.hasDefault) {
             const checkboxEl = document.createElement('we-button');
             checkboxEl.classList.add('o_we_user_value_widget', 'o_we_checkbox_wrapper');
-            if (this.selected.includes(id)) {
+            if (this.selected.includes(id) && value) {
                 checkboxEl.classList.add('active');
+            }
+            if (!value) {
+                checkboxEl.disabled = true;
             }
             const div = document.createElement('div');
             const checkbox = document.createElement('we-checkbox');
