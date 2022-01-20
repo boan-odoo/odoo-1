@@ -1886,7 +1886,8 @@ const ListUserValueWidget = UserValueWidget.extend({
         'click we-button.o_we_list_add_existing': '_onAddExistingItemClick',
         'click we-select.o_we_user_value_widget.o_we_add_list_item': '_onAddItemSelectClick',
         'click we-button.o_we_checkbox_wrapper': '_onAddItemCheckboxClick',
-        'change table input': '_onListItemChange',
+        'input table input': '_onListItemInput',
+        'blur table input': '_onListItemBlur',
     },
 
     /**
@@ -2094,8 +2095,9 @@ const ListUserValueWidget = UserValueWidget.extend({
     },
     /**
      * @private
+     * @param {Event} [ev] event that requires this notifyCurrentState.
      */
-    _notifyCurrentState() {
+    _notifyCurrentState(ev) {
         const values = [...this.listTable.querySelectorAll('.o_we_list_record_name input')].map(el => {
             let id = this.isCustom ? el.value : el.name;
             if (this.el.dataset.idMode && this.el.dataset.idMode === "name") {
@@ -2121,7 +2123,11 @@ const ListUserValueWidget = UserValueWidget.extend({
             });
         }
         this._value = JSON.stringify(values);
-        this.notifyValueChange(false);
+        if (ev && ev.type === 'input') {
+            this._onUserValuePreview();
+        } else {
+            this._onUserValueChange();
+        }
         if (!this.createWidget && !this.isCustom) {
             this._reloadSelectDropdown(values);
         }
@@ -2200,8 +2206,20 @@ const ListUserValueWidget = UserValueWidget.extend({
     /**
      * @private
      */
-    _onListItemChange() {
-        this._notifyCurrentState();
+    _onListItemBlur(ev) {
+        if (!this.el.contains(ev.relatedTarget)) {
+            // We call the function below only if the element that recovers the
+            // focus after this blur is not an element of the we-list.
+            // This allows to use the TAB key to go from one input to another in
+            // the list.
+            this._notifyCurrentState(ev);
+        }
+    },
+    /**
+     * @private
+     */
+    _onListItemInput(ev) {
+        this._notifyCurrentState(ev);
     },
     /**
      * @private
