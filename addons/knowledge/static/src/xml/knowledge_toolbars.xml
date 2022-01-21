@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="knowledge.template_toolbar">
+        <div class="o_knowledge_toolbar" contenteditable="false">
+            <div class="btn-group">
+                <button data-call="trash" title="Delete Template" t-attf-class="btn btn-link btn-sm #{widget.mode == 'edit' ? '' : 'o_hidden'}">
+                    <i class="fa fa-trash"/> <span class="o_knowledge_toolbar_button_text">Remove</span>
+                </button>
+                <button t-if="widget.linkedRecord" data-call="send_as_message" title="Send as Message" class="btn btn-link btn-sm">
+                    <i class="fa fa-envelope"/> <span class="o_knowledge_toolbar_button_text">Send as Message</span>
+                </button>
+                <button t-if="widget.linkedRecord" data-call="use_as_description" title="Use as Description" class="btn btn-link btn-sm">
+                    <i class="fa fa-pencil-square"/> <span class="o_knowledge_toolbar_button_text">Use as Description</span>
+                </button>
+                <button data-call="copy_to_clipboard" title="Copy to Clipboard" class="btn btn-link btn-sm">
+                    <i class="fa fa-clipboard"/> <span class="o_knowledge_toolbar_button_text">Copy to Clipboard</span>
+                </button>
+            </div>
+        </div>
+    </t>
+    <t t-name="knowledge.toolbars_manager">
+        <div class="o_knowledge_toolbars_manager" contentEditable="false"></div>
+    </t>
+</templates>

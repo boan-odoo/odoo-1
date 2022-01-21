@@ -104,6 +104,7 @@ const Wysiwyg = Widget.extend({
             isRootEditable: this.options.isRootEditable,
             placeholder: this.options.placeholder,
             controlHistoryFromDocument: this.options.controlHistoryFromDocument,
+            powerboxFilters: this.options.powerboxFilters || [],
             getContentEditableAreas: this.options.getContentEditableAreas,
             defaultLinkAttributes: this.options.userGeneratedContent ? {rel: 'ugc' } : {},
             getYoutubeVideoElement: getYoutubeVideoElement,

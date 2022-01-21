@@ -203,5 +203,7 @@ FormRenderer.include({
      * @param {Attachment[]} ev.data.attachments
      * @param {Thread} ev.data.thread
      */
-    _onChatterRendered(ev) {},
+    _onChatterRendered(ev) {
+        this._super(...arguments);
+    },
 });

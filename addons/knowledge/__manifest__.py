@@ -36,6 +36,12 @@
             'knowledge/static/src/js/widgets/knowledge_dialogs.js',
             'knowledge/static/src/webclient/commands/*.js',
             'knowledge/static/src/models/*/*.js',
+            'knowledge/static/src/js/form_view.js',
+            'knowledge/static/src/js/form_controller.js',
+            'knowledge/static/src/js/form_renderer.js',
+            'knowledge/static/src/js/knowledge_toolbars.js',
+            'knowledge/static/src/js/field_html.js',
+            'knowledge/static/src/js/knowledge_service.js',
         ],
         'web_editor.assets_wysiwyg': [
             'knowledge/static/src/js/wysiwyg.js',
@@ -44,6 +50,7 @@
             'knowledge/static/src/xml/knowledge_editor.xml',
             'knowledge/static/src/xml/knowledge_templates.xml',
             'knowledge/static/src/xml/chatter_topbar.xml',
+            'knowledge/static/src/xml/knowledge_toolbars.xml',
         ],
-    }
+    },
 }
