@@ -13,7 +13,7 @@
 
     <t t-name="sale_timesheet.ProfitabilitySection" owl="1">
         <t t-set="profitability_items" t-value="state.data.profitability_items"/>
-        <div name="profitability" class="o_rightpanel_section">
+        <div name="profitability" class="o_rightpanel_section" t-if="profitability_items.revenues.data.length and profitability_items.costs.data.length">
             <div class="o_rightpanel_header">
                 <div class="o_rightpanel_title">
                     Profitability
