@@ -4,6 +4,8 @@ import { qweb as QWeb, _t } from 'web.core';
 import Dialog from 'web.Dialog';
 import FormController from 'web.FormController';
 
+var core = require('web.core');
+
 const KnowledgeFormController = FormController.extend({
     events: Object.assign({}, FormController.prototype.events, {
         'click .btn-delete': '_onDelete',
@@ -12,6 +14,7 @@ const KnowledgeFormController = FormController.extend({
         'click .btn-move': '_onMove',
         'click .btn-share': '_onShare',
         'click .o_article_create': '_onCreate',
+        'click #knowledge_search_bar': '_onSearch',
         'change .o_breadcrumb_article_name': '_onRename',
     }),
 
