@@ -18,10 +18,11 @@ class ServerActions(models.Model):
                        ('followers', 'Add Followers'),
                        ('message_post', 'Post a Message'),
                        ('next_activity', 'Create Next Activity'),
-        ], ondelete={'email': 'cascade',
-                     'followers': 'cascade',
-                     'message_post': 'cascade',
-                     'next_activity': 'cascade',
+        ],
+        ondelete={'email': 'cascade',
+                  'followers': 'cascade',
+                  'message_post': 'cascade',
+                  'next_activity': 'cascade',
         }
     )
     # Followers
