@@ -62,6 +62,8 @@ export default class ProjectRightPanel extends Component {
                     }
                 }
             });
+        } else if (action.includes('{')) {  // check if the action is not an object
+            action = JSON.parse(action);
         }
         this._doAction(action, {
             additional_context: additionalContext
