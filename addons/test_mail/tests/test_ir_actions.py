@@ -11,8 +11,8 @@ class TestServerActionsEmail(TestMailCommon, TestServerActionsBase):
         super(TestServerActionsEmail, self).setUp()
         self.template = self._create_template(
             'res.partner',
-            {'partner_to': '%s' % self.test_partner.id,
-             'email_from': '${object.user_id.email_formatted or object.company_id.email_formatted or user.email_formatted | safe}',
+            {'email_from': '{{ object.user_id.email_formatted or object.company_id.email_formatted or user.email_formatted }}',
+             'partner_to': '%s' % self.test_partner.id,
             }
         )
 
