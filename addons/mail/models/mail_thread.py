@@ -2715,16 +2715,36 @@ class MailThread(models.AbstractModel):
                 if catchall:
                     result_email.update(dict((rid, '%s@%s' % (catchall, alias_domain)) for rid in left_ids))
 
-            # compute name of reply-to - TDE tocheck: quotes and stuff like that
-            company_name = company.name if company else self.env.company.name
-            for res_id in result_email.keys():
-                name = '%s%s%s' % (company_name, ' ' if doc_names.get(res_id) else '', doc_names.get(res_id, ''))
-                result[res_id] = tools.formataddr((name, result_email[res_id]))
+            result.update(self._notify_get_reply_to_get_formatted_email(result_email, doc_names, company=company))
 
         left_ids = set(_res_ids) - set(result_email)
         if left_ids:
             result.update(dict((res_id, default) for res_id in left_ids))
 
+        return result
+
+    def _notify_get_reply_to_get_formatted_email(self, record_emails, record_names, company=None):
+        """ Compute formatted email for reply_to, keeping under 78 chars.
+
+        TDE tocheck: quotes and stuff like that.
+        """
+        company_name = company.name if company else self.env.company.name
+        result = {}
+        for res_id in record_emails:
+            record_email = record_emails[res_id]
+            # address itself is too long for 78 chars limit: return only email
+            remaining_size = 72 - len(record_email)  # quotes + <> + space = 5
+            if remaining_size <= 0:
+                result[res_id] = record_email
+                continue
+
+            # strip out company_name, then record name extra chars to stay under 78
+            record_name = record_names.get(res_id) or ''
+            reply_name = '%s%s%s' % (company_name, ' ' if record_name else '', record_name)
+            if len(reply_name) > remaining_size:
+                shorter_name = record_name if record_name else company_name
+                reply_name = shorter_name if len(shorter_name) <= remaining_size else shorter_name[:max((0, remaining_size - 5))] + '[...]'
+            result[res_id] = tools.formataddr((reply_name, record_email))
         return result
 
     @api.model
