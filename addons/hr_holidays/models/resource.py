@@ -85,28 +85,26 @@ class CalendarLeaves(models.Model):
             leaves = self.env['hr.leave'].search(domain)
             if not leaves:
                 return
-            approved_leaves = leaves.filtered(lambda l: l.state in ['validate1', 'validate'])
-            validated_leaves = leaves.filtered(lambda l: l.state == 'validate')
-            validated_leaves.action_refuse()
-            approved_leaves.action_draft()
+
             previous_durations = [leave.number_of_days for leave in leaves]
+            previous_states = [leave.state for leave in leaves]
+            leaves.sudo().write({
+                'state': 'draft',
+            })
             leaves._compute_number_of_days()
-            for previous_duration, leave in zip(previous_durations, leaves):
+            for previous_duration, leave, state in zip(previous_durations, leaves, previous_states):
                 duration_difference = previous_duration - leave.number_of_days
                 if duration_difference > 0:
                     leave.message_post(body=_("Due to a change in global time offs, you have been granted %s day(s) back", duration_difference), subtype_id=1)
                 if leave.number_of_days > previous_duration\
                         and leave['holiday_status_id']['name'] != 'Sick Time Off':
                     new_leaves = self._split_leave(leave, time_domain_dict)
-                    if leave in approved_leaves:
-                        approved_leaves |= new_leaves
-                    if leave in validated_leaves:
-                        validated_leaves |= new_leaves
                     leaves |= new_leaves
-            approved_leaves.filtered(lambda l: l.state == 'draft').action_confirm()
-            approved_leaves.action_approve()
-            leaves_to_validate = validated_leaves.filtered(lambda l: l.number_of_days > 0 and l.state != 'validate')
-            leaves_to_validate.action_validate()
+                    previous_states += [state for i in range(len(new_leaves))]
+            
+            for index, leave in enumerate(leaves):
+                leave.write({'state': previous_states[index]})
+
             for leave in leaves:
                 if leave.number_of_days == 0.0:
                     leave.force_cancel(_("a new public holiday completely overrides this leave"), 1)
