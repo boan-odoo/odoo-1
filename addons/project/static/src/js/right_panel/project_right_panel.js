@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import { AddMilestone, OpenMilestone } from '@project/js/right_panel/project_utils';
-import { formatFloat } from "@web/fields/formatters";
+import { formatFloat, formatMonetary } from "@web/fields/formatters";
 
 const { Component, onWillStart, onWillUpdateProps, useState } = owl;
 
@@ -15,6 +15,10 @@ export default class ProjectRightPanel extends Component {
                 milestones: {
                     data: []
                 },
+                profitability_items: {
+                    costs: { data: [], total: { billed: 0.0, to_bill: 0.0 } },
+                    revenues: { data: [], total: { invoiced: 0.0, to_invoice: 0.0 } },
+                },
                 user: {},
             }
         });
@@ -25,6 +29,14 @@ export default class ProjectRightPanel extends Component {
 
     formatFloat(value) {
         return formatFloat(value, { digits: [false, 1] });
+    }
+
+    formatMonetary(value, options = {}) {
+        if (value === 0) return '';
+        return formatMonetary(value, {
+            currencyId: this.state.data.currency_id,
+            ...options,
+        });
     }
 
     async _loadQwebContext() {
