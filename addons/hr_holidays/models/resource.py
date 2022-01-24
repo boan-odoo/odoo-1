@@ -101,7 +101,7 @@ class CalendarLeaves(models.Model):
                     new_leaves = self._split_leave(leave, time_domain_dict)
                     leaves |= new_leaves
                     previous_states += [state for i in range(len(new_leaves))]
-            
+
             for index, leave in enumerate(leaves):
                 leave.write({'state': previous_states[index]})
 
