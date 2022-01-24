@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import json
+
 from collections import defaultdict
 
 from odoo import api, fields, models, _
@@ -399,13 +401,16 @@ class Project(models.Model):
             for product_id, sol_dict in sols_per_product.items():
                 if product_id in product_ids:
                     sols_service_policy[service_policy].update(sol_dict)  # just for testing purpose
-                    revenue = revenues_dict[service_policy_to_invoice_type.get(service_policy, False)]
+                    invoice_type = service_policy_to_invoice_type.get(service_policy, 'other_revenues')
+                    revenue = revenues_dict[invoice_type]
                     for sol_id, (untaxed_amount_to_invoice, untaxed_amount_invoiced, is_downpayment) in sol_dict.items():
                         assert not is_downpayment, f"Normally no downpayment should be taken into account, see the problematic SOL ID: {sol_id}"  # FIXME: testing purpose
                         revenue['to_invoice'] += untaxed_amount_to_invoice
                         total_revenues['to_invoice'] += untaxed_amount_to_invoice
                         revenue['invoiced'] += untaxed_amount_invoiced
                         total_revenues['invoiced'] += untaxed_amount_invoiced
+                        if invoice_type == 'other_revenues':
+                            revenue['record_ids'].append(sol_id)
         invoice_type_to_label = {
             'billable_fixed': _('Timesheets (Fixed Price)'),
             'billable_time': _('Timesheets (Billed on Timesheets)'),
@@ -413,9 +418,38 @@ class Project(models.Model):
             'non_billable': _('Timesheets (Non Billable)'),
             'other_revenues': _('Material'),
         }
+
+        basic_action_timesheets = None
+        if can_see_timesheets and len(self) == 1:
+            basic_action_timesheets = self.action_billable_time_button()
+
+        def convert_dict_into_profitability_data(d):
+            profitability_data = []
+            for invoice_type, vals in d.items():
+                record_ids = vals.pop('record_ids', [])
+                data = {'id': invoice_type, 'name': invoice_type_to_label.get(invoice_type, invoice_type), **vals}
+                if record_ids:
+                    if invoice_type in ['other_costs', 'other_revenues']:
+                        # action to see the SOL
+                        pass
+                    elif basic_action_timesheets:  # action to see the timesheets
+                        action_timesheets = {**basic_action_timesheets, 'domain': [('id', 'in', record_ids), ('project_id', 'in', self.ids)]}
+                        if len(record_ids) == 1:  # set the form view only
+                            if 'views' in action_timesheets:
+                                action_timesheets['views'] = [
+                                    (view_id, view_type)
+                                    for view_id, view_type in action_timesheets['views']
+                                    if view_type == 'form'
+                                ] or [False, 'form']
+                            action_timesheets['view_mode'] = 'form'
+                            action_timesheets['res_id'] = record_ids[0]
+                        data['action'] = json.dumps(action_timesheets)
+                profitability_data.append(data)
+            return profitability_data
+
         return {
-            'revenues': {'data': [{'id': k, 'name': invoice_type_to_label.get(k, k), **v} for k, v in revenues_dict.items()], 'total': total_revenues},
-            'costs': {'data': [{'id': k, 'name': invoice_type_to_label.get(k, k), **v} for k, v in costs_dict.items()], 'total': total_costs},
+            'revenues': {'data': convert_dict_into_profitability_data(revenues_dict), 'total': total_revenues},
+            'costs': {'data': convert_dict_into_profitability_data(costs_dict), 'total': total_costs},
         }
 
     def _get_profitability_items(self):

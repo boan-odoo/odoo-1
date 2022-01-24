@@ -49,7 +49,16 @@
             </thead>
             <tbody>
                 <tr t-foreach="revenue_items" t-as="revenue" t-key="revenue.name" t-if="revenue.invoiced !== 0 || revenue.to_invoice !== 0">
-                    <td><t t-esc="revenue.name"/></td>
+                    <td>
+                        <a t-if="revenue.action" class="o_rightpanel_button"
+                            t-on-click="onProjectActionClick"
+                            t-att-data-action="revenue.action"
+                            t-att-data-additional_context="revenue.additional_context"
+                        >
+                            <t t-esc="revenue.name"/>
+                        </a>
+                        <t t-esc="revenue.name" t-else=""/>
+                    </td>
                     <td><t t-esc="formatMonetary(revenue.invoiced)"/></td>
                     <td><t t-esc="formatMonetary(revenue.to_invoice)"/></td>
                     <td><t t-esc="formatMonetary(revenue.invoiced + revenue.to_invoice)"/></td>
@@ -81,7 +90,16 @@
             </thead>
             <tbody>
                 <tr t-foreach="cost_items" t-as="cost" t-key="cost.name" t-if="cost.billed !== 0 || cost.to_bill !== 0">
-                    <td><t t-esc="cost.name"/></td>
+                    <td>
+                        <a t-if="cost.action" class="o_rightpanel_button"
+                            t-on-click="onProjectActionClick"
+                            t-att-data-action="cost.action"
+                            t-att-data-additional_context="cost.additional_context"
+                        >
+                            <t t-esc="cost.name"/>
+                        </a>
+                        <t t-esc="cost.name" t-else=""/>
+                    </td>
                     <td><t t-esc="formatMonetary(cost.billed)"/></td>
                     <td><t t-esc="formatMonetary(cost.to_bill)"/></td>
                     <td><t t-esc="formatMonetary(cost.billed + cost.to_bill)"/></td>
