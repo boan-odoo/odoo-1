@@ -3,8 +3,7 @@
 
     <t t-name="point_of_sale.CashMovePopup" owl="1">
         <div role="dialog" class="modal-dialog">
-            <Draggable>
-                <div class="popup drag-handle">
+                <div class="popup cash-move-popup">
                     <main class="body">
                         <div class="cash-move">
                             <div class="input-amount">
@@ -25,8 +24,8 @@
                             </span>
                         </div>
                     </main>
-                    <footer class="footer">
-                        <div class="button confirm disable" t-on-click="confirm">
+                    <footer class="footer cash-move">
+                        <div class="button confirm disable highlight" t-on-click="confirm">
                             Confirm
                         </div>
                         <div class="button cancel" t-on-click="cancel">
@@ -34,7 +33,6 @@
                         </div>
                     </footer>
                 </div>
-            </Draggable>
         </div>
     </t>
 
