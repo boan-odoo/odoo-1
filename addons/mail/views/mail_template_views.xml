@@ -6,6 +6,12 @@
             <field name="model">mail.template</field>
             <field name="arch" type="xml">
                 <form string="Templates">
+                    <header>
+                        <field name="is_body_updated" invisible="1"/>
+                        <field name="template_fs" invisible="1"/>
+                        <button string="Reset Template" class="oe_highlight"
+                            name="reset_mail_template" type="object" attrs="{'invisible':['|', ('is_body_updated','=',False), ('template_fs', '=', False)]}"/>
+                    </header>
                     <sheet>
                         <div class="oe_button_box" name="button_box">
                             <field name="ref_ir_act_window" invisible="1"/>

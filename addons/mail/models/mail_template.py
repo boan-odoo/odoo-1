@@ -3,11 +3,18 @@
 
 import base64
 import logging
+import os
 
+from lxml import etree
 
 from odoo import _, api, fields, models, tools, Command
 from odoo.exceptions import UserError
+from odoo.modules import get_module_resource
+from odoo.modules.module import get_resource_from_path, get_resource_path
 from odoo.tools import is_html_empty
+from odoo.tools.convert import _eval_xml
+from odoo.tools.misc import file_open
+from odoo.tools.translate import TranslationFileReader
 
 _logger = logging.getLogger(__name__)
 
@@ -69,6 +76,9 @@ class MailTemplate(models.Model):
     ref_ir_act_window = fields.Many2one('ir.actions.act_window', 'Sidebar action', readonly=True, copy=False,
                                         help="Sidebar action to make this template available on records "
                                              "of the related document model")
+    template_fs = fields.Char(string='Template Filename', help="""File from where the template originates.
+                                                          Useful to reset broken template.""")
+    is_body_updated = fields.Boolean(string='Modified Body')
 
     # Overrides of mail.render.mixin
     @api.depends('model')
@@ -87,10 +97,20 @@ class MailTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for val in vals_list:
+            if 'body_html' in val:
+                if 'install_filename' in self._context:
+                    # we store the relative path to the resource instead of the absolute path, if found
+                    # (it will be missing e.g. when importing data-only modules using base_import_module)
+                    path_info = get_resource_from_path(self._context['install_filename'])
+                    if path_info:
+                        val['template_fs'] = '/'.join(path_info[0:2])
         return super().create(vals_list)\
             ._fix_attachment_ownership()
 
     def write(self, vals):
+        if 'body_html' in vals:
+            vals['is_body_updated'] = True
         super().write(vals)
         self._fix_attachment_ownership()
         return True
@@ -243,6 +263,48 @@ class MailTemplate(models.Model):
 
         return multi_mode and results or results[res_ids[0]]
 
+    def _get_translation_data(self, trans_file, lang, xml_ids):
+        if lang == "en_US" and not trans_file:
+            translation_terms = self.env['ir.translation'].search([
+                ('res_id', '=', self.id),
+                ('lang', '=', lang),
+                ('name', '=', 'mail.template,body_html')
+            ])
+            for term in translation_terms:
+                term.write({
+                    'value': term.src
+                })
+        elif trans_file:
+            with file_open(trans_file, mode='rb') as fileobj:
+                fileformat = os.path.splitext(trans_file)[-1][1:].lower()
+                reader = TranslationFileReader(fileobj, fileformat=fileformat)
+                for row in reader:
+                    if row.get('value') and row.get('imd_name') in xml_ids:
+                        self.env['ir.translation']._set_ids(
+                            row['name'], 'model', lang, self._ids, row['value'], row['src'],
+                        )
+        return True
+
+    def _override_translation_term(self, lang, module_name, xml_ids):
+        lang_code = tools.get_iso_codes(lang)
+        if '_' in lang_code:
+            lang_code = lang_code.split('_')[0]
+        self._get_translation_data(get_module_resource(module_name, 'i18n', lang_code + '.po'), lang, xml_ids)
+
+    def reset_mail_template(self):
+        if self.template_fs and self.is_body_updated:
+            external_id = self.get_external_id().get(self.id)
+            module, xml_id = external_id.split('.')
+            fullpath = get_resource_path(*self.template_fs.split('/'))
+            if fullpath:
+                with file_open(fullpath, 'rb') as fp:
+                    doc = etree.parse(fp)
+                    for rec in doc.xpath("//record[@id='%s'] | //record[@id='%s']" % (external_id, xml_id)):
+                        field_body_html = rec.find("./field[@name='body_html']")
+                        if field_body_html is not None:
+                            self.body_html = _eval_xml(self, field_body_html, self.env)
+                            self._override_translation_term(self.env.lang, module, [xml_id, external_id])
+                            self.is_body_updated = False
     # ------------------------------------------------------------
     # EMAIL
     # ------------------------------------------------------------
