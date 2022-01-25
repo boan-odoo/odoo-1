@@ -9,7 +9,7 @@
 
     <t t-name="sale_project.SalesSection" owl="1">
         <t t-set="sale_items" t-value="state.data.sale_items"/>
-        <t t-if="sale_items.total > 0">
+        <t t-if="sale_items and sale_items.total > 0">
             <div name="sold" class="o_rightpanel_section">
                 <div class="o_rightpanel_header">
                     <div class="o_rightpanel_title">
@@ -44,6 +44,13 @@
                                 <td><t t-esc="sale_item.product_uom_qty"/> <t t-esc="uom_name"/></td>
                                 <td><t t-esc="sale_item.qty_delivered"/> <t t-esc="uom_name"/></td>
                                 <td><t t-esc="sale_item.qty_invoiced"/> <t t-esc="uom_name"/></td>
+                            </tr>
+                            <tr t-if="sale_items.total > sale_items.data.length">
+                                <td>
+                                    <a class="o_rightpanel_button" t-on-click="onLoadSalesOrderLinesClick">
+                                        Load more sale order items
+                                    </a>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
