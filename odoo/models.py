@@ -61,6 +61,7 @@ from .tools.config import config
 from .tools.func import frame_codeinfo
 from .tools.misc import CountingStream, clean_context, DEFAULT_SERVER_DATETIME_FORMAT, DEFAULT_SERVER_DATE_FORMAT, get_lang
 from .tools.translate import _
+from .tools import vals_to_float
 from .tools import date_utils
 from .tools import populate
 from .tools import unique
@@ -2590,6 +2591,8 @@ class BaseModel(metaclass=MetaModel):
         }
         self._cr.execute(query, where_clause_params)
         fetched_data = self._cr.dictfetchall()
+        for data in fetched_data:
+            vals_to_float(data)
 
         if not groupby_fields:
             return fetched_data

@@ -689,8 +689,8 @@ class PurchaseOrder(models.Model):
         res = self.env.cr.fetchone()
         result['all_avg_days_to_purchase'] = round(res[1] or 0, 2)
         currency = self.env.company.currency_id
-        result['all_avg_order_value'] = format_amount(self.env, res[0] or 0, currency)
-        result['all_total_last_7_days'] = format_amount(self.env, res[2] or 0, currency)
+        result['all_avg_order_value'] = format_amount(self.env, float(res[0]) or 0.0, currency)
+        result['all_total_last_7_days'] = format_amount(self.env, float(res[2]) or 0.0, currency)
 
         return result
 

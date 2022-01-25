@@ -42,7 +42,7 @@ class UtmCampaign(models.Model):
         campaigns = self.browse()
         for datum in query_res:
             campaign = self.browse(datum['campaign_id'])
-            campaign.invoiced_amount = datum['price_subtotal']
+            campaign.invoiced_amount = float(datum['price_subtotal'])
             campaigns |= campaign
         for campaign in (self - campaigns):
             campaign.invoiced_amount = 0

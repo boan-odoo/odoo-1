@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models, Command, tools, _
-from odoo.tools import float_compare, float_is_zero
+from odoo.tools import vals_to_float
 from odoo.osv.expression import get_unaccent_wrapper
 from odoo.exceptions import UserError, ValidationError
 import re
@@ -570,7 +570,9 @@ class AccountReconcileModel(models.Model):
         self._cr.execute(query, params)
 
         rslt = defaultdict(lambda: [])
-        for candidate_dict in self._cr.dictfetchall():
+        candidate_dicts = self._cr.dictfetchall()
+        vals_to_float(candidate_dicts)
+        for candidate_dict in candidate_dicts:
             rslt[candidate_dict['id']].append(candidate_dict)
 
         return rslt

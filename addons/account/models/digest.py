@@ -26,7 +26,7 @@ class Digest(models.Model):
                 AND move.state = 'posted'
             ''', [company.id, start, end])
             query_res = self._cr.fetchone()
-            record.kpi_account_total_revenue_value = query_res and query_res[0] or 0.0
+            record.kpi_account_total_revenue_value = query_res and float(query_res[0]) or 0.0
 
     def _compute_kpis_actions(self, company, user):
         res = super(Digest, self)._compute_kpis_actions(company, user)

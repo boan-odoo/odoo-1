@@ -108,7 +108,7 @@ class Currency(models.Model):
                    FROM res_currency c
                    WHERE c.id IN %s"""
         self._cr.execute(query, (date, company.id, tuple(self.ids)))
-        currency_rates = dict(self._cr.fetchall())
+        currency_rates = {row[0]: float(row[1]) for row in self._cr.fetchall()}
         return currency_rates
 
     @api.depends_context('company')

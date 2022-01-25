@@ -2,6 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from __future__ import print_function
+from decimal import Decimal
 import builtins
 import math
 
@@ -215,6 +216,10 @@ def float_split(value, precision_digits):
         return int(units), 0
     return int(units), int(cents)
 
+def vals_to_float(data):
+    for key, val in data.items():
+        if isinstance(val, Decimal):
+            data[key] = float(val)
 
 if __name__ == "__main__":
 

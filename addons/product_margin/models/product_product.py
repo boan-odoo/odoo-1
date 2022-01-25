@@ -141,9 +141,9 @@ class ProductProduct(models.Model):
         invoice_types = ('out_invoice', 'out_refund')
         self.env.cr.execute(sqlstr, (tuple(self.ids), states, payment_states, invoice_types, date_from, date_to, company_id))
         for product_id, avg, qty, total, sale in self.env.cr.fetchall():
-            res[product_id]['sale_avg_price'] = avg and avg or 0.0
-            res[product_id]['sale_num_invoiced'] = qty and qty or 0.0
-            res[product_id]['turnover'] = total and total or 0.0
+            res[product_id]['sale_avg_price'] = float(avg) and avg or 0.0
+            res[product_id]['sale_num_invoiced'] = float(qty) and qty or 0.0
+            res[product_id]['turnover'] = float(total) and total or 0.0
             res[product_id]['sale_expected'] = sale and sale or 0.0
             res[product_id]['sales_gap'] = res[product_id]['sale_expected'] - res[product_id]['turnover']
             res[product_id]['total_margin'] = res[product_id]['turnover']
@@ -156,9 +156,9 @@ class ProductProduct(models.Model):
         invoice_types = ('in_invoice', 'in_refund')
         self.env.cr.execute(sqlstr, (tuple(self.ids), states, payment_states, invoice_types, date_from, date_to, company_id))
         for product_id, avg, qty, total, dummy in self.env.cr.fetchall():
-            res[product_id]['purchase_avg_price'] = avg and avg or 0.0
-            res[product_id]['purchase_num_invoiced'] = qty and qty or 0.0
-            res[product_id]['total_cost'] = total and total or 0.0
+            res[product_id]['purchase_avg_price'] = float(avg) and avg or 0.0
+            res[product_id]['purchase_num_invoiced'] = float(qty) and qty or 0.0
+            res[product_id]['total_cost'] = float(total) and total or 0.0
             res[product_id]['total_margin'] = res[product_id].get('turnover', 0.0) - res[product_id]['total_cost']
             res[product_id]['total_margin_rate'] = res[product_id].get('turnover', 0.0) and res[product_id]['total_margin'] * 100 / res[product_id].get('turnover', 0.0) or 0.0
         for product in self:

@@ -6,6 +6,7 @@ from odoo import models, api, _, fields
 from odoo.osv import expression
 from odoo.release import version
 from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
+from odoo.tools import vals_to_float
 from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
 import random
 
@@ -271,14 +272,17 @@ class account_journal(models.Model):
             (query, query_args) = self._get_open_bills_to_pay_query()
             self.env.cr.execute(query, query_args)
             query_results_to_pay = self.env.cr.dictfetchall()
+            vals_to_float(query_results_to_pay)
 
             (query, query_args) = self._get_draft_bills_query()
             self.env.cr.execute(query, query_args)
             query_results_drafts = self.env.cr.dictfetchall()
+            vals_to_float(query_results_drafts)
 
             (query, query_args) = self._get_late_bills_query()
             self.env.cr.execute(query, query_args)
             late_query_results = self.env.cr.dictfetchall()
+            vals_to_float(late_query_results)
 
             curr_cache = {}
             (number_waiting, sum_waiting) = self._count_results_and_sum_amounts(query_results_to_pay, currency, curr_cache=curr_cache)

@@ -10,12 +10,13 @@ from datetime import date, datetime, time
 import io
 from PIL import Image
 import psycopg2
+from decimal import Decimal
 
 from odoo import models, fields, Command
 from odoo.addons.base.tests.common import TransactionCaseWithUserDemo
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import common
-from odoo.tools import mute_logger, float_repr
+from odoo.tools import mute_logger, float_repr, float_round, float_compare, float_is_zero, float_split
 from odoo.tools.date_utils import add, subtract, start_of, end_of
 from odoo.tools.image import image_data_uri
 
@@ -846,25 +847,51 @@ class TestFields(TransactionCaseWithUserDemo):
         description = self.env['test_new_api.mixed'].fields_get()['number2']
         self.assertEqual(description['digits'], (16, precision.digits))
 
+    def test_21_float_digits_compatibility(self):
+        """ test field description """
+        record = self.env['test_new_api.mixed'].create({
+            'number': 99.5644444,
+            'number2': 99.5644444,
+        })
+        values = self.env['test_new_api.mixed'].read_group([('id', '=', record.id)], ['number', 'number2'], 'number', lazy=False)[0]
+
+        self.assertEqual(values['number'], 99.56)
+        self.assertEqual(values['number2'], 99.564)
+
+        self.assertEqual(record.number, 99.56)
+        self.assertEqual(record.number2, 99.564)
+        self.assertEqual(float_repr(record.number, precision_digits=2), '99.56')
+        self.assertEqual(float_repr(record.number2, precision_digits=2), '99.56')
+        self.assertEqual(float_round(record.number, precision_digits=2), 99.56)
+        self.assertEqual(float_round(record.number2, precision_digits=2), 99.56)
+        self.assertEqual(float_compare(record.number, record.number2, precision_digits=2), 0)
+        self.assertEqual(float_is_zero(record.number, precision_digits=2), False)
+        self.assertEqual(float_is_zero(record.number2, precision_digits=2), False)
+        self.assertEqual(float_split(record.number, precision_digits=2), (99, 56))
+        self.assertEqual(float_split(record.number2, precision_digits=2), (99, 56))
+
     def check_monetary(self, record, amount, currency, msg=None):
         # determine the possible roundings of amount
         if currency:
             ramount = currency.round(amount)
             samount = float(float_repr(ramount, currency.decimal_places))
+            damount = Decimal(ramount).quantize(Decimal('1.' + '0' * currency.decimal_places))
         else:
             ramount = samount = amount
+            decimal_places = len(str(amount).split('.')[1])
+            damount = Decimal(ramount).quantize(Decimal('1.' + '0' * decimal_places))
 
         # check the currency on record
         self.assertEqual(record.currency_id, currency)
 
         # check the value on the record
-        self.assertIn(record.amount, [ramount, samount], msg)
+        self.assertIn(record.amount, [ramount, samount, damount], msg)
 
         # check the value in the database
         record.flush()
         self.cr.execute('SELECT amount FROM test_new_api_mixed WHERE id=%s', [record.id])
         value = self.cr.fetchone()[0]
-        self.assertEqual(value, samount, msg)
+        self.assertEqual(value, damount, msg)
 
     def test_20_monetary(self):
         """ test monetary fields """

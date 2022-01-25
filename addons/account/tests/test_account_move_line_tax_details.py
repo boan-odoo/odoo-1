@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #pylint: disable=too-many-lines
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from odoo.tools import vals_to_float
 from odoo.tests import tagged
 from odoo import Command
 
@@ -22,6 +23,7 @@ class TestAccountTaxDetailsReport(AccountTestInvoicingCommon):
         tax_details_query, tax_details_params = self.env['account.move.line']._get_query_tax_details_from_domain(domain, fallback=fallback)
         self.cr.execute(tax_details_query, tax_details_params)
         tax_details_res = self.cr.dictfetchall()
+        vals_to_float(tax_details_res)
         return sorted(tax_details_res, key=lambda x: (x['base_line_id'], abs(x['base_amount']), abs(x['tax_amount'])))
 
     def assertTaxDetailsValues(self, tax_details, expected_values_list):

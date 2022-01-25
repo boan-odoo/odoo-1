@@ -250,10 +250,10 @@ class AccountMove(models.Model):
                 'tax_id': tax,
                 'src_tax_id': self.env['account.tax'].browse(row['group_tax_id']) if row['group_tax_id'] else tax,
                 'tax_repartition_line_id': tax_line.tax_repartition_line_id,
-                'base_amount': row['base_amount'],
-                'tax_amount': row['tax_amount'],
-                'base_amount_currency': row['base_amount_currency'],
-                'tax_amount_currency': row['tax_amount_currency'],
+                'base_amount': float(row['base_amount']),
+                'tax_amount': float(row['tax_amount']),
+                'base_amount_currency': float(row['base_amount_currency']),
+                'tax_amount_currency': float(row['tax_amount_currency']),
             })
         grouping_key_generator = grouping_key_generator or default_grouping_key_generator
 

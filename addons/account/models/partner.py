@@ -310,6 +310,7 @@ class ResPartner(models.Model):
                       """, where_params)
         treated = self.browse()
         for pid, type, val in self._cr.fetchall():
+            val = float(val)
             partner = self.browse(pid)
             if type == 'receivable':
                 partner.credit = val

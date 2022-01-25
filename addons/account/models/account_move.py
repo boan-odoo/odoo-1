@@ -2067,7 +2067,7 @@ class AccountMove(models.Model):
         query_res = self._cr.fetchall()
         if query_res:
             ids = [res[0] for res in query_res]
-            sums = [res[1] for res in query_res]
+            sums = [float(res[1]) for res in query_res]
             raise UserError(_("Cannot create unbalanced journal entry. Ids: %s\nDifferences debit - credit: %s") % (ids, sums))
 
     def _check_fiscalyear_lock_date(self):
