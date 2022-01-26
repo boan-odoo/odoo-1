@@ -407,8 +407,7 @@ class TestMrpOrder(TestMrpCommon):
         self.assertEqual(mo.move_finished_ids[0].date, datetime(2023, 5, 15, 10, 0))
         mo.action_confirm()
         mo.button_plan()
-        with Form(mo) as frm:
-            frm.date_planned_start = datetime(2024, 5, 15, 9, 0)
+        mo.date_planned_start = datetime(2024, 5, 15, 9, 0)
         self.assertEqual(mo.move_finished_ids[0].date, datetime(2024, 5, 15, 10, 0))
 
     def test_rounding(self):
