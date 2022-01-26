@@ -85,17 +85,15 @@ class MrpProduction(models.Model):
     use_create_components_lots = fields.Boolean(related='picking_type_id.use_create_components_lots')
     location_src_id = fields.Many2one(
         'stock.location', 'Components Location',
-        compute='_compute_locations', store=True,
-        readonly=True, required=True, precompute=True,
+        compute='_compute_locations', store=True, check_company=True,
+        readonly=False, required=True, precompute=True,
         domain="[('usage','=','internal'), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
-        states={'draft': [('readonly', False)]}, check_company=True,
         help="Location where the system will look for components.")
     location_dest_id = fields.Many2one(
         'stock.location', 'Finished Products Location',
-        compute='_compute_locations', store=True,
-        readonly=True, required=True, precompute=True,
+        compute='_compute_locations', store=True, check_company=True,
+        readonly=False, required=True, precompute=True,
         domain="[('usage','=','internal'), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
-        states={'draft': [('readonly', False)]}, check_company=True,
         help="Location where the system will stock the finished products.")
     date_planned_start = fields.Datetime(
         'Scheduled Date', copy=False, default=_get_default_date_planned_start,
