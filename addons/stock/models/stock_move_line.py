@@ -756,8 +756,8 @@ class StockMoveLine(models.Model):
         for move_line in self:
             line_key, name, description, uom = get_aggregated_properties(move_line=move_line)
 
+            qty_ordered = move_line.move_id.product_uom_qty
             if line_key not in aggregated_move_lines:
-                qty_ordered = move_line.move_id.product_uom_qty
                 if backorders:
                     # Filters on the aggregation key (product, description and uom) to add the
                     # quantities delayed to backorders to retrieve the original ordered qty.
@@ -765,6 +765,8 @@ class StockMoveLine(models.Model):
                         lambda ml: get_aggregated_properties(move=ml.move_id)[0] == line_key
                     )
                     qty_ordered += sum(following_move_lines.move_id.mapped('product_uom_qty'))
+                if kwargs.get('strict'):
+                    qty_ordered = move_line.qty_done
                 aggregated_move_lines[line_key] = {'name': name,
                                                    'description': description,
                                                    'qty_done': move_line.qty_done,
@@ -773,6 +775,7 @@ class StockMoveLine(models.Model):
                                                    'product_uom_rec': uom,
                                                    'product': move_line.product_id}
             else:
+                aggregated_move_lines[line_key]['qty_ordered'] += qty_ordered
                 aggregated_move_lines[line_key]['qty_done'] += move_line.qty_done
 
         # Does the same for empty move line to retrieve the ordered qty. for partially done moves
