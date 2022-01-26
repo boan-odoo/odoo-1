@@ -2,7 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo.tests import users
-from odoo.addons.mail.tests.common import MailCommon
+from odoo.addons.mail.tests.common import MailCommon, mail_new_test_user
 
 
 class TestMailComposer(MailCommon):
@@ -72,3 +72,24 @@ class TestMailComposer(MailCommon):
         self.assertIn(self.body_html,
             values[self.partner_employee.id]['body_html'],
             'We must preserve (mso) comments in email html')
+
+    def test_mail_mass_mode_compose_with_multiple_emails(self):
+        test_user = mail_new_test_user(self.env, login="test_user_emails", groups="base.group_user", email="testmail1@test.com,testmail2@test.com")
+        test_partner = test_user.partner_id
+        composer = self.env['mail.compose.message'].with_context({
+            'default_model': self.test_record._name,
+            'default_composition_mode': 'mass_mail',
+            'active_ids': [self.test_record.id],
+            'active_model': self.test_record._name,
+            'active_id': self.test_record.id
+        }).create({
+            'body': self.body_html,
+            'partner_ids': [(4, test_partner.id)],
+            'composition_mode': 'mass_mail',
+        })
+        with self.mock_mail_gateway(mail_unlink_sent=True):
+            composer._action_send_mail()
+
+        values = composer.get_mail_values(test_partner.ids)
+
+        self.assertTrue('failure_type' not in values[test_partner.id])
