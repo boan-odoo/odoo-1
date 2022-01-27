@@ -141,30 +141,33 @@ class ProductProduct(models.Model):
         invoice_types = ('out_invoice', 'out_refund')
         self.env.cr.execute(sqlstr, (tuple(self.ids), states, payment_states, invoice_types, date_from, date_to, company_id))
         for product_id, avg, qty, total, sale in self.env.cr.fetchall():
-            res[product_id]['sale_avg_price'] = float(avg) and avg or 0.0
-            res[product_id]['sale_num_invoiced'] = float(qty) and qty or 0.0
-            res[product_id]['turnover'] = float(total) and total or 0.0
-            res[product_id]['sale_expected'] = sale and sale or 0.0
-            res[product_id]['sales_gap'] = res[product_id]['sale_expected'] - res[product_id]['turnover']
-            res[product_id]['total_margin'] = res[product_id]['turnover']
-            res[product_id]['expected_margin'] = res[product_id]['sale_expected']
-            res[product_id]['total_margin_rate'] = res[product_id]['turnover'] and res[product_id]['total_margin'] * 100 / res[product_id]['turnover'] or 0.0
-            res[product_id]['expected_margin_rate'] = res[product_id]['sale_expected'] and res[product_id]['expected_margin'] * 100 / res[product_id]['sale_expected'] or 0.0
+            prod = res[product_id]
+            prod['sale_avg_price'] = float(avg or 0.0)
+            prod['sale_num_invoiced'] = float(qty or 0.0)
+            prod['turnover'] = float(total or 0.0)
+            prod['sale_expected'] = float(sale or 0.0)
+            prod['sales_gap'] = prod['sale_expected'] - prod['turnover']
+            prod['total_margin'] = prod['turnover']
+            prod['expected_margin'] = prod['sale_expected']
+            prod['total_margin_rate'] = prod['total_margin'] * 100 / prod['turnover'] if prod['turnover'] else 0.0
+            prod['expected_margin_rate'] = prod['sale_expected'] and prod['expected_margin'] * 100 / prod['sale_expected'] or 0.0
 
         ctx = self.env.context.copy()
         ctx['force_company'] = company_id
         invoice_types = ('in_invoice', 'in_refund')
         self.env.cr.execute(sqlstr, (tuple(self.ids), states, payment_states, invoice_types, date_from, date_to, company_id))
         for product_id, avg, qty, total, dummy in self.env.cr.fetchall():
-            res[product_id]['purchase_avg_price'] = float(avg) and avg or 0.0
-            res[product_id]['purchase_num_invoiced'] = float(qty) and qty or 0.0
-            res[product_id]['total_cost'] = float(total) and total or 0.0
-            res[product_id]['total_margin'] = res[product_id].get('turnover', 0.0) - res[product_id]['total_cost']
-            res[product_id]['total_margin_rate'] = res[product_id].get('turnover', 0.0) and res[product_id]['total_margin'] * 100 / res[product_id].get('turnover', 0.0) or 0.0
+            prod = res[product_id]
+            prod['purchase_avg_price'] = float(avg or 0.0)
+            prod['purchase_num_invoiced'] = float(qty or 0.0)
+            prod['total_cost'] = float(total or 0.0)
+            prod['total_margin'] = prod['turnover'] - prod['total_cost']
+            prod['total_margin_rate'] = prod['total_margin'] * 100 / prod['turnover'] if prod['turnover'] else 0.0
         for product in self:
-            res[product.id]['normal_cost'] = product.standard_price * res[product.id]['purchase_num_invoiced']
-            res[product.id]['purchase_gap'] = res[product.id]['normal_cost'] - res[product.id]['total_cost']
-            res[product.id]['expected_margin'] = res[product.id].get('sale_expected', 0.0) - res[product.id]['normal_cost']
-            res[product.id]['expected_margin_rate'] = res[product.id].get('sale_expected', 0.0) and res[product.id]['expected_margin'] * 100 / res[product.id].get('sale_expected', 0.0) or 0.0
-            product.write(res[product.id])
+            prod = res[product.id]
+            prod['normal_cost'] = product.standard_price * prod['purchase_num_invoiced']
+            prod['purchase_gap'] = prod['normal_cost'] - prod['total_cost']
+            prod['expected_margin'] = prod['sale_expected'] - prod['normal_cost']
+            prod['expected_margin_rate'] = prod['expected_margin'] * 100 / prod['sale_expected'] if prod['sale_expected'] else 0.0
+            product.write(prod)
         return res
