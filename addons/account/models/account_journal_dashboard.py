@@ -271,21 +271,15 @@ class account_journal(models.Model):
 
             (query, query_args) = self._get_open_bills_to_pay_query()
             self.env.cr.execute(query, query_args)
-            query_results_to_pay = self.env.cr.dictfetchall()
-            for data in query_results_to_pay:
-                vals_to_float(data)
+            query_results_to_pay = map(vals_to_float, self.env.cr.dictfetchall())
 
             (query, query_args) = self._get_draft_bills_query()
             self.env.cr.execute(query, query_args)
-            query_results_drafts = self.env.cr.dictfetchall()
-            for data in query_results_drafts:
-                vals_to_float(data)
+            query_results_drafts = map(vals_to_float, self.env.cr.dictfetchall())
 
             (query, query_args) = self._get_late_bills_query()
             self.env.cr.execute(query, query_args)
-            late_query_results = self.env.cr.dictfetchall()
-            for data in late_query_results:
-                vals_to_float(data)
+            late_query_results = map(vals_to_float, self.env.cr.dictfetchall())
 
             curr_cache = {}
             (number_waiting, sum_waiting) = self._count_results_and_sum_amounts(query_results_to_pay, currency, curr_cache=curr_cache)

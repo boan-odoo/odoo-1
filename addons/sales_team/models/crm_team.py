@@ -326,10 +326,7 @@ class CrmTeam(models.Model):
         }
 
         self._cr.execute(query, [self.id, start_date, end_date] + where_clause_params)
-        items = self.env.cr.dictfetchall()
-        for item in items:
-            vals_to_float(item)
-        return items
+        return list(map(vals_to_float, self.env.cr.dictfetchall()))
 
     def _get_dashboard_graph_data(self):
         def get_week_name(start_date, locale):

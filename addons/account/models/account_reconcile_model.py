@@ -570,9 +570,7 @@ class AccountReconcileModel(models.Model):
         self._cr.execute(query, params)
 
         rslt = defaultdict(lambda: [])
-        candidate_dicts = self._cr.dictfetchall()
-        for candidate in candidate_dicts:
-            vals_to_float(candidate)
+        candidate_dicts = map(vals_to_float, self._cr.dictfetchall())
         for candidate_dict in candidate_dicts:
             rslt[candidate_dict['id']].append(candidate_dict)
 

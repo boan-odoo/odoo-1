@@ -217,9 +217,14 @@ def float_split(value, precision_digits):
     return int(units), int(cents)
 
 def vals_to_float(data):
+    """ Convert all Decimal values into float values ot the dict.
+
+       :rtype: dict
+    """
     for key, val in data.items():
         if isinstance(val, Decimal):
             data[key] = float(val)
+    return data
 
 if __name__ == "__main__":
 

@@ -2590,9 +2590,7 @@ class BaseModel(metaclass=MetaModel):
             'offset': prefix_term('OFFSET', int(offset) if limit else None),
         }
         self._cr.execute(query, where_clause_params)
-        fetched_data = self._cr.dictfetchall()
-        for data in fetched_data:
-            vals_to_float(data)
+        fetched_data = list(map(vals_to_float, self._cr.dictfetchall()))
 
         if not groupby_fields:
             return fetched_data
