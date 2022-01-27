@@ -227,6 +227,7 @@
                                             <div class="ml-2">
                                                 <div t-esc="user" t-options='{"widget": "contact", "fields": ["name"]}'/>
                                                 <a t-attf-href="tel:{{user.phone}}" t-if="user.phone"><div t-esc="user" t-options='{"widget": "contact", "fields": ["phone"]}'/></a>
+                                                <a t-attf-href="mailto:{{user.email}}" t-if="user.email"><div t-esc="user" t-options='{"widget": "contact", "fields": ["email"]}'/></a>
                                             </div>
                                         </div>
                                     </t>
@@ -238,6 +239,7 @@
                                         <div class="ml-2">
                                             <div t-field="task.partner_id" t-options='{"widget": "contact", "fields": ["name"]}'/>
                                             <a t-attf-href="tel:{{task.partner_id.phone}}" t-if="task.partner_id.phone"><div t-field="task.partner_id" t-options='{"widget": "contact", "fields": ["phone"]}'/></a>
+                                            <a t-attf-href="mailto:{{task.partner_id.email}}" t-if="task.partner_id.email"><div t-field="task.partner_id" t-options='{"widget": "contact", "fields": ["email"]}'/></a>
                                         </div>
                                     </div>
                                 </div>
