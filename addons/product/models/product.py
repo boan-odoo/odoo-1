@@ -561,6 +561,44 @@ class ProductProduct(models.Model):
             return _('Products: ') + self.env['product.category'].browse(self._context['categ_id']).name
         return res
 
+    # returns the checksum of the ean13, or -1 if the ean has not the correct length, ean must be a string
+    def ean13_checksum(self, ean):
+        code = list(ean)
+        if len(code) != 13:
+            return -1
+        return self._ean_checksum(code)
+
+    # returns the checksum of the ean8, or -1 if the ean has not the correct length, ean must be a string
+    def ean8_checksum(self,ean):
+        code = list(ean)
+        if len(code) != 8:
+            return -1
+        return self._ean_checksum(code)
+
+    def _ean_checksum(self, code):
+        oddsum = evensum = 0
+        code = code[:-1] # Remove checksum
+        for i in range(len(code)):
+            if i % 2 == 0:
+                evensum += int(code[i])
+            else:
+                oddsum += int(code[i])
+        total = oddsum + 3 * evensum
+        return int((10 - total % 10) % 10)
+
+    # returns true if the barcode string is encoded with the provided encoding.
+    def check_encoding(self, barcode, encoding):
+        if encoding == 'any':
+            return True
+        elif re.match("^\d+$", barcode):
+            if encoding == 'ean8':
+                return self.ean8_checksum(barcode) == int(barcode[-1])
+            elif encoding == 'upca':
+                return self.ean13_checksum("0"+barcode) == int(barcode[-1])
+            elif encoding == 'ean13':
+                return self.ean13_checksum(barcode) == int(barcode[-1]) 
+        return False
+
     def open_pricelist_rules(self):
         self.ensure_one()
         domain = ['|',

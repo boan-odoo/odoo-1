@@ -98,12 +98,11 @@
                                             <td t-if="has_serial_number and (move_operation.lot_id or move_operation.lot_name)" class="text-center h6" width="15%">
                                                 <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;humanreadable=1' % ('Code128', move_operation.lot_id.name, 600, 100)" style="width:100%;height:35px;" alt="Barcode"/>
                                             </td>
-                                            <td width="15%" class="text-center" t-if="has_barcode">
+                                            <td width="15%" class="text-center" t-if="has_barcode"> <!-- set "move_operation.product_id" as something shorter-->
                                                 <span t-if="move_operation.product_id and move_operation.product_id.barcode">
-                                                    <img t-if="len(move_operation.product_id.barcode) == 13" t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('EAN13', move_operation.product_id.barcode, 600, 100)" style="width:100%;height:35px" alt="Barcode"/>
-                                                    <img t-elif="len(move_operation.product_id.barcode) == 8" t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('EAN8', move_operation.product_id.barcode, 600, 100)" style="width:100%;height:35px" alt="Barcode"/>
+                                                    <img t-if="move_operation.product_id.check_encoding(move_operation.product_id.barcode, 'ean13')" t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('EAN13', move_operation.product_id.barcode, 600, 100)" style="width:100%;height:35px" alt="Barcode"/>
+                                                    <img t-elif="move_operation.product_id.check_encoding(move_operation.product_id.barcode, 'ean8')" t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('EAN8', move_operation.product_id.barcode, 600, 100)" style="width:100%;height:35px" alt="Barcode"/>
                                                     <img t-else="" t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', move_operation.product_id.barcode, 600, 100)" style="width:100%;height:35px" alt="Barcode"/>
-
                                                 </span>
                                             </td>
                                             <td t-if="has_package" width="15%">
