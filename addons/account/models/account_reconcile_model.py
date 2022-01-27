@@ -571,7 +571,8 @@ class AccountReconcileModel(models.Model):
 
         rslt = defaultdict(lambda: [])
         candidate_dicts = self._cr.dictfetchall()
-        vals_to_float(candidate_dicts)
+        for candidate in candidate_dicts:
+            vals_to_float(candidate)
         for candidate_dict in candidate_dicts:
             rslt[candidate_dict['id']].append(candidate_dict)
 

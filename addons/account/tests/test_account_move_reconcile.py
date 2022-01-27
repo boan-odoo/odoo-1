@@ -192,13 +192,13 @@ class TestAccountMoveReconcile(AccountTestInvoicingCommon):
         for account_id, total_balance, total_amount_currency in self.cr.fetchall():
             account, expected_balance, expected_amount_currency = expected_values[account_id]
             self.assertEqual(
-                total_balance,
-                expected_balance,
+                float(total_balance),
+                float(expected_balance),
                 "Balance of %s is incorrect" % account.name,
             )
             self.assertEqual(
-                total_amount_currency,
-                expected_amount_currency,
+                float(total_amount_currency),
+                float(expected_amount_currency),
                 "Amount currency of %s is incorrect" % account.name,
             )
 
