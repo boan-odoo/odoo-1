@@ -16,7 +16,9 @@
                     <t t-if="sponsors_other">
                         <t t-call="website_event_exhibitor.exhibitor_aside"/>
                     </t>
-                    <t t-call="website_event_exhibitor.exhibitor_main"/>
+                    <t t-call="website_event_exhibitor.exhibitor_main">
+                        <t t-set="has_sponsors_other" t-value="bool(sponsors_other)"/>
+                    </t>
                 </div>
             </div>
             <!-- Drag/Drop Area -->
@@ -30,6 +32,7 @@
 <!-- ============================================================ -->
 
 <template id="exhibitor_main" name="Exhibitor: Main Content">
+    <t t-set="has_sponsors_other" t-value="has_sponsors_other if has_sponsors_other is not None else True"/>
     <div t-att-class="'col-12 o_wevent_online_page_main o_wesponsor_exhibitor_main bg-white p-0 %s' % ('col-md-9 col-lg-10' if option_widescreen else 'col-md-8 col-lg-9')">
         <!-- EVENT NOT STARTED ALERTS -->
         <t t-if="not sponsor.event_id.is_ongoing">
@@ -145,7 +148,14 @@
                 </a>
             </div>
         </div>
-        <div t-field="sponsor.website_description" class="my-2 mx-3 oe_no_empty"/>
+        <!-- Website description -->
+        <t>
+            <div t-if="not is_html_empty(sponsor.website_description)" t-field="sponsor.website_description" class="my-2 mx-3 oe_no_empty"/>
+            <div t-elif="env.user.has_group('event.group_event_manager')" class="my-2 mx-3 oe_no_empty">
+                The sponsor website description is missing.
+                <a t-attf-href="/web?#id={{ sponsor.id }}&amp;view_type=form&amp;model=event.sponsor">Write one.</a>
+            </div>
+        </t>
     </div>
 </template>
 

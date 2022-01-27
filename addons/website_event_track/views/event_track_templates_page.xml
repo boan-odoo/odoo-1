@@ -15,7 +15,9 @@
                     <t t-if="tracks_other">
                         <t t-call="website_event_track.event_track_aside"/>
                     </t>
-                    <t t-call="website_event_track.event_track_content"/>
+                    <t t-call="website_event_track.event_track_content">
+                        <t t-set="has_tracks_other" t-value="bool(tracks_other)"/>
+                    </t>
                 </div>
             </div>
             <!-- Drag/Drop Area -->
@@ -29,6 +31,7 @@
 <!-- ============================================================ -->
 
 <template id="event_track_content" name="Track: Main Description">
+    <t t-set="has_tracks_other" t-value="has_tracks_other if has_tracks_other is not None else True"/>
     <div name="o_wesession_track_main"
          t-att-class="'col-12 o_wevent_online_page_main o_wesession_track_main bg-white p-0 %s' % ('col-md-9 col-lg-10' if option_widescreen else 'col-md-8 col-lg-9')">
         <!-- LIVE INFORMATIONS -->
@@ -98,7 +101,7 @@
                         t-options='{"widget": "duration", "unit": "hour", "round": "minute"}'/>)
                 </t>
             </div>
-            
+
             <hr class="mt-2 mb-0"/>
 
             <!-- ABOUT AUTHOR -->
@@ -128,7 +131,15 @@
                 <div t-field="track.partner_biography" class="oe_no_empty"/>
                 <hr t-if="not is_html_empty(track.description)" class="mt-2 pb-1 mb-1"/>
             </div>
-            <div t-field="track.description" class="my-2 mx-3 oe_no_empty"/>
+
+            <!-- Description -->
+            <t>
+                <div t-if="not is_html_empty(track.description)" t-field="track.description" class="my-2 mx-3 oe_no_empty"/>
+                <div t-elif="env.user.has_group('event.group_event_user')" class="my-2 mx-3 oe_no_empty">
+                    This Track does not have a description.
+                    <a t-attf-href="/web?#id={{ track.id }}&amp;view_type=form&amp;model=event.track">Write one.</a>
+                </div>
+            </t>
         </div>
     </div>
 </template>
@@ -202,7 +213,7 @@
     <div class="d-flex align-items-center">
         <small class="text-muted" t-esc="track_other.partner_name"/>
         <div class="d-inline-block ml-auto o_wesession_track_aside_info text-truncate">
-            <small t-if="not track_other.website_published and user_event_manager"
+            <small t-if="not track_other.website_published and env.user.has_group('event.group_event_manager')"
                 class="badge badge-danger">Unpublished</small>
             <small t-if="track_other.is_track_live and not track_other.is_track_done"
                 class="badge badge-danger">Live</small>

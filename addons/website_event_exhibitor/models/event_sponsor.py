@@ -38,7 +38,7 @@ class Sponsor(models.Model):
     # description
     subtitle = fields.Char('Slogan', help='Catchy marketing sentence for promote')
     exhibitor_type = fields.Selection(
-        [('sponsor', 'Sponsor'), ('exhibitor', 'Exhibitor'), ('online', 'Online Exhibitor')],
+        [('sponsor', 'Footer Logo Only'), ('exhibitor', 'Exhibitor'), ('online', 'Online Exhibitor')],
         string="Sponsor Type", default="sponsor")
     website_description = fields.Html(
         'Description', compute='_compute_website_description',
