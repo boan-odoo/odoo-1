@@ -2275,7 +2275,7 @@ class AccountMove(models.Model):
         values = {
             'name': self.default_get(['name'])['name'],
             'invoice_source_email': from_mail_addresses[0],
-            'partner_id': partners and partners[0].id or False,
+            'partner_id': partners and not custom_values.get('company_id') and partners[0].id or False,
         }
         move_ctx = self.with_context(default_type=custom_values['type'], default_journal_id=custom_values['journal_id'])
         move = super(AccountMove, move_ctx).message_new(msg_dict, custom_values=values)
