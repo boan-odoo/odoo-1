@@ -115,7 +115,7 @@ class AccountMoveLine(models.Model):
 
     def _sale_can_be_reinvoice(self):
         self.ensure_one()
-        return not self.is_anglo_saxon_line and super(AccountMoveLine, self)._sale_can_be_reinvoice()
+        return not self.line_type == 'anglo_saxon_line' and super(AccountMoveLine, self)._sale_can_be_reinvoice()
 
     def _stock_account_get_anglo_saxon_price_unit(self):
         self.ensure_one()

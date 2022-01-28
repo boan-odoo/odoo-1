@@ -33,6 +33,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
             'debit': 0.0,
             'credit': 800.0,
             'date_maturity': False,
+            'line_type': 'invl',
         }
         cls.product_line_vals_2 = {
             'name': cls.product_b.name,
@@ -52,6 +53,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
             'debit': 0.0,
             'credit': 160.0,
             'date_maturity': False,
+            'line_type': 'invl',
         }
         cls.tax_line_vals_1 = {
             'name': cls.tax_purchase_a.name,
@@ -71,6 +73,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
             'debit': 0.0,
             'credit': 144.0,
             'date_maturity': False,
+            'line_type': False,
         }
         cls.tax_line_vals_2 = {
             'name': cls.tax_purchase_b.name,
@@ -90,6 +93,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
             'debit': 0.0,
             'credit': 24.0,
             'date_maturity': False,
+            'line_type': False,
         }
         cls.term_line_vals_1 = {
             'name': '',
@@ -109,6 +113,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
             'debit': 1128.0,
             'credit': 0.0,
             'date_maturity': fields.Date.from_string('2019-01-01'),
+            'line_type': False,
         }
         cls.move_vals = {
             'partner_id': cls.partner_a.id,
@@ -476,6 +481,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
                 'debit': 0.0,
                 'credit': 96.0,
                 'date_maturity': False,
+                'line_type': False,
             },
             {
                 'name': child_tax_1.name,
@@ -495,6 +501,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
                 'debit': 0.0,
                 'credit': 64.0,
                 'date_maturity': False,
+                'line_type': False,
             },
             {
                 'name': child_tax_2.name,
@@ -514,6 +521,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
                 'debit': 0.0,
                 'credit': 96.0,
                 'date_maturity': False,
+                'line_type': False,
             },
             {
                 **self.term_line_vals_1,
@@ -669,6 +677,7 @@ class TestAccountMoveInRefundOnchanges(AccountTestInvoicingCommon):
                 'debit': 0.04,
                 'credit': 0.0,
                 'date_maturity': False,
+                'line_type': 'inv_tax_cash_rounding',
             },
             {
                 **self.term_line_vals_1,

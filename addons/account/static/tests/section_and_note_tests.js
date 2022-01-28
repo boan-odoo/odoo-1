@@ -23,10 +23,10 @@ QUnit.module('section_and_note', {
             },
             invoice_line: {
                 fields: {
-                    display_type: {
+                    line_type: {
                         string: 'Type',
                         type: 'selection',
-                        selection: [['line_section', "Section"], ['line_note', "Note"]]
+                        selection: [['invl', 'Invoice line'], ['invl_rounding_line', 'Cash rounding line'], ['invl_section', 'Section line'], ['invl_note', 'Note line'], ['inv_tax_cash_rounding', 'Tax cash rounding line'], ['liquidity_line', 'Liquidity line'], ['counterpart_line', 'Counterpart line']]
                     },
                     invoice_id: {
                         string: "Invoice",
@@ -39,8 +39,8 @@ QUnit.module('section_and_note', {
                     },
                 },
                 records: [
-                    {id: 1, display_type: false, invoice_id: 1, name: 'product\n2 lines'},
-                    {id: 2, display_type: 'line_section', invoice_id: 1, name: 'section'},
+                    {id: 1, line_type: 'invl', invoice_id: 1, name: 'product\n2 lines'},
+                    {id: 2, line_type: 'invl_section', invoice_id: 1, name: 'section'},
                 ]
             },
         };
@@ -57,7 +57,7 @@ QUnit.module('section_and_note', {
                 '</form>',
             archs: {
                 'invoice_line,false,list': '<tree editable="bottom">' +
-                    '<field name="display_type" invisible="1"/>' +
+                    '<field name="line_type" invisible="1"/>' +
                     '<field name="name" widget="section_and_note_text"/>' +
                 '</tree>',
             },
@@ -69,12 +69,12 @@ QUnit.module('section_and_note', {
         // section should be displayed correctly
         var $tr0 = form.$('tr.o_data_row:eq(0)');
 
-        assert.doesNotHaveClass($tr0, 'o_is_line_section',
+        assert.doesNotHaveClass($tr0, 'o_is_invl_section',
             "should not have a section class");
 
         var $tr1 = form.$('tr.o_data_row:eq(1)');
 
-        assert.hasClass($tr1, 'o_is_line_section',
+        assert.hasClass($tr1, 'o_is_invl_section',
             "should have a section class");
 
         // enter edit mode

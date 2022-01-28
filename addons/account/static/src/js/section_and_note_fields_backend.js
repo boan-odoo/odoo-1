@@ -22,8 +22,8 @@ var SectionAndNoteListRenderer = ListRenderer.extend({
     _renderBodyCell: function (record, node, index, options) {
         var $cell = this._super.apply(this, arguments);
 
-        var isSection = record.data.display_type === 'line_section';
-        var isNote = record.data.display_type === 'line_note';
+        var isSection = record.data.line_type === 'invl_section';
+        var isNote = record.data.line_type === 'invl_note';
 
         if (isSection || isNote) {
             if (node.attrs.widget === "handle") {
@@ -46,15 +46,14 @@ var SectionAndNoteListRenderer = ListRenderer.extend({
         return $cell;
     },
     /**
-     * We add the o_is_{display_type} class to allow custom behaviour both in JS and CSS.
+     * We add the o_is_{line_type} class to allow custom behaviour both in JS and CSS.
      *
      * @override
      */
     _renderRow: function (record, index) {
         var $row = this._super.apply(this, arguments);
-
-        if (record.data.display_type) {
-            $row.addClass('o_is_' + record.data.display_type);
+        if (record.data.line_type === 'invl_section' || record.data.line_type === 'invl_note') {
+            $row.addClass('o_is_' + record.data.line_type);
         }
 
         return $row;
@@ -94,7 +93,7 @@ var SectionAndNoteFieldOne2Many = FieldOne2Many.extend({
 // We want a FieldChar for section,
 // and a FieldText for the rest (product and note).
 var SectionAndNoteFieldText = function (parent, name, record, options) {
-    var isSection = record.data.display_type === 'line_section';
+    var isSection = record.data.line_type === 'invl_section';
     var Constructor = isSection ? FieldChar : ListFieldText;
     return new Constructor(parent, name, record, options);
 };

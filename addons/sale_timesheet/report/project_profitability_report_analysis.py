@@ -181,18 +181,18 @@ class ProfitabilityAnalysis(models.Model):
                                     LEFT JOIN sale_order_line SOL ON SOINV.order_line_id = SOL.id
                                     LEFT JOIN account_move_line AML ON AAL.move_id = AML.id
                                                                    AND AML.parent_state = 'posted'
-                                                                   AND AML.exclude_from_invoice_tab = 'f'
+                                                                   AND COALESCE(AML.line_type LIKE 'invl%%', 'f')
                                     -- Check if it's not a Credit Note for a Vendor Bill
                                     LEFT JOIN account_move RBILL ON RBILL.id = AML.move_id
                                     LEFT JOIN account_move_line BILLL ON BILLL.move_id = RBILL.reversed_entry_id
                                                                   AND BILLL.parent_state = 'posted'
-                                                                  AND BILLL.exclude_from_invoice_tab = 'f'
+                                                                  AND COALESCE(BILLL.line_type LIKE 'invl%%', 'f')
                                                                   AND BILLL.product_id = AML.product_id
                                     -- Check if it's not an Invoice reversed by a Credit Note
                                     LEFT JOIN account_move RINV ON RINV.reversed_entry_id = AML.move_id
                                     LEFT JOIN account_move_line RINVL ON RINVL.move_id = RINV.id
                                                                   AND RINVL.parent_state = 'posted'
-                                                                  AND RINVL.exclude_from_invoice_tab = 'f'
+                                                                  AND COALESCE(RINVL.line_type LIKE 'invl%%', 'f')
                                                                   AND RINVL.product_id = AML.product_id
                                 WHERE AAL.amount > 0.0 AND AAL.project_id IS NULL AND P.active = 't'
                                     AND P.allow_timesheets = 't'
@@ -222,18 +222,18 @@ class ProfitabilityAnalysis(models.Model):
                                     JOIN account_analytic_line AAL ON AAL.account_id = AA.id
                                     LEFT JOIN account_move_line AML ON AAL.move_id = AML.id
                                                                    AND AML.parent_state = 'posted'
-                                                                   AND AML.exclude_from_invoice_tab = 'f'
+                                                                   AND COALESCE(AML.line_type LIKE 'invl%%', 'f')
                                     -- Check if it's not a Credit Note for an Invoice
                                     LEFT JOIN account_move RINV ON RINV.id = AML.move_id
                                     LEFT JOIN account_move_line INVL ON INVL.move_id = RINV.reversed_entry_id
                                                                     AND INVL.parent_state = 'posted'
-                                                                    AND INVL.exclude_from_invoice_tab = 'f'
+                                                                    AND COALESCE(INVL.line_type LIKE 'invl%%', 'f')
                                                                     AND INVL.product_id = AML.product_id
                                     -- Check if it's not a Bill reversed by a Credit Note
                                     LEFT JOIN account_move RBILL ON RBILL.reversed_entry_id = AML.move_id
                                     LEFT JOIN account_move_line RBILLL ON RBILLL.move_id = RBILL.id
                                                                       AND RBILLL.parent_state = 'posted'
-                                                                      AND RBILLL.exclude_from_invoice_tab = 'f'
+                                                                      AND COALESCE(RBILLL.line_type LIKE 'invl%%', 'f')
                                                                       AND RBILLL.product_id = AML.product_id
                                     -- Check if the AAL is not related to a consumed downpayment (when the SOL is fully invoiced - with downpayment discounted.)
                                     LEFT JOIN sale_order_line_invoice_rel SOINVDOWN ON SOINVDOWN.invoice_line_id = AML.id
@@ -378,11 +378,11 @@ class ProfitabilityAnalysis(models.Model):
                                             LEFT JOIN sale_order_line_invoice_rel SOINV ON SOINV.order_line_id = SOLDOWN.id
                                             LEFT JOIN account_move_line INVL ON SOINV.invoice_line_id = INVL.id
                                                                             AND INVL.parent_state = 'posted'
-                                                                            AND INVL.exclude_from_invoice_tab = 'f'
+                                                                            AND COALESCE(INVL.line_type LIKE 'invl%%', 'f')
                                             LEFT JOIN account_move RINV ON INVL.move_id = RINV.reversed_entry_id
                                             LEFT JOIN account_move_line RINVL ON RINV.id = RINVL.move_id
                                                                             AND RINVL.parent_state = 'posted'
-                                                                            AND RINVL.exclude_from_invoice_tab = 'f'
+                                                                            AND COALESCE(RINVL.line_type LIKE 'invl%%', 'f')
                                                                             AND RINVL.product_id = SOLDOWN.product_id
                                             LEFT JOIN account_analytic_line ANLI ON ANLI.move_id = RINVL.id AND ANLI.amount < 0.0
                                         WHERE ANLI.id IS NULL -- there are no credit note for this downpayment

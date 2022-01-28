@@ -134,8 +134,7 @@ class AccountMove(models.Model):
                         'account_id': debit_pdiff_account.id,
                         'analytic_account_id': line.analytic_account_id.id,
                         'analytic_tag_ids': [(6, 0, line.analytic_tag_ids.ids)],
-                        'exclude_from_invoice_tab': True,
-                        'is_anglo_saxon_line': True,
+                        'line_type': 'anglo_saxon_line',
                         'partner_id': line.partner_id.id,
                     }
                     vals.update(line._get_fields_onchange_subtotal(price_subtotal=vals['price_subtotal']))
@@ -154,8 +153,7 @@ class AccountMove(models.Model):
                         'account_id': line.account_id.id,
                         'analytic_account_id': line.analytic_account_id.id,
                         'analytic_tag_ids': [(6, 0, line.analytic_tag_ids.ids)],
-                        'exclude_from_invoice_tab': True,
-                        'is_anglo_saxon_line': True,
+                        'line_type': 'anglo_saxon_line',
                         'partner_id': line.partner_id.id,
                     }
                     vals.update(line._get_fields_onchange_subtotal(price_subtotal=vals['price_subtotal']))
