@@ -58,9 +58,10 @@ class SaleReport(models.Model):
 
     order_id = fields.Many2one('sale.order', 'Order #', readonly=True)
 
-    def _select_sale(self, fields=None):
-        if not fields:
-            fields = {}
+    def _with_sale(self):
+        return ""
+
+    def _select_sale(self):
         select_ = """
             coalesce(min(l.id), -s.id) as id,
             l.product_id as product_id,
@@ -84,7 +85,6 @@ class SaleReport(models.Model):
             s.campaign_id as campaign_id,
             s.medium_id as medium_id,
             s.source_id as source_id,
-            extract(epoch from avg(date_trunc('day',s.date_order)-date_trunc('day',s.create_date)))/(24*60*60)::decimal(16,2) as delay,
             t.categ_id as categ_id,
             s.pricelist_id as pricelist_id,
             s.analytic_account_id as analytic_account_id,
@@ -97,29 +97,35 @@ class SaleReport(models.Model):
             CASE WHEN l.product_id IS NOT NULL THEN sum(p.volume * l.product_uom_qty / u.factor * u2.factor) ELSE 0 END as volume,
             l.discount as discount,
             CASE WHEN l.product_id IS NOT NULL THEN sum((l.price_unit * l.product_uom_qty * l.discount / 100.0 / CASE COALESCE(s.currency_rate, 0) WHEN 0 THEN 1.0 ELSE s.currency_rate END))ELSE 0 END as discount_amount,
-            s.id as order_id
-        """
+            s.id as order_id"""
 
-        for field in fields.values():
-            select_ += field
+        additional_fields_info = self._select_additional_fields()
+        template = """,
+            %s as %s"""
+        for fname, query_info in additional_fields_info.items():
+            select_ += template % (query_info, fname)
+
         return select_
 
-    def _from_sale(self, from_clause=''):
-        from_ = """
-                sale_order_line l
-                      right outer join sale_order s on (s.id=l.order_id)
-                      join res_partner partner on s.partner_id = partner.id
-                        left join product_product p on (l.product_id=p.id)
-                            left join product_template t on (p.product_tmpl_id=t.id)
-                    left join uom_uom u on (u.id=l.product_uom)
-                    left join uom_uom u2 on (u2.id=t.uom_id)
-                    left join product_pricelist pp on (s.pricelist_id = pp.id)
-                %s
-        """ % from_clause
-        return from_
+    def _select_additional_fields(self):
+        return {}
 
-    def _group_by_sale(self, groupby=''):
-        groupby_ = """
+    def _from_sale(self):
+        return """
+            sale_order_line l
+            right outer join sale_order s on (s.id=l.order_id)
+            join res_partner partner on s.partner_id = partner.id
+            left join product_product p on (l.product_id=p.id)
+            left join product_template t on (p.product_tmpl_id=t.id)
+            left join uom_uom u on (u.id=l.product_uom)
+            left join uom_uom u2 on (u2.id=t.uom_id)"""
+
+    def _where_sale(self):
+        return """
+            l.display_type IS NULL"""
+
+    def _group_by_sale(self):
+        return """
             l.product_id,
             l.order_id,
             t.uom_id,
@@ -141,18 +147,19 @@ class SaleReport(models.Model):
             partner.industry_id,
             partner.commercial_partner_id,
             l.discount,
-            s.id %s
-        """ % (groupby)
-        return groupby_
+            s.id"""
 
-    def _query(self, with_clause='', fields=None, groupby='', from_clause=''):
-        if not fields:
-            fields = {}
-        with_ = ("WITH %s" % with_clause) if with_clause else ""
-        return '%s (SELECT %s FROM %s WHERE l.display_type IS NULL GROUP BY %s)' % \
-               (with_, self._select_sale(fields), self._from_sale(from_clause), self._group_by_sale(groupby))
+    def _query(self):
+        with_ = self._with_sale()
+        return f"""
+            {"WITH" + with_ + "(" if with_ else ""}
+            SELECT {self._select_sale()}
+            FROM {self._from_sale()}
+            WHERE {self._where_sale()}
+            GROUP BY {self._group_by_sale()}
+            {")" if with_ else ""}
+        """
 
     def init(self):
-        # self._table = sale_report
         tools.drop_view_if_exists(self.env.cr, self._table)
         self.env.cr.execute("""CREATE or REPLACE VIEW %s as (%s)""" % (self._table, self._query()))
