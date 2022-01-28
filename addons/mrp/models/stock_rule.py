@@ -40,7 +40,6 @@ class StockRule(models.Model):
     @api.model
     def _run_manufacture(self, procurements):
         productions_values_by_company = defaultdict(list)
-        errors = []
         for procurement, rule in procurements:
             if float_compare(procurement.product_qty, 0, precision_rounding=procurement.product_uom.rounding) <= 0:
                 # If procurement contains negative quantity, don't create a MO that would be for a negative value.
@@ -48,9 +47,6 @@ class StockRule(models.Model):
             bom = rule._get_matching_bom(procurement.product_id, procurement.company_id, procurement.values)
 
             productions_values_by_company[procurement.company_id.id].append(rule._prepare_mo_vals(*procurement, bom))
-
-        if errors:
-            raise ProcurementException(errors)
 
         for company_id, productions_values in productions_values_by_company.items():
             # create the MO as SUPERUSER because the current user may not have the rights to do it (mto product launched by a sale for example)
