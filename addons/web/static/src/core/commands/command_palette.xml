@@ -3,24 +3,24 @@
 
   <t t-name="web.CommandPalette" owl="1">
     <div>
-      <div class="o_command_palette_search">
-        <input type="text" t-model="state.searchValue" t-on-input="onSearchInput" t-ref="autofocus" t-att-placeholder="state.placeholder"/>
-        <i  t-att-title="state.placeholder" role="img"  t-att-aria-label="state.placeholder" class="fa fa-search"></i>
+      <div class="o_command_palette_search d-flex align-items-center justify-content-between bg-white px-4 py-3 border-bottom mb-2">
+        <input class="border-0 p-0" type="text" t-model="state.searchValue" t-on-input="onSearchInput" t-ref="autofocus" autofocus="" t-att-placeholder="state.placeholder"/>
+        <i  t-att-title="state.placeholder" role="img"  t-att-aria-label="state.placeholder" class="fa fa-search text-black-25"></i>
       </div>
 
-      <div t-ref="listbox" class="o_command_palette_listbox">
-        <div t-if="!state.commands.length" class="o_command_palette_listbox_empty" t-esc="state.emptyMessage"/>
+      <div t-ref="listbox" class="o_command_palette_listbox position-relative overflow-auto">
+        <div t-if="!state.commands.length" class="o_command_palette_listbox_empty px-4 py-3 font-italic" t-esc="state.emptyMessage"/>
         <t t-if="!isFuzzySearch">
           <t t-foreach="commandsByCategory" t-as="category" t-key="category.keyId">
-            <div class="o_command_category">
+            <div class="o_command_category px-0">
               <t t-foreach="category.commands" t-as="command"  t-key="command.keyId">
                 <t t-set="commandIndex" t-value="state.commands.indexOf(command)" />
-                <div t-attf-id="o_command_{{commandIndex}}" class="o_command" t-att-class="{ focused: state.selectedCommand === command }" t-on-click="() => this.onCommandClicked(commandIndex)" t-on-mouseenter="() => this.onCommandMouseEnter(commandIndex)" t-on-close="() => this.props.closeMe()" t-on-execute-command="() => this.executeCommand(command)">
+                <div t-attf-id="o_command_{{commandIndex}}" class="o_command d-flex" t-att-class="{ focused: state.selectedCommand === command }" t-on-click="() => this.onCommandClicked(commandIndex)" t-on-mouseenter="() => this.onCommandMouseEnter(commandIndex)" t-on-close="() => this.props.closeMe()" t-on-execute-command="() => this.executeCommand(command)">
                   <t t-component="command.Component || DefaultCommandItem" name="command.name" searchValue="clearSearchValue" t-props="command.props">
                     <t t-set-slot="name">
                         <span class="o_command_name">
                           <t t-foreach="command.splitName" t-as="name" t-key="name_index">
-                            <b t-if="name_index % 2" t-esc="name"/>
+                            <b t-if="name_index % 2" t-esc="name" class="text-primary"/>
                             <t t-else="" t-esc="name"/>
                           </t>
                         </span>
@@ -30,13 +30,13 @@
               </t>
             </div>
 
-            <hr t-if="!category_last" />
+            <hr class="my-2 mx-0" t-if="!category_last" />
 
           </t>
         </t>
       </div>
 
-      <div t-if="state.FooterComponent" class="o_command_palette_footer">
+      <div t-if="state.FooterComponent" class="o_command_palette_footer bg-100 border-top px-4 py-2 mt-2 text-500 font-weight-bolder">
         <t t-component="state.FooterComponent"/>
       </div>
 
