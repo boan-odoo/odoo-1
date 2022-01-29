@@ -414,8 +414,8 @@ class AccountJournal(models.Model):
                 JOIN account_journal journal on journal.id = apml.journal_id
                 JOIN res_company company on journal.company_id = company.id
                 WHERE apm.code in %s
-                GROUP BY 
-                    company.id, 
+                GROUP BY
+                    company.id,
                     apm.id
                 HAVING array_length(array_agg(journal.id), 1) > 1;
             ''', [unique_codes])
@@ -737,8 +737,8 @@ class AccountJournal(models.Model):
             })
         else:
             action_vals.update({
-                'views': [[False, "tree"], [False, "kanban"], [False, "form"]],
-                'view_mode': 'tree, kanban, form',
+                'views': [[False, "list"], [False, "kanban"], [False, "form"]],
+                'view_mode': 'list,kanban,form',
             })
         return action_vals
 
