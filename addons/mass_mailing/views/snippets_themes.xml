@@ -214,23 +214,21 @@
 </template>
 
 <template id="s_mail_block_event" name="Event">
-    <div class="o_mail_snippet_general o_mail_block_event s_event bg-300">
+    <div class="o_mail_snippet_general o_mail_block_event s_events" data-name="Event">
         <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-3 px-0 text-center">
-                    <h3 class="o_mail_no_margin">21 Jul</h3>
-                    <p class="o_mail_no_margin">ALL DAY</p>
-                </div>
-                <div class="col-lg-2 px-0">
-                    <img src="/mass_mailing/static/src/img/theme_default/s_default_image_block_event.jpg" class="img w-100"/>
-                </div>
-                <div class="col-lg-7">
-                    <h4>Cybersecurity</h4>
-                    <p>Cyber-threats continue to increase.
-                        <br/>The discussion will examine how to develop new norms and integrate them into EU
-                    </p>
-                    <div class="text-left">
-                        <a href="#" class="btn btn-primary">Register</a>
+            <div class="row d-flex align-items-stretch">
+                <div class="pt16 pb16 col-lg-6 offset-lg-3">
+                    <div class="card o_cc o_cc5 h-100">
+                        <div class="card-header text-center">
+                            <p class="o_mail_no_margin"><b>23 OCT <i class="fa fa-angle-right"/> 05 NOV 2022</b></p>
+                            <p class="o_mail_no_margin" style="font-size: 12px;">6:00PM</p>
+                        </div>
+                        <img class="card-img-top" src="/mass_mailing_themes/static/src/img/theme_default/s_default_image_block_event.jpg"/>
+                        <div class="card-body">
+                            <h4 class="card-title text-o-color-5">CYBERSECURITY</h4>
+                            <p class="card-text">Join us for the best digital conference event to come this year!</p>
+                            <a class="btn btn-primary rounded-circle" href="#" target="_blank">Get your tickets</a>
+                        </div>
                     </div>
                 </div>
             </div>
