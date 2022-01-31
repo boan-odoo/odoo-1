@@ -463,7 +463,14 @@ var SelectCreateDialog = ViewDialog.extend({
                 close: true,
                 click: async () => {
                     const resIds = await this.viewController.getSelectedIdsWithDomain();
-                    const values = resIds.map(e => ({id: e}));
+                    const values = await this._rpc({
+                        model: this.res_model,
+                        method: 'read',
+                        args: [resIds],
+                        kwargs: {
+                            fields: ['display_name'],
+                        }
+                    });
                     this.on_selected(values);
                 },
             });
