@@ -164,7 +164,7 @@ export const hotkeyService = {
             for (const el of getVisibleElements(ui.activeElement, "[data-hotkey]:not(:disabled)")) {
                 const hotkey = el.dataset.hotkey;
                 const overlay = document.createElement("div");
-                overlay.className = "o_web_hotkey_overlay";
+                overlay.className = "o_web_hotkey_overlay position-absolute d-flex justify-content-center align-items-center m-0 bg-black-50 h6 text-monospace text-white";
                 overlay.appendChild(document.createTextNode(hotkey.toUpperCase()));
 
                 let overlayParent;
