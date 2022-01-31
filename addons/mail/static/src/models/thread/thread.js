@@ -1439,6 +1439,14 @@ function factory(dependencies) {
          * @private
          * @returns {boolean}
          */
+        _computeHasCallButtons() {
+            return this.model === 'mail.channel' && this.rtcSessions.length === 0;
+        }
+
+        /**
+         * @private
+         * @returns {boolean}
+         */
         _computeHasInviteFeature() {
             return this.model === 'mail.channel';
         }
@@ -2168,6 +2176,12 @@ function factory(dependencies) {
          */
         hasActivities: attr({
             default: false,
+        }),
+        /**
+         * Determines whether the buttons to start a RTC call should be displayed.
+         */
+        hasCallButtons: attr({
+            compute: '_computeHasCallButtons',
         }),
         /**
          * States whether this thread should has the invite feature. Only makes

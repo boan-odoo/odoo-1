@@ -99,6 +99,12 @@ registerInstancePatchModel('mail.thread', 'im_livechat/static/src/models/thread/
         }
         return this._super();
     },
+    _computeHasCallButtons() {
+        if (this.channel_type === 'livechat') {
+            return false;
+        }
+        return this._super();
+    },
     /**
      * @override
      */
