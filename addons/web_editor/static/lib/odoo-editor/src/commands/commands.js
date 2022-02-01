@@ -375,7 +375,7 @@ export const editorCommands = {
                 const block = closestBlock(el);
                 el.style.fontWeight = isBold(block) ? 'normal' : getComputedStyle(block).fontWeight;
             } else {
-                el.style.fontWeight = 'bolder';
+                el.style.fontWeight = 'bold';
             }
         });
     },
