@@ -27,9 +27,48 @@ class ChannelPartner(models.Model):
     is_minimized = fields.Boolean("Conversation is minimized")
     is_pinned = fields.Boolean("Is pinned on the interface", default=True)
     last_interest_dt = fields.Datetime("Last Interest", default=fields.Datetime.now, help="Contains the date and time of the last interesting event that happened in this channel for this partner. This includes: creating, joining, pinning, and new message posted.")
+    message_unread_counter = fields.Integer(
+        'Unread Messages Counter', compute='_compute_message_unread',
+        help="Number of unread messages")
     # RTC
     rtc_session_ids = fields.One2many(string="RTC Sessions", comodel_name='mail.channel.rtc.session', inverse_name='channel_partner_id')
     rtc_inviting_session_id = fields.Many2one('mail.channel.rtc.session', string='Ringing session')
+
+    def _compute_message_unread(self):
+        self.flush()
+        self._cr.execute("""
+        SELECT count("mail_message".id) AS count,
+               res_id,
+               mail_channel_partner.seen_message_id
+          FROM mail_message
+    INNER JOIN mail_channel_partner ON mail_channel_partner.channel_id = mail_message.res_id
+         WHERE mail_message.model = 'mail.channel'
+           AND (
+               mail_message.message_type NOT IN ('notification', 'user_notification')
+            OR mail_message.message_type IS NULL
+           )
+           AND (
+               mail_message.id > mail_channel_partner.seen_message_id
+            OR mail_channel_partner.seen_message_id IS NULL
+           )
+           AND mail_channel_partner.id IN %(ids)s
+      GROUP BY mail_channel_partner.seen_message_id,
+               res_id
+        """, {'ids': tuple(self.ids)})
+        counters = self._cr.fetchall()
+        unreads = {}
+        if counters:
+            for counter in counters:
+                channel_id = counter[1]
+                seen_message_id = counter[2]
+                unreads[channel_id] = {seen_message_id: counter[0]}
+        for record in self:
+            unread_channel = unreads.get(record.channel_id.id)
+            if unread_channel:
+                record.message_unread_counter = unread_channel.get(record.seen_message_id.id or None)
+            else:
+                record.message_unread_counter = 0
+
 
     def name_get(self):
         return [(record.id, record.partner_id.name or record.guest_id.name) for record in self]
