@@ -9,27 +9,66 @@ const { Gui } = require('point_of_sale.Gui');
 var _t = core._t;
 
 var PaymentAdyen = PaymentInterface.extend({
+    /**
+     * Sending an adyen payment request is asynchronous such that this method has to
+     * wait for the payment status to arrive. The payment status will originate from
+     * adyen server telling the odoo instance about the payment status, then the
+     * odoo instance will broadcast the payment status which will eventually be
+     * handled here in the UI by calling `handlePaymentStatus`. For proper orchestration,
+     * this method has to return a promise that only resolves when the payment status
+     * arrived; thus, we need to set `_paymentRequestResolve` and `_paymentRequestReject`
+     * which will be called during handling of the payment status.
+     *
+     * @param {string} cid
+     * @returns {Promise<boolean>}
+     */
     send_payment_request: function (cid) {
         this._super.apply(this, arguments);
         this._reset_state();
-        return this._adyen_pay();
+        return new Promise((resolve, reject) => {
+            this._paymentRequestResolve = (val) => {
+                if (!this.hasWaitingPaymentRequest) return;
+                resolve(val);
+                this.hasWaitingPaymentRequest = false;
+            };
+            this._paymentRequestReject = (error) => {
+                if (!this.hasWaitingPaymentRequest) return;
+                reject(error)
+                this.hasWaitingPaymentRequest = false;
+            };
+            this._adyen_pay();
+        });
     },
     send_payment_cancel: function (order, cid) {
         this._super.apply(this, arguments);
-        // set only if we are polling
-        this.was_cancelled = !!this.polling;
+        this.was_cancelled = true;
+        this.hasWaitingPaymentRequest = false;
         return this._adyen_cancel();
     },
     close: function () {
         this._super.apply(this, arguments);
+    },
+    /**
+     * This method works together with `send_payment_request`.
+     * It handles the reception of payment status.
+     *
+     * @param {*} paymentStatus
+     */
+    handlePaymentStatus: function (paymentStatus) {
+        try {
+            this._handlePaymentStatus(paymentStatus);
+        } catch (error) {
+            Gui.showPopup('ErrorTracebackPopup', { title: error.message, body: error.stack });
+        } finally {
+            this._reset_state();
+        }
     },
 
     // private methods
     _reset_state: function () {
         this.was_cancelled = false;
         this.last_diagnosis_service_id = false;
-        this.remaining_polls = 4;
-        clearTimeout(this.polling);
+        this.hasWaitingPaymentRequest = false;
     },
 
     _handle_odoo_connection_failure: function (data) {
@@ -59,7 +98,7 @@ var PaymentAdyen = PaymentInterface.extend({
 
     _adyen_get_sale_id: function () {
         var config = this.pos.config;
-        return _.str.sprintf('%s (ID: %s)', config.display_name, config.id);
+        return _.str.sprintf('%s (ID: %s, SESSION_ID: %s)', config.display_name, config.id, odoo.pos_session_id);
     },
 
     _adyen_common_message_header: function () {
@@ -116,19 +155,51 @@ var PaymentAdyen = PaymentInterface.extend({
 
         if (order.selected_paymentline.amount < 0) {
             this._show_error(_t('Cannot process transactions with negative amount.'));
-            return Promise.resolve();
-        }
-
-        if (order === this.poll_error_order) {
-            delete this.poll_error_order;
-            return self._adyen_handle_response({});
+            return this._paymentRequestResolve(false);
         }
 
         var data = this._adyen_pay_data();
 
         return this._call_adyen(data).then(function (data) {
             return self._adyen_handle_response(data);
+        }).then(() => {
+            setTimeout(() => this._handleLongWait(order.selected_paymentline), 60000);
         });
+    },
+
+    _handleLongWait: async function (payment) {
+        // No need to proceed if there is no pending payment.
+        if (!this.hasWaitingPaymentRequest) return;
+
+        const actionsList = [
+            {
+                id: 1,
+                item: 'wait',
+                label: _t('Wait for 1 minute'),
+            },
+            {
+                id: 2,
+                item: 'force_done',
+                label: _t('Force Done'),
+            },
+        ];
+        const { confirmed: actionSelected, payload: action } = await Gui.showPopup('SelectionPopup', {
+            title: _t('1 minute has passed'),
+            list: actionsList,
+            cancelText: _t('Retry'),
+        });
+        if (actionSelected) {
+            if (action == 'wait') {
+                setTimeout(() => this._handleLongWait(payment), 60000);
+            } else if (action == 'payment_successful') {
+                this._paymentRequestResolve(true);
+            } else if (action == 'force_done') {
+                payment.set_payment_status('force_done');
+                this._paymentRequestReject();
+            }
+        } else {
+            this._paymentRequestResolve(false);
+        }
     },
 
     _adyen_cancel: function (ignore_error) {
@@ -175,32 +246,11 @@ var PaymentAdyen = PaymentInterface.extend({
         }, '');
     },
 
-    _poll_for_response: function (resolve, reject) {
+    _handlePaymentStatus: function (status) {
         var self = this;
         if (this.was_cancelled) {
-            resolve(false);
-            return Promise.resolve();
+            return this._paymentRequestResolve(false);
         }
-
-        return rpc.query({
-            model: 'pos.payment.method',
-            method: 'get_latest_adyen_status',
-            args: [[this.payment_method.id], this._adyen_get_sale_id()],
-        }, {
-            timeout: 5000,
-            shadow: true,
-        }).catch(function (data) {
-            if (self.remaining_polls != 0) {
-                self.remaining_polls--;
-            } else {
-                reject();
-                self.poll_error_order = self.pos.get_order();
-                return self._handle_odoo_connection_failure(data);
-            }
-            // This is to make sure that if 'data' is not an instance of Error (i.e. timeout error),
-            // this promise don't resolve -- that is, it doesn't go to the 'then' clause.
-            return Promise.reject(data);
-        }).then(function (status) {
             var notification = status.latest_response;
             var last_diagnosis_service_id = status.last_received_diagnosis_id;
             var order = self.pos.get_order();
@@ -209,9 +259,6 @@ var PaymentAdyen = PaymentInterface.extend({
 
             if (self.last_diagnosis_service_id != last_diagnosis_service_id) {
                 self.last_diagnosis_service_id = last_diagnosis_service_id;
-                self.remaining_polls = 2;
-            } else {
-                self.remaining_polls--;
             }
 
             if (notification && notification.SaleToPOIResponse.MessageHeader.ServiceID == self.most_recent_service_id) {
@@ -248,34 +295,30 @@ var PaymentAdyen = PaymentInterface.extend({
                     line.transaction_id = additional_response.get('pspReference');
                     line.card_type = additional_response.get('cardType');
                     line.cardholder_name = additional_response.get('cardHolderName') || '';
-                    resolve(true);
+                    this._paymentRequestResolve(true);
                 } else {
                     var message = additional_response.get('message');
                     self._show_error(_.str.sprintf(_t('Message from Adyen: %s'), message));
-
-                    // this means the transaction was cancelled by pressing the cancel button on the device
-                    if (message.startsWith('108 ')) {
-                        resolve(false);
-                    } else {
-                        line.set_payment_status('retry');
-                        reject();
-                    }
+                    // No need to discriminate the message since resolving to false will set the payment status to 'retry'.
+                    this._paymentRequestResolve(false)
                 }
-            } else if (self.remaining_polls <= 0) {
-                self._show_error(_t('The connection to your payment terminal failed. Please check if it is still connected to the internet.'));
-                self._adyen_cancel();
-                resolve(false);
             }
-        });
+            // /!\ At this point, the received payment status is not handled because the service id is different
+            // from the `most_recent_service_id`. Should we really ignore this stray payment status?
     },
 
+    /**
+     * /!\ When error, we should not resolve the payment request here because setting of payment status
+     * and showing of error is already handled. Resolving the request to false will just set the payment
+     * status to retry. Apparently, the business logic here assumes force done if there is error.
+     */
     _adyen_handle_response: function (response) {
         var line = this.pos.get_order().selected_paymentline;
 
         if (response.error && response.error.status_code == 401) {
             this._show_error(_t('Authentication failed. Please check your Adyen credentials.'));
             line.set_payment_status('force_done');
-            return Promise.resolve();
+            return this._paymentRequestReject();
         }
 
         response = response.SaleToPOIRequest;
@@ -293,27 +336,10 @@ var PaymentAdyen = PaymentInterface.extend({
                 line.set_payment_status('force_done');
             }
 
-            return Promise.resolve();
+            return this._paymentRequestReject();
         } else {
             line.set_payment_status('waitingCard');
-
-            var self = this;
-            var res = new Promise(function (resolve, reject) {
-                // clear previous intervals just in case, otherwise
-                // it'll run forever
-                clearTimeout(self.polling);
-
-                self.polling = setInterval(function () {
-                    self._poll_for_response(resolve, reject);
-                }, 5500);
-            });
-
-            // make sure to stop polling when we're done
-            res.finally(function () {
-                self._reset_state();
-            });
-
-            return res;
+            this.hasWaitingPaymentRequest = true;
         }
     },
 
