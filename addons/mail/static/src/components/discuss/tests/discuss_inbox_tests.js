@@ -689,13 +689,13 @@ QUnit.test('click on (non-channel/non-partner) origin thread link should redirec
         },
     };
 
-    this.serverData.models['some.model'] = { fields: {}, records: [{ id: 10 }] };
+    this.serverData.models['some.model'] = { fields: {}, records: [{ id: 10, name: "Some record" }] };
     this.serverData.models['mail.message'].records.push({
         body: "not empty",
         id: 100,
         model: 'some.model',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId],
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId],
         res_id: 10,
     });
     this.serverData.models['mail.notification'].records.push({

@@ -302,9 +302,9 @@ registerModel({
          * @private
          */
         async _loadMessageFailures() {
-            const data = await this.env.services.rpc({
-                route: '/mail/load_message_failures',
-            }, { shadow: true });
+            const data = await this.env.services.rpc(
+                '/mail/load_message_failures', {}, { silent: true }
+            );
             this._initMailFailures(data);
         },
     },

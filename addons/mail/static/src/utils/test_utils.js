@@ -20,6 +20,7 @@ import { makeTestPromise } from 'web.test_utils';
 import { messagingService } from '../services/messaging_service/messaging_service';
 import { registerCleanup } from "@web/../tests/helpers/cleanup";
 import { SIZES, uiService } from '@web/core/ui/ui_service';
+import { DiscussContainer } from '@mail/components/discuss_container/discuss_container';
 
 
 const { Component } = owl;
@@ -583,7 +584,7 @@ function setupMainComponentRegistry(param0) {
         });
     }
     if (hasDiscuss) {
-        registry.category('actions').add('mail.discuss', getMessagingComponent('Discuss'));
+        registry.category('actions').add('mail.discuss', DiscussContainer);
     }
     if (Widget) {
         if (mainComponentRegistry.contains('WidgetWrapper')) {

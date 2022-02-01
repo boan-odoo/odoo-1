@@ -17,6 +17,10 @@
     }
 }
 
+.o_DiscussContainer {
+    height: 100%;
+}
+
 .o_Discuss_chatWindowHeader {
     width: map-get($sizes, 100);
     flex: 0 0 auto;

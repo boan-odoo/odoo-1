@@ -20,11 +20,12 @@ QUnit.module('attachment_box_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, webClient } = await start(Object.assign({}, params, {
+            const { env, webClient, ...rest } = await start(Object.assign({}, params, {
                 serverData: this.serverData,
             }));
             this.env = env;
             this.webClient = webClient;
+            return rest;
         };
     },
 });
@@ -108,7 +109,7 @@ QUnit.test('base non-empty rendering', async function (assert) {
 QUnit.test('attachment box: drop attachments', async function (assert) {
     assert.expect(5);
 
-    this.serverData['res.partner'].records.push({ id: 100 });
+    this.serverData.models['res.partner'].records.push({ id: 100 });
     const { createChatterContainerComponent } = await this.start();
     await createChatterContainerComponent({
         isAttachmentBoxVisibleInitially: true,
@@ -200,7 +201,7 @@ QUnit.test('view attachments', async function (assert) {
             res_model: 'res.partner',
         },
     );
-    const { createChatterContainerComponent, messaging } = await this.start({
+    const { createChatterContainerComponent } = await this.start({
         hasDialog: true,
     });
     await createChatterContainerComponent({
@@ -208,7 +209,7 @@ QUnit.test('view attachments', async function (assert) {
         threadId: 100,
         threadModel: 'res.partner',
     });
-    const firstAttachment = messaging.models['Attachment'].findFromIdentifyingData({ id: 143 });
+    const firstAttachment = this.messaging.models['Attachment'].findFromIdentifyingData({ id: 143 });
 
     await afterNextRender(() =>
         document.querySelector(`

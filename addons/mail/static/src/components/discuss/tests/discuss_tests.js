@@ -2873,7 +2873,7 @@ QUnit.test('rendering of inbox message', async function (assert) {
         id: 100,
         model: 'res.partner',
         needaction: true,
-        needaction_partner_ids: [this.data.currentPartnerId], // for consistency
+        needaction_partner_ids: [this.TEST_USER_IDS.currentPartnerId], // for consistency
         res_id: 20,
     });
     this.serverData.models['mail.notification'].records.push({
@@ -3139,7 +3139,7 @@ QUnit.test('receive new needaction messages', async function (assert) {
 QUnit.test('reply to message from inbox (message linked to document)', async function (assert) {
     assert.expect(19);
 
-    this.data['res.partner'].records.push({
+    this.serverData.models['res.partner'].records.push({
         id: 20,
         name: "Refactoring",
     });

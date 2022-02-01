@@ -1,6 +1,5 @@
 /** @odoo-module **/
 
-import { nextAnimationFrame } from '@mail/utils/test_utils';
 import { datetime_to_str } from 'web.time';
 import { patch } from "@web/core/utils/patch";
 import { MockServer } from "@web/../tests/helpers/mock_server";
@@ -461,13 +460,13 @@ patch(MockServer.prototype, 'mail', {
      */
     async _mockRouteMailThreadData(thread_model, thread_id, request_list) {
         const res = {};
-        const thread = this._mockSearchRead(thread_model, [[['id', '=', thread_id]]], {})[0];
+        const thread = this.mockSearchRead(thread_model, [[['id', '=', thread_id]]], {})[0];
         if (!thread) {
             console.warn(`mock server: reading data "${request_list}" from invalid thread "${thread_model}_${thread_id}"`);
             return res;
         }
         if (request_list.includes('activities')) {
-            const activities = this._mockSearchRead('mail.activity', [[
+            const activities = this.mockSearchRead('mail.activity', [[
                 '|',
                     ['id', 'in', thread.activity_ids || []],
                     '&',
@@ -477,13 +476,13 @@ patch(MockServer.prototype, 'mail', {
             res['activities'] = this._mockMailActivityActivityFormat(activities.map(activity => activity.id));
         }
         if (request_list.includes('attachments')) {
-            const attachments = this._mockSearchRead('ir.attachment', [
+            const attachments = this.mockSearchRead('ir.attachment', [
                 [['res_id', '=', thread.id], ['res_model', '=', thread_model]],
             ], {}); // order not done for simplicity
             res['attachments'] = this._mockIrAttachment_attachmentFormat(attachments.map(attachment => attachment.id), true);
         }
         if (request_list.includes('followers')) {
-            const followers = this._mockSearchRead('mail.followers', [[
+            const followers = this.mockSearchRead('mail.followers', [[
                 '|',
                     ['id', 'in', thread.message_follower_ids || []],
                     '&',

@@ -12,9 +12,6 @@ export class DiscussContainer extends Component {
      * @override
      */
     setup() {
-        // for now, the legacy env is needed for internal functions such as
-        // `useModels` to work
-        this.env = Component.env;
         useModels();
         super.setup();
         useUpdate({ func: () => this._update() });

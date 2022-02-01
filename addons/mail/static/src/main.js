@@ -5,6 +5,7 @@ import { messagingService } from '@mail/services/messaging_service/messaging_ser
 import { registry } from '@web/core/registry';
 import { systrayService } from '@mail/services/systray_service/systray_service';
 import { wowlEnvProviderService } from '@mail/services/wowl_env_provider_service/wowl_env_provider_service';
+import { DiscussContainer } from './components/discuss_container/discuss_container';
 
 const serviceRegistry = registry.category('services');
 const componentsRegistry = registry.category('main_components');
@@ -20,4 +21,4 @@ componentsRegistry.add('dialog_manager', {
     Component: getMessagingComponent('DialogManager'),
 });
 
-registry.category('actions').add("mail.discuss", getMessagingComponent('Discuss'));
+registry.category('actions').add("mail.discuss", DiscussContainer);

@@ -110,7 +110,7 @@ QUnit.module('Chatter', {
                     views: [[false, "list"]],
                 },
                 mockRPC: route => {
-                    if (!['/mail/init_messaging', '/mail/load_message_failures'].includes(route)) {
+                    if (route === '/web/dataset/search_read') {
                         assert.step(route);
                     }
                 },
@@ -192,7 +192,7 @@ QUnit.test('list activity widget with exception', async function (assert) {
 });
 
 QUnit.test('list activity widget: open dropdown', async function (assert) {
-    assert.expect(9);
+    assert.expect(8);
     // TODO TSM -- intercept switch view
     const currentUser = this.serverData.models['res.users'].records.find(user =>
         user.id === this.TEST_USER_IDS.currentUserId

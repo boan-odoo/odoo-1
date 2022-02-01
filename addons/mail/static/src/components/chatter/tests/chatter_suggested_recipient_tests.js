@@ -10,11 +10,12 @@ QUnit.module('chatter_suggested_recipients_tests.js', {
         beforeEach(this);
 
         this.start = async params => {
-            const { env, webClient } = await start(Object.assign({}, params, {
+            const { env, webClient, ...rest } = await start(Object.assign({}, params, {
                 serverData: this.serverData,
             }));
             this.env = env;
             this.webClient = webClient;
+            return rest;
         };
     },
 });
