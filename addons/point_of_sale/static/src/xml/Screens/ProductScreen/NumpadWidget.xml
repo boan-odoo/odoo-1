@@ -17,7 +17,7 @@
                         'disabled-mode': !hasManualDiscount
                     }"
                     t-att-disabled="!hasManualDiscount"
-                    t-on-click="changeMode('discount')">Disc</button>
+                    t-on-click="changeMode('discount')">Disc %</button>
             <br />
             <button class="input-button number-char" t-on-click="sendInput('7')">7</button>
             <button class="input-button number-char" t-on-click="sendInput('8')">8</button>
