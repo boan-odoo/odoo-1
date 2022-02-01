@@ -2,6 +2,7 @@ odoo.define('website_blog.wysiwyg', function (require) {
 'use strict';
 
 
+const publicWidget = require('web.public.widget');
 const Wysiwyg = require('web_editor.wysiwyg');
 require('website.editor.snippets.options');
 
@@ -23,6 +24,53 @@ Wysiwyg.include({
     async start() {
         await this._super(...arguments);
         $('.js_tweet, .js_comment').off('mouseup').trigger('mousedown');
+        const postContentEl = document.getElementById('o_wblog_post_content');
+        if (postContentEl) {
+            // Patch all droppable snippet templates.
+            const usesRegularCover = document.body.querySelector("#o_wblog_post_main.container");
+            const targetClass = usesRegularCover ? 'container' : 'o_container_small';
+            const removedClass = usesRegularCover ? 'o_container_small' : 'container';
+            document.body.querySelectorAll([
+                    `#o_scroll section .${removedClass}`,
+                    "#o_scroll section .container-fluid",
+            ]).forEach(section => {
+                section.classList.remove("container-fluid");
+                section.classList.remove(removedClass);
+                section.classList.add(targetClass);
+            });
+            // Adjust breadcrumb and tags width upon blog post content changes.
+            const breadcrumbEl = postContentEl.querySelector('.breadcrumb');
+            const tagsEl = postContentEl.querySelector('.o_wblog_post_tags');
+            if (breadcrumbEl || tagsEl) {
+                this._widthObserver = new MutationObserver(records => {
+                    if (_.any(records, record => (record.type === 'childList' ||
+                        (record.type === 'attributes' && record.attributeName === 'class')) &&
+                        ![breadcrumbEl, tagsEl].includes(record.target)
+                    )) {
+                        if (breadcrumbEl) {
+                            publicWidget.registry.websiteBlog.adjustWidth(postContentEl, breadcrumbEl);
+                        }
+                        if (tagsEl) {
+                            publicWidget.registry.websiteBlog.adjustWidth(postContentEl, tagsEl);
+                        }
+                    }
+                });
+                this._widthObserver.observe(postContentEl, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                });
+            }
+        }
+    },
+    /**
+     * @override
+     */
+    destroy() {
+        if (this._widthObserver) {
+            this._widthObserver.disconnect();
+        }
+        return this._super(...arguments);
     },
 
     //--------------------------------------------------------------------------

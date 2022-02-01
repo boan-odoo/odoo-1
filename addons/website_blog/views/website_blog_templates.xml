@@ -227,7 +227,7 @@ list of filtered posts (by date or tag).
             </div>
         </section>
 
-        <div id="o_wblog_post_main" t-attf-class="pb-5 #{'anim' in request.params and 'o_wblog_post_main_transition'}">
+        <div id="o_wblog_post_main" t-attf-class="pb-5 #{'anim' in request.params and 'o_wblog_post_main_transition'} #{opt_blog_post_regular_cover and 'container'}">
             <!-- Sidebar-enabled Layout -->
             <div t-if="opt_blog_post_sidebar" class="mx-auto">
                 <div class="d-flex flex-column flex-lg-row justify-content-start">
@@ -257,13 +257,13 @@ list of filtered posts (by date or tag).
 ============================================================================ -->
 <template id="blog_post_content" name="Blog post content">
     <t t-if="opt_blog_post_breadcrumb and not opt_blog_post_regular_cover" t-call="website_blog.post_breadcrumbs">
-        <t t-set="additionnal_classes" t-value="'mb-0 pb-0 bg-transparent o_container_small pt-4'"></t>
+        <t t-set="additionnal_classes" t-value="'mb-0 pb-0 bg-transparent o_container_as_first pt-4'"></t>
     </t>
     <div t-field="blog_post.content"
         data-editor-message="WRITE HERE OR DRAG BUILDING BLOCKS"
         t-attf-class="o_wblog_post_content_field #{'js_tweet' if opt_blog_post_select_to_tweet else ''} #{'js_comment' if opt_blog_post_select_to_comment else ''} o_wblog_read_text"/>
 
-    <div t-if="len(blogs) > 1 or len(blog_post.tag_ids) > 0" class="css_editable_mode_hidden text-muted o_container_small">
+    <div t-if="len(blogs) > 1 or len(blog_post.tag_ids) > 0" class="text-muted o_wblog_post_tags o_container_as_first o_no_link_popover" contenteditable="false">
         <div t-if="len(blogs) > 1">in <a t-attf-href="#{blog_url(blog=blog_post.blog_id)}"><b t-field="blog.name"/></a></div>
         <div t-if="len(blog_post.tag_ids) > 0">#
             <t t-foreach="blog_post.tag_ids" t-as="one_tag">
@@ -342,9 +342,8 @@ list of filtered posts (by date or tag).
 -->
 <template id="opt_blog_post_comment" name="Allow Comments" inherit_id="website_blog.blog_post_complete" active="False" customize_show="True">
     <xpath expr="//div[@id='o_wblog_post_main']" position="inside">
-
-        <div class="container">
-            <div t-attf-class="mx-auto">
+        <div t-attf-class="#{opt_blog_post_sidebar and 'col-lg-9 col-12'}">
+            <div class="mx-auto o_container_as_first">
                 <div id="o_wblog_post_comments" class="pt-4">
                     <div groups="base.group_public" class="small mb-4">
                         <a t-attf-href="/web/login?redirect=/blog/{{slug(blog_post.blog_id)}}/{{slug(blog_post)}}#discussion" class="btn btn-sm btn-primary"><b>Sign in</b></a> to leave a comment
@@ -370,7 +369,7 @@ list of filtered posts (by date or tag).
     <xpath expr="//section[@id='o_wblog_post_footer']" position="inside">
         <div t-if="next_post" class="mt-5">
             <t t-if="opt_blog_post_regular_cover">
-                <div class="o_container_small">
+                <div class="pb-5 container">
                     <div class="mb-4 mx-auto">
                         <hr/>
                         <div class="d-flex text-right py-4">

@@ -18,6 +18,11 @@ publicWidget.registry.websiteBlog = publicWidget.Widget.extend({
      */
     start: function () {
         $('.js_tweet, .js_comment').share({});
+        const content = this.el.querySelector('.o_wblog_post_content_field');
+        this.el.querySelectorAll('.o_container_as_first').forEach(container => {
+            publicWidget.registry.websiteBlog.adjustWidth(content, container);
+            container.classList.remove('o_container_as_first');
+        });
         return this._super.apply(this, arguments);
     },
 
@@ -99,4 +104,38 @@ publicWidget.registry.websiteBlog = publicWidget.Widget.extend({
         dom.scrollTo($el[0], {duration: duration}).then(() => callback());
     },
 });
+
+/**
+ * Adjusts the containers'width class based on the first (text) section of the
+ * blog post content.
+ * If there is a text section it uses the first text section, otherwise it
+ * uses the first section.
+ *
+ * @static
+ * @param {Element} blogPostContentEl blog post content element
+ * @param {Element} containerEl container element to adjust
+ */
+publicWidget.registry.websiteBlog.adjustWidth = function (blogPostContentEl, containerEl) {
+    let targetClass = 'o_container_small';
+    let source;
+    for (const extraSelector of ['.s_text_block ', ':first-of-type', ':first-of-type ']) {
+        source = blogPostContentEl.querySelector([
+            `section${extraSelector}.o_container_small`,
+            `section${extraSelector}.container`,
+            `section${extraSelector}.container-fluid`,
+        ]);
+        if (source) {
+            if (source.classList.contains('container')) {
+                targetClass = 'container';
+            } else if (source.classList.contains('container-fluid')) {
+                targetClass = 'container-fluid';
+            }
+            break;
+        }
+    }
+    const widthClasses = ['container', 'container-fluid', 'o_container_small'];
+    containerEl.classList.remove(...widthClasses.filter(c => c !== targetClass));
+    containerEl.classList.add(targetClass);
+};
+
 });
