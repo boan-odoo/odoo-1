@@ -2,6 +2,7 @@
 """Utilities for generating, parsing and checking XML/XSD files on top of the lxml.etree module."""
 
 import base64
+import collections
 import logging
 import requests
 import zipfile
@@ -90,6 +91,157 @@ def create_xml_node(parent_node, node_name, node_value=None):
     :returns (etree._Element):
     """
     return create_xml_node_chain(parent_node, [node_name], node_value)[0]
+
+
+def load_xsd_and_validate_xml(env, module_name, url, xmls_to_validate):
+    """Validates the provided XML files with associated XSD files loaded from given url.
+    The XSD files are fetched from database if previously cached.
+
+
+    :param env:environment of calling module (odoo.api.Environment)
+    :param module_name: name of calling module (str)
+    :param url: url of XSD file/ZIP archive (str)
+    :param xmls_to_validate: is either
+        1) a dictionary of XML files, where keys are XSD file names and values a tuple XML name and file
+            i.e. {xsd_file_name: (xml_name, xml_file)}
+            The XSD file is the one that will be used to validate the associated XML file (if retrieved from given url)
+            -> url leads to a ZIP archive
+        2) a list of tuples (xml_name, xml_file). The XML files will be tested against the same XSD (from given url)
+            -> url leads to an XSD file
+    :returns: True if all XML files validated, False otherwise (feedback provided in _logger.warning)
+    """
+
+    def check_xsd_content(xsd_content, xsd_name):
+        try:
+            return etree.fromstring(xsd_content)
+        except XMLSyntaxError:
+            _logger.warning("Failed to parse response's content (wrong XML structure) for file with name %s" % xsd_name)
+            return
+
+    def fetch_attachment():
+        file_name = url.split('/')[-1].replace('.', '_')
+        xsd_file_name = 'xsd_cached_%s' % file_name
+        fetched_attachment = env['ir.attachment'].search([('name', '=', xsd_file_name)])
+        if fetched_attachment:
+            _logger.info("Retrieved xsd/zip from database, attachment name: %s" % file_name)
+            return fetched_attachment
+        else:
+            _logger.info("Fetching xsd/zip from given url: %s" % url)
+            response = requests.get(url, timeout=10)
+            if not response.ok:
+                _logger.warning("HTTP error (status code %s) with the given URL: %s", response.status_code, url)
+                return
+
+            # Cache XSD/ZIP as attachment for future use
+            return env['ir.attachment'].create({
+                'res_model': module_name,
+                'name': xsd_file_name,
+                'raw': response.content,
+            })
+
+    def unzip_and_validate(zip_attachment):
+        # Unzip
+        archive = zipfile.ZipFile(BytesIO(zip_attachment.raw))
+
+        # Save XSD files in a dictionary {xsd_name: xsd_file}
+        xsd_dictionary = {}
+        for file in archive.namelist():
+            if file.endswith('.xsd'):
+                try:
+                    content = archive.open(file).read()
+                    if check_xsd_content(content, file) is None:
+                        continue
+                    cached_file_name = "xsd_cached_%s" % file
+                    xsd_dictionary[cached_file_name] = content
+                except KeyError:
+                    _logger.warning("Failed to retrieve XSD file with name %s from ZIP archive" % file)
+
+        # Validate every XML file using associated XSD
+        all_validated = True
+        for xsd_name_key in xmls_to_validate:
+            xml = xmls_to_validate[xsd_name_key]
+            xsd = xsd_dictionary.get("xsd_cached_%s" % xsd_name_key)
+            if xsd is None:
+                all_validated = False
+                _logger.warning("No XSD file found with name: %s" % xsd_name_key)
+                continue
+
+            with BytesIO(xsd) as xsd_stream:
+                try:
+                    _check_with_xsd(xml, xsd_stream)
+                except UserError:
+                    all_validated = False
+                    _logger.warning("The following XML file failed to validate: %s" % xsd_name_key)
+        return all_validated
+
+    def validate(xsd_attachment):
+        # Check XSD for valid structure and validate all XML's with this XSD
+        if check_xsd_content(xsd_attachment.raw, xsd_attachment.name) is None:
+            return False
+        all_validated = True
+        for (xml_name, xml_file) in xmls_to_validate:
+            with BytesIO(xsd_attachment.raw) as xsd:
+                try:
+                    _check_with_xsd(xml_file, xsd)
+                except UserError:
+                    all_validated = False
+                    _logger.warning("the following XML file: %s failed to check against the following XSD file : %s" % (xml_name, xsd_attachment.name))
+        return all_validated
+
+    # Check for correct parameters (url and xml_to_validate)
+    if not url.endswith(('.xsd', '.zip')):
+        _logger.warning("The URL needs to lead to an XSD file or a ZIP archive")
+        return False
+    else:
+        if url.endswith('.xsd'):
+            is_zip_file = False
+            if not isinstance(xmls_to_validate, list):
+                _logger.warning("URL's with XSD files require a list of XML's")
+                return False
+        else:
+            is_zip_file = True
+            if not isinstance(xmls_to_validate, collections.Mapping):
+                _logger.warning("URL's with ZIP archive require a dictionary of XML's")
+                return False
+
+    attachment = fetch_attachment()
+    if attachment is None:
+        return False
+
+    if is_zip_file:
+        return unzip_and_validate(attachment)
+    else:
+        return validate(attachment)
+
+
+# def load_xsd_from_url():
+#     """Load XSD file/ZIP archive from given url and cache it as ir.attachment.
+#
+#     returns: an ir.attachment of the fetched xsd file or zip archive
+#     """
+#     if not url.endswith(('.xsd', '.zip')):
+#         _logger.warning("The url needs to lead to an xsd file or a zip archive")
+#         return
+#
+#     fname = url.split('/')[-1].replace('.', '_')
+#     xsd_fname = 'xsd_cached_%s' % fname
+#     attachment = env['ir.attachment'].search([('name', '=', xsd_fname)])
+#     if attachment:
+#         _logger.info("Retrieved xsd/zip from database, saved as %s" % fname)
+#         return attachment
+#
+#     _logger.info("Fetching xsd/zip from given url: %s" % url)
+#     response = requests.get(url, timeout=10)
+#     if not response.ok:
+#         _logger.warning("HTTP error (status code %s) with the given URL: %s", response.status_code, url)
+#
+#     # Cache as attachment for future use
+#     attachment = env['ir.attachment'].create({
+#         'res_model': module_name,
+#         'name': xsd_fname,
+#         'raw': response.content,
+#     })
+#     return attachment
 
 
 def load_xsd_from_url(env, url, module_name, file_name=None, zip_file_names=None, to_be_cached=False):
