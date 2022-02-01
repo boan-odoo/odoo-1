@@ -14,6 +14,7 @@ from odoo.tools.misc import clean_context
 
 _logger = logging.getLogger(__name__)
 _image_dataurl = re.compile(r'(data:image/[a-z]+?);base64,([a-z0-9+/\n]{3,}=*)\n*([\'"])(?: data-filename="([^"]*)")?', re.I)
+_message_empty_values = ['', '<p></p>', '<p><br></p>', '<p><br/></p>']
 
 
 class Message(models.Model):
@@ -118,6 +119,7 @@ class Message(models.Model):
         'mail.activity.type', 'Mail Activity Type',
         index=True, ondelete='set null')
     is_internal = fields.Boolean('Employee Only', help='Hide to public / portal users, independently from subtype configuration.')
+    is_empty = fields.Boolean(compute='_compute_is_empty', search='_search_is_empty')
     # origin
     email_from = fields.Char('From', help="Email address of the sender. This field is set when no matching partner is found and replaces the author_id field in the chatter.")
     author_id = fields.Many2one(
@@ -240,6 +242,28 @@ class Message(models.Model):
             return [('starred_partner_ids', 'in', [self.env.user.partner_id.id])]
         return [('starred_partner_ids', 'not in', [self.env.user.partner_id.id])]
 
+    @api.depends('body', 'attachment_ids', 'subtype_id', 'subtype_id.description', 'tracking_value_ids')
+    def _compute_is_empty(self):
+        for message in self:
+            is_body_empty = message.body in _message_empty_values
+            is_subtype_description_empty = not message.subtype_id or message.subtype_id.description in _message_empty_values
+            message.is_empty = is_body_empty and not message.attachment_ids and not message.tracking_value_ids and is_subtype_description_empty
+
+    @api.model
+    def _search_is_empty(self, operator, value):
+        if (operator, value) in [('=', True), ('!=', False)]:
+            return expression.AND([
+                ['|', ('subtype_id', '=', False), ('subtype_id.description', 'in', _message_empty_values)],
+                [('body', 'in', _message_empty_values)],
+                [('attachment_ids', '=', False)],
+                [('tracking_value_ids', '=', False)]
+            ])
+        return expression.OR([
+            ['&', ('subtype_id', '!=', False), ('subtype_id.description', 'not in', _message_empty_values)],
+            [('body', 'not in', _message_empty_values)],
+            [('attachment_ids', '!=', False)],
+            [('tracking_value_ids', '!=', False)]
+        ])
     # ------------------------------------------------------
     # CRUD / ORM
     # ------------------------------------------------------

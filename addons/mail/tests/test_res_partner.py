@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-
+import base64
 from uuid import uuid4
 
 from odoo.addons.mail.tests.common import MailCommon, mail_new_test_user
@@ -182,3 +182,86 @@ class TestPartner(MailCommon):
         all_msg = p2_msg_ids_init + p1_msg_ids_init + p1_msg1
         self.assertEqual(len(p2.message_ids), len(all_msg) + 1, 'Should have original messages + a log')
         self.assertTrue(all(msg in p2.message_ids for msg in all_msg))
+
+    def test_res_partner_get_starred_count(self):
+        # ignored message has (according to is_empty):
+        # - empty body OR
+        # - no subtype description OR
+        # - no tracking_value_id
+        Users = self.env['res.users']
+        new_user = Users.create({
+            'email': 'francoisemb@test.be',
+            'login': 'benjam',
+            'name': 'Benjam Prejent',
+        })
+        new_partner = new_user.partner_id
+        new_msg = new_user.message_ids
+        subtype_test = self.env['mail.message.subtype'].create({
+            'name': 'TestSubtype',
+            'description': 'PHP is the best programming language after HTML'
+        })
+        subtype_base = new_msg.subtype_id
+
+        # we shouldn't have a starred message at the beginning
+        self.assertEqual(new_partner._get_starred_count(), 0)
+
+        # A starred message should be considered
+        new_msg.write({'starred_partner_ids': [(6, 0, new_partner.ids)]})
+        self.assertEqual(new_partner._get_starred_count(), 1)
+
+        # An empty starred message without attachment nor subtype description shouldn't be considered
+        new_msg.write({'body': ''})
+        self.assertEqual(new_partner._get_starred_count(), 0)
+
+        # An empty starred message containing only a subtype description should be considered
+        new_msg.write({'subtype_id': subtype_test})
+        self.assertEqual(new_partner._get_starred_count(), 1)
+
+        # An empty starred message containing only an attachment should be considered
+        new_attachment = self.env['ir.attachment'].create({
+            'name': 'testimage.png',
+            'res_model': 'mail.channel',
+            'type': 'binary',
+            'datas': base64.b64encode(b'testImage'),
+        })
+        new_msg.write({
+            'attachment_ids': [(6, 0, new_attachment.ids)],
+            'subtype_id': subtype_base
+        })
+
+        self.assertEqual(new_partner._get_starred_count(), 1)
+
+        new_msg.write({'attachment_ids': False})
+        self.assertEqual(new_partner._get_starred_count(), 0)
+
+        # An empty starred message containing only a tracking_value should be considered
+        test_track_values = {
+            'field': 939,
+            'field_desc': 'Email',
+            'field_type': 'char',
+            'tracking_sequence': 1,
+            'old_value_char': 'francoisemb@test.be',
+            'new_value_char': 'emailchanged@test.be',
+            'mail_message_id': new_msg.id
+        }
+        self.env['mail.tracking.value'].create(test_track_values)
+        self.assertEqual(new_partner._get_starred_count(), 1)
+
+        # A starred message in a private channel is considered if either
+        # we have access to this channel
+        # or it is one of our messages
+        private_channel = self.env['mail.channel'].create({
+            'name': 'Private Channel',
+            'public': 'private',
+            'channel_partner_ids': [(4, new_partner.id)]
+        })
+        private_channel_own_message = private_channel.with_user(new_user.id).message_post(body='bodytest')
+        private_channel_own_message.write({'starred_partner_ids': [(6, 0, new_partner.ids)]})
+
+        private_channel_message = private_channel.message_post(body='bodytest')
+        private_channel_message.write({'starred_partner_ids': [(6, 0, new_partner.ids)]})
+
+        self.assertEqual(new_partner._get_starred_count(), 3)
+
+        private_channel.write({'channel_partner_ids': False})
+        self.assertEqual(new_partner._get_starred_count(), 2)
