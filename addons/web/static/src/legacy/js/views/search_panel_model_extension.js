@@ -111,7 +111,7 @@
             params.searchDomainChanged = (
                 JSON.stringify(this.searchDomain) !== JSON.stringify(searchDomain)
             );
-            if (!this.shouldLoad && !this.initialStateImport) {
+            if (!this.shouldLoad && !this.initialStateImport || params.isInitialLoad) {
                 const isFetchable = (section) => section.enableCounters ||
                     (params.searchDomainChanged && !section.expand);
                 this.categoriesToLoad = this.categories.filter(isFetchable);
