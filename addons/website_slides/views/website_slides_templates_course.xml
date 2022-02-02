@@ -110,6 +110,12 @@
     <t t-set="body_classname" t-value="'o_wslides_body'"/>
     <t t-call="website.layout">
         <div id="wrap" t-attf-class="wrap mt-0">
+            <!-- ==== Error notification ==== -->
+            <div t-if="access_error == 'course_content'" class="alert alert-danger alert-dismissable" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">×</button>
+                You need to join this course to access &quot;<t t-out="access_error_content_name"/>&quot;.
+            </div>
+
             <div t-attf-class="o_wslides_course_header o_wslides_gradient position-relative text-white pb-md-0 pt-2 pt-md-5 #{'pb-3' if channel.channel_type == 'training' else 'o_wslides_course_doc_header pb-5'}">
                 <t t-call="website_slides.course_nav"/>
 
@@ -166,6 +172,7 @@
             <!-- Share modal : here to avoid having text-white from o_wslides_course_header -->
             <t t-call="website_slides.slide_share_modal" t-if="channel.channel_type == 'documentation'">
                 <t t-set="record" t-value="channel"/>
+                <t t-set="website_share_url" t-value="channel.website_url"/>
             </t>
 
             <div class="o_wslides_course_main">
@@ -233,6 +240,7 @@
 
         <t t-call="website_slides.slide_share_modal">
             <t t-set="record" t-value="channel"/>
+            <t t-set="website_share_url" t-value="channel.website_url"/>
         </t>
     </t>
 </template>
