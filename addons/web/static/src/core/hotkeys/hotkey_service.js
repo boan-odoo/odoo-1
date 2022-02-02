@@ -164,8 +164,11 @@ export const hotkeyService = {
             for (const el of getVisibleElements(ui.activeElement, "[data-hotkey]:not(:disabled)")) {
                 const hotkey = el.dataset.hotkey;
                 const overlay = document.createElement("div");
-                overlay.className = "o_web_hotkey_overlay position-absolute d-flex justify-content-center align-items-center m-0 bg-black-50 h6 text-monospace text-white";
-                overlay.appendChild(document.createTextNode(hotkey.toUpperCase()));
+                const overlay_kbd = document.createElement("kbd");
+                overlay.className = "o_web_hotkey_overlay position-absolute d-flex justify-content-center align-items-center m-0 bg-black-50 h6";
+                overlay_kbd.className = "small";
+                overlay.appendChild(overlay_kbd);
+                overlay_kbd.appendChild(document.createTextNode(hotkey.toUpperCase()));
 
                 let overlayParent;
                 if (el.tagName.toUpperCase() === "INPUT") {
