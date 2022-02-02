@@ -142,12 +142,12 @@ export class Powerbox {
 
     addKeydownTrigger(triggerKey, options) {
         this.options.editable.addEventListener(
-            'keydown',
+            'input',
             ev => {
                 const selection = this.options.document.getSelection();
                 if (!selection.isCollapsed || !selection.rangeCount) return;
                 if (
-                    ev.key === triggerKey &&
+                    ev.data === triggerKey &&
                     !this._active &&
                     (!this.options.shouldActivate || this.options.shouldActivate())
                 ) {
