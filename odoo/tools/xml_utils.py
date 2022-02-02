@@ -158,12 +158,12 @@ def load_xsd_and_validate_xml(env, module_name, url, xmls_to_validate):
 
         # Validate every XML file using associated XSD
         all_validated = True
-        for xsd_name_key in xmls_to_validate:
-            xml = xmls_to_validate[xsd_name_key]
-            xsd = xsd_dictionary.get("xsd_cached_%s" % xsd_name_key)
+        for xml_name_key in xmls_to_validate:
+            xml = xmls_to_validate[xml_name_key]
+            xsd = xsd_dictionary.get("xsd_cached_%s" % xml_name_key)
             if xsd is None:
                 all_validated = False
-                _logger.warning("No XSD file found with name: %s" % xsd_name_key)
+                _logger.warning("No XSD file found with name: %s" % xml_name_key)
                 continue
 
             with BytesIO(xsd) as xsd_stream:
@@ -171,7 +171,7 @@ def load_xsd_and_validate_xml(env, module_name, url, xmls_to_validate):
                     _check_with_xsd(xml, xsd_stream)
                 except UserError:
                     all_validated = False
-                    _logger.warning("The following XML file failed to validate: %s" % xsd_name_key)
+                    _logger.warning("The following XML file failed to validate: %s" % xml_name_key)
         return all_validated
 
     def validate(xsd_attachment):
@@ -214,41 +214,12 @@ def load_xsd_and_validate_xml(env, module_name, url, xmls_to_validate):
         return validate(attachment)
 
 
-# def load_xsd_from_url():
-#     """Load XSD file/ZIP archive from given url and cache it as ir.attachment.
-#
-#     returns: an ir.attachment of the fetched xsd file or zip archive
-#     """
-#     if not url.endswith(('.xsd', '.zip')):
-#         _logger.warning("The url needs to lead to an xsd file or a zip archive")
-#         return
-#
-#     fname = url.split('/')[-1].replace('.', '_')
-#     xsd_fname = 'xsd_cached_%s' % fname
-#     attachment = env['ir.attachment'].search([('name', '=', xsd_fname)])
-#     if attachment:
-#         _logger.info("Retrieved xsd/zip from database, saved as %s" % fname)
-#         return attachment
-#
-#     _logger.info("Fetching xsd/zip from given url: %s" % url)
-#     response = requests.get(url, timeout=10)
-#     if not response.ok:
-#         _logger.warning("HTTP error (status code %s) with the given URL: %s", response.status_code, url)
-#
-#     # Cache as attachment for future use
-#     attachment = env['ir.attachment'].create({
-#         'res_model': module_name,
-#         'name': xsd_fname,
-#         'raw': response.content,
-#     })
-#     return attachment
-
-
 def load_xsd_from_url(env, url, module_name, file_name=None, zip_file_names=None, to_be_cached=False):
     """Load xsd file(s) from given url and potentially cache them as ir.attachment.
 
-    NOTE: XSD validation should be restricted to the development process, for testing purposes.
-          Refrain from using this method on production.
+    NOTE: This method should just be used in stable (v15) and will be removed in master.
+          Its current purpose is just to harmonize the loading of XSD files for already created modules.
+          The method load_xsd_and_validate_xml is the one that should/will be used for future modules.
 
     :param env: environment of calling module (odoo.api.Environment)
     :param url: url of xsd file/archive (str)
