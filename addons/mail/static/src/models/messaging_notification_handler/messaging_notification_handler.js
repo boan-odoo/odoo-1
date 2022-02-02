@@ -592,8 +592,9 @@ function factory(dependencies) {
          * @param {Object} param0
          * @param {integer[]} param0.message_ids
          * @param {boolean} param0.starred
+         * @param {integer} param0.starred_counter
          */
-        _handleNotificationPartnerToggleStar({ message_ids = [], starred }) {
+        _handleNotificationPartnerToggleStar({ message_ids = [], starred, starred_counter }) {
             const starredMailbox = this.messaging.starred;
             for (const messageId of message_ids) {
                 const message = this.messaging.models['mail.message'].findFromIdentifyingData({
@@ -604,7 +605,7 @@ function factory(dependencies) {
                 }
                 message.update({ isStarred: starred });
                 starredMailbox.update({
-                    counter: starred ? increment() : decrement(),
+                    counter: starred_counter,
                 });
             }
         }

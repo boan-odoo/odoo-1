@@ -40,6 +40,9 @@ function factory(dependencies) {
          * @param {MouseEvent} ev
          */
         onClickConfirmDelete(ev) {
+            if (this.message.isStarred) {
+                this.message.toggleStar();
+            }
             this.message.updateContent({
                 body: '',
                 attachment_ids: [],
