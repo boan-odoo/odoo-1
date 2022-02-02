@@ -652,17 +652,6 @@ class MrpProduction(models.Model):
         late_stock_moves = self.env['stock.move'].search([('delay_alert_date', operator, value)])
         return ['|', ('move_raw_ids', 'in', late_stock_moves.ids), ('move_finished_ids', 'in', late_stock_moves.ids)]
 
-    @api.onchange('product_qty', 'product_uom_id')
-    def _onchange_product_qty(self):
-        for workorder in self.workorder_ids:
-            workorder.product_uom_id = self.product_uom_id
-            if self._origin.product_qty:
-                workorder.duration_expected = workorder._get_duration_expected(ratio=self.product_qty / self._origin.product_qty)
-            else:
-                workorder.duration_expected = workorder._get_duration_expected()
-            if workorder.date_planned_start and workorder.duration_expected:
-                workorder.date_planned_finished = workorder.date_planned_start + relativedelta(minutes=workorder.duration_expected)
-
     @api.depends('company_id', 'date_planned_start', 'is_planned', 'product_id')
     def _compute_date_planned_finished(self):
         for production in self:
@@ -738,6 +727,7 @@ class MrpProduction(models.Model):
                 raise ValidationError(_("The total cost share for a manufacturing order's by-products cannot exceed 100."))
 
     def write(self, vals):
+        qty_by_workorder_id = {}
         if 'workorder_ids' in self:
             production_to_replan = self.filtered(lambda p: p.is_planned)
         if 'move_raw_ids' in vals and self.state not in ['draft', 'cancel', 'done']:
@@ -751,7 +741,24 @@ class MrpProduction(models.Model):
                 command, _id, field_values = move_vals
                 if command == 0 and not field_values.get('warehouse_id', False):
                     field_values['warehouse_id'] = warehouse_id
+        if 'product_qty' in vals or 'product_uom_id' in vals and self.workorder_ids:
+            for production in self:
+                qty_by_workorder_id.update({wo.id: production.product_qty for wo in production.workorder_ids})
+
         res = super(MrpProduction, self).write(vals)
+
+        if 'product_qty' in vals or 'product_uom_id' in vals and self.workorder_ids:
+            for production in self:
+                product_qty = production.product_qty
+                production.workorder_ids.product_uom_id = production.product_uom_id
+                for workorder in production.workorder_ids:
+                    origin_product_qty = qty_by_workorder_id.get(workorder.id, False)
+                    if origin_product_qty:
+                        workorder.duration_expected = workorder._get_duration_expected(ratio=product_qty / origin_product_qty)
+                    else:
+                        workorder.duration_expected = workorder._get_duration_expected()
+                    if workorder.date_planned_start and workorder.duration_expected:
+                        workorder.date_planned_finished = workorder.date_planned_start + relativedelta(minutes=workorder.duration_expected)
 
         for production in self:
             if 'date_planned_start' in vals and not self.env.context.get('force_date', False):
