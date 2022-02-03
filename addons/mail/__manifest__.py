@@ -2,7 +2,7 @@
 
 {
     'name': 'Discuss',
-    'version': '1.7',
+    'version': '1.8',
     'category': 'Productivity/Discuss',
     'sequence': 145,
     'summary': 'Chat, mail gateway and private channels',
@@ -13,7 +13,6 @@
         'data/mail_groups.xml',
         'wizard/mail_blacklist_remove_views.xml',
         'wizard/mail_compose_message_views.xml',
-        'wizard/mail_resend_cancel_views.xml',
         'wizard/mail_resend_message_views.xml',
         'wizard/mail_template_preview_views.xml',
         'wizard/mail_wizard_invite_views.xml',

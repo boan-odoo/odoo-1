@@ -63,7 +63,7 @@ export class NotificationGroup extends Component {
      * @param {MouseEvent} ev
      */
     _onClickMarkAsRead(ev) {
-        this.notificationGroupView.notificationGroup.openCancelAction();
+        this.notificationGroupView.notificationGroup.notifyCancel();
         if (!this.messaging.device.isMobile) {
             this.messaging.messagingMenu.close();
         }

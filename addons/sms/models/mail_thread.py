@@ -368,3 +368,14 @@ class MailThread(models.AbstractModel):
             sms_all.filtered(lambda sms: sms.state == 'outgoing').send(auto_commit=False, raise_exception=False)
 
         return True
+
+    def _notify_cancel_sms(self):
+        # TDE CHECK: delete pending SMS
+        self._notify_cancel_by_type_std('sms')
+
+    @api.model
+    def notify_cancel_by_type(self, notification_type):
+        super().notify_cancel_by_type(notification_type)
+        if notification_type == 'sms':
+            self._notify_cancel_sms()
+        return True
