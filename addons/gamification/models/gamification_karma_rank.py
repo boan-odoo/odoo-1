@@ -35,7 +35,7 @@ class KarmaRank(models.Model):
     @api.model_create_multi
     def create(self, values_list):
         res = super(KarmaRank, self).create(values_list)
-        users = self.env['res.users'].sudo().search([('karma', '>', 0)])
+        users = self.env['res.users'].sudo().search([('karma', '>', min(res.mapped('karma_min')))])
         users._recompute_rank()
         return res
 
