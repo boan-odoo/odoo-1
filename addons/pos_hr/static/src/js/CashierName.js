@@ -16,6 +16,17 @@ odoo.define('pos_hr.CashierName', function (require) {
                 this.selectEmployee = selectEmployee;
                 useBarcodeReader({ cashier: this._onCashierScan });
             }
+            //@Override
+            get avatar() {
+                if (this.env.pos.config.module_pos_hr) {
+                    const cashier = this.env.pos.get_cashier();
+                    const isAvatarUserType = cashier.avatar_type === 'user';
+                    const id = isAvatarUserType ? cashier.user_id : cashier.id ;
+                    const model = isAvatarUserType ? 'res.users' : 'hr.employee';
+                    return `/web/image/${model}/${id}/avatar_128`;
+                }
+                return super.avatar;
+            }
             async selectCashier() {
                 if (!this.env.pos.config.module_pos_hr) return;
 

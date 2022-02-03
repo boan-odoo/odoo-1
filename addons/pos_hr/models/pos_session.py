@@ -32,6 +32,7 @@ class PosSession(models.Model):
         employee_ids = [employee['id'] for employee in employees]
         user_ids = [employee['user_id'] for employee in employees if employee['user_id']]
         manager_ids = self.env['res.users'].browse(user_ids).filtered(lambda user: self.config_id.group_pos_manager_id in user.groups_id).mapped('id')
+        user_has_picture_set = {user.id for user in self.env['res.users'].browse(user_ids) if user.image_128}
 
         employees_barcode_pin = self.env['hr.employee'].browse(employee_ids).get_barcodes_and_pin_hashed()
         bp_per_employee_id = {bp_e['id']: bp_e for bp_e in employees_barcode_pin}
@@ -39,5 +40,6 @@ class PosSession(models.Model):
             employee['role'] = 'manager' if employee['user_id'] and employee['user_id'] in manager_ids else 'cashier'
             employee['barcode'] = bp_per_employee_id[employee['id']]['barcode']
             employee['pin'] = bp_per_employee_id[employee['id']]['pin']
+            employee['avatar_type'] = 'user' if employee['user_id'] and employee['user_id'] in user_has_picture_set else 'employee'
 
         return employees
