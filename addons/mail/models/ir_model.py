@@ -100,3 +100,26 @@ class IrModel(models.Model):
             parents = [parents] if isinstance(parents, str) else parents
             model_class._inherit = parents + ['mail.thread.blacklist']
         return model_class
+
+    def _get_model_definitions(self, model_names_to_fetch):
+        response = {}
+        for model_name in model_names_to_fetch:
+            # get model fields, relational fields are kept only if the
+            # corresponding model is in model_names_to_fetch
+            model_fields = {
+                fname: field
+                for fname, field in self.env[model_name].fields_get(
+                    attributes=['name', 'type', 'relation', 'required', 'readonly', 'selection']).items()
+                if field.get('name') and (not field.get('relation') or field['relation'] in model_names_to_fetch)
+            }
+            # get default values for the model fields, exclude those whose
+            # value is not json serializable
+            fnames_to_default_values = self.env[model_name].default_get([
+                field['name'] for field in model_fields.values()
+                if field['type'] not in ['binary', 'date', 'datetime']
+            ])
+            for fname, value in fnames_to_default_values.items():
+                if model_fields.get(fname):
+                    model_fields[fname]['default'] = value
+            response[model_name] = model_fields
+        return response

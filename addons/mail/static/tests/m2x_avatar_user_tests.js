@@ -324,13 +324,8 @@ QUnit.module('mail', {}, function () {
             'foo,false,form': '<form><field name="user_id" widget="many2one_avatar_user"/></form>',
             'foo,false,search': '<search></search>',
         };
-        const models = {
-            'foo': this.data.foo,
-            'res.partner': this.data['res.partner'],
-            'res.users': this.data['res.users'],
-        }
-        const serverData = { models, views}
-        const webClient = await createWebClient({ serverData });
+        const serverData = { models: this.data, views };
+        const { widget: webClient } = await start({ serverData, hasWebClient: true });
         await doAction(webClient, {
             res_id: 1,
             type: 'ir.actions.act_window',
@@ -372,13 +367,8 @@ QUnit.module('mail', {}, function () {
             'foo,false,form': '<form><field name="user_id" widget="many2one_avatar_user"/></form>',
             'foo,false,search': '<search></search>',
         };
-        const models = {
-            'foo': this.data.foo,
-            'res.partner': this.data['res.partner'],
-            'res.users': this.data['res.users'],
-        }
-        const serverData = { models, views}
-        const webClient = await createWebClient({ serverData });
+        const serverData = { models: this.data, views };
+        const { widget: webClient } = await start({ serverData, hasWebClient: true });
         await doAction(webClient, {
             res_id: 1,
             type: 'ir.actions.act_window',
@@ -417,13 +407,8 @@ QUnit.module('mail', {}, function () {
             'foo,false,form': '<form><field name="user_ids" widget="many2many_avatar_user"/></form>',
             'foo,false,search': '<search></search>',
         };
-        const models = {
-            'foo': this.data.foo,
-            'res.partner': this.data['res.partner'],
-            'res.users': this.data['res.users'],
-        }
-        const serverData = { models, views}
-        const webClient = await createWebClient({ serverData });
+        const serverData = { models: this.data, views };
+        const { widget: webClient } = await start({ serverData, hasWebClient: true });
         await doAction(webClient, {
             res_id: 1,
             type: 'ir.actions.act_window',
@@ -466,13 +451,8 @@ QUnit.module('mail', {}, function () {
             'foo,false,form': '<form><field name="user_ids" widget="many2many_avatar_user"/></form>',
             'foo,false,search': '<search></search>',
         };
-        const models = {
-            'foo': this.data.foo,
-            'res.partner': this.data['res.partner'],
-            'res.users': this.data['res.users'],
-        }
-        const serverData = { models, views}
-        const webClient = await createWebClient({ serverData });
+        const serverData = { models: this.data, views };
+        const { widget: webClient } = await start({ serverData, hasWebClient: true });
         await doAction(webClient, {
             res_id: 1,
             type: 'ir.actions.act_window',

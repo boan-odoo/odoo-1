@@ -15,19 +15,19 @@ import { DialogService } from '@mail/services/dialog_service/dialog_service';
 import { getMessagingComponent } from '@mail/utils/messaging_component';
 import { nextTick } from '@mail/utils/utils';
 import { DiscussWidget } from '@mail/widgets/discuss/discuss';
-import { MockModels } from '@mail/../tests/helpers/mock_models';
+
+import { getFixture } from "@web/../tests/helpers/utils";
+import { createWebClient, getActionManagerServerData } from "@web/../tests/webclient/helpers";
+import { registry } from '@web/core/registry';
 
 import AbstractStorageService from 'web.AbstractStorageService';
 import RamStorage from 'web.RamStorage';
 import {
     createView,
-    makeTestPromise,
     mock,
 } from 'web.test_utils';
 import Widget from 'web.Widget';
-import { getFixture } from "@web/../tests/helpers/utils";
-import { createWebClient, getActionManagerServerData } from "@web/../tests/webclient/helpers";
-
+import core from 'web.core';
 import LegacyRegistry from "web.Registry";
 
 const { App, Component, EventBus } = owl;
@@ -170,47 +170,107 @@ function nextAnimationFrame() {
 }
 
 //------------------------------------------------------------------------------
+// Model definitions setup
+//------------------------------------------------------------------------------
+
+const TEST_USER_IDS = {
+    partnerRootId: 2,
+    currentPartnerId: 3,
+    currentUserId: 2,
+    publicPartnerId: 4,
+    publicUserId: 3,
+};
+
+let modelDefinitions;
+QUnit.done(() => {
+    // clear model definitions only once all the tests are done
+    modelDefinitions = undefined;
+});
+
+/**
+ * Fetch model definitions from the server then apply default values and custom
+ * fields if necessary. Models to fetch, default field values and custom fields
+ * by model are retrieved from the `mailModelDefinitions` registry.
+ *
+ * @see model_definitions_setup.js
+ *
+ */
+async function setupModelDefinitions() {
+    const modelDefinitionsRegistry = registry.category('mailModelDefinitions');
+    // only the key is used in the model names registry
+    const modelNamesToFetch = modelDefinitionsRegistry.category('modelNamesToFetch').getEntries().map(entry => entry[0]);
+    const defaultFielsdValuesRegistry = modelDefinitionsRegistry.category('defaultFieldsValues');
+    const customModelFieldsRegistry = modelDefinitionsRegistry.category('customModelFields');
+
+    // fetch the model definitions
+    const formData = new FormData();
+    formData.append('csrf_token', core.csrf_token);
+    formData.append('model_names_to_fetch', JSON.stringify(modelNamesToFetch));
+    const response = await window.fetch('/mail/get_model_definitions', {
+        method: 'POST',
+        body: formData,
+    });
+    if (response.status !== 200) {
+        throw new Error('Error while fetching required models');
+    }
+    modelDefinitions = new Map(Object.entries(await response.json()));
+
+    for (const [modelName, fields] of modelDefinitions) {
+        // apply custom fields: fields that are not present in the python model definition but are
+        // used by the tests for simplicity's sake
+        const customModelFields = customModelFieldsRegistry.category(modelName).getEntries();
+        for (const [fieldName, field] of customModelFields) {
+            fields[fieldName] = field;
+        }
+        // apply default values to the fields
+        const modelDefaultFieldValuesRegistry = defaultFielsdValuesRegistry.category(modelName);
+        for(const fieldName in fields) {
+            const field = fields[fieldName];
+            if (modelDefaultFieldValuesRegistry.contains(fieldName)) {
+                field.default = modelDefaultFieldValuesRegistry.get(fieldName);
+            } else if (['date', 'datetime'].includes(field.type) && !field.default) {
+                // apply default values for date like fields if none was passed
+                const defaultFieldValue =
+                    field.type === 'date'
+                    ? () => moment().format('YYYY-MM-DD')
+                    : () => moment.utc().format("YYYY-MM-DD HH:mm:ss")
+                field.default = defaultFieldValue;
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 // Public: test lifecycle
 //------------------------------------------------------------------------------
 
-function beforeEach(self) {
-    const data = MockModels.generateData();
-
-    data.partnerRootId = 2;
-    data['res.partner'].records.push({
-        active: false,
-        display_name: "OdooBot",
-        id: data.partnerRootId,
-    });
-
-    data.currentPartnerId = 3;
-    data['res.partner'].records.push({
-        display_name: "Your Company, Mitchell Admin",
-        id: data.currentPartnerId,
-        name: "Mitchell Admin",
-    });
-    data.currentUserId = 2;
-    data['res.users'].records.push({
-        display_name: "Your Company, Mitchell Admin",
-        id: data.currentUserId,
-        name: "Mitchell Admin",
-        partner_id: data.currentPartnerId,
-    });
-
-    data.publicPartnerId = 4;
-    data['res.partner'].records.push({
-        active: false,
-        display_name: "Public user",
-        id: data.publicPartnerId,
-    });
-    data.publicUserId = 3;
-    data['res.users'].records.push({
-        active: false,
-        display_name: "Public user",
-        id: data.publicUserId,
-        name: "Public user",
-        partner_id: data.publicPartnerId,
-    });
+async function beforeEach(self) {
+    if (!modelDefinitions) {
+        await setupModelDefinitions();
+    }
+    const data = { ...TEST_USER_IDS };
+    const initialRecordsRegistry = registry.category('mailModelDefinitions').category('initialRecords');
+    for (const [modelName, fields] of modelDefinitions) {
+        let records = [];
+        if (initialRecordsRegistry.contains(modelName)) {
+            records = initialRecordsRegistry.get(modelName).map(record => ({ ...record }));
+        }
+        data[modelName] = {fields, records };
+    }
+    // some tests rely on this fake model, all fake models will be removed in
+    // another PR
+    data['res.fake'] = {
+        fields: {
+            activity_ids: { string: "Activities", type: 'one2many', relation: 'mail.activity' },
+            email_cc: { type: 'char' },
+            partner_ids: {
+                string: "Related partners",
+                type: 'many2one',
+                relation: 'res.partner'
+            },
+        },
+        records: [],
+    };
 
     const originals = {
         '_.debounce': _.debounce,
@@ -896,4 +956,5 @@ export {
     nextTick,
     pasteFiles,
     start,
+    TEST_USER_IDS,
 };
