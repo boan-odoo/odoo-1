@@ -42,6 +42,7 @@ const Wysiwyg = Widget.extend({
         colors: customColors,
         recordInfo: {context: {}},
         document: document,
+        unremovableElementsSelector: '',
     },
     init: function (parent, options) {
         this._super.apply(this, arguments);
@@ -80,6 +81,8 @@ const Wysiwyg = Widget.extend({
         this.toolbar = new Toolbar(this, this.options.toolbarTemplate);
         await this.toolbar.appendTo(document.createElement('void'));
         const commands = this._getCommands();
+        const unremovableItems = this.$editable.find(options.unremovableElementsSelector);
+        unremovableItems.addClass('oe_unremovable');
 
         let editorCollaborationOptions;
         if (
@@ -1586,6 +1589,7 @@ const Wysiwyg = Widget.extend({
     _cleanForSave: function () {
         this.odooEditor.clean();
         this.$editable.find('.oe_edited_link').removeClass('oe_edited_link');
+        this.$editable.find(this.options.unremovableElementsSelector).removeClass('oe_unremovable');
     },
     _getCommands: function () {
         const commands = [
