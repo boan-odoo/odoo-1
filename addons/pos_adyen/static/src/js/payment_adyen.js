@@ -5,6 +5,7 @@ var core = require('web.core');
 var rpc = require('web.rpc');
 var PaymentInterface = require('point_of_sale.PaymentInterface');
 const { Gui } = require('point_of_sale.Gui');
+const { isConnectionError } = require('point_of_sale.utils');
 
 var _t = core._t;
 
@@ -163,39 +164,45 @@ var PaymentAdyen = PaymentInterface.extend({
         return this._call_adyen(data).then(function (data) {
             return self._adyen_handle_response(data);
         }).then(() => {
-            setTimeout(() => this._handleLongWait(order.selected_paymentline), 60000);
+            setTimeout(() => this._handleLongWait(order.selected_paymentline), 30000);
         });
     },
 
-    _handleLongWait: async function (payment) {
+    _handleLongWait: async function (payment, title = undefined) {
         // No need to proceed if there is no pending payment.
         if (!this.hasWaitingPaymentRequest) return;
 
+        title = title || _t('30 sec has passed');
         const actionsList = [
             {
                 id: 1,
                 item: 'wait',
-                label: _t('Wait for 1 minute'),
+                label: _t('Wait for 30 sec'),
             },
             {
                 id: 2,
                 item: 'force_done',
                 label: _t('Force Done'),
             },
+            {
+                id: 3,
+                item: 'check_payment_status',
+                label: _t('Check status from server'),
+            },
         ];
         const { confirmed: actionSelected, payload: action } = await Gui.showPopup('SelectionPopup', {
-            title: _t('1 minute has passed'),
+            title,
             list: actionsList,
             cancelText: _t('Retry'),
         });
         if (actionSelected) {
             if (action == 'wait') {
-                setTimeout(() => this._handleLongWait(payment), 60000);
-            } else if (action == 'payment_successful') {
-                this._paymentRequestResolve(true);
+                setTimeout(() => this._handleLongWait(payment), 30000);
             } else if (action == 'force_done') {
                 payment.set_payment_status('force_done');
                 this._paymentRequestReject();
+            } else if (action == 'check_payment_status') {
+                await this._forceCheckPaymentStatus(payment);
             }
         } else {
             this._paymentRequestResolve(false);
@@ -225,10 +232,13 @@ var PaymentAdyen = PaymentInterface.extend({
         return this._call_adyen(data).then(function (data) {
 
             // Only valid response is a 200 OK HTTP response which is
-            // represented by true.
-            if (! ignore_error && data !== "ok") {
+            // represented by true. So we should check if data == true.
+            if (! ignore_error && data !== true) {
                 self._show_error(_t('Cancelling the payment failed. Please cancel it manually on the payment terminal.'));
+                return false;
             }
+            // Cancel is successful.
+            return true;
         });
     },
 
@@ -244,6 +254,42 @@ var PaymentAdyen = PaymentInterface.extend({
 
             return acc;
         }, '');
+    },
+
+    _forceCheckPaymentStatus: async function (payment) {
+        try {
+            const status = await this.pos.env.services.rpc({
+                model: 'pos.payment.method',
+                method: 'get_latest_adyen_status',
+                args: [[this.payment_method.id], this._adyen_get_sale_id()],
+            }, {
+                timeout: 5000,
+                shadow: true,
+            })
+            if (!status.latest_response) {
+                const { confirmed } = await Gui.showPopup('ConfirmPopup', {
+                    title: _t('No payment status found'),
+                    body: _t('Do you want to go back to the selection of force done the payment?'),
+                    confirmText: _t('More options'),
+                    cancelText: _t('Force done')
+                });
+                if (confirmed) {
+                    this._handleLongWait(payment, _t('More options'));
+                } else {
+                    payment.set_payment_status('force_done');
+                    this._paymentRequestReject();
+                }
+            } else {
+                this._handlePaymentStatus(status);
+            }
+        } catch (error) {
+            if (isConnectionError(error)) {
+                await this._show_error(_t('Unable to connect to the server.'), _t('Connection Error'));
+                this._handleLongWait(payment);
+            } else {
+                throw error;
+            }
+        }
     },
 
     _handlePaymentStatus: function (status) {
@@ -305,6 +351,7 @@ var PaymentAdyen = PaymentInterface.extend({
             }
             // /!\ At this point, the received payment status is not handled because the service id is different
             // from the `most_recent_service_id`. Should we really ignore this stray payment status?
+            // Also, the latest_response is false.
     },
 
     /**
@@ -347,7 +394,7 @@ var PaymentAdyen = PaymentInterface.extend({
         if (!title) {
             title =  _t('Adyen Error');
         }
-        Gui.showPopup('ErrorPopup',{
+        return Gui.showPopup('ErrorPopup',{
             'title': title,
             'body': msg,
         });
