@@ -46,4 +46,4 @@ class PosAdyenController(http.Controller):
         mo = regex.search(sale_id)
         if mo:
             session_id = int(mo.group(1))
-            return request.env['pos.session'].browse(session_id)
+            return request.env['pos.session'].sudo().browse(session_id)
