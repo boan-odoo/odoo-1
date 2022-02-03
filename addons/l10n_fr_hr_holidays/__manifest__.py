@@ -8,8 +8,5 @@
     'summary': 'Management of leaves for part-time workers in France',
     'depends': ['hr_holidays'],
     'auto_install': False,
-    'data': [
-        'views/res_config_settings_views.xml',
-    ],
     'license': 'LGPL-3',
 }

@@ -34,7 +34,7 @@ class HrContract(models.Model):
             employee = contract.employee_id
             employee_calendar = contract.resource_calendar_id
             company = contract.company_id
-            company_calendar = company.time_off_reference_calendar
+            company_calendar = company.resource_calendar_id
             resource = employee.resource_id
             tz = pytz.timezone(employee_calendar.tz)
 

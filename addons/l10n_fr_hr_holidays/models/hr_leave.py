@@ -84,8 +84,8 @@ class HrLeave(models.Model):
         if employee_id and super()._get_number_of_days(date_from, date_to, employee_id):
             employee = self.env['hr.employee'].browse(employee_id).sudo()
             company = employee.company_id
-            if company.country_id.code == 'FR' and company.time_off_reference_calendar:
+            if company.country_id.code == 'FR' and company.resource_calendar_id:
                 calendar = self._get_calendar()
-                if calendar and calendar != company.time_off_reference_calendar:
-                    return self._compute_fr_number_of_days(employee, date_from, date_to, calendar, company.time_off_reference_calendar)
+                if calendar and calendar != company.resource_calendar_id:
+                    return self._compute_fr_number_of_days(employee, date_from, date_to, calendar, company.resource_calendar_id)
         return basic_amount

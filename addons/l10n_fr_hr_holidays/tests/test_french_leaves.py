@@ -34,7 +34,7 @@ class TestFrenchLeaves(TransactionCase):
 
     def test_no_differences(self):
         # Base case that should not have a different behaviour
-        self.company.time_off_reference_calendar = self.base_calendar
+        self.company.resource_calendar_id = self.base_calendar
         self.employee.resource_calendar_id = self.base_calendar
 
         leave = self.env['hr.leave'].create({
@@ -58,7 +58,7 @@ class TestFrenchLeaves(TransactionCase):
                 (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 13, 'hour_to': 17, 'day_period': 'afternoon'}),
             ],
         })
-        self.company.time_off_reference_calendar = self.base_calendar
+        self.company.resource_calendar_id = self.base_calendar
         self.employee.resource_calendar_id = employee_calendar
 
         leave = self.env['hr.leave'].create({
@@ -82,7 +82,7 @@ class TestFrenchLeaves(TransactionCase):
                 (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 13, 'hour_to': 17, 'day_period': 'afternoon'}),
             ],
         })
-        self.company.time_off_reference_calendar = self.base_calendar
+        self.company.resource_calendar_id = self.base_calendar
         self.employee.resource_calendar_id = employee_calendar
 
         leave = self.env['hr.leave'].create({
@@ -106,7 +106,7 @@ class TestFrenchLeaves(TransactionCase):
                 (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 13, 'hour_to': 17, 'day_period': 'afternoon'}),
             ],
         })
-        self.company.time_off_reference_calendar = self.base_calendar
+        self.company.resource_calendar_id = self.base_calendar
         self.employee.resource_calendar_id = employee_calendar
 
         leave = self.env['hr.leave'].create({
@@ -139,7 +139,7 @@ class TestFrenchLeaves(TransactionCase):
                 (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 13, 'hour_to': 17, 'day_period': 'afternoon'}),
             ],
         })
-        self.company.time_off_reference_calendar = self.base_calendar
+        self.company.resource_calendar_id = self.base_calendar
         self.employee.resource_calendar_id = employee_calendar
 
         leave = self.env['hr.leave'].create({
@@ -161,7 +161,7 @@ class TestFrenchLeaves(TransactionCase):
                 (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 13, 'hour_to': 17, 'day_period': 'afternoon'}),
             ],
         })
-        self.company.time_off_reference_calendar = self.base_calendar
+        self.company.resource_calendar_id = self.base_calendar
         self.employee.resource_calendar_id = employee_calendar
 
         leave = self.env['hr.leave'].create({
@@ -208,7 +208,7 @@ class TestFrenchLeaves(TransactionCase):
                 (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 13, 'hour_to': 17, 'day_period': 'afternoon'}),
             ],
         })
-        self.company.time_off_reference_calendar = company_calendar
+        self.company.resource_calendar_id = company_calendar
         self.employee.resource_calendar_id = employee_calendar
 
         # Week type 0

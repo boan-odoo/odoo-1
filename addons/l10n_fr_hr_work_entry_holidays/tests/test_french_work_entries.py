@@ -52,7 +52,6 @@ class TestFrenchWorkEntries(TransactionCase):
             ],
         })
         self.company.resource_calendar_id = company_calendar
-        self.company.time_off_reference_calendar = company_calendar
         self.employee.resource_calendar_id = employee_calendar
         self.employee_contract.resource_calendar_id = employee_calendar
 
