@@ -4,11 +4,11 @@ from odoo.exceptions import ValidationError
 
 
 class AccountTaxCarryoverLine(models.Model):
-    _name = 'account.tax.carryover.line'
+    _name = 'account.tax.carryover.line' #TODO OCO retirer totalement; je le renomme et redéclare ailleurs. Repasser sur toutes ses utilisations
     _description = 'Tax carryover line'
 
     name = fields.Char(required=True)
-    amount = fields.Float(required=True, default=0.0)
+    value = fields.Float(required=True, default=0.0) # TODO OCO devrait pas être monetary ? => non, pas nécessairement un montant => chiant pour le rounding ?? => toujours rounder avant ? Via un helper ?
     date = fields.Date(required=True, default=fields.Date.context_today)
     tax_report_line_id = fields.Many2one(
         comodel_name='account.tax.report.line',

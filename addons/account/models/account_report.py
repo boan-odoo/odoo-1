@@ -103,7 +103,6 @@ class AccountReportLine(models.Model):
     code = fields.Char(string="Code")
     unfoldable = fields.Boolean(string="Unfoldable", default=False)
 
-    # TODO OCO ajouter le niveau de hiérarchie
     # TODO OCO ajouter invisible ?
     # TODO OCO ajouter la caret_option ici comme un champ, je dirais => sélection ??
 
@@ -162,6 +161,7 @@ class AccountReportExpression(models.Model):
             ('custom', "Custom Code"),
             ('aggregation', "Aggregate Other Formulas"),
             ('account_codes', "Prefix of Account Codes"),
+            ('external', "External Value"),
         ],
         required=True
     )
@@ -281,3 +281,34 @@ class AccountReportColumn(models.Model):
     sequence = fields.Integer(string="Sequence", default=0, required=True)
     report_id = fields.Many2one(string="Report", comodel_name='account.report')
     # TODO OCO ajouter le type de données dedans
+
+
+class AccountReportExternalValue(models.Model):
+    _name = 'account.report.external.value'
+    _description = 'Accounting Report External Value'
+
+    name = fields.Char(required=True)
+    amount = fields.Float(required=True)
+    date = fields.Date(required=True)
+    # TODO OCO ajouter le nom de total et un compute qui calcule l'expression-cible ? Storé et required (possible, ça ?), au au moins plante si trouve rien ?
+    target_report_line_id = fields.Many2one(string="Target Line", comodel_name='account.report.line', required=True)
+    target_report_expression_id = fields.Many2one(string="Target Expression", comodel_name='account.report.expression', required=True, domain="[('id', 'in', available_target_expression_ids), ('engine', '=', 'external')]") # TODO OCO + contraintes
+    company_id = fields.Many2one(string='Company', comodel_name='res.company', required=True, default=lambda self: self.env.company)
+
+    report_country_id = fields.Many2one(string="Country", related='target_report_line_id.report_id.country_id')
+    available_target_expression_ids = field.One2many(string="Available Expressions", related='target_report_line_id.expression_ids')
+
+    # Carryover fields
+    #TODO OCO l'expression, plutôt ?
+    carryover_origin_report_line_id = fields.Many2one(string="Origin", comodel_name='account.report.line')
+    carryover_foreign_vat_fiscal_position_id = fields.Many2one(
+        string="Fiscal position",
+        comodel_name='account.fiscal.position',
+        domain="[('company_id', '=', company_id), ('country_id', '=', report_country_id), ('foreign_vat', '!=', False)]",
+        help="The foreign fiscal position for which this carryover is made.",
+    )
+
+    @api.constrains('carryover_foreign_vat_fiscal_position_id', 'target_report_line_id')
+    def _check_fiscal_position(self):
+        if self.carryover_foreign_vat_fiscal_position_id and self.carryover_foreign_vat_fiscal_position_id.country_id != self.report_country_id:
+            raise ValidationError(_("The country set on the the foreign VAT fiscal position must match the one set on the report."))
