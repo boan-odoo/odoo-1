@@ -179,6 +179,18 @@ tour.register('sale_timesheet_tour', {
         }
     }
 }, {
+    edition: 'enterprise',
+    trigger: 'div[name="analytic_account_id"]',
+    content: 'Select an analytic account for this project.',
+    run: function (actions) {
+        actions.text('Project for', this.$anchor.find('input'));
+    },
+}, {
+    edition: 'enterprise',
+    trigger: 'ul.ui-autocomplete > li:first-child > a',
+    content: 'Select the first analytic account in the autocomplete dropdown.',
+    run: 'click',
+}, {
     trigger: 'div[name="partner_id"]',
     content: Markup('Add the customer for this project to select an SO and SOL for this customer <i>(e.g. Brandon Freeman)</i>.'),
     run: function (actions) {

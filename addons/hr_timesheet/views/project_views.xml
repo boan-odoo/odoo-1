@@ -99,6 +99,9 @@
                         </div>
                     </div>
                 </xpath>
+                <xpath expr="//field[@name='analytic_account_id']" position="attributes">
+                    <attribute name="attrs">{'required': [('allow_timesheets', '=', True)]}</attribute>
+                </xpath>
             </field>
         </record>
 

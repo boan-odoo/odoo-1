@@ -415,6 +415,38 @@ tour.stepUtils.autoExpandMoreButtons('.o_form_readonly'),
     auto: true,
 }, {
     mobile: true,
+    trigger: 'div.o_notebook_headers',
+    content: 'Click on Settings page to set the analytic account.',
+    run: function (actions) {
+        const notebookId = $('div[name="analytic_account_id"]').closest("div.tab-pane").attr('id');
+        actions.click(this.$anchor.find(`a[data-toggle="tab"][href="#${notebookId}"]`));
+    },
+}, {
+    mobile: true,
+    trigger: '.o_field_widget[name=analytic_account_id] input',
+    content: _t('Choose analytic account'),
+    position: 'left',
+},  {
+    mobile: true,
+    trigger: ".modal-dialog .btn:contains('Create')",
+    extra_trigger: '.modal-dialog',
+    content: _t('Click here to add new line.'),
+    position: 'left',
+}, {
+    mobile: true,
+    trigger: 'input[name=name]',
+    extra_trigger: ".modal:not(.o_inactive_modal) .modal-title:contains('Analytic Account')",
+    content: _t('Let\'s enter the name.'),
+    position: 'left',
+    run: 'text the_flow.analytic_account',
+}, {
+    mobile: true,
+    trigger: ".modal-footer .btn-primary:contains('Save')",
+    extra_trigger: ".modal:not(.o_inactive_modal) .modal-title:contains('Analytic Account')",
+    content: _t('Save'),
+    position: 'right',
+}, {
+    mobile: true,
     trigger: ".modal-footer .btn-primary:contains('Save')",
     extra_trigger: ".modal:not(.o_inactive_modal) .modal-title:contains('Project')",
     content: _t('Save'),

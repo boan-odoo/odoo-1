@@ -436,6 +436,7 @@ class TestProjectBilling(TestCommonSaleTimesheet):
         with Form(self.env['project.project'].with_context({'tracking_disable': True})) as project_form:
             project_form.name = 'Test Billable Project'
             project_form.allow_billable = True
+            project_form.analytic_account_id = self.env['account.analytic.account'].create({'name': 'account', 'code': 'AA1'})
             with project_form.sale_line_employee_ids.new() as mapping_form:
                 mapping_form.employee_id = self.employee_manager
                 mapping_form.sale_line_id = self.so.order_line[:1]
