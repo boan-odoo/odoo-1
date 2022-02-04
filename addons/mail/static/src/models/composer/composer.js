@@ -29,7 +29,7 @@ registerModel({
             if (this.thread && !this.textInputContent && this.attachments.length === 0) {
                 return false;
             }
-            return !this.hasUploadingAttachment && !this.isPostingMessage;
+            return !this.hasUploadingAttachment;
         },
         /**
          * @private
@@ -162,10 +162,6 @@ registerModel({
         isLog: attr({
             default: true,
         }),
-        /**
-         * Determines whether a post_message request is currently pending.
-         */
-        isPostingMessage: attr(),
         mentionedChannels: many('Thread', {
             compute: '_computeMentionedChannels',
         }),

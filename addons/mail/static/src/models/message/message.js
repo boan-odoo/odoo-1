@@ -464,6 +464,9 @@ registerModel({
                 this.originThread.model === 'mail.channel'
             );
         },
+        _computeIsPlaceholder() {
+            return Boolean(this.messageComposition);
+        },
         /**
          * @private
          * @returns {boolean}
@@ -583,6 +586,9 @@ registerModel({
         canStarBeToggled: attr({
             compute: '_computeCanStarBeToggled',
         }),
+        messageComposition: one('MessageComposition', {
+            inverse: 'message',
+        }),
         /**
          * Determines the date of the message as a moment object.
          */
@@ -699,6 +705,10 @@ registerModel({
          * present in inbox mailbox and messaging menu.
          */
         isNeedaction: attr({
+            default: false,
+        }),
+        isPlaceholder: attr({
+            compute: '_computeIsPlaceholder',
             default: false,
         }),
         is_note: attr({

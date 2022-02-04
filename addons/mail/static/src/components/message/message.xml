@@ -4,6 +4,7 @@
     <t t-name="mail.Message" owl="1">
         <div class="o_Message position-relative pt-1"
             t-att-class="{
+                'o_Message-isTemporary': messageView and messageView.message.isTemporary,
                 'o_Message_active': isActive,
                 'o-clicked': state.isClicked,
                 'o-discussion': messageView and (messageView.message.is_discussion or messageView.message.is_notification),

@@ -2395,6 +2395,11 @@ registerModel({
             compute: '_computeVideoCount',
             default: 0,
         }),
+        sender: one('Sender', {
+            default: insertAndReplace(),
+            inverse: 'thread',
+            isCausal: true,
+        }),
     },
     onChanges: [
         new OnChange({

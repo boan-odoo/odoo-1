@@ -112,7 +112,7 @@ registerModel({
         },
         /**
          * @private
-         * @returns {MessageView[]}
+         * @returns {FieldCommand}
          */
         _computeMessageViews() {
             if (!this.threadCache) {
