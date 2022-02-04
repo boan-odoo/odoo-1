@@ -54,6 +54,7 @@ class Channel(models.Model):
     # description
     name = fields.Char('Name', required=True, translate=True)
     active = fields.Boolean(default=True, help="Set active to false to hide the channel without removing it.")
+    channel_url = fields.Char('Channel URL', compute="_compute_channel_url")
     channel_type = fields.Selection([
         ('chat', 'Chat'),
         ('channel', 'Channel'),
@@ -168,6 +169,11 @@ class Channel(models.Model):
         for channel in self:
             channel.member_count = member_count_by_channel_id.get(channel.id, 0)
 
+    @api.depends('uuid')
+    def _compute_channel_url(self):
+        for channel in self:
+            channel.channel_url = f"/chat/{channel.id}/{channel.uuid}"
+
     # ONCHANGE
 
     @api.onchange('public')
@@ -190,7 +196,7 @@ class Channel(models.Model):
             if any(cmd[0] not in (4, 6) for cmd in partner_ids_cmd):
                 raise ValidationError(_('Invalid value when creating a channel with members, only 4 or 6 are allowed.'))
             partner_ids = [cmd[1] for cmd in partner_ids_cmd if cmd[0] == 4]
-            partner_ids += [pid for cmd in partner_ids_cmd if cmd[0] == 6 for pid in cmd[2]]
+            partner_ids += [cmd[2] for cmd in partner_ids_cmd if cmd[0] == 6]
 
             # find partners to add from channel_last_seen_partner_ids
             membership_ids_cmd = vals.get('channel_last_seen_partner_ids') or []
@@ -1086,6 +1092,8 @@ class Channel(models.Model):
     def create_group(self, partners_to, default_display_mode=False, name=''):
         """ Create a group channel.
             :param partners_to : list of res.partner ids to add to the conversation
+            :param default_display_mode: string selection that determines how the channel will be displayed by default
+            :param name: string of group name. default name is computed client side from the list of members if no name is set
             :returns: channel_info of the created channel
             :rtype: dict
         """
@@ -1093,7 +1101,7 @@ class Channel(models.Model):
             'channel_last_seen_partner_ids': [Command.create({'partner_id': partner_id}) for partner_id in partners_to],
             'channel_type': 'group',
             'default_display_mode': default_display_mode,
-            'name': name,  # default name is computed client side from the list of members
+            'name': name,
             'public': 'private',
         })
         channel._broadcast(partners_to)

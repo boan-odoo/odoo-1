@@ -12,4 +12,4 @@ class TestMailGuestPages(HttpCase):
         channel = self.env['mail.channel'].create({
             'name': 'Test channel',
         })
-        self.start_tour(f"/chat/{channel.id}/{channel.uuid}", "mail/static/tests/tours/mail_channel_as_guest_tour.js")
+        self.start_tour(channel.channel_url, "mail/static/tests/tours/mail_channel_as_guest_tour.js")

@@ -5,6 +5,7 @@ import odoo.http as http
 
 from odoo.http import request
 from odoo.tools.misc import get_lang
+from odoo.tools import consteq
 
 
 class CalendarController(http.Controller):
@@ -102,19 +103,15 @@ class CalendarController(http.Controller):
     def notify_ack(self):
         return request.env['res.partner'].sudo()._set_calendar_last_notif_ack()
 
-    @http.route('/calendar/join_videocall/<string:access_token>', type='http', auth='public')
-    def calendar_join_videocall(self, access_token):
-        event = request.env['calendar.event'].sudo().search([
-            ('access_token', '=', access_token)
-        ])
-        if not event:
+    @http.route('/calendar/join_videocall/<int:event_id>/<string:access_token>', type='http', auth='public')
+    def calendar_join_videocall(self, event_id, access_token):
+        event = request.env['calendar.event'].sudo().browse(event_id)
+        access_token_valid = consteq(access_token, event.access_token)
+        if not event or not access_token_valid:
             return request.not_found()
 
         # if channel doesn't exist
         if not event.videocall_channel_id:
-            event.create_videocall_channel()
+            event._create_videocall_channel()
 
-        return request.redirect('/chat/%(channel_id)s/%(uuid)s' % {
-            'channel_id': event.videocall_channel_id.id,
-            'uuid': event.videocall_channel_id.uuid
-        })
+        return request.redirect(event.videocall_channel_id.channel_url)

@@ -364,7 +364,7 @@ class TestCalendar(SavepointCaseWithUserDemo):
         self.event_tech_presentation.videocall_source = 'discuss'
         self.assertFalse(self.event_tech_presentation.videocall_channel_id.id, 'No channel should be set before the route is accessed')
         # create the first channel
-        self.event_tech_presentation.create_videocall_channel()
+        self.event_tech_presentation._create_videocall_channel()
         self.assertNotEqual(self.event_tech_presentation.videocall_channel_id.id, False)
 
         partner1 = self.env['res.partner'].create({'name': 'Bob', 'email': u'bob@gm.co'})

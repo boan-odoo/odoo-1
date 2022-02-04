@@ -303,7 +303,7 @@ class TestCreateRecurrentEvents(TestRecurrentEvents):
         self.assertEqual(len(rec_events_videocall_locations), len(set(rec_events_videocall_locations)), 'Recurrent events should have different videocall locations')
         self.assertEqual(all([not(recurrent_event.videocall_channel_id.id) for recurrent_event in recurrent_events]), True, 'No channel should be set before the route is accessed')
         # create the first channel
-        detached_events[0].create_videocall_channel()
+        detached_events[0]._create_videocall_channel()
         # after channel is created, all other events should have the same channel
         self.assertEqual(detached_events[0].videocall_channel_id.id, self.event.videocall_channel_id.id)
 

@@ -82,9 +82,6 @@ class Meeting(models.Model):
                 partners |= self.env['res.partner'].browse(active_id)
         return partners
 
-    def _default_access_token(self):
-        return uuid.uuid4().hex
-
     # description
     name = fields.Char('Meeting Subject', required=True)
     description = fields.Html('Description')
@@ -93,7 +90,7 @@ class Meeting(models.Model):
         'res.partner', string='Scheduled by', related='user_id.partner_id', readonly=True)
     location = fields.Char('Location', tracking=True, help="Location of Event")
     videocall_location = fields.Char('Meeting URL', compute='_compute_videocall_location', store=True)
-    access_token = fields.Char('Invitation Token', default=_default_access_token, copy=False, required=True)
+    access_token = fields.Char('Invitation Token', compute='_compute_videocall_location', store=True, copy=False)
     videocall_source = fields.Selection([('discuss', 'Discuss'), ('custom', 'Custom')], default="custom", required=True)
     videocall_channel_id = fields.Many2one('mail.channel', 'Discuss Channel')
     # visibility
@@ -358,11 +355,12 @@ class Meeting(models.Model):
         for event in self:
             event.display_description = not is_html_empty(event.description)
 
-    @api.depends('videocall_source', 'access_token')
+    @api.depends('videocall_source')
     def _compute_videocall_location(self):
-        for event in self:
-            if event.videocall_source == 'discuss':
-                event.videocall_location = event.get_base_url() + '/calendar/join_videocall/%s' % event.access_token
+        for event in self.filtered(lambda ev: ev.videocall_source == 'discuss'):
+            if not event.access_token:
+                event.access_token = uuid.uuid4().hex
+            event.videocall_location = f"{event.get_base_url()}/calendar/join_videocall/{event.id}/{event.access_token}"
 
     # ------------------------------------------------------------
     # CRUD
@@ -503,8 +501,8 @@ class Meeting(models.Model):
                 new_partner_ids = []
                 for value in values['partner_ids']:
                     op = value[0]
-                    if op in (4, 6):
-                        new_partner_ids.append(value[1]) if op == 4 else new_partner_ids.extend(value[2])
+                    if op in (Command.LINK, Command.SET):
+                        new_partner_ids.append(value[1]) if op == Command.LINK else new_partner_ids.extend(value[2])
                 self.videocall_channel_id.add_members(new_partner_ids)
 
         time_fields = self.env['calendar.event']._get_time_fields()
@@ -661,7 +659,7 @@ class Meeting(models.Model):
         ]
         return attendee_commands
 
-    def create_videocall_channel(self):
+    def _create_videocall_channel(self):
         if self.recurrency:
             # check if any of the events have videocall_channel_id, if not create one
             event_with_channel = self.env['calendar.event'].search([
@@ -670,14 +668,11 @@ class Meeting(models.Model):
             ], limit=1)
             if event_with_channel:
                 self.videocall_channel_id = event_with_channel.videocall_channel_id
-            else:
-                self.videocall_channel_id = self._create_videocall_channel(self.name, self.partner_ids.ids)
-                self.videocall_channel_id.channel_change_description(self.recurrence_id.name)
-        else:
-            self.videocall_channel_id = self._create_videocall_channel(self.name, self.partner_ids.ids)
-            self.videocall_channel_id.channel_change_description(self.display_time)
+                return
+        self.videocall_channel_id = self._create_videocall_channel_id(self.name, self.partner_ids.ids)
+        self.videocall_channel_id.channel_change_description(self.recurrence_id.name if self.recurrency else self.display_time)
 
-    def _create_videocall_channel(self, name, partner_ids):
+    def _create_videocall_channel_id(self, name, partner_ids):
         videocall_channel_id = self.env['mail.channel'].create_group(partner_ids, default_display_mode='video_full_screen', name=name)
         # if recurrent event, set channel to all other records of the same recurrency
         if self.recurrency:
@@ -736,6 +731,7 @@ class Meeting(models.Model):
         return {
             'type': 'ir.actions.act_url',
             'url': self.videocall_location,
+            'target': 'self' if self.videocall_source == 'discuss' else 'new'
         }
 
     def action_join_meeting(self, partner_id):

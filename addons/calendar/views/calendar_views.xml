@@ -135,7 +135,7 @@
                         <div name="send_buttons" class="sm-2">
                             <button name="action_open_composer" help="Send Email to attendees" type="object" string=" EMAIL" icon="fa-envelope"/>
                         </div>
-                        <button name="action_join_video_call" class="btn-primary" help="Join Video Call" type="object" string="JOIN VIDEO CALL" attrs="{'invisible': [('videocall_location', '=', False)]}"/>
+                        <button name="action_join_video_call" class="btn-primary" help="Join Video Call" type="object" string="Join Video Call" attrs="{'invisible': [('videocall_location', '=', False)]}"/>
                     </div>
                     <div class="alert alert-warning o_form_header mt-2" attrs="{'invisible': [('invalid_email_partner_ids', '=', [])]}" role="status">
                         <p><strong>The following attendees have invalid email addresses and won't receive any email notifications:</strong></p>
