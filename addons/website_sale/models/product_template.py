@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import api, fields, models, _
+from odoo import api, fields, models
 from odoo.addons.http_routing.models.ir_http import slug, unslug
+from odoo.addons.website.models import ir_http
 from odoo.tools.translate import html_translate
 from odoo.osv import expression
 
@@ -426,3 +427,13 @@ class ProductTemplate(models.Model):
             'currency': product.currency_id.name,
             'price': combination['list_price'],
         }
+
+    def _get_contextual_pricelist(self):
+        """ Override to fallback on website current pricelist
+        """
+        # YTI TODO: During website_sale cleaning, we should get rid of those crappy context thing
+        pricelist = super()._get_contextual_pricelist()
+        if pricelist:
+            return pricelist
+        website = ir_http.get_request_website()
+        return website and website.get_current_pricelist()

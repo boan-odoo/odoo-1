@@ -1264,14 +1264,24 @@ class ProductTemplate(models.Model):
             'template': '/product/static/xls/product_template.xls'
         }]
 
-    def _get_contextual_price(self):
+    def _get_contextual_price(self, product=None):
         self.ensure_one()
         # YTI TODO: During website_sale cleaning, we should get rid of those crappy context thing
-        if not self._context.get('pricelist'):
+        pricelist = self._get_contextual_pricelist()
+        if not pricelist:
             return 0.0
-        pricelist = self.env['product.pricelist'].browse(self._context.get('pricelist'))
 
         quantity = self.env.context.get('quantity', 1.0)
         uom = self.env['uom.uom'].browse(self.env.context.get('uom'))
         date = self.env.context.get('date')
-        return pricelist._get_product_price(self, quantity, uom=uom, date=date)
+        return pricelist._get_product_price(product or self, quantity, uom=uom, date=date)
+
+    def _get_contextual_pricelist(self):
+        """ Get the contextual pricelist
+
+        This method is meant to be overriden in other standard modules.
+        """
+        # YTI TODO: During website_sale cleaning, we should get rid of those crappy context thing
+        if self._context.get('pricelist'):
+            return self.env['product.pricelist'].browse(self._context.get('pricelist'))
+        return self.env['product.pricelist']
