@@ -37,7 +37,6 @@
             <xpath expr="//button[@name='%(project.project_update_all_action)d']" position="after">
                 <button class="d-none d-md-inline oe_stat_button"
                         type="object" name="action_view_sos" icon="fa-dollar"
-                        attrs="{'invisible': [('sale_order_count', '=', 0)]}"
                         groups="sales_team.group_sale_salesman_all_leads">
                     <field name="sale_order_count" widget="statinfo" string="Sales Orders"/>
                 </button>

@@ -264,16 +264,16 @@ class Project(models.Model):
              "with Tasks (or optionally Issues if the Issue Tracker module is installed).")
     alias_value = fields.Char(string='Alias email', compute='_compute_alias_value')
     privacy_visibility = fields.Selection([
-            ('followers', 'Invited employees'),
-            ('employees', 'All employees'),
-            ('portal', 'Invited portal users and all employees'),
+            ('followers', 'Invited internal users'),
+            ('employees', 'All internal users'),
+            ('portal', 'Invited portal users and all internal users'),
         ],
         string='Visibility', required=True,
         default='portal',
         help="Defines the visibility of the tasks of the project:\n"
-            "- Invited employees: employees may only see the followed project and tasks.\n"
-            "- All employees: employees may see all project and tasks.\n"
-            "- Invited portal users and all employees: employees may see everything."
+            "- Invited internal users: internal users may only see the followed project and tasks.\n"
+            "- All internal users: internal users may see all project and tasks.\n"
+            "- Invited portal users and all internal users: internal users may see everything."
             "   Invited portal users may see project and tasks followed by.\n"
             "   them or by someone of their company.")
     doc_count = fields.Integer(compute='_compute_attached_docs_count', string="Number of documents attached")
@@ -954,6 +954,7 @@ class Task(models.Model):
         index=True,
         copy=False,
         readonly=True)
+    days_from_last_stage_update = fields.Integer(copy=False, compute='_compute_days_from_last_stage_update', store=True)
     project_id = fields.Many2one('project.project', string='Project', recursive=True,
         compute='_compute_project_id', store=True, readonly=False,
         index=True, tracking=True, check_company=True, change_default=True)
@@ -1037,6 +1038,10 @@ class Task(models.Model):
                                      column2="task_id", string="Block",
                                      domain="[('allow_task_dependencies', '=', True), ('id', '!=', id)]")
     dependent_tasks_count = fields.Integer(string="Dependent Tasks", compute='_compute_dependent_tasks_count')
+
+    # Filter fields
+    is_blocked = fields.Boolean(compute='_is_blocked', store=True)
+    is_blocking = fields.Boolean(compute='_is_blocking', store=True)
 
     # recurrence fields
     allow_recurring_tasks = fields.Boolean(related='project_id.allow_recurring_tasks')
@@ -1162,6 +1167,13 @@ class Task(models.Model):
     def _inverse_personal_stage_type_id(self):
         for task in self:
             task.personal_stage_id.stage_id = task.personal_stage_type_id
+
+    @api.depends('date_last_stage_update')
+    def _compute_days_from_last_stage_update(self):
+        for task in self:
+            task.days_from_last_stage_update = False
+            if task.date_last_stage_update:
+                task.days_from_last_stage_update = (fields.Datetime.now() - task.date_last_stage_update).days
 
     @api.model
     def _search_personal_stage_type_id(self, operator, value):
@@ -1317,6 +1329,16 @@ class Task(models.Model):
             }
             for task in tasks_with_dependency:
                 task.dependent_tasks_count = dependent_tasks_count_dict.get(task.id, 0)
+
+    @api.depends('depend_on_ids', 'depend_on_ids.stage_id', 'depend_on_ids.stage_id.fold')
+    def _is_blocked(self):
+        for task in self:
+            task.is_blocked = any(not blocking_task.stage_id.fold for blocking_task in task.depend_on_ids)
+
+    @api.depends('depend_on_ids', 'dependent_ids', 'stage_id', 'stage_id.fold')
+    def _is_blocking(self):
+        for task in self:
+            task.is_blocking = not task.stage_id.fold and task.dependent_ids
 
     @api.depends('partner_id.email')
     def _compute_partner_email(self):
@@ -1480,7 +1502,16 @@ class Task(models.Model):
             default['recurrence_id'] = self.recurrence_id.copy().id
         if self.allow_subtasks:
             default['child_ids'] = [child.copy().id for child in self.child_ids]
-        return super(Task, self).copy(default)
+
+        new_task = super(Task, self).copy(default)
+
+        if self.allow_task_dependencies:
+            for depend_on_id in self.depend_on_ids:
+                new_dependent_ids = [dependent_id.id for dependent_id in depend_on_id.dependent_ids]
+                new_dependent_ids.append(new_task.id)
+                self.env['project.task'].browse(depend_on_id.id).write({'dependent_ids': new_dependent_ids})
+
+        return new_task
 
     @api.model
     def get_empty_list_help(self, help):
