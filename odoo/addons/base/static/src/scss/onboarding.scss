@@ -26,7 +26,7 @@
     // = Color Variations
     // ------------------------------------------------------------------------
     @each $key, $values in $o-onboarding-colors {
-        &.o_onboardingoarding_#{$key} {
+        &.o_onboarding_#{$key} {
             $-bg: map-get($values, 'bg');
             $-ui: map-get($values, 'ui');
 
