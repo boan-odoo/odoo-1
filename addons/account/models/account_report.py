@@ -290,23 +290,24 @@ class AccountReportExternalValue(models.Model):
     name = fields.Char(required=True)
     amount = fields.Float(required=True)
     date = fields.Date(required=True)
-    # TODO OCO ajouter le nom de total et un compute qui calcule l'expression-cible ? Storé et required (possible, ça ?), au au moins plante si trouve rien ?
-    target_report_line_id = fields.Many2one(string="Target Line", comodel_name='account.report.line', required=True)
+
+    target_report_line_id = fields.Many2one(string="Target Line", comodel_name='account.report.line', required=True) # TODO OCO pas related pour pemettre le setup depuis l'UI, qui définit un domaine sur les expressions
     target_report_expression_id = fields.Many2one(string="Target Expression", comodel_name='account.report.expression', required=True, domain="[('id', 'in', available_target_expression_ids), ('engine', '=', 'external')]") # TODO OCO + contraintes
     company_id = fields.Many2one(string='Company', comodel_name='res.company', required=True, default=lambda self: self.env.company)
 
     report_country_id = fields.Many2one(string="Country", related='target_report_line_id.report_id.country_id')
     available_target_expression_ids = field.One2many(string="Available Expressions", related='target_report_line_id.expression_ids')
 
-    # Carryover fields
-    #TODO OCO l'expression, plutôt ?
-    carryover_origin_report_line_id = fields.Many2one(string="Origin", comodel_name='account.report.line')
-    carryover_foreign_vat_fiscal_position_id = fields.Many2one(
+    foreign_vat_fiscal_position_id = fields.Many2one( #TODO OCO il faudra aussi le set sur les valeurs manuelles, selon les options
         string="Fiscal position",
         comodel_name='account.fiscal.position',
         domain="[('company_id', '=', company_id), ('country_id', '=', report_country_id), ('foreign_vat', '!=', False)]",
         help="The foreign fiscal position for which this carryover is made.",
     )
+
+    # Carryover fields
+    carryover_origin_expression_id = fields.Many2one(string="Origin Expression", comodel_name='account.report.expression')
+    carryover_origin_report_line_id = fields.Many2one(string="Origin Line", related='carryover_origin_expression_id.report_line_id')
 
     @api.constrains('carryover_foreign_vat_fiscal_position_id', 'target_report_line_id')
     def _check_fiscal_position(self):
