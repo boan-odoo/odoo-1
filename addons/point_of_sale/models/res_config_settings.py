@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
 
+    number_pos = fields.Integer(string='Number of Shops', compute='_compute_number_pos')
+    pos_config_ids = fields.One2many(related='company_id.pos_config_ids')
     sale_tax_id = fields.Many2one('account.tax', string="Default Sale Tax", related='company_id.account_sale_tax_id', readonly=False)
     module_pos_mercury = fields.Boolean(string="Vantiv Payment Terminal", help="The transactions are processed by Vantiv. Set your Vantiv credentials on the related payment method.")
     module_pos_adyen = fields.Boolean(string="Adyen Payment Terminal", help="The transactions are processed by Adyen. Set your Adyen credentials on the related payment method.")
@@ -21,3 +23,8 @@ class ResConfigSettings(models.TransientModel):
             self.env['pos.config'].search([
                 ('use_pricelist', '=', True)
             ]).use_pricelist = False
+
+    @api.depends('pos_config_ids')
+    def _compute_number_pos(self):
+        for res_config in self:
+            res_config.number_pos = len(res_config.pos_config_ids)

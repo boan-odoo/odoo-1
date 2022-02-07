@@ -8,6 +8,17 @@
         <field name="arch" type="xml">
             <xpath expr="//div[hasclass('settings')]" position="inside">
                 <div class="app_settings_block" data-string="Point of sale" string="Point of Sale" data-key="point_of_sale" groups="point_of_sale.group_pos_manager">
+                    <h2>Point of Sale</h2>
+                    <div class="row mt16 o_settings_container">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <strong>
+                                    <field name="number_pos" widget="statinfo" string="Shops" class="oe_inline" />
+                                </strong>
+                                <button name="%(point_of_sale.action_pos_config_pos)d" icon="fa-arrow-right" type="action" string="Configure Shops" class="btn-link"/>
+                            </div>
+                        </div>
+                    </div>
                     <h2>Accounting</h2>
                     <div class="row mt16 o_settings_container" name="taxes_setting_container">
                         <div class="col-12 col-lg-6 o_setting_box"
@@ -178,19 +189,4 @@
         </field>
     </record>
 
-    <record id="action_pos_configuration" model="ir.actions.act_window">
-        <field name="name">Settings</field>
-        <field name="type">ir.actions.act_window</field>
-        <field name="res_model">res.config.settings</field>
-        <field name="view_mode">form</field>
-        <field name="target">inline</field>
-        <field name="context">{'module' : 'point_of_sale', 'bin_size': False}</field>
-    </record>
-
-    <menuitem id="menu_pos_global_settings"
-        name="Settings"
-        parent="menu_point_config_product"
-        sequence="0"
-        action="action_pos_configuration"
-        groups="base.group_system"/>
 </odoo>

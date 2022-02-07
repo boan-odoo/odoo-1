@@ -222,7 +222,7 @@ const PosRestaurantPosGlobalState = (PosGlobalState) => class PosRestaurantPosGl
         var ids_to_remove = this.db.get_ids_to_remove_from_server();
 
         this.set_synch('connecting', 1);
-        return this._get_from_server(table.id).then(function (server_orders) {
+        return this._get_from_server(table.id).then(async (server_orders) => {
             var orders = self.get_order_list();
             orders.forEach(function(order){
                 // We don't remove the validated orders because we still want to see them
@@ -233,6 +233,8 @@ const PosRestaurantPosGlobalState = (PosGlobalState) => class PosRestaurantPosGl
                     order.destroy();
                 }
             });
+            // It's possible that the products inside the fetched server orders are not loaded.
+            await self._loadMissingProducts(server_orders)
             server_orders.forEach(function(server_order){
                 var new_order = self.createAutomaticallySavedOrder(server_order);
                 self.orders.add(new_order);

@@ -19,6 +19,7 @@ class PosCategory(models.Model):
     child_id = fields.One2many('pos.category', 'parent_id', string='Children Categories')
     sequence = fields.Integer(help="Gives the sequence order when displaying a list of product categories.")
     image_128 = fields.Image("Image", max_width=128, max_height=128)
+    has_image = fields.Boolean(compute='_compute_has_image')
 
     def name_get(self):
         def get_names(cat):
@@ -34,3 +35,8 @@ class PosCategory(models.Model):
         if self.search_count([('id', 'in', self.ids)]):
             if self.env['pos.session'].sudo().search_count([('state', '!=', 'closed')]):
                 raise UserError(_('You cannot delete a point of sale category while a session is still opened.'))
+
+    @api.depends('has_image')
+    def _compute_has_image(self):
+        for category in self:
+            category.has_image = bool(category.image_128)

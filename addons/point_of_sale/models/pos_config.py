@@ -67,7 +67,6 @@ class PosConfig(models.Model):
     iface_print_via_proxy = fields.Boolean(string='Print via Proxy', help="Bypass browser printing and prints via the hardware proxy.")
     iface_scan_via_proxy = fields.Boolean(string='Scan via Proxy', help="Enable barcode scanning with a remotely connected barcode scanner and card swiping with a Vantiv card reader.")
     iface_big_scrollbars = fields.Boolean('Large Scrollbars', help='For imprecise industrial touchscreens.')
-    iface_orderline_customer_notes = fields.Boolean(string='Customer Notes', help='Allow to write notes for customer on Orderlines. This will be shown in the receipt.')
     iface_print_auto = fields.Boolean(string='Automatic Receipt Printing', default=False,
         help='The receipt will automatically be printed at the end of each order.')
     iface_print_skip_screen = fields.Boolean(string='Skip Preview Screen', default=True,
@@ -78,11 +77,9 @@ class PosConfig(models.Model):
     iface_available_categ_ids = fields.Many2many('pos.category', string='Available PoS Product Categories',
         help='The point of sale will only display products which are within one of the selected category trees. If no category is specified, all available products will be shown')
     selectable_categ_ids = fields.Many2many('pos.category', compute='_compute_selectable_categories')
-    iface_display_categ_images = fields.Boolean(string='Display Category Pictures',
-        help="The product categories will be displayed with pictures.")
     restrict_price_control = fields.Boolean(string='Restrict Price Modifications to Managers',
         help="Only users with Manager access rights for PoS app can modify the product prices on orders.")
-    is_margins_costs_accessible_to_every_user = fields.Boolean(string='Margins & Costs', default=True,
+    is_margins_costs_accessible_to_every_user = fields.Boolean(string='Margins & Costs', default=False,
         help='When disabled, only PoS manager can view the margin and cost of product among the Product info.')
     cash_control = fields.Boolean(string='Advanced Cash Control', compute='_compute_cash_control', help="Check the amount of the cashbox at opening and closing.")
     set_maximum_difference = fields.Boolean('Set Maximum Difference', help="Set a maximum difference allowed between the expected and counted money during the closing of the session.")
@@ -133,18 +130,16 @@ class PosConfig(models.Model):
     default_fiscal_position_id = fields.Many2one('account.fiscal.position', string='Default Fiscal Position')
     default_bill_ids = fields.Many2many('pos.bill', string="Coins/Bills")
     use_pricelist = fields.Boolean("Use a pricelist.")
-    tax_regime = fields.Boolean("Tax Regime")
     tax_regime_selection = fields.Boolean("Tax Regime Selection value")
     start_category = fields.Boolean("Start Category", default=False)
-    limit_categories = fields.Boolean("Restrict Product Categories")
+    limit_categories = fields.Boolean("Restrict Categories")
     module_account = fields.Boolean(string='Invoicing', default=True, help='Enables invoice generation from the Point of Sale.')
     module_pos_restaurant = fields.Boolean("Is a Bar/Restaurant")
     module_pos_discount = fields.Boolean("Global Discounts")
     module_pos_loyalty = fields.Boolean("Loyalty Program")
     module_pos_mercury = fields.Boolean(string="Integrated Card Payments")
-    product_configurator = fields.Boolean(string="Product Configurator", default=True)
     is_posbox = fields.Boolean("PosBox")
-    is_header_or_footer = fields.Boolean("Header & Footer")
+    is_header_or_footer = fields.Boolean("Custom Header & Footer")
     module_pos_hr = fields.Boolean(help="Show employee login screen")
     amount_authorized_diff = fields.Float('Amount Authorized Difference',
         help="This field depicts the maximum difference allowed between the ending balance and the theoretical cash when "
@@ -158,7 +153,7 @@ class PosConfig(models.Model):
     cash_rounding = fields.Boolean(string="Cash Rounding")
     only_round_cash_method = fields.Boolean(string="Only apply rounding on cash")
     has_active_session = fields.Boolean(compute='_compute_current_session')
-    manual_discount = fields.Boolean(string="Manual Discounts", default=True)
+    manual_discount = fields.Boolean(string="Line Discounts", default=True)
     ship_later = fields.Boolean(string="Ship Later")
     warehouse_id = fields.Many2one('stock.warehouse', default=_default_warehouse_id, ondelete='restrict')
     route_id = fields.Many2one('stock.route', string="Spefic route for products delivered later.")
@@ -169,17 +164,19 @@ class PosConfig(models.Model):
         help="If you deliver all products at once, the delivery order will be scheduled based on the greatest "
         "product lead time. Otherwise, it will be based on the shortest.")
     limited_products_loading = fields.Boolean('Limited Product Loading',
+                                              default=True,
                                               help="we load all starred products (favorite), all services, recent inventory movements of products, and the most recently updated products.\n"
                                                    "When the session is open, we keep on loading all remaining products in the background.\n"
                                                    "In the meantime, you can click on the 'database icon' in the searchbar to load products from database.")
     limited_products_amount = fields.Integer(default=20000)
-    product_load_background = fields.Boolean()
+    product_load_background = fields.Boolean(default=True)
     limited_partners_loading = fields.Boolean('Limited Partners Loading',
+                                              default=True,
                                               help="By default, 100 partners are loaded.\n"
                                                    "When the session is open, we keep on loading all remaining partners in the background.\n"
                                                    "In the meantime, you can use the 'Load Customers' button to load partners from database.")
     limited_partners_amount = fields.Integer(default=100)
-    partner_load_background = fields.Boolean()
+    partner_load_background = fields.Boolean(default=True)
 
     @api.depends('payment_method_ids')
     def _compute_cash_control(self):
@@ -397,9 +394,9 @@ class PosConfig(models.Model):
             self.iface_print_via_proxy = False
             self.iface_customer_facing_display_via_proxy = False
 
-    @api.onchange('tax_regime')
+    @api.onchange('tax_regime_selection')
     def _onchange_tax_regime(self):
-        if not self.tax_regime:
+        if not self.tax_regime_selection:
             self.default_fiscal_position_id = False
 
     @api.onchange('tax_regime_selection')
@@ -494,9 +491,9 @@ class PosConfig(models.Model):
 
     def _set_fiscal_position(self):
         for config in self:
-            if config.tax_regime and config.default_fiscal_position_id.id not in config.fiscal_position_ids.ids:
+            if config.tax_regime_selection and config.default_fiscal_position_id and (config.default_fiscal_position_id.id not in config.fiscal_position_ids.ids):
                 config.fiscal_position_ids = [(4, config.default_fiscal_position_id.id)]
-            elif not config.tax_regime_selection and not config.tax_regime and config.fiscal_position_ids.ids:
+            elif not config.tax_regime_selection and config.fiscal_position_ids.ids:
                 config.fiscal_position_ids = [(5, 0, 0)]
 
     def _check_modules_to_install(self):
