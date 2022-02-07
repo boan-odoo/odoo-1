@@ -1683,7 +1683,7 @@ class StockMove(models.Model):
         # Now that all necessary actions has been taken, the initial demand is restored
         for move in moves_todo:
             if move.id in initial_demand_qty and initial_demand_qty[move.id] != move.product_uom_qty:
-                moves.with_context(do_not_unreserve=True).write({'product_uom_qty': initial_demand_qty[move.id]})
+                moves.browse(move.id).with_context(do_not_unreserve=True).write({'product_uom_qty': initial_demand_qty[move.id]})
 
         # We don't want to create back order for scrap moves
         # TODO: Replace by a kwarg in master
@@ -1699,7 +1699,7 @@ class StockMove(models.Model):
         # The backorder move has been created and cancelled, but we do not want to show it to the user anymore.
         # Since the `done_qty` for it will always be 0, and all necessary actions have been taken during cancellation,
         # we can safely unlink it.
-        else:
+        if cancel_backorder:
             backorder_moves.unlink()
         return moves_todo
 
