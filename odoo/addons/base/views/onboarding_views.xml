@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="onboarding_container">
-        <div class="modal o_onb_modal o_technical_modal" tabindex="-1" role="dialog">
+        <div class="modal o_onboarding_modal o_technical_modal" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -15,7 +15,7 @@
                     </div>
                     <div class="modal-footer">
                         <a type="action" class="btn btn-primary" data-dismiss="modal"
-                        data-toggle="collapse" href=".o_onb_container"
+                        data-toggle="collapse" href=".o_onboarding_container"
                         t-att-data-model="close_model" t-att-data-method="close_method">
                             Remove
                         </a>
@@ -24,29 +24,27 @@
                 </div>
             </div>
         </div>
-        <div class="o_onb_container collapse show">
-            <div t-att-class="'o_onb ' + ('o_onb_completed ' if steps_completed else ' ') + 'position-relative overflow-hidden ' + classes"
+
+        <div class="o_onboarding_container collapse show">
+            <div t-att-class="'o_onboarding_main position-relative overflow-hidden ' + classes"
                  t-att-style="'background-image:url(' + bg_image + ')'">
 
-                <div class="o_onb_wrap py-5">
-                    <a href="#"
-                       data-toggle="modal"
-                       data-target=".o_onb_modal"
-                       class="o_onb_btn_close btn btn-lg text-white position-absolute"
-                       title="Close the onboarding panel">&#215;</a>
-                    <div class="o_onb_steps d-lg-flex">
-                        <t t-out="0" />
+                <div class="o_onboarding_wrap py-5">
+                    <a href="#" data-toggle="modal" data-target=".o_onboarding_modal" class="o_onboarding_btn_close h2 py-2 px-3 text-white position-absolute" title="Close the onboarding panel">&#215;</a>
+
+                    <div class="o_onboarding_steps d-flex">
+                        <t t-out="0"/>
                     </div>
 
-                    <t t-set="msgUtilityClasses" t-valuef="position-absolute border-bottom py-4 bg-white d-flex align-items-center justify-content-center"/>
-                    <div t-att-class="'o_onb_completed_message ' + msgUtilityClasses + (' o_onb_steps__done' if state.get('onboarding_state') in ('done', 'just_done') else '') + (' o_onb_steps__just_done' if state.get('onboarding_state') == 'just_done' else '')">
+                    <div t-if="state.get('onboarding_state') in ('done', 'just_done')"
+                         t-att-state="state.get('onboarding_state')"
+                         t-attf-class="o_onboarding_completed_message position-absolute border-bottom py-4 bg-white d-flex align-items-center justify-content-center">
                         <span class="h3 m-0">
                             <i class="fa fa-check text-success me-3" />
                             <t t-if="text_completed" t-esc="text_completed" />
                             <t t-else="">Nice work! Your configuration is done.</t>
                         </span>
-                        <a type="action" class="btn btn-primary ms-4" data-toggle="collapse" href=".o_onb_container"
-                        t-att-data-model="close_model" t-att-data-method="close_method">
+                        <a type="action" class="btn btn-primary ms-4" data-toggle="collapse" href=".o_onboarding_container" t-att-data-model="close_model" t-att-data-method="close_method">
                             Close
                         </a>
                     </div>
@@ -56,42 +54,30 @@
     </template>
 
     <template id="onboarding_step">
-        <t t-set="isCurrent" t-value="state not in ('done', 'just_done')"/>
-        <t t-set="isDone" t-value="state in ('done', 'just_done')"/>
-        <t t-set="isJustDone" t-value="state == 'just_done'"/>
+        <div class="o_onboarding_step position-relative d-flex flex-column align-items-center justify-content-start text-center" t-att-data-step-state="state">
+            <img t-if="state == 'just_done'" class="o_onboarding_confetti position-absolute w-100" src="/base/static/img/onboarding_confetti.svg" alt="o_onboarding_confetti"/>
 
-        <t t-set="stepStatusClasses" t-value="
-            ('o_onb_step__done ' if isDone else 'o_onb_step__todo ') +
-            ('o_onb_step__just_done ' if isJustDone else '')"
-        />
-        <t t-set="stepUtilityClasses" t-valuef="position-relative d-flex justify-content-center flex-lg-column align-items-lg-center justify-content-lg-start  text-center"/>
-
-        <div t-att-class="'o_onb_step ' + stepStatusClasses + stepUtilityClasses">
-            <img t-if="isJustDone" class="o_onb_confetti position-absolute w-100" src="/base/static/img/onboarding_confetti.svg" alt="o_onb_confetti"/>
-
-            <div class="o_onb_step_side d-flex flex-column justify-content-center d-lg-block pt-3 pt-lg-0 flex-grow-lg-1">
-                <div class="o_onb_progress position-absolute"/>
-                <span class="o_onb_dot fa fa-check d-inline-block rounded-circle small"/>
+            <div class="o_onboarding_step_side d-flex pt-0 flex-grow-1">
+                <div class="o_onboarding_progress position-absolute"/>
+                <span t-attf-class="o_onboarding_dot fa fa-check d-inline-block rounded-circle small {{state != 'not_done' and 'text-white' or ''}}"/>
             </div>
-            <div class="o_onb_step_content py-3 pl-3 pl-lg-0 flex-grow-lg-1 d-flex flex-column align-items-center justify-content-around">
-                <div class="o_onb_step_content_info mb-3">
-                    <a type="action" data-reload-on-close="true" role="button"
-                        t-att-data-method="method" t-att-data-model="model">
-                        <h4 class="o_onb_step_title text-white" t-esc="title"/>
+
+            <div class="o_onboarding_step_content py-3 flex-grow-1 d-flex flex-column align-items-center justify-content-around">
+                <div class="o_onboarding_step_content_info mb-3">
+                    <a type="action" data-reload-on-close="true" role="button" t-att-data-method="method" t-att-data-model="model">
+                        <h4 class="o_onboarding_step_title text-white" t-esc="title"/>
                     </a>
                     <p class="text-white-75 m-0" t-esc="description"/>
                 </div>
-                <a t-if="isCurrent" class="o_onb_step_action btn px-4 text-white border border-white" type="action"
-                   data-reload-on-close="true" role="button" t-att-data-method="method"
-                   t-att-data-model="model">
-                    <t t-if="btn_text" t-esc="btn_text" />
-                    <t t-else="">Let's do it</t>
+                <a t-if="state == 'not_done'" class="o_onboarding_step_action btn px-4 border border-white" type="action" data-reload-on-close="true" role="button" t-att-data-method="method" t-att-data-model="model">
+                    <span class="text-white">
+                        <t t-if="btn_text" t-esc="btn_text" />
+                        <t t-else="">Let's do it</t>
+                    </span>
                 </a>
-                <a t-else="" class="o_onb_step_action__done pt-2 text-white" type="action"
-                   data-reload-on-close="true" role="button" t-att-data-method="method"
-                   t-att-data-model="model">
-                    <i t-attf-class="me-2 fa #{done_icon if done_icon else 'fa-check'}" />
-                    <span>
+                <a t-else="" class="o_onboarding_step_action__done btn text-white" type="action" data-reload-on-close="true" role="button" t-att-data-method="method" t-att-data-model="model">
+                    <span class="text-white">
+                        <i t-attf-class="me-2 fa #{done_icon if done_icon else 'fa-check'}" />
                         <t t-if="done_text" t-esc="done_text" />
                         <t t-else="">All done!</t>
                     </span>
