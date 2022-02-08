@@ -2103,7 +2103,14 @@ var SnippetsMenu = Widget.extend({
         $styles.each(function () {
             var $style = $(this);
             var selector = $style.data('selector');
+            // TODO: adapt in master - used to hide XML 'img' options when image
+            // is not supported.
+            const xmlImageOption = !$style[0].hasAttribute('data-js') && (selector.indexOf('img') !== -1);
+            const nonSupportedImageSelector = '[data-oe-model] > img';
             var exclude = $style.data('exclude') || '';
+            if (xmlImageOption) {
+                exclude = [exclude, nonSupportedImageSelector].filter(value => !!value).join(', ');
+            }
             const excludeParent = $style.attr('id') === "so_content_addition" ? snippetAdditionDropIn : '';
             var target = $style.data('target');
             var noCheck = $style.data('no-check');
