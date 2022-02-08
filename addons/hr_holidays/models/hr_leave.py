@@ -274,7 +274,7 @@ class HolidaysRequest(models.Model):
     # view
     is_hatched = fields.Boolean('Hatched', compute='_compute_is_hatched')
     is_striked = fields.Boolean('Striked', compute='_compute_is_hatched')
-    accrual_message = fields.Text(compute='_compute_accrual_message') # TODO keep? Shouldn't be needed with Phil's task
+    accrual_message = fields.Text(string='Accrual Usage', compute='_compute_accrual_message')
 
     _sql_constraints = [
         ('type_value',
@@ -299,7 +299,9 @@ class HolidaysRequest(models.Model):
         for leave in self:
             message = False
             if leave.future_accrual:
-                additional_leaves = leave.with_context(future_accrual_date=leave.date_from, employee_id=leave.employee_id.id).holiday_status_id.additional_leaves
+                future_leave = leave.with_context(future_accrual_date=leave.date_from, employee_id=leave.employee_id.id).holiday_status_id
+                additional_leaves = future_leave.additional_leaves
+                # TODO change message format
                 message = _('%s accrual leaves available - %s used', additional_leaves, leave.future_accrual_used)
             leave.accrual_message = message
 
