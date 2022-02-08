@@ -26,17 +26,24 @@ odoo.define('sale.SaleOrderView', function (require) {
          */
         _onOpenUpdateLineWizard(ev) {
             const recordData = ev.target.recordData;
+            const fieldType = ev.target.field.type;
+            const fieldName = ev.data.fieldName;
             const orderLines = this.renderer.state.data.order_line.data.filter(line => !line.data.display_type);
-            console.log("LINES : ", orderLines)
-            const isEqualDiscount = orderLines.slice(1).every(line => line.data.discount === recordData.discount);
-            console.log(isEqualDiscount);
-            if (orderLines.length >= 3 && recordData.sequence === orderLines[0].data.sequence && isEqualDiscount) {
-                Dialog.confirm(this, _t("Do you want to apply this discount to all order lines?"), {
+            let isEqualValue;
+            // arj fixme: degueu
+            if (recordData[fieldName] instanceof moment) {
+                isEqualValue = orderLines.slice(1).every(line => line.data[fieldName].format('YYYY-MM-DD HH:mm:ss') === recordData[fieldName].format('YYYY-MM-DD HH:mm:ss'));
+            } else {
+                isEqualValue = orderLines.slice(1).every(line => line.data[fieldName] === recordData[fieldName]);
+            }
+            // arj todo: another exception for many2One...
+            if (orderLines.length >= 3 && recordData.sequence === orderLines[0].data.sequence && isEqualValue) {
+                Dialog.confirm(this, _t("Do you want to apply this value to all order lines?"), {
                     confirm_callback: () => {
                         orderLines.slice(1).forEach((line) => {
                             this.trigger_up('field_changed', {
                                 dataPointID: this.renderer.state.id,
-                                changes: {order_line: {operation: "UPDATE", id: line.id, data: {discount: orderLines[0].data.discount}}},
+                                changes: {order_line: {operation: "UPDATE", id: line.id, data: {[fieldName]: orderLines[0].data[fieldName]}}},
                             });
                         });
                     },

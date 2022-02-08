@@ -12,9 +12,14 @@ odoo.define('sale.product_discount', function (require) {
      * !!! WARNING !!!
      *
      * This widget is only designed for sale_order_line creation/updates.
-     * !!! It should only be used on a discount field !!!
      */
-    const ProductDiscountWidget = BasicFields.FieldFloat.extend(SaleorderLineMixin, {});
+    const ProductDiscountWidget = BasicFields.FieldFloat.extend(SaleorderLineMixin, {
+
+        _getUpdateAllFields: function () {
+            return ['discount'];
+        },
+
+    });
 
     FieldsRegistry.add('product_discount', ProductDiscountWidget);
 
