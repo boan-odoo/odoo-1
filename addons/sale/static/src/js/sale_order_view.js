@@ -10,7 +10,7 @@ odoo.define('sale.SaleOrderView', function (require) {
 
     const SaleOrderFormController = FormController.extend({
         custom_events: _.extend({}, FormController.prototype.custom_events, {
-            open_discount_wizard: '_onOpenDiscountWizard',
+            open_update_line_wizard: '_onOpenUpdateLineWizard',
         }),
 
         // -------------------------------------------------------------------------
@@ -24,10 +24,12 @@ odoo.define('sale.SaleOrderView', function (require) {
          *  (2) First sale order line is changed to discount
          *  (3) Discount is the same in all sale order line
          */
-        _onOpenDiscountWizard(ev) {
-            const orderLines = this.renderer.state.data.order_line.data.filter(line => !line.data.display_type);
+        _onOpenUpdateLineWizard(ev) {
             const recordData = ev.target.recordData;
+            const orderLines = this.renderer.state.data.order_line.data.filter(line => !line.data.display_type);
+            console.log("LINES : ", orderLines)
             const isEqualDiscount = orderLines.slice(1).every(line => line.data.discount === recordData.discount);
+            console.log(isEqualDiscount);
             if (orderLines.length >= 3 && recordData.sequence === orderLines[0].data.sequence && isEqualDiscount) {
                 Dialog.confirm(this, _t("Do you want to apply this discount to all order lines?"), {
                     confirm_callback: () => {
