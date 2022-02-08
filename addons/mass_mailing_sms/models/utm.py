@@ -18,6 +18,7 @@ class UtmCampaign(models.Model):
         groups="mass_mailing.group_mass_mailing_user")
 
     # A/B Testing
+    ab_testing_sms_count = fields.Integer("A/B Test SMS #", compute="_compute_mailing_sms_count")
     ab_testing_sms_winner_selection = fields.Selection([
         ('manual', 'Manual'),
         ('clicks_ratio', 'Highest Click Rate')], string="SMS Winner Selection", default="clicks_ratio")
@@ -34,6 +35,8 @@ class UtmCampaign(models.Model):
     def _compute_mailing_sms_count(self):
         for campaign in self:
             campaign.mailing_sms_count = len(campaign.mailing_sms_ids)
+            ab_test_sms_ids = campaign.mailing_sms_ids.filtered(lambda sms: sms.ab_testing_enabled)
+            campaign.ab_testing_sms_count = len(ab_test_sms_ids)
 
     def action_create_mass_sms(self):
         action = self.env["ir.actions.actions"]._for_xml_id("mass_mailing.action_create_mass_mailings_from_campaign")

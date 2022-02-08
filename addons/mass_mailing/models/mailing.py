@@ -150,6 +150,7 @@ class MassMailing(models.Model):
         help='Percentage of the contacts that will be mailed. Recipients will be chosen randomly.', default=10)
     ab_testing_schedule_datetime = fields.Datetime(related="campaign_id.ab_testing_schedule_datetime", readonly=False,
         default=lambda self: fields.Datetime.now() + relativedelta(days=1))
+    ab_testing_total_count = fields.Integer('Total A/B test #', compute="_compute_ab_testing_total_count")
     ab_testing_winner_selection = fields.Selection(related="campaign_id.ab_testing_winner_selection",
         default="opened_ratio", readonly=False, copy=True)
 
@@ -390,6 +391,11 @@ class MassMailing(models.Model):
                 'mass_mailing.ab_testing_description',
                 mailing._get_ab_testing_description_values()
             )
+
+    @api.depends('ab_testing_mailings_count')
+    def _compute_ab_testing_total_count(self):
+        for mailing in self:
+            mailing.ab_testing_total_count = mailing.ab_testing_mailings_count
 
     def _get_ab_testing_description_modifying_fields(self):
         return ['ab_testing_enabled', 'ab_testing_pc', 'ab_testing_schedule_datetime', 'ab_testing_winner_selection', 'campaign_id']
@@ -718,6 +724,7 @@ class MassMailing(models.Model):
         other_ab_testing_pc = sum([mailing.ab_testing_pc for mailing in other_ab_testing_mailings])
         return {
             'mailing': self,
+            'ab_testing_count': self.ab_testing_mailings_count,
             'ab_testing_winner_selection_description': self._get_ab_testing_winner_selection()['description'],
             'other_ab_testing_pc': other_ab_testing_pc,
             'remaining_ab_testing_pc': 100 - (other_ab_testing_pc + self.ab_testing_pc),
@@ -844,7 +851,7 @@ class MassMailing(models.Model):
         # randomly choose a fragment
         if self.ab_testing_enabled and self.ab_testing_pc < 100:
             contact_nbr = self.env[self.mailing_model_real].search_count(mailing_domain)
-            topick = int(contact_nbr / 100.0 * self.ab_testing_pc)
+            topick = int(contact_nbr / 100.0 * self.ab_testing_pc) or 1 if contact_nbr else 0
             if self.campaign_id and self.ab_testing_enabled:
                 already_mailed = self.campaign_id._get_mailing_recipients()[self.campaign_id.id]
             else:
