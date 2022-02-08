@@ -30,7 +30,7 @@
                     <br/>pointer to build the perfect page in 7 steps.
                 </p>
             </div>
-            <nav t-cache="(website, 'menu', env.user.has_group('base.group_user'))" groups="base.group_user" t-if="website" id="oe_main_menu_navbar" class="o_main_navbar d-flex align-items-center">
+            <nav t-cache="(website, env.user.has_group('base.group_user'))" groups="base.group_user" t-if="website" id="oe_main_menu_navbar" class="o_main_navbar d-flex align-items-center">
                 <div id="oe_applications">
                     <div class="dropdown active pl-3">
                         <a class="dropdown-toggle full" data-toggle="dropdown" href="#" accesskey="h">
@@ -44,7 +44,7 @@
 
                 <button type="button" class="btn fa fa-bars float-right ml-auto d-block d-md-none o_mobile_menu_toggle" aria-label="Menu" title="Menu" groups="website.group_website_designer"/>
 
-                <div t-cache="(website, 'edit menu', deletable, env.user.has_group('website.group_website_designer'))" class="o_menu_sections d-flex flex-grow-1 flex-shrink-1" groups="website.group_website_designer">
+                <div t-cache="(website, deletable, env.user.has_group('website.group_website_designer'))" class="o_menu_sections d-flex flex-grow-1 flex-shrink-1" groups="website.group_website_designer">
                     <!-- Content -->
                     <div t-if="editable" class="dropdown" id="content-menu">
                         <a id="content-menu-button" class="dropdown-toggle o-no-caret waves" data-toggle="dropdown" data-display="static" href="#">Pages</a>

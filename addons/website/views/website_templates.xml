@@ -108,7 +108,6 @@
                     </t>
                 </t>
             </t>
-            <link t-if="request and website" rel="canonical" t-att-href="website._get_canonical_url(canonical_params=canonical_params)"/>
         </t>
         <link t-if="request and website" rel="canonical" t-att-href="website._get_canonical_url(canonical_params=canonical_params)"/>
         <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin=""/>
@@ -123,6 +122,10 @@
 
     <xpath expr="//header" position="attributes">
         <attribute name="data-name">Header</attribute>
+    </xpath>
+
+    <xpath expr="//header/t[@t-cache='(res_company,)']" position="attributes">
+        <attribute name="t-cache">(res_company, xmlid, website, website.menu_id)</attribute>
     </xpath>
 
     <xpath expr="//header" position="before">
@@ -234,7 +237,7 @@
 <!-- "Default" template -->
 <template id="template_header_default" inherit_id="website.layout" name="Template Header Default" active="True">
     <xpath expr="//header//nav" position="replace">
-        <t t-call="website.navbar" t-cache="('header menu', xmlid)">
+        <t t-call="website.navbar">
             <t t-set="_navbar_classes" t-valuef="shadow-sm"/>
             <div id="top_menu_container" class="container justify-content-start justify-content-lg-between">
                 <!-- Brand -->

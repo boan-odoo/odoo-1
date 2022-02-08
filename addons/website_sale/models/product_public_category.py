@@ -78,3 +78,16 @@ class ProductPublicCategory(models.Model):
         for data in results_data:
             data['url'] = '/shop/category/%s' % data['id']
         return results_data
+
+    def unlink(self):
+        self.env['ir.qweb'].clear_cache(self)
+        return super().unlink()
+
+    @api.model_create_multi
+    def create(self, values):
+        self.env['ir.qweb'].clear_cache(self.env[self._name])
+        return super().create(values)
+
+    def write(self, data):
+        self.env['ir.qweb'].clear_cache(self)
+        return super().write(data)

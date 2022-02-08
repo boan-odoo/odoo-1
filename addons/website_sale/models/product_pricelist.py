@@ -30,6 +30,8 @@ class ProductPricelist(models.Model):
         website = self.env['website']
         website._get_pl_partner_order.clear_cache(website)
 
+        self.env['ir.qweb'].clear_cache(self)
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

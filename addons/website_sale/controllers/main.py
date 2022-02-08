@@ -374,7 +374,7 @@ class WebsiteSale(http.Controller):
             'search_categories_ids': tools.lazy(lambda: search_categories.ids),
             'layout_mode': layout_mode,
             'cache_key_products_item': lambda product: (product, pricelist, page),
-            'cache_key_pricelist_list': lambda product: (pricelist),
+            'cache_key_pricelist_list': lambda product: (pricelist,),
         }
         if filter_by_price_enabled:
             values['min_price'] = min_price or available_min_price

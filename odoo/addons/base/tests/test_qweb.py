@@ -1603,7 +1603,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.dummy">
-                    <div t-cache="cache_id" class="toto">
+                    <div t-cache="(cache_id,)" class="toto">
                         <table>
                             <tr><td><span t-esc="value[0]"/></td></tr>
                             <tr><td><span t-esc="value[1]"/></td></tr>
@@ -1657,8 +1657,8 @@ class TestQwebCache(TransactionCase):
 
         # use same cache id, display the same content
         result = etree.fromstring(view1._render({
-            'cache_id': 1,
-            'cache_id2': 1,
+            'cache_id': (1,),
+            'cache_id2': (1,),
             'value': [1, 2, 3],
             'value2': [10, 20, 30]
         }))
@@ -1670,9 +1670,9 @@ class TestQwebCache(TransactionCase):
                     <tr><td><span>3</span></td></tr>
                 </table>
                 <table>
-                    <tr><td><span>1</span></td></tr>
-                    <tr><td><span>2</span></td></tr>
-                    <tr><td><span>3</span></td></tr>
+                    <tr><td><span>10</span></td></tr>
+                    <tr><td><span>20</span></td></tr>
+                    <tr><td><span>30</span></td></tr>
                 </table>
             </div>
         """), 'First rendering (add in cache with different cache)')
@@ -1704,7 +1704,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.dummy">
-                    <div t-cache="cache_id" class="toto">
+                    <div t-cache="(cache_id,)" class="toto">
                         <table>
                             <tr><td><span t-esc="value[0]"/></td></tr>
                             <tr t-cache="None"><td><span t-esc="value[1]"/></td></tr>
@@ -1745,11 +1745,11 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="toto">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <tr>
                                 <td>
-                                    <table t-cache="cache_id2">
+                                    <table t-cache="(cache_id2,)">
                                         <tr><td><t t-esc="value2[0]"/></td></tr>
                                         <tr><td><t t-esc="value2[1]"/></td></tr>
                                         <tr><td><t t-esc="value2[2]"/></td></tr>
@@ -1845,11 +1845,11 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="toto">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <tr t-cache="None">
                                 <td>
-                                    <table t-cache="cache_id2">
+                                    <table t-cache="(cache_id2,)">
                                         <tr><td><t t-esc="value2[0]"/></td></tr>
                                         <tr><td><t t-esc="value2[1]"/></td></tr>
                                         <tr><td><t t-esc="value2[2]"/></td></tr>
@@ -1944,7 +1944,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.dummy">
-                    <div t-cache="cache_id" class="toto">
+                    <div t-cache="(cache_id,)" class="toto">
                         <table>
                             <tr><td><span t-esc="value[0]"/></td></tr>
                             <tr><td><span t-esc="value[1]"/></td></tr>
@@ -1985,12 +1985,12 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="toto">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><span t-esc="value[0]"/></td></tr>
                             <tr><td><span t-esc="value[1]"/></td></tr>
                             <tr><td><span t-esc="value[2]"/></td></tr>
                         </table>
-                        <table t-cache="cache_id2">
+                        <table t-cache="(cache_id2,)">
                             <tr><td><span t-esc="value2[0]"/></td></tr>
                             <tr><td><span t-esc="value2[1]"/></td></tr>
                             <tr><td><span t-esc="value2[2]"/></td></tr>
@@ -2050,7 +2050,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.dummy">
-                    <div t-cache="cache_id" class="toto">
+                    <div t-cache="(cache_id,)" class="toto">
                         <table>
                             <tr><td><span t-esc="value[0]"/></td></tr>
                             <tr t-cache="None"><td><span t-esc="value[1]"/></td></tr>
@@ -2091,11 +2091,11 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="toto">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <tr>
                                 <td>
-                                    <table t-cache="cache_id2">
+                                    <table t-cache="(cache_id2,)">
                                         <tr><td><t t-esc="value2[0]"/></td></tr>
                                         <tr><td><t t-esc="value2[1]"/></td></tr>
                                         <tr><td><t t-esc="value2[2]"/></td></tr>
@@ -2190,11 +2190,11 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="toto">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <tr t-cache="None">
                                 <td>
-                                    <table t-cache="cache_id2">
+                                    <table t-cache="(cache_id2,)">
                                         <tr><td><t t-esc="value2[0]"/></td></tr>
                                         <tr><td><t t-esc="value2[1]"/></td></tr>
                                         <tr><td><t t-esc="value2[2]"/></td></tr>
@@ -2288,7 +2288,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="template_page">
-                    <section t-cache="cache_id">
+                    <section t-cache="(cache_id,)">
                         <t t-set="counter" t-value="counter + 100"/>
                         <article t-cache="None"><t t-out="counter"/></article>
                         <div>cache: <t t-out="counter"/></div>
@@ -2341,7 +2341,7 @@ class TestQwebCache(TransactionCase):
                 <t t-name="template_page">
                     <root>
                         <t t-set="counter" t-value="counter + 100"/>
-                        <section t-cache="cache_id">
+                        <section t-cache="(cache_id,)">
                             <article t-cache="None"><t t-out="counter"/></article>
                             <div>cache: <t t-out="counter"/></div>
                         </section>
@@ -2400,7 +2400,7 @@ class TestQwebCache(TransactionCase):
                 <t name="base.template">
                     <t t-cache="None">
                         <span>base.template (cache None): <t t-esc="value_0"/>, <t t-esc="value_1"/>, <t t-esc="value_2"/></span>
-                        <t t-set="value_2" t-value="20" t-cache="key"/>
+                        <t t-set="value_2" t-value="20" t-cache="(key,)"/>
                         <t t-set="value_1" t-value="20"/>
                     </t>
                 </t>
@@ -2414,7 +2414,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.page">
-                    <div t-cache="key">
+                    <div t-cache="(key,)">
                         <t t-set="value_0" t-value="10"/>
                         <t t-set="value_1" t-value="10"/>
                         <t t-set="value_2" t-value="10" t-cache="None"/>
@@ -2473,7 +2473,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.root">
-                    <root t-cache="cache_id">
+                    <root t-cache="(cache_id,)">
                         <t t-call="base.section"/>
                     </root>
                 </t>
@@ -2536,7 +2536,7 @@ class TestQwebCache(TransactionCase):
                 <t t-name="base.dummy">
                     <tr>
                         <td>
-                            <table t-cache="cache_id2">
+                            <table t-cache="(cache_id2,)">
                                 <tr><td><t t-esc="value2[0]"/></td></tr>
                                 <tr><td><t t-esc="value2[1]"/></td></tr>
                                 <tr><td><t t-esc="value2[2]"/></td></tr>
@@ -2555,7 +2555,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="toto">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <t t-call="base.dummy" t-cache="None"/>
                             <tr><td><t t-esc="value[2]"/></td></tr>
@@ -2647,7 +2647,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="dummy">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <t t-out="0" t-cache="None"/>
                             <tr><td><t t-esc="value[2]"/></td></tr>
@@ -2666,7 +2666,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy1">
                     <t t-call="base.dummy">
-                        <tr t-cache="cache_id2">
+                        <tr t-cache="(cache_id2,)">
                             <td>
                                 <table>
                                     <tr><td><t t-esc="value2[0]"/></td></tr>
@@ -2763,7 +2763,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="dummy">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <t t-out="row" t-cache="None"/>
                             <tr><td><t t-esc="value[2]"/></td></tr>
@@ -2782,7 +2782,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy1">
                     <t t-set="row">
-                        <tr t-cache="str(cache_id2) + '_2'">
+                        <tr t-cache="(str(cache_id2) + '_2',)">
                             <td>
                                 <table>
                                     <tr><td><t t-esc="value2[0]"/></td></tr>
@@ -2792,7 +2792,7 @@ class TestQwebCache(TransactionCase):
                             </td>
                         </tr>
                     </t>
-                    <section t-cache="cache_id2">
+                    <section t-cache="(cache_id2,)">
                         <t t-call="base.dummy" t-cache="None"/>
                     </section>
                 </t>
@@ -2888,7 +2888,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="dummy">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <t t-out="0" t-cache="None"/>
                             <tr><td><t t-esc="value[2]"/></td></tr>
@@ -2909,7 +2909,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.dummy1">
-                    <section t-cache="cache_id2">
+                    <section t-cache="(cache_id2,)">
                         <t t-call="base.dummy">
                             <tr>
                                 <td>
@@ -2987,7 +2987,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.layout">
                     <div class="layout">
-                        <table t-cache="layout_cache_id">
+                        <table t-cache="(layout_cache_id,)">
                             <tr><td><t t-out="layout_value[0]"/></td></tr>
                             <t t-out="0" t-cache="None"/>
                             <tr><td><t t-out="layout_value[2]"/></td></tr>
@@ -3005,7 +3005,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <t t-call="base.layout">
-                        <tr t-cache="dummy_cache_id">
+                        <tr t-cache="(dummy_cache_id,)">
                             <td>
                                 <table>
                                     <tr><td><t t-out="dummy_value[0]"/></td></tr>
@@ -3127,7 +3127,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="dummy">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <t t-out="row" t-cache="None"/>
                             <tr><td><t t-esc="value[2]"/></td></tr>
@@ -3145,7 +3145,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy1">
                     <t t-set="row">
-                        <tr t-cache="str(cache_id2) + '_2'">
+                        <tr t-cache="(str(cache_id2) + '_2',)">
                             <td>
                                 <table>
                                     <tr><td><t t-esc="value2[0]"/></td></tr>
@@ -3155,7 +3155,7 @@ class TestQwebCache(TransactionCase):
                             </td>
                         </tr>
                     </t>
-                    <section t-cache="cache_id2">
+                    <section t-cache="(cache_id2,)">
                         <t t-call="base.dummy" t-cache="None"/>
                     </section>
                 </t>
@@ -3252,7 +3252,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="dummy">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <t t-out="0" t-cache="None"/>
                             <tr><td><t t-esc="value[2]"/></td></tr>
@@ -3272,7 +3272,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.dummy1">
-                    <section t-cache="cache_id2">
+                    <section t-cache="(cache_id2,)">
                         <t t-call="base.dummy">
                             <tr>
                                 <td>
@@ -3351,7 +3351,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="dummy">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <t t-out="0" t-cache="None"/>
                             <tr><td><t t-esc="value[2]"/></td></tr>
@@ -3370,7 +3370,7 @@ class TestQwebCache(TransactionCase):
                 <t t-name="base.dummy1">
                     <section>
                         <t t-call="base.dummy">
-                            <tr t-cache="cache_id2"><td><t t-esc="value2"/></td></tr>
+                            <tr t-cache="(cache_id2,)"><td><t t-esc="value2"/></td></tr>
                         </t>
                     </section>
                 </t>
@@ -3385,7 +3385,7 @@ class TestQwebCache(TransactionCase):
                 <t t-name="base.dummy2">
                     <section>
                         <t t-call="base.dummy">
-                            <tr class="temp2" t-cache="cache_id2"><td><t t-esc="value2"/></td></tr>
+                            <tr class="temp2" t-cache="(cache_id2,)"><td><t t-esc="value2"/></td></tr>
                         </t>
                     </section>
                 </t>
@@ -3473,7 +3473,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="base.dummy">
                     <div class="dummy">
-                        <table t-cache="cache_id">
+                        <table t-cache="(cache_id,)">
                             <tr><td><t t-esc="value[0]"/></td></tr>
                             <tr t-cache="None"><td><t t-esc="value[1]"/></td></tr>
                             <tr><td><t t-esc="value[2]"/></td></tr>
@@ -3490,7 +3490,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.dummy1">
-                    <section t-cache="cache_id2">
+                    <section t-cache="(cache_id2,)">
                         <t t-call="base.dummy">not used content</t>
                     </section>
                 </t>
@@ -3576,7 +3576,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="template_layout">
-                    <html t-cache="True">
+                    <html t-cache="(True,)">
                         <body>
                             <t t-out="0" t-cache="None"/>
                         </body>
@@ -3592,7 +3592,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="template_header">
-                    <header t-cache="header_cache_id">
+                    <header t-cache="(header_cache_id,)">
                         <div t-cache="None">
                             <t t-out="0"/>
                             <span t-esc="header_value"/>
@@ -3611,7 +3611,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="template_page">
                     <t t-call="base.template_layout">
-                        <page t-cache="page_cache_id">
+                        <page t-cache="(page_cache_id,)">
                             <t t-call="base.template_header">
                                 <span t-esc="inside_value"/>
                             </t>
@@ -3758,7 +3758,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="template_page">
-                    <page t-cache="page_cache_id">
+                    <page t-cache="(page_cache_id,)">
                         <t t-call="base.template_header"/>
                         <t t-out="counter"/>
                     </page>
@@ -3848,7 +3848,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="template_page">
-                    <page t-cache="page_cache_id">
+                    <page t-cache="(page_cache_id,)">
                         <t t-call="base.template_header"><t t-out="title"/></t>
                     </page>
                 </t>
@@ -3903,7 +3903,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="template_layout">
-                    <html t-cache="True">
+                    <html t-cache="(True,)">
                         <body>
                             <t t-out="0" t-cache="None"/>
                         </body>
@@ -3962,7 +3962,7 @@ class TestQwebCache(TransactionCase):
             'arch': """
                 <t t-name="template_page">
                     <t t-call="base.template_layout">
-                        <page t-cache="page_cache_id">
+                        <page t-cache="(page_cache_id,)">
                             <t t-call="base.template_header" t-set-title="template_page_record_title">
                                 <span t-esc="template_page_record_html"/>
                             </t>
@@ -4146,7 +4146,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="template_page">
-                    <section t-cache="True">
+                    <section t-cache="(True,)">
                         <article t-foreach="articles" t-as="obj" t-cache="None"><t t-cache="(cache_id, obj['id'])"><t t-out="obj['name']"/>:<t t-out="counter()"/></t></article>
                     </section>
                 </t>
@@ -4214,8 +4214,8 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t name="base.layout">
-                    <t t-cache="1">
-                        <t t-cache="2">
+                    <t t-cache="(1,)">
+                        <t t-cache="(2,)">
                             <t t-call="base.template">
                                 <h1>Layout</h1>
                             </t>
@@ -4277,7 +4277,7 @@ class TestQwebCache(TransactionCase):
             'name': "template_page",
             'type': 'qweb',
             'arch': """
-                <t t-name="base.template_page" t-cache="True">
+                <t t-name="base.template_page" t-cache="(True,)">
                     <t t-if="value == 1" t-set="classes" t-value="'classname_1'"/>
                     <t t-if="value == 2" t-set="classes" t-value="'classname_2'"/>
 
@@ -4338,7 +4338,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.template_page">
-                    <section t-cache="True">
+                    <section t-cache="(True,)">
                         <t t-foreach="[1,2,3]" t-as="num">
                             <t t-call="base.dummy">
                                 <t t-set="classname" t-value="'test_%s' % num"/>
@@ -4426,7 +4426,7 @@ class TestQwebCache(TransactionCase):
             'type': 'qweb',
             'arch': """
                 <t t-name="base.template_page">
-                    <section t-cache="cache_id"><t t-call="base.dummy" t-set-num="a"/></section>
+                    <section t-cache="(cache_id,)"><t t-call="base.dummy" t-set-num="a"/></section>
                 </t>
             """
         })

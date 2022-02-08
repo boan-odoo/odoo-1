@@ -96,10 +96,15 @@ class Menu(models.Model):
                 if default_menu and vals.get('parent_id') == default_menu.id:
                     new_menu = super().create(vals)
                 menus |= new_menu
+
+        self.env['ir.qweb'].clear_cache(self.search([('id', 'parent_of', menus.ids)]))
+
         # Only one record per vals is returned but multiple could have been created
         return menus
 
     def write(self, values):
+        self.env['ir.qweb'].clear_cache(self.search([('id', 'parent_of', self.ids)]))
+
         res = super().write(values)
         if 'website_id' in values or 'group_ids' in values or 'sequence' in values:
             self.clear_caches()
@@ -113,6 +118,9 @@ class Menu(models.Model):
             menus_to_remove |= self.env['website.menu'].search([('url', '=', menu.url),
                                                                 ('website_id', '!=', False),
                                                                 ('id', '!=', menu.id)])
+
+        self.env['ir.qweb'].clear_cache(self.search([('id', 'parent_of', menus_to_remove.ids)]))
+
         return super(Menu, menus_to_remove).unlink()
 
     def _compute_visible(self):

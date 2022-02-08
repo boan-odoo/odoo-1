@@ -86,3 +86,16 @@ class Product(models.Model):
     def _is_sold_out(self):
         combination_info = self.with_context(website_sale_stock_get_quantity=True).product_tmpl_id._get_combination_info(product_id=self.id)
         return combination_info['product_type'] == 'product' and combination_info['free_qty'] <= 0
+
+    def unlink(self):
+        self.env['ir.qweb'].clear_cache(self)
+        return super().unlink()
+
+    @api.model_create_multi
+    def create(self, values):
+        self.env['ir.qweb'].clear_cache(self.env[self._name])
+        return super().create(values)
+
+    def write(self, data):
+        self.env['ir.qweb'].clear_cache(self)
+        return super().write(data)

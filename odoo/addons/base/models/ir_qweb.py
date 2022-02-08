@@ -563,6 +563,8 @@ class IrQWeb(models.AbstractModel):
         # str xml of the reference template used for compilation. Useful for debugging, dev mode and profiling.
         options['ref_xml'] = document
 
+        options['cache_key'] = tuple([ref] + [options.get(k) for k in self._get_template_cache_keys()])
+
         _options = dict(options)
         options = frozendict(options)
 
@@ -1988,8 +1990,7 @@ class IrQWeb(models.AbstractModel):
                             else:
                                 cache.append(item)
                         return cache
-                    cache_id = (values['__qweb_is_cache_nested__'], {repr(def_name + '_gen0')})
-                    cache_content = self._cache_content(compile_options, cache_id, {def_name}_cache)
+                    cache_content = self._cache_content(compile_options, values['__qweb_is_cache_nested__'], {def_name}_cache)
                     if t_call_gen0:
                         cache_content = None
                 else:
@@ -2147,12 +2148,12 @@ class IrQWeb(models.AbstractModel):
 
         code_wrapper = [indent_code(f"""
             def {def_name}_wrapper(self, compile_options, values, gen0, log):
-                cache_id = {self._compile_expr(expr)}
+                cache_key = {self._compile_expr(expr)}
                 is_nested = '__qweb_is_cache_nested__' in values
-                old_cache_id = values.get('__qweb_is_cache_nested__')
-                values['__qweb_is_cache_nested__'] = cache_id
+                old_cache_key = values.get('__qweb_is_cache_nested__')
+                values['__qweb_is_cache_nested__'] = cache_key
                 content = []
-                if cache_id is not None:
+                if cache_key is not None:
                     def {def_name}_cache():
                         # create the cache and load content in same time to have every t-set
                         # called in the right order.
@@ -2168,7 +2169,7 @@ class IrQWeb(models.AbstractModel):
                                 cache.append(item)
                                 content.append(item)
                         return cache
-                    cache_content = self._cache_content(compile_options, cache_id, {def_name}_cache)
+                    cache_content = self._cache_content(compile_options, cache_key, {def_name}_cache)
                     if content:
                         cache_content = None
                 else:
@@ -2180,7 +2181,7 @@ class IrQWeb(models.AbstractModel):
                         else:
                             content.append(item)
                 if is_nested:
-                    values['__qweb_is_cache_nested__'] = old_cache_id
+                    values['__qweb_is_cache_nested__'] = old_cache_key
                 else:
                     values.pop('__qweb_is_cache_nested__', None)
 
@@ -2296,10 +2297,61 @@ class IrQWeb(models.AbstractModel):
         else:
             return self._generate_asset_nodes_cache(bundle, css, js, debug, async_load, defer_load, lazy_load, media)
 
-    def _cache_content(self, options, cache_id, get_value):
-        if not self.env.context.get('use_qweb_cache'):
+    # qweb cache feature
+
+    def _cache_content(self, options, cache_key, get_value):
+        if not self.env.context.get('use_qweb_cache') or not cache_key:
             return get_value()
-        return self.__cache_content(options, cache_id, get_value)
+        if not isinstance(cache_key, tuple):
+            raise ValueError("The cache key must be falsy or a python tuple.")
+
+        # generate the cache key
+        array_keys = [options['cache_key']]
+        for item in cache_key:
+            if isinstance(item, models.BaseModel):
+                array_keys.append(repr(item))
+            else:
+                array_keys.append(item)
+
+        key = tuple(array_keys)
+
+        if key not in self._cache:
+            # for a given key, there are multiple cached function results
+            self._cache[key] = {}
+
+            # Add records references for invalidation
+            for item in cache_key:
+                if isinstance(item, models.BaseModel):
+                    if item._name not in self._cache_records:
+                        self._cache_records[item._name] = []
+                    self._cache_records[item._name].append((set(item.ids), key))
+
+        # generate value from the function if the result is not cached
+        fn_name = get_value.__name__
+        if fn_name not in self._cache[key]:
+            self._cache[key][fn_name] = get_value()
+
+        return self._cache[key][fn_name]
+
+    _cache_records = {}
+    _cache = {}
+
+    @classmethod
+    def clear_caches(cls):
+        cls._cache.clear()
+        super().clear_caches()
+
+    def clear_cache(self, recordset):
+        if recordset.ids:
+            caches = self._cache_records.get(recordset._name)
+            if caches:
+                ids = set(recordset.ids)
+                for cache in list(caches):
+                    if cache[0] & ids:
+                        self._cache.pop(cache[1])
+                        caches.pop(caches.index(cache))
+        else:
+            self._cache_records.pop(recordset._name, None)
 
     # other methods used for the asset bundles
 
@@ -2369,13 +2421,6 @@ class IrQWeb(models.AbstractModel):
     def _get_asset_link_urls(self, bundle):
         asset_nodes = self._get_asset_nodes(bundle, js=False)
         return [node[1]['href'] for node in asset_nodes if node[0] == 'link']
-
-    @tools.conditional(
-        'xml' not in tools.config['dev_mode'],
-        tools.ormcache('cache_id', 'options.get("ref")', 'tuple(options.get(k) for k in self._get_template_cache_keys())'),
-    )
-    def __cache_content(self, options, cache_id, get_value):
-        return get_value()
 
 
 def render(template_name, values, load, **options):
