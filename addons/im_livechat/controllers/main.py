@@ -158,35 +158,47 @@ class LivechatController(http.Controller):
             channel._send_history_message(pid, page_history)
         return True
 
-    @http.route('/im_livechat/chatbot_trigger_step', type="json", auth="public", cors="*")
-    def im_livechat_chatbot_trigger_step(self, channel_uuid):
+    @http.route('/im_livechat/chatbot_restart', type="json", auth="public", cors="*")
+    def im_livechat_chatbot_restart(self, channel_uuid):
 
         mail_channel = request.env['mail.channel'].sudo().search([('uuid', '=', channel_uuid)], limit=1)
         if not mail_channel:
             return
 
+        mail_channel.sudo()._chatbot_restart()
+
+    @http.route('/im_livechat/chatbot_trigger_step', type="json", auth="public", cors="*")
+    def im_livechat_chatbot_trigger_step(self, channel_uuid, chatbot_id):
+
+        mail_channel = request.env['mail.channel'].sudo().search([('uuid', '=', channel_uuid)], limit=1)
+        if not mail_channel:
+            return False
+
+        next_step = False
         if mail_channel.livechat_chatbot_current_step_id:
             user_answer = next(
                 message
                 for message
                 in mail_channel.message_ids.sorted(lambda message: message.id, reverse=True))
             next_step = mail_channel.livechat_chatbot_current_step_id._process_answer(mail_channel, user_answer)
-            if next_step:
-                mail_channel._process_chatbot_next_step(next_step)
+        elif chatbot_id:
+            chatbot = request.env['im_livechat.chatbot.script'].browse(chatbot_id)
+            if chatbot.exists() and chatbot.step_ids:
+                next_step = chatbot.step_ids[0]
 
-                # TODO awa: 'chatbot_step_is_last' currently doesn't work properly, it needs to be based
-                # on selected answers rather than simply "the last step of the script"
-                return {
-                    'chatbot_step_answers': [{
-                        'id': answer.id,
-                        'label': answer.name
-                    } for answer in next_step.answer_ids],
-                    'chatbot_step_is_last': next_step == next_step.chatbot_id.step_ids[-1],
-                    'chatbot_step_message': next_step.message,
-                    'chatbot_step_type': next_step.type,
-                }
-
-        return False
+        if next_step:
+            mail_channel._process_chatbot_next_step(next_step)
+            return {
+                'chatbot_step_answers': [{
+                    'id': answer.id,
+                    'label': answer.name
+                } for answer in next_step.answer_ids],
+                'chatbot_step_is_last': next_step._is_last_step(mail_channel),
+                'chatbot_step_message': next_step.message,
+                'chatbot_step_type': next_step.type,
+            }
+        else:
+            return False
 
     @http.route('/im_livechat/notify_typing', type='json', auth='public', cors="*")
     def notify_typing(self, uuid, is_typing):

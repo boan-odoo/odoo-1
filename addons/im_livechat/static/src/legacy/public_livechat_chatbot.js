@@ -45,6 +45,16 @@ LivechatButton.include({
     /**
      * @private
      */
+    _chatbotEndScript: function () {
+        this._chatWindow.$('.o_composer_text_field').addClass('d-none');
+        this._chatWindow.$('.o_livechat_chatbot_end').removeClass('d-none');
+        this._chatWindow.$('.o_livechat_chatbot_restart').one('click',
+            this._onChatbotRestartScript.bind(this));
+
+    },
+    /**
+     * @private
+     */
     _chatbotDisableInput: function (disableText) {
         this._chatWindow.$('.o_composer_text_field')
             .prop('disabled', true)
@@ -56,13 +66,17 @@ LivechatButton.include({
      */
      _chatbotTriggerNextStep: async function () {
          let result = await session.rpc('/im_livechat/chatbot_trigger_step', {
-            channel_uuid: this._livechat.getUUID()
+            channel_uuid: this._livechat.getUUID(),
+            chatbot_id: this._rule.chatbot.chatbot_id
          });
 
          if (result) {
             this._chatbotCurrentStep = result;
 
             if (this._chatbotCurrentStep.chatbot_step_type === 'text'
+                && this._chatbotCurrentStep.chatbot_step_is_last) {
+                this._chatbotEndScript();
+            } else if (this._chatbotCurrentStep.chatbot_step_type === 'text'
                 && !this._chatbotCurrentStep.chatbot_step_is_last) {
                 setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
             } else {
@@ -110,11 +124,15 @@ LivechatButton.include({
      * @private
      */
     _sendMessage: function (message, additionalParameters=false) {
-        if (this._isChatbot && this._chatbotCurrentStep && !this._chatbotCurrentStep.chatbot_step_is_last) {
-            this._chatbotDisableInput(
-                _.str.sprintf(_t('%s is typing...'), this._rule.chatbot.chatbot_name));
+        if (this._isChatbot && this._chatbotCurrentStep) {
+            if (!this._chatbotCurrentStep.chatbot_step_is_last) {
+                this._chatbotDisableInput(
+                    _.str.sprintf(_t('%s is typing...'), this._rule.chatbot.chatbot_name));
 
-            setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
+                setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
+            } else {
+                this._chatbotEndScript();
+            }
         }
 
         return this._super(...arguments);
@@ -142,6 +160,24 @@ LivechatButton.include({
     //--------------------------------------------------------------------------
     // Handlers
     //--------------------------------------------------------------------------
+
+    /**
+     *
+     * @param {MouseEvent} ev
+     */
+    _onChatbotRestartScript: async function (ev) {
+        this._chatWindow.$('.o_composer_text_field').removeClass('d-none');
+        this._chatWindow.$('.o_livechat_chatbot_end').addClass('d-none');
+
+        await session.rpc('/im_livechat/chatbot_restart', {
+            channel_uuid: this._livechat.getUUID(),
+        });
+
+        this._chatbotDisableInput(
+            _.str.sprintf(_t('%s is typing...'), this._rule.chatbot.chatbot_name));
+
+        setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
+    },
 
     /**
      *

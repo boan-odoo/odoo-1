@@ -222,3 +222,21 @@ class MailChannel(models.Model):
             'body_html': mail_body,
         })
         mail.send()
+
+    # =======================
+    # Chatbot
+    # =======================
+
+    def _chatbot_restart(self):
+        self.write({
+            'livechat_chatbot_current_step_id': False
+        })
+
+        self.livechat_chatbot_message_ids.unlink()
+
+        self.with_context(mail_create_nosubscribe=True).message_post(
+            author_id=self.env.ref('base.partner_root').id,
+            body=_("Restarting conversation..."),
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment',
+        )

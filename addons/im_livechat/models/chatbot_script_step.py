@@ -30,7 +30,7 @@ class ChatbotScriptStep(models.Model):
         'chatbot_script_step_id', 'chatbot_script_question_answer_id',
         string='Only If', help='Show this step only if all of these answers have been selected.')
 
-    def _process_next_step(self, selected_answer_ids):
+    def _fetch_next_step(self, selected_answer_ids):
         self.ensure_one()
         domain = [('sequence', '>', self.sequence)]
         if selected_answer_ids:
@@ -39,6 +39,13 @@ class ChatbotScriptStep(models.Model):
                 ('triggering_answer_ids', '=', False),
                 ('triggering_answer_ids', 'in', selected_answer_ids.ids)]])
         return self.env['im_livechat.chatbot.script_step'].sudo().search(domain, limit=1)
+
+    def _is_last_step(self, mail_channel):
+        self.ensure_one()
+
+        return self.type != 'question_selection' and not self._fetch_next_step(
+            mail_channel.livechat_chatbot_message_ids.mapped('user_answer_id')
+        )
 
     def _process_answer(self, mail_channel, mail_message):
         """
@@ -77,4 +84,4 @@ class ChatbotScriptStep(models.Model):
 
         selected_answer_ids = mail_channel.livechat_chatbot_message_ids.mapped('user_answer_id')
 
-        return self._process_next_step(selected_answer_ids)
+        return self._fetch_next_step(selected_answer_ids)
