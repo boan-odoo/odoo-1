@@ -162,6 +162,7 @@ class AccountReportExpression(models.Model):
             ('aggregation', "Aggregate Other Formulas"),
             ('account_codes', "Prefix of Account Codes"),
             ('external', "External Value"),
+            ('bounded', "Bounded Value"),
         ],
         required=True
     )
@@ -180,6 +181,9 @@ class AccountReportExpression(models.Model):
         required=True,
         default='strict_range',
     ) #TODO OCO j'ai donc changé le default ; ce n'est plus 'normal'
+
+    # Carryover fields
+    carryover_target = fields.Char(string="Carryover Target")# TODO OCO formule: code.label_de_total + contrainte=> seulement possible de la set si le label ne commence pas par _carryover
 
     #TODO OCO tester les flux de création et renommage de tags
     @api.model
