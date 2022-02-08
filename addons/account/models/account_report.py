@@ -183,7 +183,7 @@ class AccountReportExpression(models.Model):
     ) #TODO OCO j'ai donc changé le default ; ce n'est plus 'normal'
 
     # Carryover fields
-    carryover_target = fields.Char(string="Carryover Target")# TODO OCO formule: code.label_de_total + contrainte=> seulement possible de la set si le label ne commence pas par _carryover
+    carryover_to = fields.Char(string="Carryover To")# TODO OCO formule: code.label_de_total + contrainte=> seulement possible de la set si le label ne commence pas par _carryover
 
     #TODO OCO tester les flux de création et renommage de tags
     @api.model
@@ -311,7 +311,7 @@ class AccountReportExternalValue(models.Model):
 
     # Carryover fields
     carryover_origin_expression_id = fields.Many2one(string="Origin Expression", comodel_name='account.report.expression')
-    carryover_origin_report_line_id = fields.Many2one(string="Origin Line", related='carryover_origin_expression_id.report_line_id')
+    carryover_origin_report_line_id = fields.Many2one(string="Origin Line", related='carryover_origin_expression_id.report_line_id') # TODO OCO pour l'UI
 
     @api.constrains('carryover_foreign_vat_fiscal_position_id', 'target_report_line_id')
     def _check_fiscal_position(self):
