@@ -492,6 +492,9 @@ function getCreateThreadViewComponent({ afterEvent, apps, env, widget }) {
 function getOpenDiscuss({ afterNextRender, discussWidget }) {
     return async function openDiscuss() {
         await afterNextRender(() => discussWidget.on_attach_callback());
+        await afterNextRender(() => {
+            discussWidget.app.root.render();
+        });
     };
 }
 
