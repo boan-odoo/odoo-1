@@ -158,7 +158,6 @@ class AccountReportExpression(models.Model):
         selection = [
             ('domain', "Odoo Domain"),
             ('tax_tags', "Tax Tags"),
-            ('custom', "Custom Code"),
             ('aggregation', "Aggregate Other Formulas"),
             ('account_codes', "Prefix of Account Codes"),
             ('external', "External Value"),
@@ -183,7 +182,7 @@ class AccountReportExpression(models.Model):
     ) #TODO OCO j'ai donc changé le default ; ce n'est plus 'normal'
 
     # Carryover fields
-    carryover_to = fields.Char(string="Carryover To")# TODO OCO formule: code.label_de_total + contrainte=> seulement possible de la set si le label ne commence pas par _carryover
+    carryover_target = fields.Char(string="Carry Over To")# TODO OCO formule: code.label_de_total + contrainte=> seulement possible de la set si le label ne commence pas par _carryover
 
     #TODO OCO tester les flux de création et renommage de tags
     @api.model
@@ -300,7 +299,7 @@ class AccountReportExternalValue(models.Model):
     company_id = fields.Many2one(string='Company', comodel_name='res.company', required=True, default=lambda self: self.env.company)
 
     report_country_id = fields.Many2one(string="Country", related='target_report_line_id.report_id.country_id')
-    available_target_expression_ids = field.One2many(string="Available Expressions", related='target_report_line_id.expression_ids')
+    available_target_expression_ids = fields.One2many(string="Available Expressions", related='target_report_line_id.expression_ids')
 
     foreign_vat_fiscal_position_id = fields.Many2one( #TODO OCO il faudra aussi le set sur les valeurs manuelles, selon les options
         string="Fiscal position",

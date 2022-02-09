@@ -79,8 +79,8 @@
             ==> Ou bien on s'en tape parce qu'ici c'est juste le string ?
              -->
             <field name="expression_ids" eval="[(5, 0, 0),
-                (0, 0, {'total': 'main', 'engine': 'custom', 'formula': '_tax_report_engine_generic', 'subformula': 'sales.tax'}),
-                (0, 0, {'total': 'forty_two', 'engine': 'custom', 'formula': 'test_oco_always_42'}),
+                (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': 'tag A'}),
+                (0, 0, {'total': 'forty_two', 'engine': 'tax_tags', 'formula': 'tag B'}),
             ]"/>
             <!--TODO OCO pour le control, on pourrait du coup mettre control_main, control_opt, ... EASY-->
             <field name="sequence">1</field>
@@ -140,8 +140,8 @@
             <field name="name">test sub line - SUB1</field>
             <field name="report_id" ref="test_report"/>
             <field name="expression_ids" eval="[(5, 0, 0),
-                (0, 0, {'total': 'main', 'engine': 'custom', 'formula': '_tax_report_engine_generic', 'subformula': 'sales.tax'}),
-                (0, 0, {'total': 'forty_two', 'engine': 'custom', 'formula': 'test_oco_always_42'}),
+                (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': 'test B'}),
+                (0, 0, {'total': 'forty_two', 'engine': 'tax_tags', 'formula': 'test C'}),
             ]"/>
             <field name="unfoldable" eval="True"/>
             <field name="hierarchy_level">2</field>
@@ -160,8 +160,8 @@
             <field name="name">test sub line - SUB2</field>
             <field name="report_id" ref="test_report"/>
             <field name="expression_ids" eval="[(5, 0, 0),
-                (0, 0, {'total': 'main', 'engine': 'custom', 'formula': '_tax_report_engine_generic', 'subformula': 'sales.tax'}),
-                (0, 0, {'total': 'forty_two', 'engine': 'custom', 'formula': 'test_oco_always_42'}),
+                (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': 'test D'}),
+                (0, 0, {'total': 'forty_two', 'engine': 'tax_tags', 'formula': 'test E'}),
             ]"/>
             <field name="unfoldable" eval="False"/>
             <field name="hierarchy_level">2</field>

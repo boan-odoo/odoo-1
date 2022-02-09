@@ -97,11 +97,6 @@ class AccountTaxReportLine(models.Model):
         help="The line to which the value of this line will be carried over to if needed."
              " If left empty the line will carry over to itself."
     )
-    carryover_line_ids = fields.One2many(
-        string="Carryover lines",
-        comodel_name='account.tax.carryover.line',
-        inverse_name='tax_report_line_id',
-    )
     is_carryover_persistent = fields.Boolean(
         string="Persistent",
         help="Defines how this report line creates carry over lines when performing tax closing."
