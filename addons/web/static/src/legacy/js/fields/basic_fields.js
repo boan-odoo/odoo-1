@@ -254,6 +254,7 @@ var InputField = DebouncedField.extend({
      * @returns {string} the content of the input
      */
     _getValue: function () {
+
         return this.$input.val();
     },
     /**

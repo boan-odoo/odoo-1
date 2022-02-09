@@ -10,7 +10,7 @@ odoo.define('sale.SaleOrderView', function (require) {
 
     const SaleOrderFormController = FormController.extend({
         custom_events: _.extend({}, FormController.prototype.custom_events, {
-            open_update_line_wizard: '_onOpenUpdateLineWizard',
+            open_discount_wizard: '_onOpenDiscountWizard',
         }),
 
         // -------------------------------------------------------------------------
@@ -22,28 +22,20 @@ odoo.define('sale.SaleOrderView', function (require) {
          * The wizard will open only if
          *  (1) Sale order line is 3 or more
          *  (2) First sale order line is changed to discount
-         *  (3) Discount is the same in all sale order line
+         *  (3) Discount is the same in all other sale order line
          */
-        _onOpenUpdateLineWizard(ev) {
+        _onOpenDiscountWizard(ev) {
             const recordData = ev.target.recordData;
-            const fieldType = ev.target.field.type;
-            const fieldName = ev.data.fieldName;
+            const newValue =  ev.data.value;
             const orderLines = this.renderer.state.data.order_line.data.filter(line => !line.data.display_type);
-            let isEqualValue;
-            // arj fixme: degueu
-            if (recordData[fieldName] instanceof moment) {
-                isEqualValue = orderLines.slice(1).every(line => line.data[fieldName].format('YYYY-MM-DD HH:mm:ss') === recordData[fieldName].format('YYYY-MM-DD HH:mm:ss'));
-            } else {
-                isEqualValue = orderLines.slice(1).every(line => line.data[fieldName] === recordData[fieldName]);
-            }
-            // arj todo: another exception for many2One...
-            if (orderLines.length >= 3 && recordData.sequence === orderLines[0].data.sequence && isEqualValue) {
-                Dialog.confirm(this, _t("Do you want to apply this value to all order lines?"), {
+            const isEqualValue = orderLines.slice(1).every(line => line.data.discount === orderLines[1].data.discount);
+            if (orderLines.length >= 3 && recordData.id === orderLines[0].data.id && isEqualValue) {
+                Dialog.confirm(this, _t("Do you want to apply this discount to all order lines?"), {
                     confirm_callback: () => {
                         orderLines.slice(1).forEach((line) => {
                             this.trigger_up('field_changed', {
                                 dataPointID: this.renderer.state.id,
-                                changes: {order_line: {operation: "UPDATE", id: line.id, data: {[fieldName]: orderLines[0].data[fieldName]}}},
+                                changes: {order_line: {operation: "UPDATE", id: line.id, data: {discount: newValue}}},
                             });
                         });
                     },
