@@ -52,7 +52,7 @@ class LivechatController(http.Controller):
 
     @http.route('/im_livechat/init', type='json', auth="public", cors="*")
     def livechat_init(self, channel_id):
-        available = False
+        operator_available = len(request.env['im_livechat.channel'].sudo().browse(channel_id)._get_available_users())
         rule = {}
         # find the country from the request
         country_id = False
@@ -85,13 +85,10 @@ class LivechatController(http.Controller):
                         'chatbot_step_type': chatbot_first_step.type,
                     }
                 }})
-            else:
-                # We don't really need to know if there are any available operators if there is a chatbot
-                available = len(request.env['im_livechat.channel'].sudo().browse(channel_id)._get_available_users())
         return {
             # TODO PKO: We should change the name of this one... maybe 'livechat_active' or 'activate_livechat' ?
             'available_for_me': (rule and rule['action'] == 'use_chatbot')
-                                or available and (not rule or rule['action'] != 'hide_button'),
+                                or operator_available and (not rule or rule['action'] != 'hide_button'),
             'rule': rule,
         }
 

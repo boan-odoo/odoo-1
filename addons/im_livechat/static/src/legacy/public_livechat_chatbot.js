@@ -22,7 +22,7 @@ LivechatButton.include({
         return this._super(...arguments).then(() => {
             if (this._rule) {
                 this._isChatbot = this._rule.action === 'use_chatbot';
-                this._chatbotCurrentStep = this._rule.chatbot.chatbot_step;
+                this._chatbotCurrentStep = this._isChatbot ? this._rule.chatbot.chatbot_step : false;
 
                 return Promise.resolve();
             }
@@ -98,7 +98,11 @@ LivechatButton.include({
      */
     _prepareGetSessionParameters: function () {
         const parameters = this._super(...arguments);
-        parameters.chatbot_id = this._rule.chatbot.chatbot_id;
+
+        if (this._isChatbot) {
+            parameters.chatbot_id = this._rule.chatbot.chatbot_id;
+        }
+
         return parameters;
     },
     /**
