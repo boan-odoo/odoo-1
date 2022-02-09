@@ -595,7 +595,14 @@ class Lead(models.Model):
         if any(field in ['active', 'stage_id'] for field in vals):
             self._handle_won_lost(vals)
 
+        if len(self) == 1:
+            from_stage = self.stage_id.id
+            from_active = self.active
         write_result = super(Lead, self).write(vals)
+
+        # Recompute the probabilities if the stage or activation has changed (after the table update in _handle_won_lost)
+        if len(self) == 1 and (from_stage != self.stage_id.id or from_active != self.active):
+            self._compute_probabilities()
 
         return write_result
 
