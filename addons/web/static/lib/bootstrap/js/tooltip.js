@@ -380,7 +380,9 @@
       var _this = this;
 
       if ($(this.element).css('display') === 'none') {
-        throw new Error('Please use show on visible elements');
+        return;
+        // TODO: explain this modif: see _onButtonClicked on bank_rec_widget_edit_form
+//        throw new Error('Please use show on visible elements');
       }
 
       var showEvent = $.Event(this.constructor.Event.SHOW);
