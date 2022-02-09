@@ -35,7 +35,7 @@ options.registry.SocialMedia = options.Class.extend({
      * @override
      */
     async cleanForSave() {
-        this.$target[0].querySelectorAll(':scope > a').forEach(el => el.removeAttribute('id'));
+        this.$target[0].querySelectorAll(':scope > a').forEach(el => $(el).removeData('social_id'));
         // Update the DB links.
         let websiteId;
         this.trigger_up('context_get', {
@@ -64,7 +64,8 @@ options.registry.SocialMedia = options.Class.extend({
         // Handle element deletation.
         const entriesIds = entries.map(entry => entry.id);
         const anchorsEls = this.$target[0].querySelectorAll(':scope > a');
-        const deletedEl = Array.from(anchorsEls).find(aEl => !entriesIds.includes(aEl.id));
+        const deletedEl = Array.from(anchorsEls)
+            .find(aEl => !entriesIds.includes($(aEl).data('social_id')));
         if (deletedEl) {
             deletedEl.remove();
         }
@@ -75,7 +76,7 @@ options.registry.SocialMedia = options.Class.extend({
                 // It's a new social media.
                 anchorEl = this.$target[0].querySelector(':scope > a').cloneNode(true);
                 anchorEl.href = '#';
-                anchorEl.setAttribute('id', entry.id);
+                $(anchorEl).data('social_id', entry.id);
             }
             // Handle visibility of the link
             anchorEl.classList.toggle('d-none', !entry.selected);
@@ -138,7 +139,7 @@ options.registry.SocialMedia = options.Class.extend({
         for (const anchorEl of this.$target[0].querySelectorAll(':scope > a')) {
             const dbField = anchorEl.href.split('/website/social/')[1];
             const entry = {
-                id: anchorEl.id,
+                id: $(anchorEl).data('social_id'),
                 selected: !anchorEl.classList.contains('d-none'),
                 display_name: dbField ?
                     dbSocialValues['social_' + dbField] : anchorEl.getAttribute('href'),
@@ -196,7 +197,7 @@ options.registry.SocialMedia = options.Class.extend({
     _renderCustomXML(uiFragment) {
         const anchorEls = this.$target[0].querySelectorAll(':scope > a:not(.d-none)');
         uiFragment.querySelector('we-list').dataset.defaults = JSON.stringify(
-            Array.from(anchorEls).map(el => el.id)
+            Array.from(anchorEls).map(el => $(el).data('social_id'))
         );
     }
 });
