@@ -457,8 +457,14 @@ class MassMailing(models.Model):
     @api.returns('self', lambda value: value.id)
     def copy(self, default=None):
         self.ensure_one()
+        copy_extra_name = ""
+        if self.ab_testing_enabled:
+            if default and default.get('ab_testing_pc') == 100:
+                copy_extra_name = " (final)"
+        else:
+            copy_extra_name = " (copy)"
         default = dict(default or {},
-                       name=_('%s (copy)', self.name),
+                       name=_('%s%s', self.name, copy_extra_name),
                        contact_list_ids=self.contact_list_ids.ids)
         return super(MassMailing, self).copy(default=default)
 
