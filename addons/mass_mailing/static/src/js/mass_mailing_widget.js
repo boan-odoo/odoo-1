@@ -379,6 +379,7 @@ var MassMailingFieldHtml = FieldHtml.extend({
                 template: values.body_arch,
                 userId: values.user_id[0],
                 userName: values.user_id[1],
+                modelId: values.mailing_model_id[0],
             };
         });
 
@@ -586,6 +587,8 @@ var MassMailingFieldHtml = FieldHtml.extend({
             });
             selectedTheme = this._getSelectedTheme(themesParams);
         }
+
+        this.trigger_up('themes_loaded');
     },
     /**
      * @override

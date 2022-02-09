@@ -10,6 +10,7 @@ import config from 'web.config';
 const MassMailingFullWidthFormController = FormController.extend({
     custom_events: _.extend({}, FormController.prototype.custom_events,{
         iframe_updated: '_onIframeUpdated',
+        themes_loaded: '_onThemesLoaded',
     }),
 
     /**
@@ -37,9 +38,29 @@ const MassMailingFullWidthFormController = FormController.extend({
         this._super(...arguments);
     },
 
+    _applyChanges: function (dataPointID, changes, event) {
+        if (changes.mailing_model_id) {
+            const modelId = changes.mailing_model_id.id;
+            this._hideIrrelevantTemplates(modelId);
+        }
+        return this._super(...arguments);
+    },
+
     //--------------------------------------------------------------------------
     // Private
     //--------------------------------------------------------------------------
+
+    _hideIrrelevantTemplates: function (modelId) {
+        const iframeContent = $('.o_field_widget[name="body_arch"] iframe').contents();
+        iframeContent
+            .find(`.o_mail_template_preview[model-id="${modelId}"]`)
+            .removeClass('d-none')
+            .addClass('d-inline-block');
+        iframeContent
+            .find(`.o_mail_template_preview[model-id!="${modelId}"]`)
+            .addClass('d-none')
+            .removeClass('d-inline-block');
+    },
 
     /**
      * Resize the mailing editor's iframe container so its height fits its
@@ -150,6 +171,14 @@ const MassMailingFullWidthFormController = FormController.extend({
                 'flex-direction': isFullscreen ? '' : 'column',
             });
         }
+    },
+
+    /**
+     * The themes have been loaded by the mass mailing widget.
+     */
+    _onThemesLoaded() {
+        const modelId = this.initialState.data.mailing_model_id.res_id;
+        this._hideIrrelevantTemplates(modelId);
     },
     /**
      * Switch "scrolling modes" on toggle fullscreen mode: in fullscreen mode,

@@ -1262,7 +1262,7 @@ class MassMailing(models.Model):
         """Return all mailings set as favorite and skip mailings with empty body."""
         values_list = self.search_read(
             domain=[('favorite', '=', True)],
-            fields=['id', 'subject', 'body_arch', 'user_id'],
+            fields=['id', 'subject', 'body_arch', 'user_id', 'mailing_model_id'],
             order='favorite_date DESC',
         )
 

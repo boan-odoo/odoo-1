@@ -10,7 +10,8 @@
     <div t-name="mass_mailing.theme_selector_new" class="o_mail_theme_selector_new">
         <div class="d-inline-block w-100">
             <div t-foreach="templates" t-as="template"
-                class="o_mail_template_preview d-inline-block dropdown-item" t-att-id="template.name">
+                class="o_mail_template_preview d-inline-block dropdown-item"
+                t-att-id="template.name" t-att-model-id="template.modelId">
                 <div class="d-inline-flex flex-row align-items-center text-white border px-2 py-2 w-100">
                     <i class="fa fa-star text-warning mr-2"/>
                     <span class="text-truncate" t-esc="template.subject"/>
