@@ -299,6 +299,7 @@ publicWidget.registry.ProductComparison = publicWidget.Widget.extend(cartHandler
      * @param {Event} ev
      */
     _onFormSubmit(ev) {
+        // TODO TLE Maybe there is something to change here (Simply disable a direct add to cart.)
         ev.preventDefault();
         const $form = $(ev.currentTarget);
         const cellIndex = $(ev.currentTarget).closest('td')[0].cellIndex;
