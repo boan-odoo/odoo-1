@@ -170,7 +170,7 @@ class MrpProduction(models.Model):
         )
     workorder_ids = fields.One2many(
         'mrp.workorder', 'production_id', 'Work Orders', copy=True,
-        compute='_compute_workorder_ids', store=True, inverse='_set_workorder_ids')
+        compute='_compute_workorder_ids', store=True, readonly=False)
     move_dest_ids = fields.One2many('stock.move', 'created_production_id',
         string="Stock Movements of Produced Goods")
 
@@ -500,10 +500,7 @@ class MrpProduction(models.Model):
             elif any(not float_is_zero(move.quantity_done, precision_rounding=move.product_uom.rounding or move.product_id.uom_id.rounding) for move in production.move_raw_ids):
                 production.state = 'progress'
 
-    def _set_workorder_ids(self):
-        pass
-
-    @api.depends('bom_id', 'product_id')
+    @api.depends('bom_id', 'product_id', 'product_qty')
     def _compute_workorder_ids(self):
         for production in self:
             if production.state != 'draft':
