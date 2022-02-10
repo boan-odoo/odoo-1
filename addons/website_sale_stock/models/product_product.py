@@ -16,5 +16,10 @@ class ProductProduct(models.Model):
             self.cart_qty = 0
             return
         cart = website.sale_get_order()
+        if not cart:
+            self.cart_qty = 0
+            return
         for product in self:
-            product.cart_qty = sum(cart.order_line.filtered(lambda p: p.product_id.id == product.id).mapped('product_uom_qty')) if cart else 0
+            product.cart_qty = sum(
+                cart._get_common_product_lines(product=product).mapped('product_uom_qty')
+            )
