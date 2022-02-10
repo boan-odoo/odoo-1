@@ -500,7 +500,7 @@ class MrpProduction(models.Model):
             elif any(not float_is_zero(move.quantity_done, precision_rounding=move.product_uom.rounding or move.product_id.uom_id.rounding) for move in production.move_raw_ids):
                 production.state = 'progress'
 
-    @api.depends('bom_id', 'product_id', 'product_qty')
+    @api.depends('bom_id', 'product_id', 'product_qty', 'product_uom_id')
     def _compute_workorder_ids(self):
         for production in self:
             if production.state != 'draft':
@@ -508,28 +508,31 @@ class MrpProduction(models.Model):
             if not production.bom_id or not production.product_id:
                 production.workorder_ids = False
                 continue
-            workorders_values = []
-            product_qty = production.product_uom_id._compute_quantity(production.product_qty, production.bom_id.product_uom_id)
-            exploded_boms, dummy = production.bom_id.explode(production.product_id, product_qty / production.bom_id.product_qty, picking_type=production.bom_id.picking_type_id)
+            if self.bom_id != self._origin.bom_id:
+                workorders_values = []
+                product_qty = production.product_uom_id._compute_quantity(production.product_qty, production.bom_id.product_uom_id)
+                exploded_boms, dummy = production.bom_id.explode(production.product_id, product_qty / production.bom_id.product_qty, picking_type=production.bom_id.picking_type_id)
 
-            for bom, bom_data in exploded_boms:
-                # If the operations of the parent BoM and phantom BoM are the same, don't recreate work orders.
-                if not (bom.operation_ids and (not bom_data['parent_line'] or bom_data['parent_line'].bom_id.operation_ids != bom.operation_ids)):
-                    continue
-                for operation in bom.operation_ids:
-                    if operation._skip_operation_line(bom_data['product']):
+                for bom, bom_data in exploded_boms:
+                    # If the operations of the parent BoM and phantom BoM are the same, don't recreate work orders.
+                    if not (bom.operation_ids and (not bom_data['parent_line'] or bom_data['parent_line'].bom_id.operation_ids != bom.operation_ids)):
                         continue
-                    workorders_values += [{
-                        'name': operation.name,
-                        'production_id': production.id,
-                        'workcenter_id': operation.workcenter_id.id,
-                        'product_uom_id': production.product_uom_id.id,
-                        'operation_id': operation.id,
-                        'state': 'pending',
-                    }]
-            production.workorder_ids = [Command.clear()] + [Command.create(value) for value in workorders_values]
+                    for operation in bom.operation_ids:
+                        if operation._skip_operation_line(bom_data['product']):
+                            continue
+                        workorders_values += [{
+                            'name': operation.name,
+                            'production_id': production.id,
+                            'workcenter_id': operation.workcenter_id.id,
+                            'product_uom_id': production.product_uom_id.id,
+                            'operation_id': operation.id,
+                            'state': 'pending',
+                        }]
+                production.workorder_ids = [Command.clear()] + [Command.create(value) for value in workorders_values]
+
+            ratio = (production.product_qty / production._origin.product_qty) if production._origin.product_qty else 1
             for workorder in production.workorder_ids:
-                workorder.duration_expected = workorder._get_duration_expected()
+                workorder.duration_expected = workorder._get_duration_expected(ratio=ratio)
 
     @api.depends('state', 'move_raw_ids.state')
     def _compute_reservation_state(self):
@@ -694,10 +697,11 @@ class MrpProduction(models.Model):
                         Command.update(m.id, {'date': production.date_planned_finished}) for m in production.move_finished_ids
                     ]
                 continue
-            production.move_finished_ids = [Command.clear()]
-            if production.product_id:
+            mo_product = production.product_id
+            if mo_product and mo_product != production._origin.product_id:
+                production.move_finished_ids = [Command.clear()]
                 production._create_update_move_finished()
-            else:
+            elif not mo_product:
                 production.move_finished_ids = [
                     Command.delete(move.id) for move in production.move_finished_ids.filtered(lambda m: m.bom_line_id)
                 ]
@@ -724,7 +728,6 @@ class MrpProduction(models.Model):
                 raise ValidationError(_("The total cost share for a manufacturing order's by-products cannot exceed 100."))
 
     def write(self, vals):
-        qty_by_workorder_id = {}
         if 'workorder_ids' in self:
             production_to_replan = self.filtered(lambda p: p.is_planned)
         if 'move_raw_ids' in vals and self.state not in ['draft', 'cancel', 'done']:
@@ -738,24 +741,8 @@ class MrpProduction(models.Model):
                 command, _id, field_values = move_vals
                 if command == 0 and not field_values.get('warehouse_id', False):
                     field_values['warehouse_id'] = warehouse_id
-        if 'product_qty' in vals or 'product_uom_id' in vals and self.workorder_ids:
-            for production in self:
-                qty_by_workorder_id.update({wo.id: production.product_qty for wo in production.workorder_ids})
 
         res = super(MrpProduction, self).write(vals)
-
-        if 'product_qty' in vals or 'product_uom_id' in vals and self.workorder_ids:
-            for production in self:
-                product_qty = production.product_qty
-                production.workorder_ids.product_uom_id = production.product_uom_id
-                for workorder in production.workorder_ids:
-                    origin_product_qty = qty_by_workorder_id.get(workorder.id, False)
-                    if origin_product_qty:
-                        workorder.duration_expected = workorder._get_duration_expected(ratio=product_qty / origin_product_qty)
-                    else:
-                        workorder.duration_expected = workorder._get_duration_expected()
-                    if workorder.date_planned_start and workorder.duration_expected:
-                        workorder.date_planned_finished = workorder.date_planned_start + relativedelta(minutes=workorder.duration_expected)
 
         for production in self:
             if 'date_planned_start' in vals and not self.env.context.get('force_date', False):
