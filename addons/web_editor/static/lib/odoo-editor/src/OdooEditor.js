@@ -26,6 +26,7 @@ import {
     nodeSize,
     preserveCursor,
     setSelection,
+    setCursorStart,
     startPos,
     toggleClass,
     closestElement,
@@ -217,6 +218,9 @@ export class OdooEditor extends EventTarget {
             this._pluginAdd(plugin);
         }
 
+        // container of the temporary <p><br></p> elements added during arrowUp/Down navigation
+        this._magicNodes = new Set();
+
         // -------------------
         // Alter the editable
         // -------------------
@@ -276,6 +280,7 @@ export class OdooEditor extends EventTarget {
 
         this.addDomListener(this.document, 'selectionchange', this._onSelectionChange);
         this.addDomListener(this.document, 'selectionchange', this._handleCommandHint);
+        this.addDomListener(this.document, 'selectionchange', this._handleMagicNodes);
         this.addDomListener(this.document, 'keydown', this._onDocumentKeydown);
         this.addDomListener(this.document, 'keyup', this._onDocumentKeyup);
         this.addDomListener(this.document, 'mousedown', this._onDoumentMousedown);
@@ -292,6 +297,11 @@ export class OdooEditor extends EventTarget {
                 this._historyMakeSnapshot();
             }, HISTORY_SNAPSHOT_INTERVAL);
         }
+
+        this._magicNodesObserver = new MutationObserver(function (mutationList, observer) {
+            this._magicNodesObserver.disconnect();
+            this._magicNodes.clear();
+        }.bind(this));
 
         // -------
         // Toolbar
@@ -2335,6 +2345,84 @@ export class OdooEditor extends EventTarget {
             ev.preventDefault();
             ev.stopPropagation();
             this.execCommand('strikeThrough');
+        } else if (ev.key === 'ArrowUp' && !ev.ctrlKey && !ev.metaKey) {
+            const sel = this.document.getSelection();
+            const selRoot = Array.from(ev.target.children).find(elem => elem === sel.anchorNode || elem.contains(sel.anchorNode)) || ev.target;
+            const prevRoot = selRoot.previousElementSibling;
+            const isEmptyOrTextRoot = selRoot.tagName == "P" && (isEmptyBlock(selRoot) || Array.from(selRoot.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent).length);
+            const prevIsEmptyOrTextRoot = selRoot !== ev.target && prevRoot && (prevRoot.tagName == "P" && (isEmptyBlock(prevRoot) || Array.from(prevRoot.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent).length));
+            if (sel.type && !isEmptyOrTextRoot && !prevIsEmptyOrTextRoot) {
+                let elem = sel.anchorNode;
+                while (elem !== selRoot && !elem.previousElementSibling) {
+                    elem = elem.parentElement;
+                }
+                let isUpperBorderElement = elem === selRoot;
+                if (isUpperBorderElement) {
+                    ev.preventDefault();
+                    ev.stopPropagation(); // to be done only if we did something
+                    sel.removeAllRanges();
+                    const range = this.document.createRange();
+                    if (selRoot === ev.target) {
+                        range.setStart(selRoot, 0);
+                        range.setEnd(selRoot, 0);
+                    } else {
+                        range.setStartBefore(selRoot);
+                        range.setEndBefore(selRoot);
+                    }
+                    sel.addRange(range);
+                    const magicNodeHtml = `<p><br></p>`; // should be marked
+                    // this.observerUnactive();
+                    const [magicNode] = this.execCommand('insertHTML', magicNodeHtml);
+                    // insertHtml -> magic p br p after moving the carret
+                    // the magic p br p should self validate if its content is modified
+                    setCursorStart(magicNode);
+                    // this.observerActive();
+                    this._magicNodes.add(magicNode);
+                    this._magicNodesObserver.observe(magicNode, { attributes: false, childList: true, subtree: true });
+                }
+            }
+        } else if (ev.key === 'ArrowDown' && !ev.ctrlKey && !ev.metaKey) {
+            const sel = this.document.getSelection();
+            const selRoot = Array.from(ev.target.children).find(elem => elem === sel.anchorNode || elem.contains(sel.anchorNode)) || ev.target;
+            const nextRoot = selRoot.nextElementSibling;
+            const isEmptyOrTextRoot = selRoot.tagName == "P" && (isEmptyBlock(selRoot) || Array.from(selRoot.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent).length);
+            const nextIsEmptyOrTextRoot = selRoot !== ev.target && nextRoot && (nextRoot.tagName == "P" && (isEmptyBlock(nextRoot) || Array.from(nextRoot.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent).length));
+            if (sel.type && !isEmptyOrTextRoot && !nextIsEmptyOrTextRoot) {
+                let elem = sel.anchorNode;
+                while (elem !== selRoot && !elem.nextElementSibling) {
+                    elem = elem.parentElement;
+                }
+                let isLowerBorderElement = elem === selRoot;
+                if (isLowerBorderElement) {
+                    ev.preventDefault();
+                    ev.stopPropagation(); // to be done only if we did something
+                    sel.removeAllRanges();
+                    const range = this.document.createRange();
+                    if (selRoot === ev.target) {
+                        const lastChild = selRoot.lastElementChild;
+                        if (!lastChild) {
+                            range.setStart(selRoot, 0);
+                            range.setEnd(selRoot, 0);
+                        } else {
+                            range.setStartAfter(lastChild);
+                            range.setEndAfter(lastChild);
+                        }
+                    } else {
+                        range.setStartAfter(selRoot);
+                        range.setEndAfter(selRoot);
+                    }
+                    sel.addRange(range);
+                    const magicNodeHtml = `<p><br></p>`; // should be marked
+                    // this.observerUnactive();
+                    const [magicNode] = this.execCommand('insertHTML', magicNodeHtml);
+                    // insertHtml -> magic p br p after moving the carret
+                    // the magic p br p should self validate if its content is modified
+                    setCursorStart(magicNode);
+                    // this.observerActive();
+                    this._magicNodes.add(magicNode);
+                    this._magicNodesObserver.observe(magicNode, { attributes: false, childList: true, subtree: true });
+                }
+            }
         }
     }
     /**
@@ -2507,6 +2595,23 @@ export class OdooEditor extends EventTarget {
             this._makeHint(this.editable.firstChild, this.options.placeholder, true);
         }
     }
+
+    _handleMagicNodes() {
+        const block = this.options.getPowerboxElement();
+        // this.observerUnactive();
+        this._magicNodes.forEach(node => {
+            if (node !== block) {
+                node.remove();
+            }
+        });
+        // this.observerActive();
+        const magicBlock = this._magicNodes.has(block) ? block : null;
+        this._magicNodes.clear();
+        if (magicBlock) {
+            this._magicNodes.add(magicBlock);
+        }
+    }
+
     _makeHint(block, text, temporary = false) {
         const content = block && block.innerHTML.trim();
         if (
