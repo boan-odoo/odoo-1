@@ -16,7 +16,6 @@ class TestDeliveryCost(common.TransactionCase):
         self.Product = self.env['product.product']
 
         self.partner_18 = self.env['res.partner'].create({'name': 'My Test Customer'})
-        self.pricelist = self.env.ref('product.list0')
         self.product_4 = self.env['product.product'].create({'name': 'A product to deliver'})
         self.product_uom_unit = self.env.ref('uom.product_uom_unit')
         self.product_delivery_normal = self.env['product.product'].create({

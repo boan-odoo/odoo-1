@@ -701,7 +701,7 @@ class SaleOrderLine(models.Model):
     @api.depends('product_id', 'product_uom', 'product_uom_qty')
     def _compute_price_unit(self):
         for line in self:
-            if not line.product_uom or not line.product_id or not line.order_id.pricelist_id:
+            if not line.product_uom or not line.product_id or not line.order_id.currency_id:
                 line.price_unit = 0.0
             else:
                 price = line._get_display_price()
@@ -789,9 +789,9 @@ class SaleOrderLine(models.Model):
 
         :param recordset product: object of current product record
         :param int rule_id: suitable rule found, as a `product.pricelist.item` id
-        :param float qty: total quentity of product
+        :param float qty: total quantity of product
         :param recordset uom: unit of measure of current order line
-        :param int pricelist_id: pricelist id of sales order
+        :param int pricelist_id: pricelist id of sales order  # TODO edm: this isn't even a param... Can this be called without pricelist?
         """
         product.ensure_one()
 
@@ -862,7 +862,7 @@ class SaleOrderLine(models.Model):
                 if line.order_id.pricelist_id.currency_id != currency:
                     # we need new_list_price in the same currency as price, which is in the SO's pricelist's currency
                     new_list_price = currency._convert(
-                        new_list_price, line.order_id.pricelist_id.currency_id,
+                        new_list_price, line.order_id.pricelist_id.currency_id,  # TODO edm?
                         line.order_id.company_id or self.env.company,
                         line.order_id.date_order or fields.Date.today())
                 discount = (new_list_price - price) / new_list_price * 100

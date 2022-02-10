@@ -164,7 +164,7 @@ class ProductTemplate(models.Model):
             indeed some pricelist rules might depend on it.
 
         :param pricelist: `product.pricelist` the pricelist to use
-            (can be none, eg. from SO if no partner and no pricelist selected)
+            (can be none, eg. from SO if no partner and no pricelist selected)  # TODO edm?
 
         :param parent_combination: if no combination and no product_id are
             given, it will try to find the first possible combination, taking

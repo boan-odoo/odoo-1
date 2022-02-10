@@ -210,8 +210,12 @@ class SaleOrder(models.Model):
         states=READONLY_FIELD_STATES,
         domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]", tracking=1,
         help="If you change the pricelist, only newly added lines will be affected.")
+    has_pricelist = fields.Boolean(
+        string='Has Available Pricelist', compute='_compute_has_pricelist',
+    )
     currency_id = fields.Many2one(
-        related='pricelist_id.currency_id', depends=["pricelist_id"], store=True, precompute=True, ondelete="restrict")
+        'res.currency', compute='_compute_currency_id', store=True, precompute=True, readonly=False, ondelete='restrict'
+    )  # TODO edm
     analytic_account_id = fields.Many2one(
         'account.analytic.account', 'Analytic Account',
         copy=False, check_company=True,  # Unrequired company
@@ -285,10 +289,15 @@ class SaleOrder(models.Model):
                                        string='Transactions', copy=False, readonly=True)
     authorized_transaction_ids = fields.Many2many('payment.transaction', compute='_compute_authorized_transaction_ids',
                                                   string='Authorized Transactions', copy=False)
-    show_update_pricelist = fields.Boolean(
+    show_update_pricelist_or_currency = fields.Boolean(
         string='Has Pricelist Changed',
-        compute='_compute_show_update_pricelist', store=True, readonly=True, precompute=True,
-        help="Technical Field, True if the pricelist was changed;\n"
+        compute='_compute_show_update_pricelist_or_currency', store=True, readonly=True, precompute=True,
+        help="Technical Field, True if the pricelist or currency was changed;\n"
+             " this will then display a recomputation button")
+    show_update_currency = fields.Boolean(
+        string='Has Currency Changed',
+        compute='_compute_show_update_currency', store=True, readonly=True,
+        help="Technical Field, True if the currency was changed;\n"
              " this will then display a recomputation button")
     tag_ids = fields.Many2many('crm.tag', 'sale_order_tag_rel', 'order_id', 'tag_id', string='Tags')
     # UTMs - enforcing the fact that we want to 'set null' when relation is unlinked
@@ -471,11 +480,25 @@ class SaleOrder(models.Model):
         for order in self:
             order.partner_shipping_id = order.partner_id.address_get(['delivery'])['delivery'] if order.partner_id else False
 
+    @api.depends('company_id')
+    def _compute_has_pricelist(self):
+        for order in self:
+            domain = ['|', ('company_id', '=', False), ('company_id', '=', self.company_id.id)]
+            order.has_pricelist = self.env['product.pricelist'].search(domain)
+
     @api.depends('partner_id')
     def _compute_pricelist_id(self):
         for order in self.filtered(lambda o: o.partner_id):
             order = order.with_company(order.company_id)
             order.pricelist_id = order.partner_id.property_product_pricelist
+
+    @api.depends('pricelist_id', 'company_id')
+    def _compute_currency_id(self):
+        for order in self:
+            order.currency_id = order.pricelist_id.currency_id.id or order.company_id.currency_id.id
+            # TODO edm (not related to this code, but I just wanted to write it somewhere, vfe,
+            #  don't judge me!): grep `.pricelist_id.currency_id` to clean this, shouldn't be in
+            #  sale at least, nowhere unrelated to the pricelist at best
 
     @api.depends('partner_id')
     def _compute_note(self):
@@ -553,10 +576,21 @@ class SaleOrder(models.Model):
                 }
             }
 
-    @api.depends('pricelist_id')
-    def _compute_show_update_pricelist(self):
+    @api.depends('pricelist_id', 'currency_id')
+    def _compute_show_update_pricelist_or_currency(self):
         for order in self:
-            order.show_update_pricelist = order.order_line and order.pricelist_id and order._origin.pricelist_id != self.pricelist_id
+            order.show_update_pricelist_or_currency = order.order_line and (
+                order._origin.pricelist_id != self.pricelist_id
+                or order._origin.currency_id != self.currency_id
+            )
+
+    @api.onchange('currency_id')
+    def _onchange_currency_invalidate_pricelist(self):
+        for order in self:
+            if order.pricelist_id and order.currency_id != order.pricelist_id.currency_id:
+                new_currency = order.currency_id
+                order.pricelist_id = None  # this triggers the compute to change the currency
+                order.currency_id = new_currency
 
     def update_prices(self):
         self.ensure_one()
@@ -565,11 +599,22 @@ class SaleOrder(models.Model):
         lines_to_recompute._compute_price_unit()
         # Special case: we want to overwrite the existing discount on update_prices call
         # i.e. to make sure the discount is correctly reset
-        # if pricelist discount_policy is different than when the price was first computed.
+        # if pricelist discount_policy is different from when the price was first computed.
         lines_to_recompute.discount = 0.0
         lines_to_recompute._compute_discount()
-        self.show_update_pricelist = False
-        self.message_post(body=_("Product prices have been recomputed according to pricelist <b>%s<b> ", self.pricelist_id.display_name))
+        if not self.pricelist_id:
+            message = _(
+                "Product prices have been recomputed according to the product prices and the "
+                "currency <b>%s<b> ",
+                self.currency_id.display_name
+            )
+        else:
+            message = _(
+                "Product prices have been recomputed according to pricelist <b>%s<b> ",
+                self.pricelist_id.display_name
+            )
+        self.show_update_pricelist_or_currency = False
+        self.message_post(body=message)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -656,7 +701,7 @@ class SaleOrder(models.Model):
             'ref': self.client_order_ref or '',
             'move_type': 'out_invoice',
             'narration': self.note,
-            'currency_id': self.pricelist_id.currency_id.id,
+            'currency_id': self.currency_id.id,
             'campaign_id': self.campaign_id.id,
             'medium_id': self.medium_id.id,
             'source_id': self.source_id.id,

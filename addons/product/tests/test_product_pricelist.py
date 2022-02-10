@@ -85,17 +85,11 @@ class TestProductPricelist(TransactionCase):
         })
 
         self.uom_unit_id = self.ref('uom.product_uom_unit')
-        self.list0 = self.ref('product.list0')
 
         self.ipad_retina_display.write({'uom_id': self.uom_unit_id, 'categ_id': self.category_5_id})
         self.customer_pricelist = self.ProductPricelist.create({
             'name': 'Customer Pricelist',
             'item_ids': [(0, 0, {
-                'name': 'Default pricelist',
-                'compute_price': 'formula',
-                'base': 'pricelist',
-                'base_pricelist_id': self.list0
-            }), (0, 0, {
                 'name': '10% Discount on Assemble Computer',
                 'applied_on': '1_product',
                 'product_tmpl_id': self.ipad_retina_display.product_tmpl_id.id,

@@ -86,7 +86,7 @@ class PricelistItem(models.Model):
              "Sales Price: The base price will be the Sales Price.\n"
              "Cost Price : The base price will be the cost price.\n"
              "Other Pricelist : Computation of the base price based on another Pricelist.")
-    base_pricelist_id = fields.Many2one('product.pricelist', 'Other Pricelist', check_company=True)
+    base_pricelist_id = fields.Many2one('product.pricelist', 'Other Pricelist', check_company=True)  # TODO edm: check this
 
     compute_price = fields.Selection(
         selection=[

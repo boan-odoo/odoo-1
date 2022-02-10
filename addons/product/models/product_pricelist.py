@@ -261,9 +261,7 @@ class Pricelist(models.Model):
         First, the pricelist of the specific property (res_id set), this one
                 is created when saving a pricelist on the partner form view.
         Else, it will return the pricelist of the partner country group
-        Else, it will return the generic property (res_id not set), this one
-                is created on the company creation.
-        Else, it will return the first available pricelist
+        Else, it will return the first available pricelist if any  # TODO edm: is that even correct? Or should **explicitly** return None now? (even in the code)
 
         :param int company_id: if passed, used for looking up properties,
             instead of current user's company

@@ -187,7 +187,7 @@ class AccountMoveLine(models.Model):
                 1.0,
                 self.product_uom_id,
                 date=order.date_order,
-            )
+            )  # TODO edm for no pricelist case
 
         uom_precision_digits = self.env['decimal.precision'].precision_get('Product Unit of Measure')
         if float_is_zero(unit_amount, precision_digits=uom_precision_digits):
