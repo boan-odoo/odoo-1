@@ -6,6 +6,7 @@ import logging
 from odoo import api, fields, models, tools, SUPERUSER_ID, _
 
 from odoo.http import request
+from odoo.osv import expression
 from odoo.addons.website.models import ir_http
 from odoo.addons.http_routing.models.ir_http import url_for
 
@@ -222,7 +223,10 @@ class Website(models.Model):
         return pl
 
     def sale_product_domain(self):
-        return [("sale_ok", "=", True)] + self.get_current_website().website_domain()
+        return expression.AND([self._product_domain(), self.get_current_website().website_domain()])
+
+    def _product_domain(self):
+        return [('sale_ok', '=', True)]
 
     @api.model
     def sale_get_payment_term(self, partner):

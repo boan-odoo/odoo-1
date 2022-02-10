@@ -543,12 +543,21 @@ class WebsiteSale(http.Controller):
         if kw.get('no_variant_attribute_values'):
             no_variant_attribute_values = json_scriptsafe.loads(kw.get('no_variant_attribute_values'))
 
+        kwargs = dict(kw)
+        if 'quantity' in kwargs:
+            del kwargs['quantity']
+        if 'product_custom_attribute_values' in kwargs:
+            del kwargs['product_custom_attribute_values']
+        if 'no_variant_attribute_values' in kwargs:
+            del kwargs['no_variant_attribute_values']
+
         sale_order._cart_update(
             product_id=int(product_id),
             add_qty=add_qty,
             set_qty=set_qty,
             product_custom_attribute_values=product_custom_attribute_values,
-            no_variant_attribute_values=no_variant_attribute_values
+            no_variant_attribute_values=no_variant_attribute_values,
+            **kwargs
         )
 
         if kw.get('express'):
@@ -574,13 +583,22 @@ class WebsiteSale(http.Controller):
 
         pcav = kw.get('product_custom_attribute_values')
         nvav = kw.get('no_variant_attribute_values')
+        kwargs = dict(kw)
+        if 'quantity' in kwargs:
+            del kwargs['quantity']
+        if 'product_custom_attribute_values' in kwargs:
+            del kwargs['product_custom_attribute_values']
+        if 'no_variant_attribute_values' in kwargs:
+            del kwargs['no_variant_attribute_values']
+
         value = order._cart_update(
             product_id=product_id,
             line_id=line_id,
             add_qty=add_qty,
             set_qty=set_qty,
             product_custom_attribute_values=json_scriptsafe.loads(pcav) if pcav else None,
-            no_variant_attribute_values=json_scriptsafe.loads(nvav) if nvav else None
+            no_variant_attribute_values=json_scriptsafe.loads(nvav) if nvav else None,
+            **kwargs
         )
 
         if not order.cart_quantity:

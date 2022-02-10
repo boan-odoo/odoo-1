@@ -107,6 +107,7 @@ const DynamicSnippetProducts = DynamicSnippetCarousel.extend({
      * @param {Event} ev
      */
     _onAddToCart: function (ev) {
+        // TODO Handle Renting products here - Avoid it ? - Avoid it serverside ?
         var self = this;
         var $card = $(ev.currentTarget).closest('.card');
         this._rpc({
