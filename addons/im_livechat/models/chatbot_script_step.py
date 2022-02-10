@@ -16,7 +16,7 @@ class ChatbotScriptStep(models.Model):
     sequence = fields.Integer(string='Sequence')
     chatbot_id = fields.Many2one(
         'im_livechat.chatbot.script', string='Chatbot', required=True, ondelete='cascade')
-    type = fields.Selection([
+    step_type = fields.Selection([
         ('text', 'Text'),
         ('question_selection', 'Question'),
         # TODO PKO: Put the following two in website_livechat
@@ -27,7 +27,6 @@ class ChatbotScriptStep(models.Model):
         'im_livechat.chatbot.script_question_answer', 'step_id', string='Answers')
     triggering_answer_ids = fields.Many2many(
         'im_livechat.chatbot.script_question_answer', 'chatbot_script_chatbot_script_question_answer_rel',
-        'chatbot_script_step_id', 'chatbot_script_question_answer_id',
         string='Only If', help='Show this step only if all of these answers have been selected.')
 
     def _fetch_next_step(self, selected_answer_ids):
@@ -75,13 +74,13 @@ class ChatbotScriptStep(models.Model):
     def _is_last_step(self, mail_channel):
         self.ensure_one()
 
-        return self.type != 'question_selection' and not self._fetch_next_step(
-            mail_channel.livechat_chatbot_message_ids.mapped('user_answer_id')
+        return self.step_type != 'question_selection' and not self._fetch_next_step(
+            mail_channel.livechat_chatbot_message_ids.mapped('chatbot_question_answer_id')
         )
 
     def _process_answer(self, mail_channel, mail_message):
         """
-        Process user's answer depending on the step type.
+        Process user's answer depending on the step_type.
 
         :param mail_channel:
         :param message_content:
@@ -90,18 +89,18 @@ class ChatbotScriptStep(models.Model):
         """
         self.ensure_one()
 
-        if self.type == 'question_selection':
+        if self.step_type == 'question_selection':
             # Update 'chatbot.mail.message' with the user's answer
             text_answer = html2plaintext(mail_message.body)
-            user_answer_id = self.answer_ids.filtered(lambda a: a.name == text_answer)
-            if not user_answer_id:
+            chatbot_question_answer_id = self.answer_ids.filtered(lambda a: a.name == text_answer)
+            if not chatbot_question_answer_id:
                 raise ValidationError(_('"%s" is not a valid answer for this step', text_answer))
 
             mail_message_id = self.env['im_livechat.chatbot.mail.message'].search([
                 ('mail_channel_id', '=', mail_channel.id),
                 ('chatbot_step_id', '=', self.id)], limit=1)
             if mail_message_id:
-                mail_message_id.write({'user_answer_id': user_answer_id.id})
+                mail_message_id.write({'chatbot_question_answer_id': chatbot_question_answer_id.id})
             else:
                 # there is no existing chatbot mail message
                 # -> this can happen for the "welcome message" (first message of the bot)
@@ -111,9 +110,7 @@ class ChatbotScriptStep(models.Model):
                 self.env['im_livechat.chatbot.mail.message'].create({
                     'mail_channel_id': mail_channel.id,
                     'chatbot_step_id': self.id,
-                    'user_answer_id': user_answer_id.id
+                    'chatbot_question_answer_id': chatbot_question_answer_id.id
                 })
 
-        selected_answer_ids = mail_channel.livechat_chatbot_message_ids.mapped('user_answer_id')
-
-        return self._fetch_next_step(selected_answer_ids)
+        return self._fetch_next_step(mail_channel.livechat_chatbot_message_ids.chatbot_question_answer_id)

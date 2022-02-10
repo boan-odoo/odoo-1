@@ -45,14 +45,14 @@ class ImLivechatChannel(models.Model):
         compute='_are_you_inside', store=False, readonly=True)
     script_external = fields.Html('Script (external)', compute='_compute_script_external', store=False, readonly=True, sanitize=False)
     nbr_channel = fields.Integer('Number of conversation', compute='_compute_nbr_channel', store=False, readonly=True)
-    chatbot_count = fields.Integer(string='Number of Chatbot', compute='_compute_chatbot_ids', store=True)
+    chatbot_count = fields.Integer(string='Number of Chatbot', compute='_compute_chatbot_ids')
 
     image_128 = fields.Image("Image", max_width=128, max_height=128, default=_default_image)
 
     # relationnal fields
     user_ids = fields.Many2many('res.users', 'im_livechat_channel_im_user', 'channel_id', 'user_id', string='Operators', default=_default_user_ids)
     channel_ids = fields.One2many('mail.channel', 'livechat_channel_id', 'Sessions')
-    chatbot_ids = fields.Many2many('im_livechat.chatbot.script', compute='_compute_chatbot_ids', store=True)
+    chatbot_ids = fields.Many2many('im_livechat.chatbot.script', compute='_compute_chatbot_ids')
     rule_ids = fields.One2many('im_livechat.channel.rule', 'channel_id', 'Rules')
 
     def _are_you_inside(self):
@@ -62,7 +62,7 @@ class ImLivechatChannel(models.Model):
     @api.depends('rule_ids.chatbot_id')
     def _compute_chatbot_ids(self):
         for record in self:
-            record.chatbot_ids = record.rule_ids.mapped('chatbot_id')
+            record.chatbot_ids = record.rule_ids.chatbot_id
             record.chatbot_count = len(record.chatbot_ids)
 
     def _compute_script_external(self):
@@ -111,13 +111,9 @@ class ImLivechatChannel(models.Model):
 
     def action_view_chatbot(self):
         self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Chatbot(s)'),
-            'view_mode': 'tree,form',
-            'res_model': 'im_livechat.chatbot.script',
-            'domain': [('id', 'in', self.chatbot_ids.ids)],
-        }
+        action = self.env['ir.actions.act_window']._for_xml_id('im_livechat.chatbot_script_action')
+        action['domain'] = [('id', 'in', self.chatbot_ids.ids)]
+        return action
 
     # --------------------------
     # Channel Methods
@@ -163,10 +159,12 @@ class ImLivechatChannel(models.Model):
             'public': 'private',
         }
 
-    def _open_livechat_mail_channel(self, anonymous_name, previous_operator_id=None, chatbot_id=None, user_id=None, country_id=None):
-        """ Return a mail.channel given a livechat channel. It creates one with a connected operator, or return false otherwise
+    def _open_livechat_mail_channel(self, anonymous_name, previous_operator_id=None, chatbot=None, user_id=None, country_id=None):
+        """ Return a mail.channel given a livechat channel. It creates one with a connected operator or with Odoobot as
+            an operator if a chatbot has been configured, or return false otherwise
             :param anonymous_name : the name of the anonymous person of the channel
             :param previous_operator_id : partner_id.id of the previous operator that this visitor had in the past
+            :param chatbot : chatbot if there is one configured
             :param user_id : the id of the logged in visitor, if any
             :param country_code : the country of the anonymous person of the channel
             :type anonymous_name : str
@@ -178,9 +176,7 @@ class ImLivechatChannel(models.Model):
         """
         self.ensure_one()
         operator = False
-        chatbot = False
-        if chatbot_id:
-            chatbot = self.env['im_livechat.chatbot.script'].sudo().browse(chatbot_id)
+        if chatbot:
             if chatbot.id not in self.chatbot_ids.ids:
                 return False
             # if a chatbot is set we set Odoobot as the operator

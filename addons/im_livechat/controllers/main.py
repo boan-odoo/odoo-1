@@ -6,7 +6,6 @@ import base64
 from odoo import http,tools, _
 from odoo.http import request
 from odoo.addons.base.models.assetsbundle import AssetsBundle
-from odoo.addons.mail.controllers.bus import MailChatController
 
 
 class LivechatController(http.Controller):
@@ -81,7 +80,7 @@ class LivechatController(http.Controller):
                             'label': answer.name
                         } for answer in step.answer_ids],
                         'chatbot_step_message': step.message,
-                        'chatbot_step_type': step.type,
+                        'chatbot_step_type': step.step_type,
                     } for step in chatbot.step_ids._filtered_welcome_steps()]
                 }})
         return {
@@ -112,10 +111,16 @@ class LivechatController(http.Controller):
         if previous_operator_id:
             previous_operator_id = int(previous_operator_id)
 
+        chatbot = False
         if chatbot_id:
-            chatbot_id = int(chatbot_id)
+            chatbot = request.env['im_livechat.chatbot.script'].sudo().browse(chatbot_id)
 
-        return request.env["im_livechat.channel"].with_context(lang=False).sudo().browse(channel_id)._open_livechat_mail_channel(anonymous_name, previous_operator_id, chatbot_id, user_id, country_id)
+        return request.env["im_livechat.channel"].with_context(lang=False).sudo().browse(channel_id)._open_livechat_mail_channel(
+            anonymous_name,
+            previous_operator_id=previous_operator_id,
+            chatbot=chatbot,
+            user_id=user_id,
+            country_id=country_id)
 
     @http.route('/im_livechat/feedback', type='json', auth='public', cors="*")
     def feedback(self, uuid, rate, reason=None, **kwargs):
@@ -183,7 +188,7 @@ class LivechatController(http.Controller):
                 next_step = chatbot.step_ids[0]
 
         if next_step:
-            mail_channel._process_chatbot_next_step(next_step)
+            mail_channel._chatbot_process_step(next_step)
             return {
                 'chatbot_step_answers': [{
                     'id': answer.id,
@@ -191,7 +196,7 @@ class LivechatController(http.Controller):
                 } for answer in next_step.answer_ids],
                 'chatbot_step_is_last': next_step._is_last_step(mail_channel),
                 'chatbot_step_message': next_step.message,
-                'chatbot_step_type': next_step.type,
+                'chatbot_step_type': next_step.step_type,
             }
         else:
             return False

@@ -26,6 +26,6 @@ class MailMessage(models.Model):
                             'id': answer.id,
                             'label': answer.name
                         } for answer in chatbot_mail_message_id.chatbot_step_id.answer_ids]
-                    if chatbot_mail_message_id.user_answer_id:
-                        vals['chatbot_selected_answer_id'] = chatbot_mail_message_id.user_answer_id.id
+                    if chatbot_mail_message_id.chatbot_question_answer_id:
+                        vals['chatbot_selected_answer_id'] = chatbot_mail_message_id.chatbot_question_answer_id.id
         return vals_list

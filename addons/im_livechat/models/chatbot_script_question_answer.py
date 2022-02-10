@@ -26,7 +26,13 @@ class ChatbotScriptQuestionAnswer(models.Model):
         ) for answer in self]
 
     @api.model
-    def _name_search(self, name, args=None, operator='ilike', limit=100, name_get_uid=None):
+    def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
+        """
+        Search the records whose name or step message are matching the ``name`` pattern.
+        The chatbot_id is also passed to the context through the custom widget
+        ('chatbot_triggering_answers_widget') This allows to only see the question_answer
+        from the same chatbot you're configuring.
+        """
         force_domain_chatbot_id = self.env.context.get('force_domain_chatbot_id')
 
         if name and operator == 'ilike':
