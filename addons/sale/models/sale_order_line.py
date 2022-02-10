@@ -5,7 +5,6 @@ from datetime import timedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
-from odoo.tools.misc import get_lang
 from odoo.osv import expression
 from odoo.tools import float_is_zero, float_compare, float_round
 
@@ -15,6 +14,12 @@ class SaleOrderLine(models.Model):
     _description = 'Sales Order Line'
     _order = 'order_id, sequence, id'
     _check_company_auto = True
+
+    @property
+    def FIELDS_IMPACTING_PRODUCT_PRICE(self):
+        # TODO: Dear Reviewer, may we have a chat about this property name, I struggled to choose a
+        # relevant one, and this one is the worst so I can directly say I'm not proud of it :D
+        return []
 
     @api.depends('state', 'product_uom_qty', 'qty_delivered', 'qty_to_invoice', 'qty_invoiced')
     def _compute_invoice_status(self):
@@ -674,7 +679,9 @@ class SaleOrderLine(models.Model):
                 line.pricelist_item_id = False
             else:
                 line.pricelist_item_id = line.order_id.pricelist_id._get_product_rule(
-                    line.product_id, line.product_uom_qty or 1.0, line.product_uom, line.order_id.date_order)
+                    line.product_id, line.product_uom_qty or 1.0, line.product_uom,
+                    line.order_id.date_order, **line._get_price_computation_kwargs()
+                )
 
     def _get_price_rule_id(self, **product_context):
         self.ensure_one()
@@ -686,10 +693,15 @@ class SaleOrderLine(models.Model):
 
         if pricelist_rule:
             price = pricelist_rule._compute_price(
-                product, qty, self.product_uom, order_date)
+                product, qty, self.product_uom, order_date,
+                pricelist=self.order_id.pricelist_id, **self._get_price_computation_kwargs()
+            )
         else:
             # fall back on Sales Price if no rule is found
-            price = product.price_compute('list_price', uom=self.product_uom, date=order_date)[product.id]
+            price = product.price_compute(
+                'list_price', uom=self.product_uom, date=order_date,
+                pricelist=self.order_id.pricelist_id, **self._get_price_computation_kwargs()
+            )[product.id]
 
             # Note: we do not rely on the currency parameter of price_compute
             # to avoid rounding the resulting price value to the currency decimal precision
@@ -801,16 +813,20 @@ class SaleOrderLine(models.Model):
             pricelist_item = PricelistItem.browse(rule_id)
             if pricelist_item.pricelist_id.discount_policy == 'without_discount':
                 while pricelist_item.base == 'pricelist' and pricelist_item.base_pricelist_id and pricelist_item.base_pricelist_id.discount_policy == 'without_discount':
+                    # TODO TLE: Add probably an hook here to add kwargs, see #sale_renting.
                     _price, rule_id = pricelist_item.base_pricelist_id._get_product_price_rule(
-                        product, qty, uom=uom, date=date)
+                        product, qty, uom=uom, date=date, **self._get_price_computation_kwargs()
+                    )
                     pricelist_item = PricelistItem.browse(rule_id)
 
             if pricelist_item.base == 'standard_price':
                 price = product.standard_price
                 currency = product.cost_currency_id
             elif pricelist_item.base == 'pricelist' and pricelist_item.base_pricelist_id:
+                #  TODO TLE: Add probably an hook here to add kwargs, see #sale_renting.
                 price = pricelist_item.base_pricelist_id._get_product_price(
-                    product, qty, uom=uom, date=date)
+                    product, qty, uom=uom, date=date, **self._get_price_computation_kwargs()
+                )
                 currency = pricelist_item.base_pricelist_id.currency_id
             else:
                 price = product.lst_price
@@ -922,3 +938,16 @@ class SaleOrderLine(models.Model):
     def _is_not_sellable_line(self):
         # True if the line is a computed line (reward, delivery, ...) that user cannot add manually
         return False
+
+    def _get_price_computation_kwargs(self):
+        """ Get optional fields which may impact price computation
+        """
+        if not self:
+            return {}
+
+        self.ensure_one()
+        return {
+            field: self[field]
+            for field in self.FIELDS_IMPACTING_PRODUCT_PRICE
+            if self[field]
+        }

@@ -539,7 +539,9 @@ class ProductTemplate(models.Model):
             },
         }
 
-    def price_compute(self, price_type, uom=None, currency=None, company=None, date=False):
+    def price_compute(
+        self, price_type, uom=None, currency=None, company=None, date=False, **kwargs
+    ):
         company = company or self.env.company
         date = date or fields.Date.context_today(self)
 

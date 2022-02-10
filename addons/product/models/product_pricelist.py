@@ -73,7 +73,7 @@ class Pricelist(models.Model):
                 return pricelist_ids
         return super()._name_search(name, args, operator=operator, limit=limit, name_get_uid=name_get_uid)
 
-    def _get_products_price(self, products, quantity, uom=None, date=False):
+    def _get_products_price(self, products, quantity, uom=None, date=False, **kwargs):
         """Compute the pricelist prices for the specified products, qty & uom.
 
         Note: self.ensure_one()
@@ -89,10 +89,11 @@ class Pricelist(models.Model):
                 quantity,
                 uom=uom,
                 date=date,
+                **kwargs
             ).items()
         }
 
-    def _get_product_price(self, product, quantity, uom=None, date=False):
+    def _get_product_price(self, product, quantity, uom=None, date=False, **kwargs):
         """Compute the pricelist price for the specified product, qty & uom.
 
         Note: self.ensure_one()
@@ -101,9 +102,11 @@ class Pricelist(models.Model):
         :rtype: float
         """
         self.ensure_one()
-        return self._compute_price_rule(product, quantity, uom=uom, date=date)[product.id][0]
+        return self._compute_price_rule(
+            product, quantity, uom=uom, date=date, **kwargs
+        )[product.id][0]
 
-    def _get_product_price_rule(self, product, quantity, uom=None, date=False):
+    def _get_product_price_rule(self, product, quantity, uom=None, date=False, **kwargs):
         """Compute the pricelist price & rule for the specified product, qty & uom.
 
         Note: self.ensure_one()
@@ -112,9 +115,9 @@ class Pricelist(models.Model):
         :rtype: tuple(float, int)
         """
         self.ensure_one()
-        return self._compute_price_rule(product, quantity, uom=uom, date=date)[product.id]
+        return self._compute_price_rule(product, quantity, uom=uom, date=date, **kwargs)[product.id]
 
-    def _get_product_rule(self, product, quantity, uom=None, date=False):
+    def _get_product_rule(self, product, quantity, uom=None, date=False, **kwargs):
         """Compute the pricelist price & rule for the specified product, qty & uom.
 
         Note: self.ensure_one()
@@ -123,9 +126,11 @@ class Pricelist(models.Model):
         :rtype: int or False
         """
         self.ensure_one()
-        return self._compute_price_rule(product, quantity, uom=uom, date=date)[product.id][1]
+        return self._compute_price_rule(
+            product, quantity, uom=uom, date=date, **kwargs
+        )[product.id][1]
 
-    def _compute_price_rule(self, products, qty, uom=None, date=False):
+    def _compute_price_rule(self, products, qty, uom=None, date=False, **kwargs):
         """ Low-level method - Mono pricelist, multi products
         Returns: dict{product_id: (price, suitable_rule) for the given pricelist}
 
@@ -166,7 +171,9 @@ class Pricelist(models.Model):
             product_tmpl_ids = products.product_tmpl_id.ids
 
         # Fetch all rules potentially matching specified products/templates/categories and date
-        rules = self._get_applicable_rules(date, product_tmpl_ids, product_ids, category_ids)
+        rules = self._get_applicable_rules(
+            date, product_tmpl_ids, product_ids, category_ids, **kwargs
+        )
 
         results = {}
         for product in products:
@@ -183,16 +190,19 @@ class Pricelist(models.Model):
                 qty_in_product_uom = qty
 
             for rule in rules:
-                if rule._is_applicable_for(product, qty_in_product_uom):
+                if rule._is_applicable_for(product, qty_in_product_uom, **kwargs):
                     suitable_rule = rule
                     break
 
             # TODO VFE provide a way for lazy computation of price ?
+            kwargs['pricelist'] = self
             if suitable_rule:
-                price = suitable_rule._compute_price(product, qty, target_uom, date)
+                price = suitable_rule._compute_price(product, qty, target_uom, date, **kwargs)
             else:
                 # fall back on Sales Price if no rule is found
-                price = product.price_compute('list_price', uom=target_uom, date=date)[product.id]
+                price = product.price_compute(
+                    'list_price', uom=target_uom, date=date, **kwargs
+                )[product.id]
 
                 if product.currency_id != self.currency_id:
                     price = product.currency_id._convert(price, self.currency_id, self.env.company, date, round=False)
@@ -211,7 +221,9 @@ class Pricelist(models.Model):
             self._get_applicable_rules_domain(*args, **kwargs)
         )
 
-    def _get_applicable_rules_domain(self, date, product_tmpl_ids, product_ids, category_ids):
+    def _get_applicable_rules_domain(
+        self, date, product_tmpl_ids, product_ids, category_ids, **kwargs
+    ):
         return [
             ('pricelist_id', '=', self.id),
             '|', ('product_tmpl_id', '=', False), ('product_tmpl_id', 'in', product_tmpl_ids),
@@ -222,13 +234,13 @@ class Pricelist(models.Model):
         ]
 
     # Multi pricelists price|rule computation
-    def _price_get(self, product, qty):
+    def _price_get(self, product, qty, **kwargs):
         """ Multi pricelist, mono product - returns price per pricelist """
         return {
             key: price[0]
-            for key, price in self._compute_price_rule_multi(product, qty)[product.id].items()}
+            for key, price in self._compute_price_rule_multi(product, qty, **kwargs)[product.id].items()}
 
-    def _compute_price_rule_multi(self, products, qty, uom=None, date=False):
+    def _compute_price_rule_multi(self, products, qty, uom=None, date=False, **kwargs):
         """ Low-level method - Multi pricelist, multi products
         Returns: dict{product_id: dict{pricelist_id: (price, suitable_rule)} }"""
         if not self.ids:
@@ -237,7 +249,7 @@ class Pricelist(models.Model):
             pricelists = self
         results = {}
         for pricelist in pricelists:
-            subres = pricelist._compute_price_rule(products, qty, uom=uom, date=date)
+            subres = pricelist._compute_price_rule(products, qty, uom=uom, date=date, **kwargs)
             for product_id, price in subres.items():
                 results.setdefault(product_id, {})
                 results[product_id][pricelist.id] = price
@@ -573,7 +585,7 @@ class PricelistItem(models.Model):
                 values.update(dict(categ_id=None))
         return super(PricelistItem, self).write(values)
 
-    def _is_applicable_for(self, product, qty_in_product_uom):
+    def _is_applicable_for(self, product, qty_in_product_uom, **kwargs):
         """Check whether the current rule is valid for the given product & qty.
 
         Note: self.ensure_one()
@@ -619,7 +631,7 @@ class PricelistItem(models.Model):
 
         return res
 
-    def _compute_price(self, product, quantity, uom, date):
+    def _compute_price(self, product, quantity, uom, date, **kwargs):
         """Compute the unit price of a product in the context of a pricelist application.
 
         :param product: recordset of product (product.product/product.template)
@@ -636,19 +648,18 @@ class PricelistItem(models.Model):
 
         # Pricelist specific values are specified according to product UoM
         # and must be multiplied according to the factor between uoms
-        product_uom = product.uom_id
-        if product_uom != uom:
-            convert = lambda p: product_uom._compute_price(p, uom)
-        else:
-            convert = lambda p: p
+        def convert(p):
+            if product.uom_id != uom:
+                return product.uom_id._compute_price(p, uom)
+            return p
 
         if self.compute_price == 'fixed':
             price = convert(self.fixed_price)
         elif self.compute_price == 'percentage':
-            base_price = self._compute_base_price(product, quantity, uom=uom, date=date)
+            base_price = self._compute_base_price(product, quantity, uom=uom, date=date, **kwargs)
             price = (base_price - (base_price * (self.percent_price / 100))) or 0.0
         else:
-            base_price = self._compute_base_price(product, quantity, uom=uom, date=date)
+            base_price = self._compute_base_price(product, quantity, uom=uom, date=date, **kwargs)
             # complete formula
             price_limit = base_price
             price = (base_price - (base_price * (self.price_discount / 100))) or 0.0
@@ -665,7 +676,7 @@ class PricelistItem(models.Model):
                 price = min(price, price_limit + convert(self.price_max_margin))
         return price
 
-    def _compute_base_price(self, product, quantity, uom, date):
+    def _compute_base_price(self, product, quantity, uom, date, **kwargs):
         """ Compute the base price for a given rule
 
         :param product: recordset of product (product.product/product.template)
@@ -679,14 +690,15 @@ class PricelistItem(models.Model):
         rule_base = self.base
         if rule_base == 'pricelist' and self.base_pricelist_id:
             price = self.base_pricelist_id._get_product_price(
-                product, quantity, uom, date)
+                product, quantity, uom, date, **kwargs
+            )
             src_currency = self.base_pricelist_id.currency_id
         elif rule_base == "standard_price":
             src_currency = product.cost_currency_id
-            price = product.price_compute(rule_base, uom=uom, date=date)[product.id]
-        else: # lst_price
+            price = product.price_compute(rule_base, uom=uom, date=date, **kwargs)[product.id]
+        else:  # lst_price
             src_currency = product.currency_id
-            price = product.price_compute(rule_base, uom=uom, date=date)[product.id]
+            price = product.price_compute(rule_base, uom=uom, date=date, **kwargs)[product.id]
 
         target_currency = self.pricelist_id.currency_id
         if src_currency != target_currency:
