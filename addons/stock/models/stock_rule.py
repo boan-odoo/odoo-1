@@ -293,6 +293,8 @@ class StockRule(models.Model):
         picking_description = product_id._get_description(self.picking_type_id)
         if values.get('product_description_variants'):
             picking_description += values['product_description_variants']
+            if values.get('pos_order'):
+                picking_description = values['product_description_variants']
         # it is possible that we've already got some move done, so check for the done qty and create
         # a new move with the correct qty
         qty_left = product_qty

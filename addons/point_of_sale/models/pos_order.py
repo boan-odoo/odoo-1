@@ -1066,6 +1066,7 @@ class PosOrderLine(models.Model):
             'partner_id': self.order_id.partner_id.id,
             'product_description_variants': self.full_product_name,
             'company_id': self.order_id.company_id,
+            'pos_order': True,
         }
         return values
 
