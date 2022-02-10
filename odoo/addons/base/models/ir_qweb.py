@@ -492,8 +492,10 @@ class QWebException(Exception):
 
     def __str__(self):
         parts = [self.title]
-        if self.__cause__ is not None:
+        if str(self.__cause__) != '':
             parts.append(f"{self.__cause__.__class__.__name__}: {self.__cause__}")
+        elif str(self.__context__) != '':
+            parts.append(f"{self.__context__.__class__.__name__}: {self.__context__}")
         if self.name is not None:
             parts.append(f"Template: {self.name}")
         if self.path is not None:
@@ -764,7 +766,7 @@ class IrQWeb(models.AbstractModel):
         values['true'] = True
         values['false'] = False
         if not options.get('minimal_qcontext'):
-            values.update(self._prepare_environment_values())
+            values = {**self._prepare_environment_values(), **values}
         elif 'request' not in values:
             values['request'] = request
 

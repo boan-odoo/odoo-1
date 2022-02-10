@@ -373,8 +373,6 @@ class WebsiteSale(http.Controller):
             'keep': keep,
             'search_categories_ids': tools.lazy(lambda: search_categories.ids),
             'layout_mode': layout_mode,
-            'cache_key_products_item': lambda product: (product, pricelist, page),
-            'cache_key_pricelist_list': lambda product: (pricelist),
         }
         if filter_by_price_enabled:
             values['min_price'] = min_price or available_min_price
@@ -434,7 +432,6 @@ class WebsiteSale(http.Controller):
             'product': product,
             'add_qty': add_qty,
             'view_track': view_track,
-            'cache_key_products_item': lambda product: (product, pricelist, kwargs.get('order'), kwargs.get('page')),
         }
 
     @http.route(['/shop/change_pricelist/<model("product.pricelist"):pl_id>'], type='http', auth="public", website=True, sitemap=False)
