@@ -174,7 +174,7 @@ class MailChannel(models.Model):
 
     def _process_chatbot_next_step(self, step_id):
         self.ensure_one()
-        if step_id.sequence <= self.livechat_chatbot_current_step_id.sequence:
+        if self.livechat_chatbot_current_step_id and step_id.sequence <= self.livechat_chatbot_current_step_id.sequence:
             raise ValidationError(_('The new step sequence must be higher than the old one.'))
 
         # We change the current step to the new step

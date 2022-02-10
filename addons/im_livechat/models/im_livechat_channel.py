@@ -143,7 +143,7 @@ class ImLivechatChannel(models.Model):
             'livechat_active': True,
             'livechat_operator_id': operator_partner_id,
             'livechat_channel_id': self.id,
-            'livechat_chatbot_current_step_id': chatbot.step_ids[0].id if chatbot else False,
+            'livechat_chatbot_current_step_id': chatbot.step_ids._filtered_welcome_steps()[-1].id if chatbot else False,
             'anonymous_name': False if user_id else anonymous_name,
             'country_id': country_id,
             'channel_type': 'livechat',

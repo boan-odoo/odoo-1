@@ -71,19 +71,18 @@ class LivechatController(http.Controller):
             }
             if matching_rule.action == 'use_chatbot' and matching_rule.chatbot_id.step_ids:
                 chatbot = matching_rule.chatbot_id
-                chatbot_first_step = chatbot.step_ids[0]
                 rule.update({'chatbot': {
                     'chatbot_id': chatbot.id,
                     'chatbot_name': chatbot.name,
                     'chatbot_operator_id': request.env.ref('base.partner_root').id,
-                    'chatbot_step': {
+                    'chatbot_welcome_steps': [{
                         'chatbot_step_answers': [{
                             'id': answer.id,
                             'label': answer.name
-                        } for answer in chatbot_first_step.answer_ids],
-                        'chatbot_step_message': chatbot_first_step.message,
-                        'chatbot_step_type': chatbot_first_step.type,
-                    }
+                        } for answer in step.answer_ids],
+                        'chatbot_step_message': step.message,
+                        'chatbot_step_type': step.type,
+                    } for step in chatbot.step_ids._filtered_welcome_steps()]
                 }})
         return {
             # TODO PKO: We should change the name of this one... maybe 'livechat_active' or 'activate_livechat' ?

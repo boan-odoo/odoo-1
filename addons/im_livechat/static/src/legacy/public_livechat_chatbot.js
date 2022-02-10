@@ -22,8 +22,6 @@ LivechatButton.include({
         return this._super(...arguments).then(() => {
             if (this._rule) {
                 this._isChatbot = this._rule.action === 'use_chatbot';
-                this._chatbotCurrentStep = this._isChatbot ? this._rule.chatbot.chatbot_step : false;
-
                 return Promise.resolve();
             }
         });
@@ -146,18 +144,47 @@ LivechatButton.include({
      */
     _sendWelcomeMessage: function () {
         if (this._isChatbot) {
-            this._addMessage({
-                id: '_welcome',
-                attachment_ids: [],
-                author_id: this._livechat.getOperatorPID(),
-                body: this._rule.chatbot.chatbot_step.chatbot_step_message,
-                chatbot_step_answers: this._rule.chatbot.chatbot_step.chatbot_step_answers,
-                date: time.datetime_to_str(new Date()),
-                model: "mail.channel",
-                res_id: this._livechat.getID(),
-            }, { prepend: true });
+            this._sendWelcomeChatbotMessage(0);
         } else {
             this._super(...arguments);
+        }
+    },
+    /**
+     * The bot can say multiple messages in quick succession as "welcome messages".
+     * (See im_livechat.chatbot.script_step#_filtered_welcome_steps() for more details).
+     *
+     * It is important that those messages are sent as "welcome messages", meaning manually added
+     * within the template, without creating actual mail.messages in the mail.channel.
+     *
+     * Indeed, if the end-user never interacts with the bot, those empty mail.channels are deleted
+     * by a garbage collector mechanism.
+     *
+     * @private
+     */
+    _sendWelcomeChatbotMessage: function (stepIndex) {
+        const chatbotStep = this._rule.chatbot.chatbot_welcome_steps[stepIndex];
+        this._chatbotCurrentStep = chatbotStep;
+
+        this._addMessage({
+            id: '_welcome_' + stepIndex,
+            attachment_ids: [],
+            author_id: this._livechat.getOperatorPID(),
+            body: chatbotStep.chatbot_step_message,
+            chatbot_step_answers: chatbotStep.chatbot_step_answers,
+            date: time.datetime_to_str(new Date()),
+            model: "mail.channel",
+            message_type: "comment",
+            res_id: this._livechat.getID(),
+        });
+
+        if (stepIndex + 1 < this._rule.chatbot.chatbot_welcome_steps.length) {
+            this._chatbotDisableInput(
+                _.str.sprintf(_t('%s is typing...'), this._rule.chatbot.chatbot_name));
+
+            setTimeout(() => {
+                this._sendWelcomeChatbotMessage(stepIndex + 1);
+                this._renderMessages();
+            }, 2000);
         }
     },
 

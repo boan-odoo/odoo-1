@@ -12,12 +12,3 @@ class ChatbotScript(models.Model):
 
     name = fields.Char(string='Name', required=True)
     step_ids = fields.One2many('im_livechat.chatbot.script_step', 'chatbot_id', string='Script Steps')
-
-    @api.constrains('step_ids')
-    def _check_step_ids(self):
-        for chatbot in self:
-            if chatbot.step_ids and chatbot.step_ids[0].type == 'text':
-                raise ValidationError(_(
-                    "The first step of your script can not be 'text' step.\n"
-                    "Indeed, we need an interaction from the end user right after this step."
-                ))

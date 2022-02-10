@@ -40,6 +40,38 @@ class ChatbotScriptStep(models.Model):
                 ('triggering_answer_ids', 'in', selected_answer_ids.ids)]])
         return self.env['im_livechat.chatbot.script_step'].sudo().search(domain, limit=1)
 
+    def _filtered_welcome_steps(self):
+        """ Returns a sub-set of self that only contains the "welcoming steps".
+        We consider those as all the steps the bot will say before expecting a first answer from
+        the end user.
+
+        Example 1:
+        - step 1 (question_selection): What do you want to do? - Create a Lead, -Create a Ticket
+        - step 2 (text): Thank you for visiting our website!
+        -> The welcoming steps will only contain step 1, since directly after that we expect an
+        input from the user
+
+        Example 2:
+        - step 1 (text): Hello! I'm a bot!
+        - step 2 (text): I am here to help lost users.
+        - step 3 (question_selection): What do you want to do? - Create a Lead, -Create a Ticket
+        - step 4 (text): Thank you for visiting our website!
+        -> The welcoming steps will contain steps 1, 2 and 3.
+        Meaning the bot will have a small monologue with himself before expecting an input from the
+        end user.
+
+        This is important because we need to display those welcoming steps in a special fashion on
+        the frontend, since those are not inserted into the mail.channel as actual mail.messages,
+        to avoid bloating the channels with bot messages if the end-user never interacts with it. """
+
+        welcome_steps = self.env['im_livechat.chatbot.script_step']
+        for step in self:
+            welcome_steps += step
+            if step.type != 'text':
+                break
+
+        return welcome_steps
+
     def _is_last_step(self, mail_channel):
         self.ensure_one()
 
