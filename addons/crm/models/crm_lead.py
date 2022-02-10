@@ -1875,10 +1875,10 @@ class Lead(models.Model):
 
     @api.model
     def get_import_templates(self):
-        return [{
+        return {'files': [{
             'label': _('Import Template for Leads & Opportunities'),
             'template': '/crm/static/xls/crm_lead.xls'
-        }]
+        }]}
 
     # ------------------------------------------------------------
     # PLS

@@ -443,7 +443,7 @@ var DataImport = AbstractAction.extend({
         this.$('.oe_import_options').show();
         this.$form.addClass('oe_import_preview_error oe_import_error');
         this.$form.find('.oe_import_box, .oe_import_with_file').removeClass('d-none');
-        this.$form.find('.o_view_nocontent').addClass('d-none');
+        this.$form.find('.o_view_nocontent, .o_view_nocontent_long').addClass('d-none');
         this.$('.oe_import_error_report').html(
                 QWeb.render('ImportView.preview.error', result));
     },
@@ -455,7 +455,7 @@ var DataImport = AbstractAction.extend({
             .blur();
         this.$buttons.filter('.o_import_import, .o_import_validate').removeClass('d-none');
         this.$form.find('.oe_import_box, .oe_import_with_file').removeClass('d-none');
-        this.$form.find('.o_view_nocontent').addClass('d-none');
+        this.$form.find('.o_view_nocontent, .o_view_nocontent_long').addClass('d-none');
         this.$form.addClass('oe_import_preview');
         this.$('input.oe_import_advanced_mode').prop('checked', result.advanced_mode);
         this.$('.oe_import_grid').html(QWeb.render('ImportView.preview', result));

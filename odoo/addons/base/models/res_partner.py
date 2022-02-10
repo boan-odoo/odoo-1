@@ -1034,10 +1034,14 @@ class Partner(models.Model):
 
     @api.model
     def get_import_templates(self):
-        return [{
+        return {'files': [{
             'label': _('Import Template for Customers'),
-            'template': '/base/static/xls/res_partner.xls'
-        }]
+            'template': '/base/static/xls/generic_import.xlsx'
+        }]}
+
+    @api.model
+    def _get_import_sheet(self, sheet_names):
+        return 'Contacts' if 'Contacts' in sheet_names else super()._get_import_sheet(sheet_names)
 
     @api.model
     def _check_import_consistency(self, vals_list):

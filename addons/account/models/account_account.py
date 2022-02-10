@@ -409,6 +409,21 @@ class AccountAccount(models.Model):
                 self.company_id._auto_balance_opening_move()
 
     @api.model
+    def get_import_templates(self):
+        return {
+            'qweb_template': 'account.import_template',
+            'files': [{
+                'label': _('Import Template for Vendor Pricelists'),
+                'template': '/base/static/xls/generic_import.xlsx'
+        }]}
+
+    @api.model
+    def _get_import_sheet(self, sheet_names):
+        if 'Chart of Accounts' in sheet_names:
+            return 'Chart of Accounts'
+        return 'CoA' if 'CoA' in sheet_names else super()._get_import_sheet(sheet_names)
+
+    @api.model
     def default_get(self, default_fields):
         """If we're creating a new account through a many2one, there are chances that we typed the account code
         instead of its name. In that case, switch both fields values.

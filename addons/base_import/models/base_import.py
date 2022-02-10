@@ -97,10 +97,26 @@ class Base(models.AbstractModel):
         """
         Get the import templates label and path.
 
-        :return: a list(dict) containing label and template path
+        :return: a dict containing
+                qweb_template: name of the qweb template to display instead of the default content
+                files: list(dict) containing label and template path
                  like ``[{'label': 'foo', 'template': 'path'}]``
         """
-        return []
+        return {
+            'qweb_template': None,
+            'files': []
+        }
+
+    @api.model
+    def _get_import_sheet(self, sheet_names):
+        """
+        Get the correct sheet id from the available xls sheet names
+
+        :param: sheet_names contains a list of available sheets
+
+        :return: int specifying the id of the
+        """
+        return sheet_names[0]
 
 class ImportMapping(models.Model):
     """ mapping of previous column:field selections
@@ -381,7 +397,7 @@ class Import(models.TransientModel):
     def _read_xls(self, options):
         book = xlrd.open_workbook(file_contents=self.file or b'')
         sheets = options['sheets'] = book.sheet_names()
-        sheet = options['sheet'] = options.get('sheet') or sheets[0]
+        sheet = options['sheet'] = options.get('sheet') or self.env[self.res_model]._get_import_sheet(sheets)
         return self._read_xls_book(book, sheet)
 
     def _read_xls_book(self, book, sheet_name):
