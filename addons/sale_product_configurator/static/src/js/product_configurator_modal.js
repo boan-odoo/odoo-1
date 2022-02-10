@@ -81,6 +81,7 @@ var OptionalProductsModal = Dialog.extend(ServicesMixin, VariantMixin, {
             add_qty: self.rootProduct.quantity,
             force_dialog: self.forceDialog,
             kwargs: {
+                // FIXME TLE : Why is it in kwargs ?
                 context: _.extend({
                     'quantity': self.rootProduct.quantity
                 }, this.context),

@@ -61,6 +61,9 @@ class ProductConfiguratorController(http.Controller):
         combination = request.env['product.template.attribute.value'].browse(variant_values)
         add_qty = int(kw.get('add_qty', 1))
 
+        if 'kwargs' in kw and 'context' in kw['kwargs']:
+            product = product.with_context(**kw['kwargs']['context'])
+
         no_variant_attribute_values = combination.filtered(
             lambda product_template_attribute_value: product_template_attribute_value.attribute_id.create_variant == 'no_variant'
         )
@@ -75,7 +78,7 @@ class ProductConfiguratorController(http.Controller):
             'variant_values': variant_values,
             'pricelist': pricelist,
             'handle_stock': handle_stock,
-            'already_configured': kw.get("already_configured", False)
+            'already_configured': kw.get("already_configured", False),
         })
 
     def _get_pricelist(self, pricelist_id, pricelist_fallback=False):
