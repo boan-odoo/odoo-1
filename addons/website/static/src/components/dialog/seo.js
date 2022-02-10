@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { useService, useListener } from '@web/core/utils/hooks';
+import { MediaDialog } from '@web_editor/components/media_dialog/media_dialog';
 import { WebsiteDialog } from './dialog';
 
 const { Component, useState, reactive, onMounted, onWillStart } = owl;
@@ -23,6 +24,7 @@ MetaImage.template = 'website.MetaImage';
 class ImageSelector extends Component {
     setup() {
         this.website = useService('website');
+        this.dialogs = useService('dialog');
 
         this.seoContext = useState(seoContext);
 
@@ -87,6 +89,11 @@ class ImageSelector extends Component {
             return img;
         });
         this.seoContext.metaImage = src;
+    }
+
+    openMediaDialog() {
+        this.dialogs.add(MediaDialog, {
+        });
     }
 }
 ImageSelector.template = 'website.ImageSelector';

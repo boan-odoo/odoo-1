@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+<t t-name="web_editor.ProgressBar" owl="1">
+    <div class="d-flex text-info">
+        <span t-if="!props.hasError and !props.uploaded"><i class="fa fa-spinner fa-pulse"/></span>
+        <span class="font-italic font-weight-bold text-truncate flex-grow-1 mx-2" t-esc="props.name"/>
+        <span class="text-nowrap" t-esc="props.size"/>
+    </div>
+    <div t-if="props.uploaded" class="js_progressbar_txt">
+        <span class="text-success"><i class="fa fa-check"/> File has been uploaded</span>
+    </div>
+    <div t-elif="props.hasError" class="js_progressbar_txt">
+        <span class="text-danger"><i class="fa fa-times float-left m-1"/> <span class="o_we_error_text" t-esc="props.errorMessage ? props.errorMessage : 'File could not be saved'"/></span>
+    </div>
+    <div t-else="" class="progress">
+        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" t-attf-style="width: {{props.progress}}%;"><span t-esc="props.progress + '%'"/></div>
+    </div>
+    <hr/>
+</t>
+
+<t t-name="web_editor.UploadProgressToast" owl="1">
+    <div class="o_notification_manager">
+        <div class="o_notification bg-info fade show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="o_notification_body">
+                <button type="button" class="close o_notification_close" aria-label="Close" t-on-click="() => this.props.close()">
+                    <span class="d-inline" aria-hidden="true">×</span>
+                </button>
+                <div class="mr-auto o_notification_content">
+                    <div t-foreach="props.files" t-as="file" t-key="file.id" class="o_we_progressbar">
+                        <ProgressBar progress="file.progress"
+                            errorMessage="file.errorMessage"
+                            hasError="file.hasError"
+                            name="file.name"
+                            uploaded="file.uploaded"
+                            size="file.size"
+                            id="file.id"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+</templates>

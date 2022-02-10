@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const {pathname, search} = window.location;
         const params = new URLSearchParams(search);
 
-        const autoredirectToBackendAction = false;
+        const autoredirectToBackendAction = true;
         if (autoredirectToBackendAction) {
             document.body.innerHTML = '';
             window.location.replace(`/web#action=website.website_editor&path=${encodeURIComponent(pathname + '?' + params.toString())}&website_id=${websiteId}`);

@@ -2,6 +2,7 @@
 
 import { registry } from '@web/core/registry';
 import { useService } from '@web/core/utils/hooks';
+import { MediaDialog } from '@web_editor/components/media_dialog/media_dialog';
 
 const { Component, onWillStart, useEffect, useRef } = owl;
 
@@ -9,6 +10,8 @@ export class WebsiteEditorClientAction extends Component {
     setup() {
         super.setup(...arguments);
         this.websiteService = useService('website');
+        // TO REMOVE: only for easier dev
+        this.dialogs = useService('dialog');
         this.title = useService('title');
 
         this.iframeFallbackUrl = '/website/iframefallback';
@@ -28,6 +31,8 @@ export class WebsiteEditorClientAction extends Component {
         }, () => [this.props.action.context.params]);
 
         useEffect(() => {
+            // TO REMOVE: only for easier dev
+            this.dialogs.add(MediaDialog, {});
             this.iframe.el.addEventListener('load', () => {
                 this.currentUrl = this.iframe.el.contentDocument.location.href;
                 this.currentTitle = this.iframe.el.contentDocument.title;

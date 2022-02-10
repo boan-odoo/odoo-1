@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+<t t-name="web_editor.AttachmentErrorBody" owl="1">
+    <div class="form-text">
+        <p>The image could not be deleted because it is used in the
+            following pages or views:</p>
+        <ul t-foreach="props.views"  t-as="view" t-key="view.id">
+            <li>
+                <a t-att-href="'/web#model=ir.ui.view&amp;id=' + view.id">
+                    <t t-esc="view.name"/>
+                </a>
+            </li>
+        </ul>
+    </div>
+</t>
+<t t-name="web_editor.AttachmentErrorFooter" owl="1">
+    <button class="btn btn-primary" t-on-click="() => this.close()">
+        Ok
+    </button>
+</t>
+
+<t t-name="web_editor.SearchMedia" owl="1">
+    <div class="input-group mr-auto">
+        <input type="text" class="form-control o_we_search" t-att-placeholder="props.searchPlaceholder.trim()" t-att-value="props.needle" t-on-input="search"/>
+        <div class="input-group-append">
+            <div class="input-group-text o_we_search_icon">
+                <i class="fa fa-search" title="Search" role="img" aria-label="Search"/>
+            </div>
+        </div>
+    </div>
+</t>
+
+<t t-name="web_editor.FileSelectorControlPanel" owl="1">
+    <div class="form-inline align-items-center py-4">
+        <SearchMedia searchPlaceholder="props.searchPlaceholder" needle="props.needle" search="props.search"/>
+
+        <div class="d-flex justify-content-start align-items-center flex-grow-1 ml-2">
+            <div t-if="props.showOptimizedOption" class="custom-control custom-switch align-items-center mr-2" t-on-change="props.changeShowOptimized">
+                <input class="o_we_show_optimized ml-2 custom-control-input" type="checkbox" checked="props.showOptimized" id="o_we_show_optimized_switch"/>
+                <label class="custom-control-label" for="o_we_show_optimized_switch">
+                    Show optimized images
+                </label>
+            </div>
+            <select t-if="showSearchServiceSelect" class="custom-select o_we_search_select" t-on-change="ev => props.changeSearchService(ev.target.value)">
+                <option t-att-selected="props.searchService === 'all'" value="all">All</option>
+                <option t-att-selected="props.searchService === 'database'" value="database">My Images</option>
+                <option t-if="props.useMediaLibrary" t-att-selected="props.searchService === 'media-library'" value="media-library">Illustrations</option>
+            </select>
+        </div>
+
+        <div class="input-group align-items-center ml-2">
+            <input type="text" class="form-control o_we_url_input o_we_transition_ease mr-1" t-att-class="{ o_we_horizontal_collapse: !state.showUrlInput }" name="url" t-att-placeholder="props.urlPlaceholder" t-model="state.urlInput" t-on-input="onUrlInput"/>
+            <div class="input-group-append align-items-center">
+                <button type="button" class="btn o_upload_media_url_button" t-att-class="{ 'btn-primary': state.urlInput, 'btn-secondary': !state.urlInput}" t-on-click="onUrlUploadClick" t-att-disabled="!enableUrlUploadClick">
+                    <t t-esc="props.addText"/>
+                </button>
+                <div class="mx-2">
+                    <span t-if="state.urlInput and state.isValidUrl and state.isValidFileFormat" class="o_we_url_success text-success fa fa-lg fa-check" title="The URL seems valid."/>
+                    <span t-if="state.urlInput and !state.isValidUrl" class="o_we_url_error text-danger fa fa-lg fa-times" title="The URL does not seem to work."/>
+                    <span t-if="props.urlWarningTitle and state.urlInput and state.isValidUrl and !state.isValidFileFormat" class="o_we_url_warning text-warning fa fa-lg fa-warning" t-att-title="props.urlWarningTitle"/>
+                </div>
+            </div>
+        </div>
+
+        <input type="file" class="d-none o_file_input" t-on-change="onChangeFileInput" t-ref="file-input" t-att-accept="props.accept" t-att-multiple="props.multiImages &amp;&amp; 'multiple'"/>
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary o_upload_media_button" t-on-click="onClickUpload">
+                <t t-esc="props.uploadText"/>
+            </button>
+        </div>
+    </div>
+</t>
+
+<t t-name="web_editor.RemoveButton" owl="1">
+    <t t-set="removeTitle" t-if="props.model === 'ir.ui.view'">This file is a public view attachment.</t>
+    <t t-set="removeTitle" t-else="">This file is attached to the current record.</t>
+    <i class="fa fa-trash o_existing_attachment_remove p-2" t-att-title="removeTitle" role="img" t-att-aria-label="removeTitle" t-on-click="props.remove"/>
+</t>
+
+<t t-name="web_editor.ImageAttachment" owl="1">
+    <div class="o_existing_attachment_cell o_we_image position-relative align-items-center justify-content-center" t-att-class="{ o_we_attachment_optimized: props.isOptimized, o_loaded: state.loaded, o_we_attachment_selected: props.selected }" t-on-click="props.selectAttachment">
+        <RemoveButton model="props.model" remove="() => this.remove()"/>
+        <div class="o_we_media_dialog_img_wrapper">
+            <img class="img img-fluid o_we_attachment_highlight" t-att-src="props.src" t-att-alt="props.name" t-att-title="props.name"/>
+        </div>
+        <span t-if="props.isOptimized" class="badge badge-success">Optimized</span>
+    </div>
+</t>
+
+<t t-name="web_editor.LibraryImage" owl="1">
+    <div class="o_existing_attachment_cell o_we_image position-relative align-items-center justify-content-center o_library_media_cell" t-att-class="{ o_loaded: state.loaded, o_we_attachment_selected: props.selected }" t-on-click="props.selectMedia">
+        <div class="o_we_media_dialog_img_wrapper">
+            <img class="img img-fluid o_we_attachment_highlight" t-att-src="props.src" t-att-title="props.tooltip or ''" crossorigin="anonymous"/>
+            <a t-if="props.author" class="o_we_media_author" t-att-href="props.href" target="_blank" t-esc="props.author"/>
+        </div>
+    </div>
+</t>
+
+<t t-name="web_editor.FileSelector" owl="1">
+    <form>
+        <FileSelectorControlPanel uploadText="uploadText"
+            urlPlaceholder="urlPlaceholder"
+            addText="addText"
+            searchPlaceholder="searchPlaceholder"
+            urlWarningTitle="urlWarningTitle"
+            uploadUrl="props.uploadUrl"
+            uploadFiles="props.uploadFiles"
+            showOptimizedOption="showOptimizedOption"
+            showOptimized="state.showOptimized"
+            changeShowOptimized="showOptimized => this.state.showOptimized = !this.state.showOptimized"
+            changeSearchService="service => this.state.searchService = service"
+            searchService="state.searchService"
+            needle="state.needle"
+            search="(needle) => this.search(needle)"
+            useMediaLibrary="props.useMediaLibrary"
+            onUploaded="(attachment) => this.onUploaded(attachment)"
+            validateUrl="validateUrl"/>
+        <t t-call="{{ constructor.attachmentsListTemplate }}"/>
+        <div class="mt-4 text-center mx-auto o_we_load_more">
+            <button t-if="canLoadMore" class="btn btn-primary o_load_more" type="button" t-on-click="loadMore">Load more...</button>
+            <div t-if="hasContent and !canLoadMore" class="mt-4 o_load_done_msg">
+                <span><i t-esc="allLoadedText"/></span>
+            </div>
+        </div>
+    </form>
+</t>
+
+<t t-name="web_editor.ImagesListTemplate" owl="1">
+    <div class="o_we_existing_attachments o_we_images d-flex flex-wrap w-100 justify-content-between align-items-stretch my-0">
+        <t t-if="!hasContent and !isFetching">
+            <div t-if="state.needle" class="o_nocontent_help">
+                <p class="o_empty_folder_image">No images found.</p>
+                <p class="o_empty_folder_subtitle">You can upload images with the button located in the top left of the screen.</p>
+            </div>
+            <div t-else="" class="o_we_search_prompt">
+                <h2>Get the perfect image by searching in our library of copyright free photos and illustrations.</h2>
+            </div>
+        </t>
+        <t t-else="">
+            <t t-if="['all', 'database'].includes(state.searchService)" t-foreach="state.attachments" t-as="attachment" t-key="attachment.id">
+                <ImageAttachment t-if="!attachment.original_id or state.showOptimized"
+                    isOptimized="!!attachment.original_id"
+                    src="attachment.thumbnail_src or attachment.image_src"
+                    name="attachment.name"
+                    model="attachment.res_model"
+                    minRowHeight="MIN_ROW_HEIGHT"
+                    id="attachment.id"
+                    onRemoved="(attachmentId) => this.onRemoved(attachmentId)"
+                    selected="attachment.selected"
+                    selectAttachment="() => this.selectAttachment(attachment)"/>
+            </t>
+            <t t-if="['all', 'media-library'].includes(state.searchService)" t-foreach="state.libraryMedia" t-as="media" t-key="media.id">
+                <LibraryImage author="media.author"
+                    src="media.thumbnail_url"
+                    href="media.author_link"
+                    tooltip="media.tooltip"
+                    minRowHeight="MIN_ROW_HEIGHT"
+                    selected="media.selected"
+                    selectMedia="() => this.selectMedia(media)"/>
+            </t>
+            <!-- 20 placeholders is just enough for a 5K screen, change this if ImageWidget.MIN_ROW_HEIGHT changes -->
+            <t t-foreach="[...Array(20).keys()]" t-as="i" t-key="i">
+                <div class="o_we_attachment_placeholder"/>
+            </t>
+        </t>
+    </div>
+</t>
+
+<t t-name="web_editor.DocumentAttachment" owl="1">
+    <div class="col-2 o_existing_attachment_cell o_we_attachment_highlight my-2" t-att-class="{ o_we_attachment_selected: props.selected }" t-on-click="props.selectAttachment">
+        <RemoveButton remove="() => this.remove()"/>
+        <div t-att-data-url="props.url" role="img" t-att-aria-label="props.name" t-att-title="props.name" t-att-data-mimetype="props.mimetype" class="o_image d-flex align-items-center justify-content-center"/>
+        <small class="o_file_name" t-esc="props.name"/>
+    </div>
+</t>
+
+<t t-name="web_editor.DocumentsListTemplate" owl="1">
+    <div class="o_we_existing_attachments o_we_documents">
+        <div t-if="!hasContent" class="o_nocontent_help">
+            <p class="o_empty_folder_image">No documents found.</p>
+            <p class="o_empty_folder_subtitle">You can upload documents with the button located in the top left of the screen.</p>
+        </div>
+        <div t-else="" class="row mx-auto">
+            <t t-foreach="state.attachments" t-as="attachment" t-key="attachment.id">
+                <DocumentAttachment url="attachment.url"
+                    name="attachment.name"
+                    mimetype="attachment.mimetype"
+                    id="attachment.id"
+                    onRemoved="(attachmentId) => this.onRemoved(attachmentId)"
+                    selected="attachment.selected"
+                    selectAttachment="() => this.selectAttachment(attachment)"/>
+            </t>
+        </div>
+    </div>
+</t>
+
+<t t-name="web_editor.IconSelector" owl="1">
+    <form action="#">
+        <div class="form-inline align-items-center py-4">
+            <SearchMedia searchPlaceholder="searchPlaceholder"
+                search="(needle) => this.search(needle)"
+                needle="state.needle"/>
+        </div>
+        <div class="font-icons-icons">
+            <t t-foreach="state.fonts" t-as="font" t-key="font.base">
+                <span t-foreach="font.icons" t-as="icon" t-key="font.base + icon.alias"
+                    t-att-title="icon.names[0]"
+                    t-att-aria-label="icon.names[0]" role="img"
+                    class="font-icons-icon"
+                    t-att-class="{ o_we_attachment_selected: icon.selected }"
+                    t-attf-class="{{ font.base }} {{ icon.names[0] }}"
+                    t-on-click="() => this.select(font.base, icon.alias)"/>
+            </t>
+        </div>
+    </form>
+</t>
+
+<t t-name="web_editor.VideoSelector" owl="1">
+    <div/>
+</t>
+
+<t t-name="web_editor.MediaDialog" owl="1">
+    <ul class="nav nav-tabs" role="tablist">
+        <t t-foreach="tabs" t-as="tab" t-key="tab.id">
+            <li class="nav-item"><a class="nav-link" t-att-class="{ active:  tab.id === state.activeTab }" t-on-click="() => state.activeTab = tab.id"><t t-esc="tab.title"/></a></li>
+        </t>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <t t-foreach="tabs" t-as="tab" t-key="tab.id">
+            <div class="tab-pane fade" t-att-class="tab.id === state.activeTab ? 'active show' : ''"><t t-component="tab.Component" t-props="tab.props"/></div>
+        </t>
+    </div>
+    <UploadProgressToast t-if="state.filesToUpload.length and state.showUploadProgressToast" close="() => this.state.showUploadProgressToast = false" files="state.filesToUpload"/>
+</t>
+</templates>
