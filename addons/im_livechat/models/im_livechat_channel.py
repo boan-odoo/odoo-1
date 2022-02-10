@@ -138,6 +138,18 @@ class ImLivechatChannel(models.Model):
             visitor_user = self.env['res.users'].browse(user_id)
             if visitor_user and visitor_user.active and visitor_user != operator:  # valid session user (not public)
                 channel_partner_to_add.append(Command.create({'partner_id': visitor_user.partner_id.id}))
+
+        if chatbot:
+            name = ' '.join([
+                visitor_user.display_name if visitor_user else anonymous_name,
+                chatbot.name
+            ])
+        else:
+            name = ' '.join([
+                visitor_user.display_name if visitor_user else anonymous_name,
+                operator.livechat_username if operator.livechat_username else operator.name
+            ])
+
         return {
             'channel_last_seen_partner_ids': channel_partner_to_add,
             'livechat_active': True,
@@ -147,7 +159,7 @@ class ImLivechatChannel(models.Model):
             'anonymous_name': False if user_id else anonymous_name,
             'country_id': country_id,
             'channel_type': 'livechat',
-            'name': ' '.join([visitor_user.display_name if visitor_user else anonymous_name, operator.livechat_username if operator.livechat_username else operator.name]),
+            'name': name,
             'public': 'private',
         }
 
