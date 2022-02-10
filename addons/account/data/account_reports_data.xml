@@ -3,6 +3,7 @@
     <data>
 
         <!-- GENERIC TAX REPORT -->
+        <!--TODO OCO il faudra tester ce que fait la colonne de debug sur les rapports custom-->
         <record id="generic_tax_report" model="account.report">
             <field name="name">Generic Tax report</field>
             <field name="filter_multi_company">tax_units</field>
@@ -209,6 +210,21 @@
             <field name="expression_ids" eval="[(5, 0, 0),
                 (0, 0, {'total': 'main', 'engine': 'account_codes', 'formula': '44 + 7002 + cocolasticot'}),
                 (0, 0, {'total': 'forty_two', 'engine': 'domain', 'formula': &quot;['|', '|', ('account_id.code', 'like', '44%'), ('account_id.code', 'like', '7002%'), ('account_id.code', 'like', 'cocolasticot%')]&quot;, 'subformula': 'sum'}),
+            ]"/>
+            <field name="hierarchy_level">1</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="oco_test_carryover_be" model="account.report.line">
+            <field name="name">Carryover: Belgian case</field>
+            <field name="code">test_carryover</field>
+            <field name="report_id" ref="test_report"/>
+            <field name="expression_ids" eval="[(5, 0, 0),
+                (0, 0, {'total': 'main', 'engine': 'aggregation', 'formula': 'test_carryover.main_unbounded', 'subformula': 'if_above(EUR(0))'}),
+                (0, 0, {'total': '_carryover_main', 'engine': 'aggregation', 'formula': 'test_carryover.main_unbounded', 'subformula': 'if_below(EUR(0))'}),
+                (0, 0, {'total': '_applied_carryover_main', 'engine': 'external', 'formula': 'sum', 'date_scope': 'to_beginning_of_period'}),
+                (0, 0, {'total': 'main_tags', 'engine': 'tax_tags', 'formula': 'carryover_test'}),
+                (0, 0, {'total': 'main_unbounded', 'engine': 'aggregation', 'formula': 'test_carryover.main_tags + test_carryover._applied_carryover_main'}),
             ]"/>
             <field name="hierarchy_level">1</field>
             <field name="sequence">10</field>

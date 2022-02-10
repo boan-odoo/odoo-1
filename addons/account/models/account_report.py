@@ -161,7 +161,6 @@ class AccountReportExpression(models.Model):
             ('aggregation', "Aggregate Other Formulas"),
             ('account_codes', "Prefix of Account Codes"),
             ('external', "External Value"),
-            ('bounded', "Bounded Value"),
         ],
         required=True
     )
@@ -291,7 +290,7 @@ class AccountReportExternalValue(models.Model):
     _description = 'Accounting Report External Value'
 
     name = fields.Char(required=True)
-    amount = fields.Float(required=True)
+    value = fields.Float(required=True)
     date = fields.Date(required=True)
 
     target_report_line_id = fields.Many2one(string="Target Line", comodel_name='account.report.line', required=True) # TODO OCO pas related pour pemettre le setup depuis l'UI, qui définit un domaine sur les expressions
