@@ -242,7 +242,7 @@ class TestSaleOrder(TestSaleCommon):
         self.assertTrue(so_copy.unlink(), 'Sale: deleting a quotation should be possible')
 
         # SO in state 'cancel' can be deleted
-        so_copy = self.sale_order.copy()
+        so_copy = self.sale_order.with_context(disable_cancel_warning=True).copy()
         so_copy.action_confirm()
         self.assertTrue(so_copy.state == 'sale', 'Sale: SO should be in state "sale"')
         so_copy.action_cancel()

@@ -240,6 +240,13 @@ class SaleOrder(models.Model):
 
         self.env['stock.picking']._log_activity(_render_note_exception_quantity_so, documents)
 
+    def _show_cancel_wizard(self):
+        res = super(SaleOrder, self)._show_cancel_wizard()
+        for order in self:
+            if any(picking.state == 'done' for picking in order.picking_ids) and not order._context.get('disable_cancel_warning'):
+                return True
+        return res
+
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 

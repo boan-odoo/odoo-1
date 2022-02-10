@@ -409,7 +409,7 @@ class TestSaleStock(TestSaleCommon, ValuationReconciliationTestCommon):
         item1 = self.company_data['product_order_no']
         partner1 = self.partner_a.id
         partner2 = self.env['res.partner'].create({'name': 'Another Test Partner'})
-        so1 = self.env['sale.order'].create({
+        so1 = self.env['sale.order'].with_context(disable_cancel_warning=True).create({
             'partner_id': partner1,
             'order_line': [(0, 0, {
                 'name': item1.name,

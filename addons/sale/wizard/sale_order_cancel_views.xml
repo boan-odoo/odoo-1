@@ -10,7 +10,6 @@
                     <field name="order_id" invisible="1"/>
                     <field name="template_id" invisible="1"/>
                     <field name="display_invoice_alert" invisible="1"/>
-                    <field name="is_quotation" invisible="1"/>
                     <div col="2"
                          class="alert alert-warning"
                          role="alert">
@@ -20,23 +19,20 @@
                             Draft invoices for this order will be cancelled. <br/>
                         </span>
                     </div>
-                    <group attrs="{'invisible': [('is_quotation', '=', True)]}">
-                        <field name="partner_ids"
-                               widget="many2many_tags_email"
-                               attrs="{'readonly': False}"
-                               context="{'force_email':True,
-                                         'show_email':True,
-                                         'no_create_edit': True}"/>
-                        <field name="subject" placeholder="Subject"/>
-                    </group>
-                    <field name="body" label="Content" options="{'style-inline': true}" attrs="{'invisible': [('is_quotation', '=', True)]}" />
+                    <field name="partner_ids"
+                           widget="many2many_tags_email"
+                           attrs="{'readonly': False}"
+                           context="{'force_email':True,
+                                     'show_email':True,
+                                     'no_create_edit': True}"/>
+                    <field name="subject" placeholder="Subject"/>
+                    <field name="body" label="Content" options="{'style-inline': true}"/>
                     <div></div>
                     <footer>
                         <button string="Send and cancel"
                                 name="action_send_mail_and_cancel"
                                 type="object"
-                                class="btn-primary"
-                                attrs="{'invisible': [('is_quotation', '=', True)]}"/>
+                                class="btn-primary"/>
                         <button string="Cancel"
                                 name="action_cancel"
                                 type="object"

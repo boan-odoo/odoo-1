@@ -894,9 +894,9 @@ class SaleOrder(models.Model):
         })
 
     def action_cancel(self):
-        if any((
-            order.state!='draft' and not order._context.get('disable_cancel_warning')
-        ) for order in self):
+        self.ensure_one()
+        cancel_warning = self._show_cancel_wizard()
+        if cancel_warning:
             template_id = self.env['ir.model.data']._xmlid_to_res_id(
                 'sale.mail_template_sale_cancellation', raise_if_not_found=False
             )
@@ -913,7 +913,7 @@ class SaleOrder(models.Model):
                 'model_description': self.with_context(lang=lang).type_name,
             }
             return {
-                'name': _('Cancel Sales Order'),
+                'name': _('Cancel Quotation') if self.state == 'sent' else _('Cancel Sales Order'),
                 'type': 'ir.actions.act_window',
                 'view_mode': 'form',
                 'res_model': 'sale.order.cancel',
@@ -927,6 +927,16 @@ class SaleOrder(models.Model):
         inv = self.invoice_ids.filtered(lambda inv: inv.state == 'draft')
         inv.button_cancel()
         return self.write({'state': 'cancel'})
+
+    def _show_cancel_wizard(self):
+        for order in self:
+            if (
+                order.state != 'draft' and not order._context.get('disable_cancel_warning')
+                or order.invoice_ids.filtered(lambda inv: inv.state == 'draft')
+                and not order._context.get('disable_cancel_warning')
+            ):
+                return True
+        return False
 
     def _find_mail_template(self, force_confirmation_template=False):
         template_id = False

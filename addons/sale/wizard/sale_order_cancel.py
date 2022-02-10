@@ -34,12 +34,13 @@ class SaleOrderCancel(models.TransientModel):
     display_invoice_alert = fields.Boolean(
         'Invoice Alert', compute='_compute_display_invoice_alert'
     )
-    is_quotation = fields.Boolean(string='Is a Quotation', compute='_compute_is_quotation')
 
     @api.depends('order_id')
     def _compute_partner_ids(self):
         for order in self:
-            order.partner_ids += order.order_id.partner_id + order.order_id.message_partner_ids
+            order.partner_ids += order.order_id.partner_id \
+                                 + order.order_id.message_partner_ids \
+                                 - order.author_id
 
     @api.depends('order_id')
     def _compute_display_invoice_alert(self):
@@ -47,11 +48,6 @@ class SaleOrderCancel(models.TransientModel):
             order.display_invoice_alert = bool(
                 order.order_id.invoice_ids.filtered(lambda inv: inv.state == 'draft')
             )
-
-    @api.depends('order_id')
-    def _compute_is_quotation(self):
-        for order in self:
-            order.is_quotation = bool(order.order_id.state == 'draft')
 
     @api.depends('order_id')
     def _compute_subject(self):
@@ -77,34 +73,13 @@ class SaleOrderCancel(models.TransientModel):
 
     def action_send_mail_and_cancel(self):
         for order in self:
-            partner_to_id = order.sudo()._render_template(
-                order.template_id.partner_to, 'sale.order', [order.order_id.id]
-            )[order.order_id.id]
-            order.env['mail.mail'].sudo().create({
-                'email_from': order.email_from,
-                'email_to': order.sudo()._render_template(
-                    order.template_id.email_to, 'sale.order', [order.order_id.id]
-                )[order.order_id.id],
-                'email_cc': order.sudo()._render_template(
-                    order.template_id.email_cc, 'sale.order', [order.order_id.id]
-                )[order.order_id.id],
-                'recipient_ids': order.partner_ids + order.env['res.partner'].browse(partner_to_id),
-                'author_id': order.author_id.id,
-                'reply_to': order.sudo()._render_template(
-                    order.template_id.reply_to, 'sale.order', [order.order_id.id]
-                )[order.order_id.id],
-                'res_id': None,
-                'subject': order.subject,
-                'body_html': order.body,
-                'auto_delete': True,
-                'scheduled_date': order.sudo()._render_template(
-                    order.template_id.scheduled_date, 'sale.order', [order.order_id.id]
-                )[order.order_id.id],
-            })
             order.order_id.message_post(
                 subject=order.subject,
                 body=order.body,
                 message_type='comment',
+                email_from=self.author_id.email,
+                email_layout_xmlid='mail.mail_notification_light',
+                partner_ids=self.partner_ids.ids,
             )
         return self.action_cancel()
 
