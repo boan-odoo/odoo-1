@@ -230,5 +230,7 @@
             <field name="sequence">10</field>
         </record>
 
+        <!--TODO OCO le print du test report déconne complet (les colonnes sont bonnes, mais les lignes viennent du rapport générique) => sans doute un souci de passage d'options-->
+
     </data>
 </odoo>
