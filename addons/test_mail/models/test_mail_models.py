@@ -123,6 +123,7 @@ class MailTestTicketMC(models.Model):
     _inherit = ['mail.test.ticket']
 
     company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env.company)
+    container_id = fields.Many2one('mail.test.container.mc', tracking=True)
 
 
 class MailTestContainer(models.Model):
