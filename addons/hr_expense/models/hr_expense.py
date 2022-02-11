@@ -1031,6 +1031,7 @@ class HrExpenseSheet(models.Model):
         })
         sheets = super(HrExpenseSheet, self.with_context(context)).create(vals_list)
         sheets.activity_update()
+        sheets._copy_expense_attachments()
         return sheets
 
     @api.ondelete(at_uninstall=False)
@@ -1038,6 +1039,15 @@ class HrExpenseSheet(models.Model):
         for expense in self:
             if expense.state in ['post', 'done']:
                 raise UserError(_('You cannot delete a posted or paid expense.'))
+
+    def _copy_expense_attachments(self):
+        for sheet in self:
+            attachment_ids = self.env['ir.attachment'].search([
+                ('res_model', '=', 'hr.expense'),
+                ('res_id', 'in', sheet.expense_line_ids.ids)
+            ])
+            for attachment in attachment_ids:
+                attachment.copy({'res_model': 'hr.expense.sheet', 'res_id': self.id})
 
     # --------------------------------------------
     # Mail Thread

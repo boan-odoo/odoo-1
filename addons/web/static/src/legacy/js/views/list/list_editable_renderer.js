@@ -1695,6 +1695,7 @@ ListRenderer.include({
      * @private
      */
     _onRowClicked: function (ev) {
+        console.log('_onRowClicked 123')
         if (!this._isRecordEditable(ev.currentTarget.dataset.id)) {
             // If there is an edited record, tries to save it and do not open the clicked record
             if (this.getEditableRecordID()) {

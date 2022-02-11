@@ -51,6 +51,7 @@ This module also uses analytic accounting and is compatible with the invoice on 
     'application': True,
     'assets': {
         'web.assets_backend': [
+            'hr_expense/static/src/js/expense_line_list_view.js',
             'hr_expense/static/src/js/expense_views.js',
             'hr_expense/static/src/js/expense_form_view.js',
             'hr_expense/static/src/js/expense_qr_code_action.js',
