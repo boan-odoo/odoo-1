@@ -54,26 +54,6 @@ class KnowledgeDataSet(DataSet):
         article.write(values)
         return True
 
-    @http.route('/knowledge/article/<int:article_id>/delete', type='json', auth="user")
-    def article_delete(self, article_id):
-        article = request.env['knowledge.article'].browse(article_id)
-        if not article.exists():
-            return False
-        article.unlink()
-        return True
-
-    @http.route('/knowledge/article/<int:article_id>/duplicate', type='json', auth="user")
-    def article_duplicate(self, article_id):
-        article = request.env['knowledge.article'].browse(article_id)
-        if not article.exists():
-            return False
-        new_article = article.copy({
-            'name': _('%s (copy)') % article.name,
-            'sequence': article.sequence + 1
-        })
-
-        return new_article.id
-
     @http.route('/knowledge/article/create', type='json', auth="user")
     def article_create(self, title=False, target_parent_id=False, private=False):
         Article = request.env['knowledge.article']

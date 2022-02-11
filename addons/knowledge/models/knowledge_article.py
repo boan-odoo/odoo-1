@@ -383,6 +383,13 @@ class Article(models.Model):
 
         return result
 
+    @api.returns('self', lambda value: value.id)
+    def copy(self, default=None):
+        default = dict(default or {},
+                       name=_("%s (copy)", self.name),
+                       sequence=self.sequence+1)
+        return super().copy(default=default)
+
     def unlink(self):
         for article in self:
             # Make all the article's children be adopted by the parent's parent.

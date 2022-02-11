@@ -41,24 +41,26 @@ const KnowledgeFormController = FormController.extend({
     },
 
     _onDelete: async function () {
-        const { id } = this.getState();
-        if (typeof id === 'undefined') {
-            return;
-        }
-        const message = _t("Are you sure you want to delete this record?");
-        let dialog;
-        const confirmCallback = () => {
-            this._delete(id).guardedCatch(() => dialog.destroy());
-        };
-        dialog = Dialog.confirm(this, message, { confirm_callback: confirmCallback });
+        this._deleteRecords([this.handle]);
+    },
+
+    /**
+     * @override
+     */
+    _onDeletedRecords: function () {
+        this.do_action('knowledge.action_home_page', {});
     },
 
     _onDuplicate: async function () {
-        const { id } = this.getState();
-        if (typeof id === 'undefined') {
-            return;
-        }
-        await this._duplicate(id);
+        var self = this;
+        this.model.duplicateRecord(this.handle).then(function (handle) {
+            const { res_id } = self.model.get(handle);
+            self.do_action('knowledge.action_home_page', {
+                additional_context: {
+                    res_id: res_id
+                }
+            });
+        });
     },
 
     /**
@@ -212,35 +214,6 @@ const KnowledgeFormController = FormController.extend({
         // Change in favourite if any match
         const $liFavourite = this.$el.find(`.o_tree_favourite [data-article-id="${id}"]`);
         $liFavourite.children(":first").find('.o_article_name').text(targetName);
-    },
-
-    /**
-     * @param {integer} id - Target id
-     */
-    _delete: async function (id) {
-        const result = await this._rpc({
-            route: `/knowledge/article/${id}/delete`
-        });
-        if (result) {
-            this.do_action('knowledge.action_home_page', {});
-        }
-    },
-
-    /**
-     * @param {integer} id - Target id
-     */
-    _duplicate: async function (id) {
-        const articleId = await this._rpc({
-            route: `/knowledge/article/${id}/duplicate`
-        });
-        if (!articleId) {
-            return;
-        }
-        this.do_action('knowledge.action_home_page', {
-            additional_context: {
-                res_id: articleId
-            }
-        });
     },
 
     /**
