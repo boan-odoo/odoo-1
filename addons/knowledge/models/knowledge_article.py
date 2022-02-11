@@ -420,6 +420,80 @@ class Article(models.Model):
     # Tools and business methods
     ############################
 
+    def move_to(self, parent_id=False, before_article_id=False, private=False):
+        self.ensure_one()
+        parent = self.browse(parent_id) if parent_id else False
+        if parent_id and not parent:
+            raise UserError(_("The parent in which you want to move your article does not exist"))
+        before_article = self.browse(before_article_id) if before_article_id else False
+        if before_article_id and not before_article:
+            raise UserError(_("The article before which you want to move your article does not exist"))
+
+        if before_article:
+            sequence = before_article.sequence
+        else:
+            # get max sequence among articles with the same parent
+            sequence = self._get_max_sequence_inside_parent(parent_id)
+
+        values = {
+            'parent_id': parent_id,
+            'sequence': sequence
+        }
+        if not parent_id:
+            # If parent_id, the write method will set the internal_permission based on the parent.
+            # If moved from workspace to private -> set none. If moved from private to workspace -> set write
+            values['internal_permission'] = 'none' if private else 'write'
+
+        if not parent and private:  # If set private without parent, remove all members except current user.
+            self.article_member_ids.unlink()
+            values.update({
+                'article_member_ids': [(0, 0, {
+                    'partner_id': self.env.user.partner_id.id,
+                    'permission': 'write'
+                })]
+            })
+
+        self.write(values)
+        return True
+
+    def article_create(self, title=False, parent_id=False, private=False):
+        Article = self.env['knowledge.article']
+        parent = Article.browse(parent_id) if parent_id else False
+        if parent_id and not parent:
+            raise UserError(_("The parent in which you want to move your article does not exist"))
+
+        values = {
+            'internal_permission': 'none' if private else 'write',  # you cannot create an article without parent in shared directly.,
+            'parent_id': parent_id,
+            'sequence': self._get_max_sequence_inside_parent(parent_id)
+        }
+        if not parent and private:
+            # To be private, the article need at least one member with write access.
+            values.update({
+                'article_member_ids': [(0, 0, {
+                    'partner_id': self.env.user.partner_id.id,
+                    'permission': 'write'
+                })]
+            })
+        if title:
+            values.update({
+                'name': title,
+                'body': title
+            })
+
+        article = Article.create(values)
+
+        return article.id
+
+    def _get_max_sequence_inside_parent(self, parent_id):
+        # TODO DBE: maybe order the childs_ids in desc on parent should be enough
+        max_sequence_article = self.search(
+            [('parent_id', '=', parent_id)],
+            order="sequence desc",
+            limit=1
+        )
+        return max_sequence_article.sequence + 1 if max_sequence_article else 0
+
     def _get_highest_parent(self):
         self.ensure_one()
         if self.parent_id:

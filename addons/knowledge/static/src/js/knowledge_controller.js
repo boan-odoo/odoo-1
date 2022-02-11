@@ -187,11 +187,13 @@ const KnowledgeFormController = FormController.extend({
      */
     _create: async function (id, setPrivate) {
         const articleId = await this._rpc({
-            route: `/knowledge/article/create`,
-            params: {
-                target_parent_id: id,
+            model: 'knowledge.article',
+            method: 'article_create',
+            args: [[]],
+            kwargs: {
+                parent_id: id,
                 private: setPrivate
-            }
+            },
         });
         if (!articleId) {
             return;
@@ -222,10 +224,12 @@ const KnowledgeFormController = FormController.extend({
      */
     _move: async function (src, dst) {
         const result = await this._rpc({
-            route: `/knowledge/article/${src}/move`,
-            params: {
-                target_parent_id: dst
-            }
+            model: 'knowledge.article',
+            method: 'move_to',
+            args: [
+                $li.data(key),
+            ],
+            kwargs: {parent_id: dst},
         });
         const $parent = this.$el.find(`.o_tree [data-article-id="${dst}"]`);
         if (result && $parent.length !== 0) {
