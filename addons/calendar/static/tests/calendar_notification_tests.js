@@ -131,7 +131,7 @@ QUnit.module("Calendar Notification", (hooks) => {
                 start() {
                     return {
                         doAction(actionId) {
-                            assert.step(actionId);
+                            assert.step(actionId.type);
                             return Promise.resolve(true);
                         },
                         loadState(state, options) {
@@ -156,9 +156,15 @@ QUnit.module("Calendar Notification", (hooks) => {
                 "Very old meeting message"
             );
 
+<<<<<<< HEAD
             await click(target.querySelectorAll(".o_notification_buttons .btn")[1]);
             assert.verifySteps(["calendar.action_calendar_event_notify"]);
             assert.containsNone(target, ".o_notification");
+=======
+            await click(webClient.el.querySelectorAll(".o_notification_buttons .btn")[1]);
+            assert.verifySteps(["ir.actions.act_window"]);
+            assert.containsNone(webClient.el, ".o_notification");
+>>>>>>> a86296c2958... temp
         }
     );
 
