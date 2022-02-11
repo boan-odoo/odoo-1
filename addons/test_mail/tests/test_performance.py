@@ -32,9 +32,10 @@ class BaseMailPerformance(TransactionCaseWithUserDemo):
             'notification_type': 'inbox',
             'signature': '--\nErnest',
         })
-        cls.admin = cls.env.user
-        cls.admin.write({
+        cls.user_admin = cls.env.ref('base.user_admin')
+        cls.user_admin.write({
             'country_id': cls.env.ref('base.be').id,
+            'notification_type': 'inbox',
         })
 
         cls.customer = cls.env['res.partner'].with_context(cls._quick_create_ctx).create({
@@ -75,8 +76,9 @@ class BaseMailPerformance(TransactionCaseWithUserDemo):
         self.env['base'].flush()
         self.cr.flush()
 
-    def _generate_attachments_data(self, count, res_model=None, res_id=None):
+    def _generate_attachments_data(self, count, res_model=None, res_id=None, attach_values=None):
         # attachment visibility depends on what they are attached to
+        attach_values = attach_values if attach_values else {}
         if res_model is None:
             res_model = self.template._name
         if res_id is None:
@@ -87,6 +89,7 @@ class BaseMailPerformance(TransactionCaseWithUserDemo):
             'mimetype': 'text/plain',
             'res_model': res_model,
             'res_id': res_id,
+            **attach_values,
         } for x in range(count)]
 
 
