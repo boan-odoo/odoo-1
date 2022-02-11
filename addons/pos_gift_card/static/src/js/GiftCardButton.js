@@ -20,7 +20,7 @@ odoo.define("pos_gift_card.GiftCardButton", function (require) {
   ProductScreen.addControlButton({
     component: GiftCardButton,
     condition: function () {
-      return this.env.pos.config.use_gift_card;
+      return this.env.pos.config.module_pos_gift_card;
     },
   });
 

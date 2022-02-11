@@ -16,7 +16,7 @@ odoo.define("pos_gift_card.gift_card", function (require) {
       }
     }
     wait_for_push_order() {
-        if(this.pos.config.use_gift_card) {
+        if(this.pos.config.module_pos_gift_card) {
             let giftProduct = this.pos.db.product_by_id[this.pos.config.gift_card_product_id[0]];
             for (let line of this.orderlines) {
                 if(line.product.id === giftProduct.id)

@@ -10,6 +10,6 @@ class PosSession(models.Model):
 
     def _loader_params_product_product(self):
         result = super()._loader_params_product_product()
-        if self.config_id.use_gift_card and self.config_id.gift_card_product_id:
+        if self.config_id.module_pos_gift_card and self.config_id.gift_card_product_id:
             result['search_params']['domain'] = OR([result['search_params']['domain'], [('id', '=', self.config_id.gift_card_product_id.id)]])
         return result

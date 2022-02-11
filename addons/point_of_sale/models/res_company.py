@@ -6,7 +6,6 @@ from odoo.exceptions import ValidationError
 class ResCompany(models.Model):
     _inherit = 'res.company'
 
-    pos_config_ids = fields.One2many('pos.config', 'company_id', string="Shops")
     point_of_sale_update_stock_quantities = fields.Selection([
             ('closing', 'At the session closing'),
             ('real', 'In real time (recommended)'),

@@ -10,7 +10,7 @@ odoo.define('pos_gift_card.PaymentScreen', function(require) {
     const PosGiftCardPaymentScreen = PaymentScreen => class extends PaymentScreen {
         //@Override
         async validateOrder(isForceValidate) {
-            if(this.env.pos.config.use_gift_card) {
+            if(this.env.pos.config.module_pos_gift_card) {
                 if (await this._isOrderValid(isForceValidate)) {
                     try {
                         let giftProduct = this.env.pos.db.product_by_id[this.env.pos.config.gift_card_product_id[0]];
@@ -56,7 +56,7 @@ odoo.define('pos_gift_card.PaymentScreen', function(require) {
         }
 
         async _postPushOrderResolve(order, server_ids) {
-            if(this.env.pos.config.use_gift_card) {
+            if(this.env.pos.config.module_pos_gift_card) {
                 let ids = await this.rpc({
                     model: 'pos.order',
                     method: 'get_new_card_ids',

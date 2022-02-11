@@ -19,6 +19,9 @@ class PosCategory(models.Model):
     child_id = fields.One2many('pos.category', 'parent_id', string='Children Categories')
     sequence = fields.Integer(help="Gives the sequence order when displaying a list of product categories.")
     image_128 = fields.Image("Image", max_width=128, max_height=128)
+
+    # During loading of data, the image is not loaded so we expose a lighter
+    # field to determine whether a pos.category has an image or not.
     has_image = fields.Boolean(compute='_compute_has_image')
 
     def name_get(self):

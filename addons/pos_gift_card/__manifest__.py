@@ -13,7 +13,6 @@
         'data/gift_card_data.xml',
         'views/gift_card_views.xml',
         'views/res_config_settings_views.xml',
-        'views/pos_config_views.xml',
         'security/ir.model.access.csv',
     ],
     'assets': {

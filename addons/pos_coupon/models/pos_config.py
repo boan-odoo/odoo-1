@@ -12,10 +12,6 @@ from odoo.exceptions import UserError
 class PosConfig(models.Model):
     _inherit = "pos.config"
 
-    use_coupon_programs = fields.Boolean(
-        "Coupons & Promotions",
-        help="Use coupon and promotion programs in this PoS configuration.",
-    )
     coupon_program_ids = fields.Many2many(
         "coupon.program",
         string="Coupon Programs",

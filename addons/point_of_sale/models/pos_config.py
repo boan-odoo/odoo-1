@@ -141,6 +141,8 @@ class PosConfig(models.Model):
     is_posbox = fields.Boolean("PosBox")
     is_header_or_footer = fields.Boolean("Custom Header & Footer")
     module_pos_hr = fields.Boolean(help="Show employee login screen")
+    module_pos_coupon = fields.Boolean("Coupons & Promotions", help="Use coupon and promotion programs in this PoS configuration.")
+    module_pos_gift_card = fields.Boolean(string="Gift Card")
     amount_authorized_diff = fields.Float('Amount Authorized Difference',
         help="This field depicts the maximum difference allowed between the ending balance and the theoretical cash when "
              "closing a session, for non-POS managers. If this maximum is reached, the user will have an error message at "
@@ -745,3 +747,14 @@ class PosConfig(models.Model):
             if field.startswith('module_'):
                 modules_to_check.append(field.replace('module_', ''))
         return modules_to_check
+
+    def action_pos_config_modal_edit(self):
+        return {
+            'view_mode': 'form',
+            'view_id': self.env.ref('point_of_sale.pos_config_view_form').id,
+            'res_model': 'pos.config',
+            'type': 'ir.actions.act_window',
+            'target': 'new',
+            'res_id': self.id,
+            'context': {'pos_config_open_modal': True},
+        }

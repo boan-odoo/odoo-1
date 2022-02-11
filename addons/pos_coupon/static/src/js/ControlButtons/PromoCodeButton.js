@@ -27,7 +27,7 @@ odoo.define('pos_coupon.PromoCodeButton', function (require) {
     ProductScreen.addControlButton({
         component: PromoCodeButton,
         condition: function () {
-            return this.env.pos.config.use_coupon_programs;
+            return this.env.pos.config.module_pos_coupon;
         },
     });
 

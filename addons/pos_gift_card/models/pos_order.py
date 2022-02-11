@@ -47,7 +47,7 @@ class PosOrder(models.Model):
 
     def _add_mail_attachment(self, name, ticket):
         attachment = super()._add_mail_attachment(name, ticket)
-        if self.config_id.use_gift_card and len(self.get_new_card_ids()) > 0:
+        if self.config_id.module_pos_gift_card and len(self.get_new_card_ids()) > 0:
             report = self.env.ref('pos_gift_card.gift_card_report_pdf')._render_qweb_pdf(self.get_new_card_ids())
             filename = name + '.pdf'
             gift_card = self.env['ir.attachment'].create({

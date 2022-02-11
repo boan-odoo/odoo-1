@@ -2,7 +2,7 @@ odoo.define('pos_coupon.pos', function (require) {
     'use strict';
 
     /**
-     * When pos_coupon is active (`use_coupon_programs == true`), reward lines
+     * When pos_coupon is active (`module_pos_coupon == true`), reward lines
      * are generated for each order. Everytime an order is updated ('update-rewards'
      * event is triggered), the reward lines are recalculated. Generated reward lines
      * are computed based on `bookedCouponCodes` and `activePromoProgramIds` which are
@@ -308,7 +308,7 @@ odoo.define('pos_coupon.pos', function (require) {
         // NEW METHODS
 
         _updateRewards() {
-            if (!this.pos.config.use_coupon_programs) return;
+            if (!this.pos.config.module_pos_coupon) return;
             dp.add(this._getNewRewardLines()).then(([newRewardLines, rewardsContainer]) => {
                 newRewardLines.forEach((rewardLine) => this.orderlines.add(rewardLine));
                 // We need this for the rendering of ActivePrograms component.

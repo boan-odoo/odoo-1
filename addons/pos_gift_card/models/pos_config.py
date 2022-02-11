@@ -7,8 +7,6 @@ from odoo import api, fields, models
 class PosConfig(models.Model):
     _inherit = "pos.config"
 
-    use_gift_card = fields.Boolean(string="Gift Card")
-
     gift_card_product_id = fields.Many2one(
         "product.product",
         string="Gift Card Product",
@@ -26,9 +24,9 @@ class PosConfig(models.Model):
         help="Defines the way you want to set your gift cards.",
     )
 
-    @api.onchange("use_gift_card")
+    @api.onchange("module_pos_gift_card")
     def _onchange_giftproduct(self):
-        if self.use_gift_card:
+        if self.module_pos_gift_card:
             self.gift_card_product_id = self.env.ref(
                 "gift_card.pay_with_gift_card_product", False
             )

@@ -7,3 +7,4 @@ from . import coupon
 from . import coupon_program
 from . import barcode_rule
 from . import pos_session
+from . import res_config_settings

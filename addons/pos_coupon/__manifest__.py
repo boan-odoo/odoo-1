@@ -15,7 +15,6 @@
         "security/ir.model.access.csv",
         "views/coupon_views.xml",
         "views/coupon_program_views.xml",
-        "views/pos_config_views.xml",
         "views/res_config_settings_views.xml",
         ],
     "demo": [

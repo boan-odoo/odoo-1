@@ -10,7 +10,7 @@ class PosSession(models.Model):
 
     def _pos_ui_models_to_load(self):
         result = super()._pos_ui_models_to_load()
-        if self.config_id.use_coupon_programs and len(self.config_id.program_ids) > 0:
+        if self.config_id.module_pos_coupon and len(self.config_id.program_ids) > 0:
             new_model = 'coupon.program'
             if new_model not in result:
                 result.append(new_model)
@@ -29,7 +29,7 @@ class PosSession(models.Model):
 
     def _loader_params_product_product(self):
         result = super(PosSession, self)._loader_params_product_product()
-        if self.config_id.use_coupon_programs and len(self.config_id.program_ids) > 0:
+        if self.config_id.module_pos_coupon and len(self.config_id.program_ids) > 0:
             discount_product_ids = self.config_id.program_ids.mapped(lambda program: program.discount_line_product_id.id)
             reward_product_ids = self.config_id.program_ids.mapped(lambda program: program.reward_product_id.id)
             product_ids = [id for id in [*discount_product_ids, *reward_product_ids] if id]
