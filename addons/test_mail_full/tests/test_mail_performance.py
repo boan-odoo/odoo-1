@@ -20,8 +20,8 @@ class TestMailPerformance(BaseMailPerformance):
         # users / followers
         cls.user_emp_email = mail_new_test_user(
             cls.env,
-            company_id=cls.admin.company_id.id,
-            company_ids=[(4, cls.admin.company_id.id)],
+            company_id=cls.user_admin.company_id.id,
+            company_ids=[(4, cls.user_admin.company_id.id)],
             email='user.emp.email@test.example.com',
             login='user_emp_email',
             groups='base.group_user,base.group_partner_manager',
@@ -31,8 +31,8 @@ class TestMailPerformance(BaseMailPerformance):
         )
         cls.user_portal = mail_new_test_user(
             cls.env,
-            company_id=cls.admin.company_id.id,
-            company_ids=[(4, cls.admin.company_id.id)],
+            company_id=cls.user_admin.company_id.id,
+            company_ids=[(4, cls.user_admin.company_id.id)],
             email='user.portal@test.example.com',
             login='user_portal',
             groups='base.group_portal',
@@ -54,51 +54,47 @@ class TestMailPerformance(BaseMailPerformance):
         ])
 
         # record
-        cls.record_container = cls.env['mail.test.container'].with_context(cls._quick_create_ctx).create({
+        cls.record_container = cls.env['mail.test.container.mc'].create({
             'alias_name': 'test-alias',
             'customer_id': cls.customer.id,
             'name': 'Test Container',
         })
-        cls.record_ticket = cls.env['mail.test.ticket'].with_context(cls._quick_create_ctx).create({
+        cls.record_ticket = cls.env['mail.test.ticket.mc'].create({
             'email_from': 'email.from@test.example.com',
             'container_id': cls.record_container.id,
             'customer_id': False,
             'name': 'Test Ticket',
             'user_id': cls.user_emp_email.id,
         })
-        cls.record_ticket.message_subscribe(cls.customers.ids)
-
-        cls.attachment_vals = [{
-            'datas': base64.b64encode(bytes("Attachment content %s" % i, 'utf-8')),
-            'name': 'fileText_test%s.txt' % i,
-            'mimetype': 'text/plain',
-            'res_model': 'mail.compose.message',
-            'res_id': 0,
-        } for i in range(3)]
-
-    def setUp(self):
-        super(TestMailPerformance, self).setUp()
-        self._init_mail_gateway()
+        cls.record_ticket.message_subscribe(cls.customers.ids + cls.user_admin.partner_id.ids)
 
     def test_initial_values(self):
         """ Simply ensure some values through all tests """
-        record_ticket = self.env['mail.test.ticket'].browse(self.record_ticket.ids)
-        self.assertEqual(record_ticket.message_partner_ids, self.user_emp_email.partner_id + self.customers)
-        self.assertEqual(len(record_ticket.message_ids), 0)
+        record_ticket = self.env['mail.test.ticket.mc'].browse(self.record_ticket.ids)
+        self.assertEqual(record_ticket.message_partner_ids, self.user_emp_email.partner_id + self.user_admin.partner_id + self.customers)
+        self.assertEqual(len(record_ticket.message_ids), 1)
 
     @mute_logger('odoo.tests', 'odoo.addons.mail.models.mail_mail', 'odoo.models.unlink')
     @users('employee')
     @warmup
     def test_message_post_w_followers(self):
         """ Aims to cover as much features of message_post as possible """
-        record_ticket = self.env['mail.test.ticket'].browse(self.record_ticket.ids)
+        record_ticket = self.env['mail.test.ticket.mc'].browse(self.record_ticket.ids)
+        attachments = self.env['ir.attachment'].create([
+            dict(values,
+                 res_model='mail.compose.message',
+                 res_id=0)
+            for values in self.test_attachments_vals
+        ])
 
-        with self.assertQueryCount(employee=57):
+        with self.assertQueryCount(employee=70):
             new_message = record_ticket.message_post(
+                attachment_ids=attachments.ids,
                 body='<p>Test Content</p>',
                 message_type='comment',
                 subject='Test Subject',
                 subtype_xmlid='mail.mt_comment',
             )
 
-        self.assertEqual(new_message.notified_partner_ids, self.user_emp_email.partner_id + self.customers)
+        self.assertEqual(new_message.notified_partner_ids,
+                         self.user_emp_email.partner_id + self.user_admin.partner_id + self.customers)
