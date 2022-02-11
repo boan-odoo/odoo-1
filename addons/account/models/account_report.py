@@ -228,6 +228,31 @@ class AccountReportExpression(models.Model):
 
         return rslt
 
+    def _expand_aggregations(self):
+        # TODO OCO DOC: retoure self + toutes les expressions dont les aggregations dépendent (enfin, tout ce qui a été trouvé de legit, en cas de cross_report)
+        rslt = self
+
+        to_expand = self.filtered(lambda x: x.engine == 'aggregation')
+        while to_expand:
+            domains = []
+
+            for candidate_expr in to_expand:
+                labels_by_code = to_expand._get_aggregation_terms_details()
+
+                cross_report_domain = []
+                if candidate.expr.subformula != 'cross_report':
+                    cross_report_domain = [('report_line_id.report_id', '=', candidate_expr.report_line_id.report_id.id)]
+
+                for line_code, expr_labels in labels.by.code.items():
+                    dependency_domain = [('report_line_id.code', '=', line_code), ('total', 'in', expr_labels)] + cross_report_domain
+                    domains.append(dependency_domain)
+
+            sub_expressions = self.env['account.report.expression'].search(osv.expression.OR(domains))
+            to_expand = sub_expressions.filtered(lambda x: x.engine == 'aggregation' and x not in rslt)
+            rslt |= sub_expressions
+
+        return rslt
+
     def _get_aggregation_terms_details(self):
         # TODO OCO DOC
         totals_by_code = defaultdict(lambda: set()) # e.g. {'A': {'balance', 'other'}, 'B': {'balance'}} if we the expression does formula=A.balance + B.balance + A.other
