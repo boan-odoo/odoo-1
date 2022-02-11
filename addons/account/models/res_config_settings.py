@@ -154,14 +154,20 @@ class ResConfigSettings(models.TransientModel):
         super().set_values()
         # install a chart of accounts for the given company (if required)
 # <<<<<<< HEAD
+# <<<<<<< HEAD
 #         if self.env.company == self.company_id \
 #                 and self.chart_template_id \
 #                 and self.chart_template_id != self.company_id.chart_template_id:
 #             self.chart_template_id._load(15.0, 15.0, self.env.company)
 # =======
-        if self.env.company == self.company_id and self.chart_template and self.chart_template != self.company_id.chart_template:
-            self.env.company.try_loading_coa(self.chart_template)
+#         if self.env.company == self.company_id and self.chart_template and self.chart_template != self.company_id.chart_template:
+#             self.env.company.try_loading_coa(self.chart_template)
 # >>>>>>> 1eb2ebef96a ([REF] account: remove chart template)
+# =======
+        if self.env.company == self.company_id and self.chart_template \
+        and self.chart_template != self.company_id.chart_template:
+            self.chart_template.try_loading()
+# >>>>>>> 26e64de9c44 ([IMP] account: try_loading, company -> template)
 
     @api.depends('company_id')
     def _compute_has_chart_of_accounts(self):
