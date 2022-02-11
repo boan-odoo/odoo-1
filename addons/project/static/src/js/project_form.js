@@ -9,6 +9,7 @@ import viewRegistry from 'web.view_registry';
 import FormHtmlFieldExpanderMixin from './project_form_html_field_expander_mixin'
 
 const ProjectFormController = FormController.extend({
+
     _getActionMenuItems(state) {
         if (!this.archiveEnabled || !state.data['recurrence_id']) {
             return this._super(...arguments);
@@ -108,9 +109,25 @@ export const FormDescriptionExpanderView = FormView.extend({
     }),
 })
 
+export const ProjectFormRenderer = FormDescriptionExpanderRenderer.extend({
+
+    /**
+     * @private
+     * @override
+     */
+    _renderStatButton: function (node) {
+        var $button = this._super.apply(this, arguments);
+        if ($button.attr('id') == 'button_open_parent_task' && this.state.data.parent_id) {
+            $button.prop('title', this.state.data.parent_id.data.display_name);
+        }
+        return $button;
+    },
+})
+
 export const ProjectFormView = FormDescriptionExpanderView.extend({
     config: Object.assign({}, FormDescriptionExpanderView.prototype.config, {
         Controller: ProjectFormController,
+        Renderer: ProjectFormRenderer,
     }),
 });
 
