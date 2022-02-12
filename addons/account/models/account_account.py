@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import re
+
 from odoo import api, fields, models, _, tools
 from odoo.osv import expression
 from odoo.exceptions import UserError, ValidationError
 
+ACCOUNT_REGEX = re.compile(r'(\d+)?(.*)$')
 
 class AccountAccountType(models.Model):
     _name = "account.account.type"
@@ -55,7 +58,7 @@ class AccountAccount(models.Model):
                                                            ('user_type_id', '=', data_unaffected_earnings.id)])
                 raise ValidationError(_('You cannot have more than one account with "Current Year Earnings" as type. (accounts: %s)', [a.code for a in account_unaffected_earnings]))
 
-    name = fields.Char(string="Account Name", required=True, index='trigram', tracking=True)
+    name = fields.Char(string="Account Name", required=False, index='trigram', tracking=True)
     currency_id = fields.Many2one('res.currency', string='Account Currency',
         help="Forces all moves for this account to have this account currency.", tracking=True)
     code = fields.Char(size=64, required=True, index=True, tracking=True)
@@ -84,7 +87,7 @@ class AccountAccount(models.Model):
 
     opening_debit = fields.Monetary(string="Opening Debit", compute='_compute_opening_debit_credit', inverse='_set_opening_debit', help="Opening debit value for this account.")
     opening_credit = fields.Monetary(string="Opening Credit", compute='_compute_opening_debit_credit', inverse='_set_opening_credit', help="Opening credit value for this account.")
-    opening_balance = fields.Monetary(string="Opening Balance", compute='_compute_opening_debit_credit', help="Opening balance value for this account.")
+    opening_balance = fields.Monetary(string="Opening Balance", compute='_compute_opening_debit_credit', inverse='_set_opening_balance', help="Opening balance value for this account.")
 
     is_off_balance = fields.Boolean(compute='_compute_is_off_balance', default=False, store=True, readonly=True)
 
@@ -359,6 +362,11 @@ class AccountAccount(models.Model):
         for record in self:
             record._set_opening_debit_credit(record.opening_credit, 'credit')
 
+    def _set_opening_balance(self):
+        for record in self:
+            side = 'debit' if record.opening_balance > 0 else 'credit'
+            record._set_opening_debit_credit(abs(record.opening_balance), side)
+
     def _set_opening_debit_credit(self, amount, field):
         """ Generic function called by both opening_debit and opening_credit's
         inverse function. 'Amount' parameter is the value to be set, and field
@@ -471,6 +479,12 @@ class AccountAccount(models.Model):
             name = account.code + ' ' + account.name
             result.append((account.id, name))
         return result
+
+    @api.model
+    def name_create(self, name):
+        results = ACCOUNT_REGEX.match(name or '').groups('')
+        code, name = results[0], results[1]
+        return self.create({'code': code, 'name': name}).name_get()[0]
 
     @api.returns('self', lambda value: value.id)
     def copy(self, default=None):
