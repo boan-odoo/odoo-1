@@ -128,10 +128,12 @@ class HolidaysRequest(models.Model):
     user_id = fields.Many2one('res.users', string='User', related='employee_id.user_id', related_sudo=True, compute_sudo=True, store=True, readonly=True)
     manager_id = fields.Many2one('hr.employee', compute='_compute_from_employee_id', store=True, readonly=False)
     # leave type configuration
+    def _default_leave_type(self):
+        return self.env['hr.leave.type'].search([('name', '=', 'Sick Time Off')]).id
     holiday_status_id = fields.Many2one(
         "hr.leave.type", compute='_compute_from_employee_id', store=True, string="Time Off Type", required=True, readonly=False,
         states={'cancel': [('readonly', True)], 'refuse': [('readonly', True)], 'validate1': [('readonly', True)], 'validate': [('readonly', True)]},
-        domain=['|', ('requires_allocation', '=', 'no'), ('has_valid_allocation', '=', True)])
+        domain=['|', ('requires_allocation', '=', 'no'), ('has_valid_allocation', '=', True)], default=_default_leave_type)
     holiday_allocation_id = fields.Many2one(
         'hr.leave.allocation', compute='_compute_from_holiday_status_id', string="Allocation", store=True, readonly=False)
     color = fields.Integer("Color", related='holiday_status_id.color')
@@ -1377,7 +1379,7 @@ class HolidaysRequest(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'ir.attachment',
             'context': {'create': False},
-            'view_mode': 'list',
+            'view_mode': 'kanban',
             'domain': domain
         }
 

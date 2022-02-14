@@ -149,6 +149,7 @@
                                                 <span class="fa fa-ellipsis-v"/>
                                             </a>
                                             <div class="dropdown-menu" role="menu">
+                                                <!-- <a onclick="download()" type="object" class="dropdown-item" role="menuitem">Download</a> -->
                                                 <a t-if="widget.deletable" role="menuitem" type="delete" class="dropdown-item">Delete</a>
                                             </div>
                                         </div>
