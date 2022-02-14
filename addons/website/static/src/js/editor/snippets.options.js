@@ -970,7 +970,7 @@ options.registry.WebsiteLevelColor = options.Class.extend({
             color = '';
             gradient = widgetValue;
         } else {
-            color = widgetValue;
+            color = widgetValue === 'false' ? '' : widgetValue;
             gradient = '';
         }
         await this.customizeWebsiteVariable(previewMode, gradient, params);
