@@ -97,17 +97,17 @@ def load_xsd_and_validate_xml(env, module_name, url, xmls_to_validate):
     """Validates the provided XML files with associated XSD files loaded from given url.
     The XSD files are fetched from database if previously cached.
 
-
-    :param env:environment of calling module (odoo.api.Environment)
-    :param module_name: name of calling module (str)
-    :param url: url of XSD file/ZIP archive (str)
-    :param xmls_to_validate: is either
-        1) a dictionary of XML files, where keys are XSD file names and values a tuple XML name and file
-            i.e. {xsd_file_name: (xml_name, xml_file)}
-            The XSD file is the one that will be used to validate the associated XML file (if retrieved from given url)
-            -> url leads to a ZIP archive
+    :param odoo.api.Environment env: environment of calling module (odoo.api.Environment)
+    :param str module_name: name of calling module (str)
+    :param str url: url of XSD file/ZIP archive (str)
+    :param dict or list[tuple] xmls_to_validate: is either
+        1) a dictionary of XML files, where keys are XSD file names and values are a tuple with the XML name and file
+        (i.e. {xsd_file_name: (xml_name, xml_file)})
+        The XSD file is the one that will be used to validate the associated XML file (if retrieved from given url)
+        (implies that url leads to a ZIP archive)
         2) a list of tuples (xml_name, xml_file). The XML files will be tested against the same XSD (from given url)
-            -> url leads to an XSD file
+        (implies that url leads to an XSD file)
+    :rtype: bool
     :returns: True if all XML files validated, False otherwise (feedback provided in _logger.warning)
     """
 
@@ -221,12 +221,13 @@ def load_xsd_from_url(env, url, module_name, file_name=None, zip_file_names=None
           Its current purpose is just to harmonize the loading of XSD files for already created modules.
           The method load_xsd_and_validate_xml is the one that should/will be used for future modules.
 
-    :param env: environment of calling module (odoo.api.Environment)
-    :param url: url of xsd file/archive (str)
-    :param module_name: name of calling module (str)
-    :param file_name: if provided, gives this name to the cached file, in case of a single xsd file (str)
-    :param zip_file_names: list of file names to be extracted from zip archive. If not provided, extract all .xsd files (list of str)
-    :param to_be_cached: if True, the raw xsd files will be cached and thus saved as ir.attachment (bool)
+    :param odoo.api.Environment env: environment of calling module (odoo.api.Environment)
+    :param str url: url of xsd file/archive (str)
+    :param str module_name: name of calling module (str)
+    :param str file_name: if provided, gives this name to the cached file, in case of a single xsd file (str)
+    :param list[str] zip_file_names: list of file names to be extracted from zip archive. If not provided, extract all .xsd files (list of str)
+    :param bool to_be_cached: if True, the raw xsd files will be cached and thus saved as ir.attachment (bool)
+    :rtype: list[bytes] or None
     :returns: list of raw xsd files (bytes) or None if error
     """
 
