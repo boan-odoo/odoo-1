@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_task" inherit_id="project.portal_my_task">
+        <xpath expr="//li[@id='task-nav']/ul" position="inside">
+            <li t-if="task.sale_order_id.id and so_accessible" class="nav-item">
+                <a class="nav-link pl-3" t-attf-href="/my/orders/{{ task.sale_order_id.id }}">
+                    Sales Order
+                </a>
+            </li>
+            <li t-if="task.sale_order_id and task.sale_order_id.state in ('draft', 'sent') and so_accessible" class="nav-item">
+                <a class="nav-link pl-3" t-attf-href="/my/quotes/{{ task.sale_order_id.id }}">
+                    Quotations
+                </a>
+            </li>
+            <li t-if="task.sale_order_id.invoice_ids and invoices_accessible" class="nav-item">
+                <a class="nav-link pl-3" t-attf-href="/my/invoices/#{ task.sale_order_id.invoice_ids.id }">
+                    Invoices
+                </a>
+            </li>
+        </xpath>
+    </template>
+</odoo>
