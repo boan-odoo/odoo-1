@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import models
+from odoo import models, _
 
 
 class MailChannel(models.Model):
@@ -17,3 +17,9 @@ class MailChannel(models.Model):
             visitor_sudo.write({'lead_ids': [(4, lead.id)]})
             lead.country_id = lead.country_id or visitor_sudo.country_id
         return lead
+
+    def _prepare_lead_values(self, step_id):
+        values = super(MailChannel, self)._prepare_lead_values(step_id)
+        if self.livechat_visitor_id:
+            values['name'] = _("%s's New Lead", self.livechat_visitor_id.display_name)
+        return values

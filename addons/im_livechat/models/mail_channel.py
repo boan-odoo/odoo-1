@@ -232,7 +232,8 @@ class MailChannel(models.Model):
 
     def _message_post_after_hook(self, message, msg_vals):
         """
-        Create a chatbot.mail.message before calling _message_format method which needs the step_id.
+        This method is called just before _notify_thread() method which is calling the _message_format()
+        method. We need a 'chatbot.mail.message' record before it happens to correctly display the message.
         It's created only if the author is Odoobot and if the mail channel is linked to a chatbot step.
         """
         if self.livechat_chatbot_current_step_id and message.author_id == self.env.ref('base.partner_root'):

@@ -13,4 +13,9 @@
     'installable': True,
     'auto_install': True,
     'license': 'LGPL-3',
+    'assets': {
+        'web.assets_frontend': [
+            'crm_livechat/static/src/legacy/public_livechat_chatbot.js',
+        ],
+    },
 }

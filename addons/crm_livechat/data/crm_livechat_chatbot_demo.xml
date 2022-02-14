@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo><data>
+
+    <record id="im_livechat.im_livechat_chatbot_script_bot_01_step_10" model="im_livechat.chatbot.script_step">
+        <field name="step_type">create_lead</field>
+        <field name="team_id" ref="sales_team.team_sales_department"/>
+    </record>
+
+</data></odoo>

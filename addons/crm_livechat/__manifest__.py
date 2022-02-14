@@ -6,7 +6,10 @@
     'category': 'Sales/CRM',
     'summary': 'Create lead from livechat conversation',
     'data': [
+        'data/crm_livechat_chatbot_demo.xml',
         'data/utm_data.xml',
+
+        'views/chatbot_script_step_views.xml',
     ],
     'depends': [
         'crm',
@@ -21,6 +24,9 @@
         ],
         'web.assets_backend': [
             'crm_livechat/static/src/models/*/*.js',
+        ],
+        'im_livechat.external_lib': [
+            'crm_livechat/static/src/legacy/public_livechat_chatbot.js',
         ],
     },
 }

@@ -160,6 +160,12 @@ LivechatButton.include({
      *
      * @private
      */
+    _isExpectingUserInput: function (step) {
+        return step !== 'text';
+    },
+    /**
+     * @private
+     */
      _chatbotTriggerNextStep: async function () {
          let result = await session.rpc('/im_livechat/chatbot_trigger_step', {
             channel_uuid: this._livechat.getUUID(),
@@ -169,10 +175,10 @@ LivechatButton.include({
          if (result) {
             this._chatbotCurrentStep = result;
 
-            if (this._chatbotCurrentStep.chatbot_step_type === 'text'
+            if (!this._isExpectingUserInput(this._chatbotCurrentStep.chatbot_step_type)
                 && this._chatbotCurrentStep.chatbot_step_is_last) {
                 this._chatbotEndScript();
-            } else if (this._chatbotCurrentStep.chatbot_step_type === 'text'
+            } else if (!this._isExpectingUserInput(this._chatbotCurrentStep.chatbot_step_type)
                 && !this._chatbotCurrentStep.chatbot_step_is_last) {
                 this._chatbotSetIsTyping();
                 setTimeout(this._chatbotTriggerNextStep.bind(this), this._chatbotMessageDelay);

@@ -17,3 +17,4 @@ class ChatbotMailMessage(models.Model):
     mail_channel_id = fields.Many2one('mail.channel', string='Related Mail Channel', required=True)
     chatbot_step_id = fields.Many2one('im_livechat.chatbot.script_step', string='Chatbot Step', required=True)
     chatbot_question_answer_id = fields.Many2one('im_livechat.chatbot.script_question_answer', string="User's answer")
+    chatbot_user_raw_answer = fields.Text(string="User's raw answer")

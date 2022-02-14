@@ -41,7 +41,7 @@ Help your customers with this chat, and analyse their feedback.
         'data/im_livechat_chatbot_demo.xml',
         'data/mail_shortcode_demo.xml',
     ],
-    'depends': ["mail", "rating", "digest"],
+    'depends': ["mail", "rating", "digest", "utm"],
     'installable': True,
     'auto_install': False,
     'application': True,

@@ -4,7 +4,7 @@
 from odoo import models, fields, _
 from odoo.exceptions import ValidationError
 from odoo.osv import expression
-from odoo.tools import html2plaintext
+from odoo.tools import html2plaintext, single_email_re, email_normalize
 
 
 class ChatbotScriptStep(models.Model):
@@ -19,7 +19,6 @@ class ChatbotScriptStep(models.Model):
     step_type = fields.Selection([
         ('text', 'Text'),
         ('question_selection', 'Question'),
-        # TODO PKO: Put the following two in website_livechat
         ('question_email', 'Email'),
         ('question_phone', 'Phone'),
         ('forward_operator', 'Forward to Operator'),
@@ -95,34 +94,50 @@ class ChatbotScriptStep(models.Model):
         Process user's answer depending on the step_type.
 
         :param mail_channel:
-        :param message_content:
+        :param mail_message:
         :return: script step to display next
         :rtype: 'im_livechat.chatbot.script_step'
         """
         self.ensure_one()
 
+        user_raw_answer = html2plaintext(mail_message.body)
+        mail_message_id = self.env['im_livechat.chatbot.mail.message'].search([
+            ('mail_channel_id', '=', mail_channel.id),
+            ('chatbot_step_id', '=', self.id),
+        ], limit=1)
+
+        update_values = {}
         if self.step_type == 'question_selection':
             # Update 'chatbot.mail.message' with the user's answer
-            text_answer = html2plaintext(mail_message.body)
-            chatbot_question_answer_id = self.answer_ids.filtered(lambda a: a.name == text_answer)
+            chatbot_question_answer_id = self.answer_ids.filtered(lambda a: a.name == user_raw_answer)
             if not chatbot_question_answer_id:
-                raise ValidationError(_('"%s" is not a valid answer for this step', text_answer))
+                raise ValidationError(_('"%s" is not a valid answer for this step', user_raw_answer))
+            update_values.update({
+                'chatbot_question_answer_id': chatbot_question_answer_id.id,
+                'chatbot_user_raw_answer': user_raw_answer,
+            })
 
-            mail_message_id = self.env['im_livechat.chatbot.mail.message'].search([
-                ('mail_channel_id', '=', mail_channel.id),
-                ('chatbot_step_id', '=', self.id)], limit=1)
-            if mail_message_id:
-                mail_message_id.write({'chatbot_question_answer_id': chatbot_question_answer_id.id})
-            else:
-                # there is no existing chatbot mail message
-                # -> this can happen for the "welcome message" (first message of the bot)
-                # which is NOT registered in the conversation
-                # to avoid creating messsages in the channel if the user never uses the bot
-                # in that case we create a chatbot message without a reference to a 'mail.message'
-                self.env['im_livechat.chatbot.mail.message'].create({
-                    'mail_channel_id': mail_channel.id,
-                    'chatbot_step_id': self.id,
-                    'chatbot_question_answer_id': chatbot_question_answer_id.id
-                })
+        elif self.step_type == 'question_email':
+            if not single_email_re.match(user_raw_answer):
+                # if this error is raised, display an error message but do not go to next step
+                raise ValidationError(_('"%s" is not a valid email.', user_raw_answer))
+            update_values['chatbot_user_raw_answer'] = email_normalize(user_raw_answer)
+
+        elif self.step_type == 'question_phone':
+            update_values['chatbot_user_raw_answer'] = user_raw_answer
+
+        if mail_message_id:
+            mail_message_id.write(update_values)
+        else:
+            # there is no existing chatbot mail message
+            # -> this can happen for the "welcome message" (first message of the bot)
+            # which is NOT registered in the conversation
+            # to avoid creating messsages in the channel if the user never uses the bot
+            # in that case we create a chatbot message without a reference to a 'mail.message'
+            self.env['im_livechat.chatbot.mail.message'].create({
+                'mail_channel_id': mail_channel.id,
+                'chatbot_step_id': self.id,
+                **update_values
+            })
 
         return self._fetch_next_step(mail_channel.livechat_chatbot_message_ids.chatbot_question_answer_id)

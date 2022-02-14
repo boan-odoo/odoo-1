@@ -8,7 +8,7 @@
     </record>
 
     <record id="im_livechat_chatbot_script_bot_01_step_01" model="im_livechat.chatbot.script_step">
-        <field name="message">Hello! I a bot!</field>
+        <field name="message">Hello! I'm a bot!</field>
         <field name="sequence">1</field>
         <field name="step_type">text</field>
         <field name="chatbot_id" ref="im_livechat_chatbot_script_bot_01"/>
@@ -39,6 +39,12 @@
         <field name="step_id" ref="im_livechat_chatbot_script_bot_01_step_02"/>
     </record>
 
+    <record id="im_livechat_chatbot_script_bot_01_step_02_answer_04" model="im_livechat.chatbot.script_question_answer">
+        <field name="name">I would like to be informed of your activities</field>
+        <field name="sequence">4</field>
+        <field name="step_id" ref="im_livechat_chatbot_script_bot_01_step_02"/>
+    </record>
+
     <record id="im_livechat_chatbot_script_bot_01_step_03" model="im_livechat.chatbot.script_step">
         <field name="message">It's probably raining... typical Belgium weather!</field>
         <field name="sequence">3</field>
@@ -55,15 +61,6 @@
         <field name="triggering_answer_ids" eval="[(4, ref('im_livechat_chatbot_script_bot_01_step_02_answer_02'))]"/>
     </record>
 
-    <record id="im_livechat_chatbot_script_bot_01_step_07" model="im_livechat.chatbot.script_step">
-        <field name="message">Ok, I'm redirecting you to one of our operators.</field>
-        <field name="sequence">5</field>
-        <field name="step_type">forward_operator</field>
-        <field name="message_no_operator">Oh no... looks like no-one is available right now :(</field>
-        <field name="chatbot_id" ref="im_livechat_chatbot_script_bot_01"/>
-        <field name="triggering_answer_ids" eval="[(4, ref('im_livechat_chatbot_script_bot_01_step_02_answer_03'))]"/>
-    </record>
-
     <record id="im_livechat_chatbot_script_bot_01_step_04_answer_01" model="im_livechat.chatbot.script_question_answer">
         <field name="name">You type way too fast for a human being...</field>
         <field name="sequence">1</field>
@@ -78,7 +75,7 @@
 
     <record id="im_livechat_chatbot_script_bot_01_step_05" model="im_livechat.chatbot.script_step">
         <field name="message">I've been practicing a lot... during many years... I can't even remember when I first started!</field>
-        <field name="sequence">6</field>
+        <field name="sequence">5</field>
         <field name="step_type">text</field>
         <field name="chatbot_id" ref="im_livechat_chatbot_script_bot_01"/>
         <field name="triggering_answer_ids" eval="[(4, ref('im_livechat_chatbot_script_bot_01_step_04_answer_01'))]"/>
@@ -86,10 +83,43 @@
 
     <record id="im_livechat_chatbot_script_bot_01_step_06" model="im_livechat.chatbot.script_step">
         <field name="message">I have always been attentive during English lessons :)</field>
-        <field name="sequence">7</field>
+        <field name="sequence">6</field>
         <field name="step_type">text</field>
         <field name="chatbot_id" ref="im_livechat_chatbot_script_bot_01"/>
         <field name="triggering_answer_ids" eval="[(4, ref('im_livechat_chatbot_script_bot_01_step_04_answer_02'))]"/>
+    </record>
+
+    <record id="im_livechat_chatbot_script_bot_01_step_07" model="im_livechat.chatbot.script_step">
+        <field name="message">Ok, I'm redirecting you to one of our operators.</field>
+        <field name="sequence">7</field>
+        <field name="step_type">forward_operator</field>
+        <field name="message_no_operator">Oh no... looks like no-one is available right now :(</field>
+        <field name="chatbot_id" ref="im_livechat_chatbot_script_bot_01"/>
+        <field name="triggering_answer_ids" eval="[(4, ref('im_livechat_chatbot_script_bot_01_step_02_answer_03'))]"/>
+    </record>
+
+    <record id="im_livechat_chatbot_script_bot_01_step_08" model="im_livechat.chatbot.script_step">
+        <field name="message">Sure! Could you provide us your email?</field>
+        <field name="sequence">8</field>
+        <field name="step_type">question_email</field>
+        <field name="chatbot_id" ref="im_livechat_chatbot_script_bot_01"/>
+        <field name="triggering_answer_ids" eval="[(4, ref('im_livechat_chatbot_script_bot_01_step_02_answer_04'))]"/>
+    </record>
+
+    <record id="im_livechat_chatbot_script_bot_01_step_09" model="im_livechat.chatbot.script_step">
+        <field name="message">Can you also provide us your phone?</field>
+        <field name="sequence">9</field>
+        <field name="step_type">question_phone</field>
+        <field name="chatbot_id" ref="im_livechat_chatbot_script_bot_01"/>
+        <field name="triggering_answer_ids" eval="[(4, ref('im_livechat_chatbot_script_bot_01_step_02_answer_04'))]"/>
+    </record>
+
+    <record id="im_livechat_chatbot_script_bot_01_step_10" model="im_livechat.chatbot.script_step">
+        <field name="message">Thank you! Don't worry... we won't spam you :)</field>
+        <field name="sequence">10</field>
+        <field name="step_type">text</field>
+        <field name="chatbot_id" ref="im_livechat_chatbot_script_bot_01"/>
+        <field name="triggering_answer_ids" eval="[(4, ref('im_livechat_chatbot_script_bot_01_step_02_answer_04'))]"/>
     </record>
 
     <!-- Channel Rule -->
