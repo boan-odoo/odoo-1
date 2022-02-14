@@ -167,6 +167,10 @@
 
             <div class="oe_structure"/>
 
+            <p t-if="doc.carrier_id.carrier_description" id="carrier_description">
+                <strong>Shipping Description:</strong>
+                <span t-out="doc.carrier_id.carrier_description"/>
+            </p>
             <p t-field="doc.note" />
             <p t-if="not is_html_empty(doc.payment_term_id.note)">
                 <span t-field="doc.payment_term_id.note"/>

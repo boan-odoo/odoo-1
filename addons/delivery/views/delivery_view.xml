@@ -138,7 +138,13 @@
                                     <group name="zip_to">
                                         <field name="zip_to"/>
                                     </group>
+                                    <group>
+                                        <field name="zip_prefix_ids" widget="many2many_tags"/>
+                                    </group>
                                 </group>
+                            </page>
+                            <page string="Description" name="description">
+                                <field name="carrier_description" placeholder="Shipping method details to be included at bottom sales orders and their confirmation emails. E.g. Instructions for customers to follow."/>
                             </page>
                         </notebook>
                     </sheet>

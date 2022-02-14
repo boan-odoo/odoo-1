@@ -9,6 +9,18 @@ from odoo.tools.float_utils import float_round
 from .delivery_request_objects import DeliveryCommodity, DeliveryPackage
 
 
+class DeliveryZipPrefix(models.Model):
+    """ Zip prefix that a delivery.carrier will deliver to. """
+    _name = 'delivery.zip.prefix'
+    _description = 'Delivery Zip Prefix'
+
+    name = fields.Char('Prefix', required=True, translate=True)
+
+    _sql_constraints = [
+        ('name_uniq', 'unique (name)', "Prefix already exists!"),
+    ]
+
+
 class DeliveryCarrier(models.Model):
     _name = 'delivery.carrier'
     _description = "Shipping Methods"
@@ -55,6 +67,12 @@ class DeliveryCarrier(models.Model):
     state_ids = fields.Many2many('res.country.state', 'delivery_carrier_state_rel', 'carrier_id', 'state_id', 'States')
     zip_from = fields.Char('Zip From')
     zip_to = fields.Char('Zip To')
+    zip_prefix_ids = fields.Many2many(
+        'delivery.zip.prefix', 'delivery_zip_prefix_rel', 'carrier_id', 'zip_prefix_id', 'Zip Prefixes')
+    carrier_description = fields.Text(
+        'Carrier Description', translate=True,
+        help="A description of the delivery method that you want to communicate to your customers on the Sales Order and sales confirmation email."
+             "E.g. instructions for customers to follow.")
 
     margin = fields.Float(help='This percentage will be added to the shipping price.')
     free_over = fields.Boolean('Free if order amount is above', help="If the order total amount (shipping excluded) is above or equal to this value, the customer benefits from a free shipping", default=False)
@@ -118,6 +136,8 @@ class DeliveryCarrier(models.Model):
         if self.zip_from and (partner.zip or '').upper() < self.zip_from.upper():
             return False
         if self.zip_to and (partner.zip or '').upper() > self.zip_to.upper():
+            return False
+        if self.zip_prefix_ids and not partner.zip.startswith(tuple(self.zip_prefix_ids.name)):
             return False
         return True
 
