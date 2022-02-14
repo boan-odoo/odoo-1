@@ -5,4 +5,12 @@
             <field name="implied_ids" eval="[(4, ref('event.group_event_registration_desk'))]"/>
         </record>
     </data>
+    <data noupdate="1">
+        <!-- Multi - Company Rules -->
+        <record id="event_sale_report_comp_rule" model="ir.rule">
+            <field name="name">Event Sales Report multi-company</field>
+            <field name="model_id" ref="model_event_sale_report"/>
+            <field name="domain_force">['|',('company_id','=',False),('company_id', 'in', company_ids)]</field>
+        </record>
+    </data>
 </odoo>

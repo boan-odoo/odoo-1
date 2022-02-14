@@ -172,6 +172,7 @@
            <field name="view_mode">tree,kanban,form,calendar,graph</field>
         </record>
 
+        <!-- EVENT.EVENT VIEWS -->
         <record model="ir.ui.view" id="view_event_form">
             <field name="name">event.event.form</field>
             <field name="model">event.event</field>
