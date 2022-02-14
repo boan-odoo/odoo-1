@@ -34,4 +34,10 @@
             <script type="text/javascript" src="/website_twitter/static/src/js/website.twitter.editor.js"/>
         </xpath>
     </template>
+
+    <template id="twitter_tests" inherit_id="web.assets_tests">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/website_twitter/static/tests/tours/twitter_scroller_reload_button.js"/>
+        </xpath>
+    </template>
 </odoo>

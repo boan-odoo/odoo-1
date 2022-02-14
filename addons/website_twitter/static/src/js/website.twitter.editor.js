@@ -13,14 +13,14 @@ sOptions.registry.twitter = sOptions.Class.extend({
      */
     start: function () {
         var self = this;
-        var $configuration = dom.renderButton({
+        this.$configuration = dom.renderButton({
             attrs: {
                 class: 'btn-primary d-none',
                 contenteditable: 'false',
             },
             text: _t("Reload"),
         });
-        $configuration.appendTo(document.body).on('click', function (ev) {
+        this.$configuration.appendTo(document.body).on('click', function (ev) {
             ev.preventDefault();
             ev.stopPropagation();
             self._rpc({route: '/website_twitter/reload'});
@@ -28,20 +28,22 @@ sOptions.registry.twitter = sOptions.Class.extend({
         this.$target.on('mouseover.website_twitter', function () {
             var $selected = $(this);
             var position = $selected.offset();
-            $configuration.removeClass('d-none').offset({
+            self.$configuration.removeClass('d-none').offset({
                 top: $selected.outerHeight() / 2
                         + position.top
-                        - $configuration.outerHeight() / 2,
+                        - self.$configuration.outerHeight() / 2,
                 left: $selected.outerWidth() / 2
                         + position.left
-                        - $configuration.outerWidth() / 2,
+                        - self.$configuration.outerWidth() / 2,
             });
         }).on('mouseleave.website_twitter', function (e) {
-            var current = document.elementFromPoint(e.clientX, e.clientY);
-            if (current === $configuration[0]) {
-                return;
+            if (e.clientX && e.clientY) {
+                var current = document.elementFromPoint(e.clientX, e.clientY);
+                if (current === self.$configuration[0]) {
+                    return;
+                }
             }
-            $configuration.addClass('d-none');
+            self.$configuration.addClass('d-none');
         });
         this.$target.on('click.website_twitter', '.lnk_configure', function (e) {
             window.location = e.currentTarget.href;
@@ -63,6 +65,7 @@ sOptions.registry.twitter = sOptions.Class.extend({
     destroy: function () {
         this._super.apply(this, arguments);
         this.$target.off('.website_twitter');
+        this.$configuration.remove();
     },
 });
 });
