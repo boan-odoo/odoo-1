@@ -404,7 +404,7 @@ class ProductTemplate(models.Model):
         for product, data in zip(self, results_data):
             if with_price:
                 combination_info = product._get_combination_info(only_template=True)
-                data['price'], list_price = self._search_rend_results_prices(
+                data['price'], list_price = self._search_render_results_prices(
                     mapping, combination_info
                 )
                 if list_price:
@@ -418,7 +418,7 @@ class ProductTemplate(models.Model):
                 )
         return results_data
 
-    def _search_rend_results_prices(self, mapping, combination_info):
+    def _search_render_results_prices(self, mapping, combination_info):
         monetary_options = {'display_currency': mapping['detail']['display_currency']}
         price = self.env['ir.qweb.field.monetary'].value_to_html(
             combination_info['price'], monetary_options
