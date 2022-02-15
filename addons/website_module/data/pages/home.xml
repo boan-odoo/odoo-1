@@ -21,8 +21,8 @@
             <t t-call="website.layout">
                 <div id="wrap" class="oe_structure">
 
-                    <section class="s_text_image pt200 pb200" data-oe-shape-data="{'shape':'website_module/hexagon/01','flip':[]}">
-                        <div class="o_we_shape o_website_module_hexagon_01"/>
+                    <section class="s_text_image pt200 pb200" data-oe-shape-data="{'shape':'illustration/hexagon/01','flip':[]}">
+                        <div class="o_we_shape o_illustration_hexagon_01"/>
                         <div class="container">
                             <div class="row">
                                 <div class="col-lg-6">
@@ -41,6 +41,75 @@
             </t>
         </t>
     </field>
+</record>
+
+<!-- Create shape attachments -->
+<record id="attachment_hexagon_01" model="ir.attachment">
+    <field name="name">01.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/01.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/01.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_hexagon_02" model="ir.attachment">
+    <field name="name">02.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/02.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/02.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_hexagon_03" model="ir.attachment">
+    <field name="name">03.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/03.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/03.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_hexagon_04" model="ir.attachment">
+    <field name="name">04.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/04.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/04.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_hexagon_05" model="ir.attachment">
+    <field name="name">05.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/05.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/05.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_hexagon_06" model="ir.attachment">
+    <field name="name">06.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/06.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/06.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_hexagon_07" model="ir.attachment">
+    <field name="name">07.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/07.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/07.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_hexagon_08" model="ir.attachment">
+    <field name="name">08.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/08.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/08.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_hexagon_09" model="ir.attachment">
+    <field name="name">09.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/hexagon/09.svg"/>
+    <field name="url">/web_editor/shape/illustration/hexagon/09.svg</field>
+    <field name="public">True</field>
+</record>
+
+<record id="attachment_notched_01" model="ir.attachment">
+    <field name="name">01.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/notched/01.svg"/>
+    <field name="url">/web_editor/shape/illustration/notched/01.svg</field>
+    <field name="public">True</field>
+</record>
+<record id="attachment_notched_02" model="ir.attachment">
+    <field name="name">02.svg</field>
+    <field name="datas" type="base64" file="website_module/static/shapes/notched/02.svg"/>
+    <field name="url">/web_editor/shape/illustration/notched/02.svg</field>
+    <field name="public">True</field>
 </record>
 
 </odoo>

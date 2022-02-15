@@ -9,6 +9,8 @@
     'data': [
         # Assets
         'views/assets.xml',
+        # Shapes in snippet options
+        'views/snippets/options.xml',
         # Pages
         'data/pages/home.xml',
     ],
