@@ -8,7 +8,7 @@
             <form>
                 <sheet>
                     <group>
-                        <field name="message" widget="text_emojis" placeholder="e.g. How can I help you?"/>
+                        <field name="message" widget="text_emojis" placeholder="e.g. 'How can I help you?'"/>
                         <field name="chatbot_id" invisible="1"/>
                     </group>
                     <group>
@@ -22,6 +22,10 @@
                                    options="{'no_create': True}"/>
                         </group>
                     </group>
+                        <group attrs="{'invisible': [('step_type', '!=', 'forward_operator')]}">
+                            <field name="message_no_operator" widget="text_emojis"
+                                placeholder="e.g. 'Oops, no-one is available currently, please use our /contactus form!'"/>
+                        </group>
                 </sheet>
             </form>
         </field>

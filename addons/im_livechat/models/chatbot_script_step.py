@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import api, models, fields, _
+from odoo import models, fields, _
 from odoo.exceptions import ValidationError
 from odoo.osv import expression
 from odoo.tools import html2plaintext
@@ -22,16 +22,21 @@ class ChatbotScriptStep(models.Model):
         # TODO PKO: Put the following two in website_livechat
         ('question_email', 'Email'),
         ('question_phone', 'Phone'),
+        ('forward_operator', 'Forward to Operator'),
     ], default='text', required=True)
+    # answers
     answer_ids = fields.One2many(
         'im_livechat.chatbot.script_question_answer', 'step_id', string='Answers')
     triggering_answer_ids = fields.Many2many(
         'im_livechat.chatbot.script_question_answer', 'chatbot_script_chatbot_script_question_answer_rel',
         string='Only If', help='Show this step only if all of these answers have been selected.')
+    # forwar-operator specifics
+    message_no_operator = fields.Text(string='No Operator Message',
+        help='If there are no operators available when forwarding, this message will be sent instead.')
 
     def _fetch_next_step(self, selected_answer_ids):
         self.ensure_one()
-        domain = [('sequence', '>', self.sequence)]
+        domain = [('chatbot_id', '=', self.chatbot_id.id), ('sequence', '>', self.sequence)]
         if selected_answer_ids:
             domain = expression.AND([domain, [
                 '|',
@@ -66,7 +71,7 @@ class ChatbotScriptStep(models.Model):
         welcome_steps = self.env['im_livechat.chatbot.script_step']
         for step in self:
             welcome_steps += step
-            if step.type != 'text':
+            if step.step_type != 'text':
                 break
 
         return welcome_steps
@@ -74,9 +79,16 @@ class ChatbotScriptStep(models.Model):
     def _is_last_step(self, mail_channel):
         self.ensure_one()
 
-        return self.step_type != 'question_selection' and not self._fetch_next_step(
-            mail_channel.livechat_chatbot_message_ids.mapped('chatbot_question_answer_id')
-        )
+        # when forwarding an operator, we end the script (the human takes over)
+        if self.step_type == 'forward_operator':
+            return True
+
+        # if it's not a question and if there is no next step, then we end the script
+        if self.step_type != 'question_selection' and not self._fetch_next_step(
+           mail_channel.livechat_chatbot_message_ids.mapped('chatbot_question_answer_id')):
+            return True
+
+        return False
 
     def _process_answer(self, mail_channel, mail_message):
         """

@@ -136,10 +136,7 @@ class ImLivechatChannel(models.Model):
                 channel_partner_to_add.append(Command.create({'partner_id': visitor_user.partner_id.id}))
 
         if chatbot:
-            name = ' '.join([
-                visitor_user.display_name if visitor_user else anonymous_name,
-                chatbot.name
-            ])
+            name = chatbot.name
         else:
             name = ' '.join([
                 visitor_user.display_name if visitor_user else anonymous_name,

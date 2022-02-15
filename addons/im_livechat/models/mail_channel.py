@@ -3,7 +3,7 @@
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
-from odoo.tools import html_escape
+from odoo.tools import html_escape, plaintext2html
 
 
 class MailChannel(models.Model):
@@ -207,12 +207,28 @@ class MailChannel(models.Model):
         # We change the current step to the new step
         self.livechat_chatbot_current_step_id = step_id
 
+        message = step_id.message
+
+        human_operator = False
+        if step_id.step_type == 'forward_operator':
+            human_operator = self.livechat_channel_id._get_random_operator()
+            if human_operator:
+                self.with_user(self.env.ref('base.user_root')).add_members(human_operator.partner_id.ids)
+
+                if not message:
+                    message = _('Hello %s !', human_operator.name)
+            else:
+                message = plaintext2html(step_id.message_no_operator) or _("Oops, no-one is available currently :(")
+
         self.with_context(mail_create_nosubscribe=True).message_post(
             author_id=self.env.ref('base.partner_root').id,
-            body=step_id.message,
+            body=message,
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
         )
+
+        if human_operator:
+            self._broadcast(human_operator.partner_id.ids)
 
     def _message_post_after_hook(self, message, msg_vals):
         """

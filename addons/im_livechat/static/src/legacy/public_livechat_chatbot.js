@@ -4,6 +4,7 @@ odoo.define('im_livechat.legacy.im_livechat_chatbot.im_livechat', function (requ
 var core = require('web.core');
 var session = require('web.session');
 var time = require('web.time');
+var utils = require('web.utils');
 
 const LivechatButton = require('im_livechat.legacy.im_livechat.im_livechat').LivechatButton;
 
@@ -19,10 +20,30 @@ var _t = core._t;
  */
 LivechatButton.include({
     async willStart() {
-        return this._super(...arguments).then(() => {
+        return this._super(...arguments).then(async () => {
             if (this._rule) {
                 this._isChatbot = this._rule.action === 'use_chatbot';
+                this._chatbot = this._rule.chatbot;
                 return Promise.resolve();
+            } else if (this._history !== null && this._history.length === 0) {
+                const result = await session.rpc('/im_livechat/init', {channel_id: this.options.channel_id});
+
+                if (result.rule.action === 'use_chatbot') {
+                    // remove cookie to force opening the popup again
+                    utils.set_cookie('im_livechat_auto_popup', '', -1);
+                    this._history = null;
+                    this._rule = result.rule;
+                    this._isChatbot = true;
+                    this._chatbotBatchWelcomeMessages = true;  // see '_sendWelcomeChatbotMessage'
+                }
+                return Promise.resolve();
+            } else if (this._history !== null && this._history.length !== 0) {
+                var sessionCookie = utils.get_cookie('im_livechat_session');
+                this._isChatbot = sessionCookie.chatbot;
+
+                if (this._isChatbot) {
+                    this._chatbot = sessionCookie.chatbot;
+                }
             }
         });
     },
@@ -65,7 +86,7 @@ LivechatButton.include({
      _chatbotTriggerNextStep: async function () {
          let result = await session.rpc('/im_livechat/chatbot_trigger_step', {
             channel_uuid: this._livechat.getUUID(),
-            chatbot_id: this._rule.chatbot.chatbot_id
+            chatbot_id: this._chatbot.chatbot_id
          });
 
          if (result) {
@@ -87,21 +108,33 @@ LivechatButton.include({
 
     /**
      * @private
+     * @override
      */
      _isAutoPopup: function () {
         return ['auto_popup', 'use_chatbot'].includes(this._rule.action);
     },
     /**
      * @private
+     * @override
      */
     _prepareGetSessionParameters: function () {
         const parameters = this._super(...arguments);
 
         if (this._isChatbot) {
-            parameters.chatbot_id = this._rule.chatbot.chatbot_id;
+            parameters.chatbot_id = this._chatbot.chatbot_id;
         }
 
         return parameters;
+    },
+    /**
+     * @private
+     * @override
+     */
+    _prepareSessionCookiesData: function () {
+        const cookiesData = this._super(...arguments);
+        cookiesData['chatbot'] = this._chatbot ? this._chatbot : false;
+
+        return cookiesData;
     },
     /**
      * @private
@@ -129,10 +162,10 @@ LivechatButton.include({
         if (this._isChatbot && this._chatbotCurrentStep) {
             if (!this._chatbotCurrentStep.chatbot_step_is_last) {
                 this._chatbotDisableInput(
-                    _.str.sprintf(_t('%s is typing...'), this._rule.chatbot.chatbot_name));
+                    _.str.sprintf(_t('%s is typing...'), this._chatbot.chatbot_name));
 
                 setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
-            } else {
+            } else if (!this._chatbotCurrentStep.step_type === 'forward_operator') {
                 this._chatbotEndScript();
             }
         }
@@ -144,7 +177,11 @@ LivechatButton.include({
      */
     _sendWelcomeMessage: function () {
         if (this._isChatbot) {
-            this._sendWelcomeChatbotMessage(0);
+            let welcomeMessageDelay = 2000;
+            if (this._chatbotBatchWelcomeMessages) {
+                welcomeMessageDelay = 0;
+            }
+            this._sendWelcomeChatbotMessage(0, welcomeMessageDelay);
         } else {
             this._super(...arguments);
         }
@@ -159,10 +196,19 @@ LivechatButton.include({
      * Indeed, if the end-user never interacts with the bot, those empty mail.channels are deleted
      * by a garbage collector mechanism.
      *
+     * About "welcomeMessageDelay":
+     *
+     * The first time we open the chat, we want to bot to slowly input those messages in one at a
+     * time, with pauses during which the end-user sees ("The bot is typing...").
+     *
+     * However, if the user navigates within the website (meaning he has an opened mail.channel),
+     * then we input all the welcome messages at once without pauses, to avoid having that annoying
+     * slow effect on every page / refresh.
+     *
      * @private
      */
-    _sendWelcomeChatbotMessage: function (stepIndex) {
-        const chatbotStep = this._rule.chatbot.chatbot_welcome_steps[stepIndex];
+    _sendWelcomeChatbotMessage: function (stepIndex, welcomeMessageDelay) {
+        const chatbotStep = this._chatbot.chatbot_welcome_steps[stepIndex];
         this._chatbotCurrentStep = chatbotStep;
 
         this._addMessage({
@@ -177,14 +223,14 @@ LivechatButton.include({
             res_id: this._livechat.getID(),
         });
 
-        if (stepIndex + 1 < this._rule.chatbot.chatbot_welcome_steps.length) {
+        if (stepIndex + 1 < this._chatbot.chatbot_welcome_steps.length) {
             this._chatbotDisableInput(
-                _.str.sprintf(_t('%s is typing...'), this._rule.chatbot.chatbot_name));
+                _.str.sprintf(_t('%s is typing...'), this._chatbot.chatbot_name));
 
             setTimeout(() => {
                 this._sendWelcomeChatbotMessage(stepIndex + 1);
                 this._renderMessages();
-            }, 2000);
+            }, welcomeMessageDelay);
         }
     },
 
@@ -205,7 +251,7 @@ LivechatButton.include({
         });
 
         this._chatbotDisableInput(
-            _.str.sprintf(_t('%s is typing...'), this._rule.chatbot.chatbot_name));
+            _.str.sprintf(_t('%s is typing...'), this._chatbot.chatbot_name));
 
         setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
     },
@@ -257,9 +303,9 @@ WebsiteLivechatMessage.include({
         this._super(...arguments);
 
         if (parent._isChatbot) {
-            this._chatbotId = parent._rule.chatbot.chatbot_id;
-            this._chatbotName = parent._rule.chatbot.chatbot_name;
-            this._chatbotOperatorId = parent._rule.chatbot.chatbot_operator_id;
+            this._chatbotId = parent._chatbot.chatbot_id;
+            this._chatbotName = parent._chatbot.chatbot_name;
+            this._chatbotOperatorId = parent._chatbot.chatbot_operator_id;
 
             this._chatbotStepId = data.chatbot_script_step_id;
             this._chatbotStepAnswers = data.chatbot_step_answers;
