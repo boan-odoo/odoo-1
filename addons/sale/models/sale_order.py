@@ -203,6 +203,10 @@ class SaleOrder(models.Model):
         compute='_compute_partner_shipping_id', store=True, readonly=False, precompute=True,
         states={'done': [('readonly', True)], 'cancel': [('readonly', True)]},
         domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",)
+    # Credit Limit related fields
+    partner_credit = fields.Monetary(related='partner_id.commercial_partner_id.credit')
+    partner_credit_limit = fields.Monetary(related='partner_id.credit_limit_compute')
+    show_partner_credit_warning = fields.Boolean(compute='_compute_show_partner_credit_warning')
 
     pricelist_id = fields.Many2one(
         'product.pricelist', string='Pricelist', required=False, check_company=True,  # Unrequired company
@@ -516,6 +520,14 @@ class SaleOrder(models.Model):
                 )._get_default_team_id(
                     user_id=user_id, domain=[('company_id', 'in', [company_id, False])])
             order.team_id = cached_teams[key]
+
+    @api.depends('partner_credit_limit', 'partner_credit', 'company_id.account_default_credit_limit')
+    def _compute_show_partner_credit_warning(self):
+        for order in self:
+            company_limit = order.partner_credit_limit == -1 and order.company_id.account_default_credit_limit
+            partner_limit = order.partner_credit_limit > 0 and order.partner_credit_limit
+            order.show_partner_credit_warning = (company_limit and order.partner_credit > company_limit) or \
+                                                (partner_limit and order.partner_credit > partner_limit)
 
     @api.onchange('partner_id')
     def _onchange_partner_id_warning(self):

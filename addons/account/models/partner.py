@@ -433,7 +433,15 @@ class ResPartner(models.Model):
                 partner.currency_id = self.env.company.currency_id
 
     credit = fields.Monetary(compute='_credit_debit_get', search=_credit_search,
-        string='Total Receivable', help="Total amount this customer owes you.")
+        string='Total Receivable', help="Total amount this customer owes you.",
+        groups='account.group_account_invoice,account.group_account_readonly')
+    credit_limit = fields.Monetary(string='Internal Credit Limit', default=-1)
+    credit_limit_compute = fields.Monetary(
+        string='Credit Limit', default=-1,
+        compute='_compute_credit_limit_compute', inverse='_inverse_credit_limit_compute',
+        help='A limit of zero means no limit. A limit of -1 will use the default (company) limit.'
+    )
+    show_credit_limit = fields.Boolean(compute='_compute_show_credit_limit')
     debit = fields.Monetary(compute='_credit_debit_get', search=_debit_search, string='Total Payable',
         help="Total amount you have to pay to this vendor.")
     debit_limit = fields.Monetary('Payable Limit')
@@ -527,6 +535,24 @@ class ResPartner(models.Model):
         for partner in self:
             partner.duplicated_bank_account_partners_count = len(partner._get_duplicated_bank_accounts())
 
+    @api.depends('credit_limit')
+    @api.depends_context('company')
+    def _compute_credit_limit_compute(self):
+        for partner in self:
+            partner.credit_limit_compute = self.env.company.account_default_credit_limit if partner.credit_limit == -1 else partner.credit_limit
+
+    @api.depends('credit_limit_compute')
+    @api.depends_context('company')
+    def _inverse_credit_limit_compute(self):
+        for partner in self:
+            is_default = partner.credit_limit_compute == self.env.company.account_default_credit_limit
+            partner.credit_limit = -1 if is_default else partner.credit_limit_compute
+
+    @api.depends_context('company')
+    def _compute_show_credit_limit(self):
+        for partner in self:
+            partner.show_credit_limit = self.env.company.account_credit_limit
+
     def _find_accounting_partner(self, partner):
         ''' Find the partner for which the accounting entries will be created '''
         return partner.commercial_partner_id
@@ -535,7 +561,7 @@ class ResPartner(models.Model):
     def _commercial_fields(self):
         return super(ResPartner, self)._commercial_fields() + \
             ['debit_limit', 'property_account_payable_id', 'property_account_receivable_id', 'property_account_position_id',
-             'property_payment_term_id', 'property_supplier_payment_term_id', 'last_time_entries_checked']
+             'property_payment_term_id', 'property_supplier_payment_term_id', 'last_time_entries_checked', 'credit_limit']
 
     def action_view_partner_invoices(self):
         self.ensure_one()

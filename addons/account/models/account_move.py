@@ -374,6 +374,10 @@ class AccountMove(models.Model):
     # Technical field to hide Reconciled Entries stat button
     has_reconciled_entries = fields.Boolean(compute="_compute_has_reconciled_entries")
     show_reset_to_draft_button = fields.Boolean(compute='_compute_show_reset_to_draft_button')
+    # Credit Limit related fields
+    partner_credit = fields.Monetary(related='partner_id.commercial_partner_id.credit')
+    partner_credit_limit = fields.Monetary(related='partner_id.credit_limit_compute')
+    show_partner_credit_warning = fields.Boolean(compute='_compute_show_partner_credit_warning')
 
     # ==== Hash Fields ====
     restrict_mode_hash_table = fields.Boolean(related='journal_id.restrict_mode_hash_table')
@@ -1959,6 +1963,14 @@ class AccountMove(models.Model):
     def _compute_tax_country_code(self):
         for record in self:
             record.tax_country_code = record.tax_country_id.code
+
+    @api.depends('partner_credit_limit', 'partner_credit', 'company_id.account_default_credit_limit')
+    def _compute_show_partner_credit_warning(self):
+        for move in self:
+            company_limit = move.partner_credit_limit == -1 and move.company_id.account_default_credit_limit
+            partner_limit = move.partner_credit_limit > 0 and move.partner_credit_limit
+            move.show_partner_credit_warning = (company_limit and move.partner_credit > company_limit) or \
+                                               (partner_limit and move.partner_credit > partner_limit)
 
     # -------------------------------------------------------------------------
     # BUSINESS MODELS SYNCHRONIZATION

@@ -141,6 +141,12 @@ class ResConfigSettings(models.TransientModel):
     use_invoice_terms = fields.Boolean(
         string='Default Terms & Conditions',
         config_parameter='account.use_invoice_terms')
+    account_credit_limit = fields.Boolean(
+        string="Sales Credit Limit", related="company_id.account_credit_limit", readonly=False,
+        help="Enable credit limit for the current company.")
+    account_default_credit_limit = fields.Monetary(
+        string="Default Credit Limit", related="company_id.account_default_credit_limit", readonly=False,
+        help="A limit of zero means no limit by default.")
 
     # Technical field to hide country specific fields from accounting configuration
     country_code = fields.Char(related='company_id.account_fiscal_country_id.code', readonly=True)
