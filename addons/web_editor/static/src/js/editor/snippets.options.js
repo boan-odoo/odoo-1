@@ -4030,6 +4030,10 @@ const SnippetOptionWidget = Widget.extend({
         if (shouldRecordUndo) {
             this.options.wysiwyg.odooEditor.unbreakableStepUnactive();
         }
+        const isOptionsTab = widget.$el.closest([
+            'we-customizeblock-option.snippet-option-OptionsTab',
+            'we-customizeblock-option.snippet-option-ThemeColors',
+        ].join(',')).length;
         this.trigger_up('snippet_edition_request', {exec: async () => {
             // If some previous snippet edition in the mutex removed the target from
             // the DOM, the widget can be destroyed, in that case the edition request
@@ -4086,7 +4090,7 @@ const SnippetOptionWidget = Widget.extend({
             // Set timeout needed so that the user event which triggered the
             // option can bubble first.
             }));
-        }});
+        }, optionsLoader: isOptionsTab});
 
         if (ev.data.isSimulatedEvent) {
             // If the user value update was simulated through a trigger, we
