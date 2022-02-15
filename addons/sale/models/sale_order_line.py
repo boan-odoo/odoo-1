@@ -813,7 +813,6 @@ class SaleOrderLine(models.Model):
             pricelist_item = PricelistItem.browse(rule_id)
             if pricelist_item.pricelist_id.discount_policy == 'without_discount':
                 while pricelist_item.base == 'pricelist' and pricelist_item.base_pricelist_id and pricelist_item.base_pricelist_id.discount_policy == 'without_discount':
-                    # TODO TLE: Add probably an hook here to add kwargs, see #sale_renting.
                     _price, rule_id = pricelist_item.base_pricelist_id._get_product_price_rule(
                         product, qty, uom=uom, date=date, **self._get_price_computation_kwargs()
                     )
@@ -823,7 +822,6 @@ class SaleOrderLine(models.Model):
                 price = product.standard_price
                 currency = product.cost_currency_id
             elif pricelist_item.base == 'pricelist' and pricelist_item.base_pricelist_id:
-                #  TODO TLE: Add probably an hook here to add kwargs, see #sale_renting.
                 price = pricelist_item.base_pricelist_id._get_product_price(
                     product, qty, uom=uom, date=date, **self._get_price_computation_kwargs()
                 )
