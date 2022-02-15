@@ -145,8 +145,7 @@ class SendSMS(models.TransientModel):
         for composer in self:
             value = composer.recipient_single_number_itf or composer.recipient_single_number
             if value:
-                records = composer._get_records()
-                sanitized = phone_validation.phone_sanitize_numbers_w_record([value], records)[value]['sanitized']
+                sanitized = phone_validation.phone_sanitize_numbers_w_record([value], composer)[value]['sanitized']
                 composer.recipient_single_valid = bool(sanitized)
             else:
                 composer.recipient_single_valid = False
