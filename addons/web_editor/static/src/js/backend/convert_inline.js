@@ -124,8 +124,11 @@ function bootstrapToTable($editable) {
         masonryRow.parentElement.style.setProperty('height', '100%');
     }
 
+    const tds = [];
     // Now convert all containers with rows to tables.
     for (const container of [...editable.querySelectorAll('.container, .container-fluid, .o_fake_table')].filter(n => [...n.children].some(c => c.classList.contains('row')))) {
+        const containerWidth = _getWidth(container);
+
         // TABLE
         const table = _createTable(container.attributes);
         for (const child of [...container.childNodes]) {
@@ -158,6 +161,7 @@ function bootstrapToTable($editable) {
             for (const child of [...bootstrapRow.childNodes]) {
                 tr.append(child);
             }
+            tr.style.setProperty('width', '100%');
             bootstrapRow.before(tr);
             bootstrapRow.remove();
 
@@ -177,6 +181,7 @@ function bootstrapToTable($editable) {
 
             // 2. Create and fill up the row(s) with grid(s).
             let grid = _createColumnGrid();
+            tds.push(...grid);
             let gridIndex = 0;
             let currentRow = tr.cloneNode();
             tr.after(currentRow);
@@ -186,7 +191,7 @@ function bootstrapToTable($editable) {
                 const columnSize = _getColumnSize(bootstrapColumn);
                 if (gridIndex + columnSize < 12) {
                     currentCol = grid[gridIndex];
-                    _applyColspan(currentCol, columnSize);
+                    _applyColspan(currentCol, columnSize, containerWidth);
                     if (columnIndex === bootstrapColumns.length - 1) {
                         // We handled all the columns but there is still space
                         // in the row. Insert the columns and fill the row.
@@ -197,7 +202,7 @@ function bootstrapToTable($editable) {
                 } else if (gridIndex + columnSize === 12) {
                     // Finish the row.
                     currentCol = grid[gridIndex];
-                    _applyColspan(currentCol, columnSize);
+                    _applyColspan(currentCol, columnSize, containerWidth);
                     currentRow.append(...grid.filter(td => td.getAttribute('colspan')));
                     if (columnIndex !== bootstrapColumns.length - 1) {
                         // The row was filled before we handled all of its
@@ -206,20 +211,22 @@ function bootstrapToTable($editable) {
                         currentRow = currentRow.cloneNode();
                         previousRow.after(currentRow);
                         grid = _createColumnGrid();
+                        tds.push(...grid);
                         gridIndex = 0;
                     }
                 } else {
                     // Fill the row with what was in the grid before it
                     // overflowed.
-                    _applyColspan(grid[gridIndex], 12 - gridIndex);
+                    _applyColspan(grid[gridIndex], 12 - gridIndex, containerWidth);
                     currentRow.append(...grid.filter(td => td.getAttribute('colspan')));
                     // Start a new row that starts with the current col.
                     const previousRow = currentRow;
                     currentRow = currentRow.cloneNode();
                     previousRow.after(currentRow);
                     grid = _createColumnGrid();
+                    tds.push(...grid);
                     currentCol = grid[0];
-                    _applyColspan(currentCol, columnSize);
+                    _applyColspan(currentCol, columnSize, containerWidth);
                     gridIndex = columnSize;
                     if (columnIndex === bootstrapColumns.length - 1 && gridIndex < 12) {
                         // We handled all the columns but there is still space
@@ -227,7 +234,7 @@ function bootstrapToTable($editable) {
                         grid[gridIndex].setAttribute('colspan', 12 - gridIndex);
                         currentRow.append(...grid.filter(td => td.getAttribute('colspan')));
                         // Adapt width to colspan.
-                        _applyColspan(grid[gridIndex], 12 - gridIndex);
+                        _applyColspan(grid[gridIndex], 12 - gridIndex, containerWidth);
                     }
                 }
                 if (currentCol) {
@@ -245,12 +252,34 @@ function bootstrapToTable($editable) {
                         currentCol.append(child);
                     }
                     // Adapt width to colspan.
-                    _applyColspan(currentCol, +currentCol.getAttribute('colspan'));
+                    _applyColspan(currentCol, +currentCol.getAttribute('colspan'), containerWidth);
                 }
                 columnIndex++;
             }
             tr.remove(); // row was cloned and inserted already
         }
+    }
+
+    // Finally replace the responsive tables with static ones for Outlook
+    for (const td of tds.filter(td => !td.querySelector('td'))) {
+        const tdStyle = td.getAttribute('style') || '';
+        const msoAttributes = [...td.attributes].filter(attr => attr.name !== 'style' && attr.name !== 'width')
+            .map(attr => `${attr.name}="${td.getAttribute(attr.name)}"`).join(' ');
+        const msoWidth = td.style.getPropertyValue('max-width');
+        const msoStyles = tdStyle.replace(/(^| |max-)width:[^;]*;\s*/g, '');
+        const msoContents = td.innerHTML.replace(/<!--\[if mso\]>/g, '').replace(/<!\[endif\]-->/g, '').replace(/<!--(.*?)-->/g, '')
+        const mso = document.createComment(
+            `[if mso]><td ${msoAttributes} ${msoWidth
+                ? `width="${msoWidth}" style="${msoStyles}width: ${msoWidth};"`
+                : `style="${msoStyles}"`}>${msoContents}</td><![endif]`
+        );
+        td.before(mso);
+        // Hide the original td in Outlook (mso-hide is used in formatTables
+        // to apply a non-standard style that risks being lost when
+        // modifying the dom if we set it here already).
+        td.classList.add('mso-hide');
+        td.before(document.createComment('[if !mso]><!'));
+        td.after(document.createComment('<![endif]'));
     }
 }
 /**
@@ -619,18 +648,18 @@ function formatTables($editable) {
         }
     }
     // Align items doesn't work on table rows.
-    for (const cell of editable.querySelectorAll('tr')) {
-        const alignItems = cell.style.alignItems;
+    for (const row of editable.querySelectorAll('tr')) {
+        const alignItems = row.style.alignItems;
         if (alignItems === 'flex-start') {
-            cell.style.verticalAlign = 'top';
+            row.style.verticalAlign = 'top';
         } else if (alignItems === 'center') {
-            cell.style.verticalAlign = 'middle';
+            row.style.verticalAlign = 'middle';
         } else if (alignItems === 'flex-end' || alignItems === 'baseline') {
-            cell.style.verticalAlign = 'bottom';
+            row.style.verticalAlign = 'bottom';
         }
     }
-    // Table don't properly inherit alignments from their ancestors in Outlook.
-    for (const table of $editable.find('table')) {
+    // Tables don't properly inherit alignments from their ancestors in Outlook.
+    for (const table of editable.querySelectorAll('table')) {
         if (table.style.textAlign === 'inherit') {
             let ancestor = table;
             while (ancestor && (!ancestor.style.textAlign || ancestor.style.textAlign === 'inherit')) {
@@ -640,6 +669,11 @@ function formatTables($editable) {
                 table.style.setProperty('text-align', ancestor.style.textAlign);
             }
         }
+    }
+    // Hide replaced cells on Outlook
+    for (const toHide of editable.querySelectorAll('.mso-hide')) {
+        const style = toHide.getAttribute('style') || '';
+        toHide.setAttribute('style', `${style} mso-hide: all;`.trim());
     }
 }
 /**
@@ -800,13 +834,17 @@ function normalizeRem($editable, rootFontSize=16) {
  *
  * @param {Element} element
  * @param {number} colspan
+ * @param {number} tableWidth
  */
-function _applyColspan(element, colspan) {
+function _applyColspan(element, colspan, tableWidth) {
     element.setAttribute('colspan', colspan);
+    const widthPercentage = +element.getAttribute('colspan') / 12;
     // Round to 2 decimal places.
-    const width = (Math.round(+element.getAttribute('colspan') * 10000 / 12) / 100) + '%';
-    element.setAttribute('width', width);
-    element.style.setProperty('width', width);
+    const width = Math.round(tableWidth * widthPercentage * 100) / 100;
+    element.setAttribute('width', '100%');
+    element.style.setProperty('width', '100%');
+    element.style.setProperty('max-width', width + 'px');
+    element.style.setProperty('display', 'inline-block');
 }
 /**
  * Take a selector and return its specificity according to the w3 specification.

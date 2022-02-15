@@ -793,15 +793,20 @@ function getGridHtml(matrix) {
  * ]                            // </table>
  *
  * @param {Array<Array<Array<[Number, Number, string?]>>>} matrix
+ * @param {boolean} [responsive=false]
  * @returns {string}
  */
-function getTableHtml(matrix) {
+function getTableHtml(matrix, responsive=false) {
     return (
         `<table ${tableAttributesString} style="width: 100% !important; ${tableStylesString}">` +
         matrix.map((row, iRow) => (
-            `<tr>` +
+            (responsive ? `<tr style="width: 100%;">` : `<tr>`) +
             row.map((col, iCol) => (
-                `<td colspan="${col[0]}" width="${col[1]}%" style="width: ${col[1]}%;">` +
+                // NOTE: what happened to ${col[1]} in responsive mode? shouldn't it
+                // be the max-width?
+                (responsive
+                    ? `<td colspan="${col[0]}" width="100%" style="width: 100%; display: inline-block;" class="mso-hide">`
+                    : `<td colspan="${col[0]}" width="${col[1]}%" style="width: ${col[1]}%;">`) +
                 (col.length === 3 ? col[2] : `(${iRow}, ${iCol})`) +
                 `</td>`
             )).join('') +
@@ -841,16 +846,26 @@ function getRegularGridHtml(nRows, nCols) {
  * @param {Number|Number[]} nCols
  * @param {Number|Number[]} colspan
  * @param {Number|Number[]} width
+ * @param {boolean} [responsive=false]
  * @returns {string}
  */
-function getRegularTableHtml(nRows, nCols, colspan, width) {
+function getRegularTableHtml(nRows, nCols, colspan, width, responsive=false) {
     const matrix = new Array(nRows).fill().map((_, iRow) => (
         new Array(Array.isArray(nCols) ? nCols[iRow] : nCols).fill().map(() => ([
             Array.isArray(colspan) ? colspan[iRow] : colspan,
             Array.isArray(width) ? width[iRow] : width,
         ])))
     );
-    return getTableHtml(matrix);
+    return getTableHtml(matrix, responsive);
+}
+/**
+ * Take an HTML string and returns that string stripped from any HTML comments.
+ *
+ * @param {string} html
+ * @returns {string}
+ */
+function removeComments(html) {
+    return html.replace(/<!--(.*?)-->/g, '');
 }
 
 return {
@@ -865,6 +880,7 @@ return {
     getTableHtml: getTableHtml,
     getRegularGridHtml: getRegularGridHtml,
     getRegularTableHtml: getRegularTableHtml,
+    removeComments: removeComments,
 };
 
 
