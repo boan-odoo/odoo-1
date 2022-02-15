@@ -764,6 +764,7 @@ class Message(models.Model):
             'message_ids': ids,
             'starred': False,
             'starred_counter': self.env.user.partner_id._get_starred_count(),
+            'data': [m.message_format()[0] for m in starred_messages],
         })
 
     def toggle_message_starred(self):
@@ -782,6 +783,7 @@ class Message(models.Model):
             'message_ids': [self.id],
             'starred': starred,
             'starred_counter': self.env.user.partner_id._get_starred_count(),
+            'data': self.message_format(),
         })
 
     def _message_add_reaction(self, content):

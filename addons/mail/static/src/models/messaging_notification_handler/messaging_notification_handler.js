@@ -593,13 +593,14 @@ function factory(dependencies) {
          * @param {integer[]} param0.message_ids
          * @param {boolean} param0.starred
          * @param {integer} param0.starred_counter
+         * @param {Object} data
          */
-        _handleNotificationPartnerToggleStar({ message_ids = [], starred, starred_counter }) {
+        _handleNotificationPartnerToggleStar({ message_ids = [], starred, starred_counter, data }) {
             const starredMailbox = this.messaging.starred;
-            for (const messageId of message_ids) {
-                const message = this.messaging.models['mail.message'].findFromIdentifyingData({
-                    id: messageId,
-                });
+            const messages = this.messaging.models['mail.message'].insert(data.map(
+                data => this.messaging.models['mail.message'].convertData(data)
+            ));
+            for (const message of messages) {
                 if (!message) {
                     continue;
                 }
