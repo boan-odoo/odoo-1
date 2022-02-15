@@ -20,7 +20,7 @@ class AccountPaymentRegister(models.TransientModel):
                 lambda l: l.payment_method_id == preferred
             )
             if record.payment_type == 'outbound' and method_line:
-                record.payment_method_line_id = method_line
+                record.payment_method_line_id = sorted(method_line, key=lambda x: x.sequence)[0]
 
 
 class AccountPayment(models.Model):
