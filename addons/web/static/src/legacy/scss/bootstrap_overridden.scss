@@ -179,3 +179,8 @@ $breadcrumb-item-padding: .2em !default;
 // Code
 
 $code-color: $o-main-code-color!default;
+
+// User input typically entered via keyboard
+
+$kbd-color: $o-gray-700 !default;
+$kbd-bg: $o-gray-100 !default;
