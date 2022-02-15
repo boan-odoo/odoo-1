@@ -36,7 +36,7 @@ def get_selection_groups(name):
     return [int(v) for v in name[11:].split('_')]
 
 
-class ResGroups(models.Model):
+class Groups(models.Model):
     _name = "res.groups"
     _description = "Access Groups"
     _rec_name = 'full_name'
