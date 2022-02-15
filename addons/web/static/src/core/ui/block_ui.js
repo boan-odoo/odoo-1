@@ -1,10 +1,11 @@
 /** @odoo-module **/
 
 import { browser } from "@web/core/browser/browser";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useState, xml } = owl;
 
-export class BlockUI extends Component {
+export class BlockUI extends LegacyComponent {
     setup() {
         this.messagesByDuration = [
             { time: 20, l1: this.env._t("Loading...") },

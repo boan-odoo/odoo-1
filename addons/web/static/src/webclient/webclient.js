@@ -9,10 +9,11 @@ import { NotUpdatable } from "@web/core/utils/components";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { ActionContainer } from "./actions/action_container";
 import { NavBar } from "./navbar/navbar";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onMounted, useExternalListener, useState } = owl;
 
-export class WebClient extends Component {
+export class WebClient extends LegacyComponent {
     setup() {
         this.menuService = useService("menu");
         this.actionService = useService("action");

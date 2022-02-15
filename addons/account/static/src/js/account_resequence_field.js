@@ -3,10 +3,11 @@ odoo.define('account.ShowResequenceRenderer', function (require) {
 
 const AbstractFieldOwl = require('web.AbstractFieldOwl');
 const field_registry = require('web.field_registry_owl');
+const { LegacyComponent } = require("@web/legacy/legacy_component");
 
 const { Component, onWillUpdateProps } = owl;
 
-class ChangeLine extends Component { }
+class ChangeLine extends LegacyComponent { }
 ChangeLine.template = 'account.ResequenceChangeLine';
 ChangeLine.props = ["changeLine", 'ordering'];
 

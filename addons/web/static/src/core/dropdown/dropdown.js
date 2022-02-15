@@ -4,6 +4,7 @@ import { useBus, useService } from "@web/core/utils/hooks";
 import { usePosition } from "../position/position_hook";
 import { useDropdownNavigation } from "./dropdown_navigation_hook";
 import { localization } from "../l10n/localization";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const {
     Component,
@@ -40,12 +41,13 @@ export const DROPDOWN = Symbol("Dropdown");
 /**
  * @extends Component
  */
-export class Dropdown extends Component {
+export class Dropdown extends LegacyComponent {
     setup() {
         this.state = useState({
             open: this.props.startOpen,
             groupIsOpen: this.props.startOpen,
         });
+        this.rootRef = useRef("root");
 
         // Set up beforeOpen ---------------------------------------------------
         onWillStart(() => {
@@ -142,6 +144,10 @@ export class Dropdown extends Component {
     // -------------------------------------------------------------------------
     // Private
     // -------------------------------------------------------------------------
+
+    get el() {
+        return this.rootRef.el;
+    }
 
     /**
      * Changes the dropdown state and notifies over the Dropdown bus.

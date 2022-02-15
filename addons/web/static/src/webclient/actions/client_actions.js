@@ -3,6 +3,7 @@
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { escape, sprintf } from "@web/core/utils/strings";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onMounted, xml } = owl;
 
@@ -24,7 +25,7 @@ export const displayNotificationAction = (env, action) => {
 
 registry.category("actions").add("display_notification", displayNotificationAction);
 
-class InvalidAction extends Component {
+class InvalidAction extends LegacyComponent {
     setup() {
         this.notification = useService("notification");
         onMounted(this.onMounted);

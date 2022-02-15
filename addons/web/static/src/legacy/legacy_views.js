@@ -14,8 +14,9 @@ import {
 } from "./backend_utils";
 import { registry } from "@web/core/registry";
 import { loadPublicAsset } from "@web/core/assets";
+import { LegacyComponent } from "./legacy_component";
 
-const { Component, xml, onWillStart } = owl;
+const { xml, onWillStart } = owl;
 const viewRegistry = registry.category("views");
 
 function getJsClassWidget(fieldsInfo) {
@@ -31,7 +32,7 @@ const legacyViewTemplate = xml`
 // registers a view from the legacy view registry to the wowl one, but wrapped
 // into an Owl Component
 function registerView(name, LegacyView) {
-    class Controller extends Component {
+    class Controller extends LegacyComponent {
         setup() {
             this.vm = useService("view");
             this.Widget = Widget; // fool the ComponentAdapter with a simple Widget

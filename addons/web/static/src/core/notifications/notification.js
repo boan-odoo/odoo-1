@@ -1,8 +1,10 @@
 /** @odoo-module **/
 
+import { LegacyComponent } from "@web/legacy/legacy_component";
+
 const { Component } = owl;
 
-export class Notification extends Component {
+export class Notification extends LegacyComponent {
     get className() {
         let className;
         switch (this.props.type) {

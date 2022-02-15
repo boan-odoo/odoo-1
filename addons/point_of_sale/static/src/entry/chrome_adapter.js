@@ -11,10 +11,11 @@ import { registry } from "@web/core/registry";
 import env from "point_of_sale.env";
 import { debounce } from "@web/core/utils/timing";
 import { batched } from "point_of_sale.utils";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, reactive, markRaw, useExternalListener, useSubEnv, onWillUnmount, xml } = owl;
 
-export class ChromeAdapter extends Component {
+export class ChromeAdapter extends LegacyComponent {
     setup() {
         this.PosChrome = Registries.Component.get(Chrome);
         ProductScreen.sortControlButtons();

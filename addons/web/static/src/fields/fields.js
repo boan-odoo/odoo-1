@@ -3,6 +3,7 @@ import { registry } from "@web/core/registry";
 import legacyFieldRegistry from "web.field_registry";
 import owlFieldRegistry from "web.field_registry_owl";
 import { ComponentAdapter } from "web.OwlCompatibility";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useEffect, xml } = owl;
 
@@ -22,7 +23,7 @@ function getFieldFromRegistry(registry, { fieldType, viewType, fieldName, fields
     return registry.get(fieldType, null);
 }
 
-class Field extends Component {
+class Field extends LegacyComponent {
     static getTangibleField({ record, type, name }) {
         const FieldClass = getFieldFromRegistry(fieldRegistry, {
             fieldName: name,

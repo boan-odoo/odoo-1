@@ -4,15 +4,14 @@ odoo.define('base_import.ImportMenu', function (require) {
     const { DropdownItem } = require('@web/core/dropdown/dropdown_item');
     const FavoriteMenu = require('web.FavoriteMenu');
     const { useModel } = require('web.Model');
-
-    const { Component } = owl;
+    const { LegacyComponent } = require("@web/legacy/legacy_component");
 
     /**
      * Import Records menu
      *
      * This component is used to import the records for particular model.
      */
-    class ImportMenu extends Component {
+    class ImportMenu extends LegacyComponent {
         setup() {
             this.model = useModel('searchModel');
         }

@@ -1,10 +1,11 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class AttachmentList extends Component {
+export class AttachmentList extends LegacyComponent {
 
     /**
      * @returns {AttachmentList}

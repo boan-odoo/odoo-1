@@ -1,10 +1,11 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onMounted, onWillUnmount, useEffect } = owl;
 
-export class AutocompleteInput extends Component {
+export class AutocompleteInput extends LegacyComponent {
 
     /**
      * @override

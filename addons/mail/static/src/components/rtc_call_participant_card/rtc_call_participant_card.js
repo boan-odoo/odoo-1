@@ -1,12 +1,13 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 import Popover from "web.Popover";
 
 const { Component, useRef } = owl;
 
-export class RtcCallParticipantCard extends Component {
+export class RtcCallParticipantCard extends LegacyComponent {
 
     /**
      * @override

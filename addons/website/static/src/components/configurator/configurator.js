@@ -8,6 +8,7 @@ import {_t, _lt} from 'web.core';
 import {svgToPNG} from 'website.utils';
 import {useService} from "@web/core/utils/hooks";
 import {renderToString} from "@web/core/utils/render";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { App, Component, onMounted, reactive, useEnv, useRef, useState, whenReady } = owl;
 
@@ -67,7 +68,7 @@ const SESSION_STORAGE_ITEM_NAME = 'websiteConfigurator' + session.website_id;
 // Components
 //---------------------------------------------------------
 
-class SkipButton extends Component {
+class SkipButton extends LegacyComponent {
     async skip() {
         await skipConfigurator(Component.env.services);
     }
@@ -75,7 +76,7 @@ class SkipButton extends Component {
 
 SkipButton.template = 'website.Configurator.SkipButton';
 
-class WelcomeScreen extends Component {
+class WelcomeScreen extends LegacyComponent {
     setup() {
         this.state = useStore();
         this.router = useRouter();
@@ -91,7 +92,7 @@ Object.assign(WelcomeScreen, {
     template: 'website.Configurator.WelcomeScreen',
 });
 
-class DescriptionScreen extends Component {
+class DescriptionScreen extends LegacyComponent {
     setup() {
         this.industrySelection = useRef('industrySelection');
         this.state = useStore();
@@ -269,7 +270,7 @@ Object.assign(DescriptionScreen, {
     template: 'website.Configurator.DescriptionScreen',
 });
 
-class PaletteSelectionScreen extends Component {
+class PaletteSelectionScreen extends LegacyComponent {
     setup() {
         this.state = useStore();
         this.router = useRouter();
@@ -292,7 +293,7 @@ class PaletteSelectionScreen extends Component {
         if (logoSelectInput.files.length === 1) {
             const file = logoSelectInput.files[0];
             const data = await utils.getDataURLFromFile(file);
-            const attachment = await this.rpc({
+            const attachment = await this.env.services.rpc({
                 route: '/web_editor/attachment/add_data',
                 params: {
                     name: 'logo',
@@ -338,7 +339,7 @@ Object.assign(PaletteSelectionScreen, {
     template: 'website.Configurator.PaletteSelectionScreen',
 });
 
-class FeaturesSelectionScreen extends Component {
+class FeaturesSelectionScreen extends LegacyComponent {
     setup() {
         this.state = useStore();
         this.router = useRouter();
@@ -373,7 +374,7 @@ Object.assign(FeaturesSelectionScreen, {
     template: 'website.Configurator.FeatureSelection',
 });
 
-class ThemeSelectionScreen extends Component {
+class ThemeSelectionScreen extends LegacyComponent {
     setup() {
         this.state = useStore();
         this.router = useRouter();
@@ -393,7 +394,7 @@ class ThemeSelectionScreen extends Component {
 
 ThemeSelectionScreen.template = 'website.Configurator.ThemeSelectionScreen';
 
-class Configurator extends Component {
+class Configurator extends LegacyComponent {
     setup() {
         this.router = useRouter();
     }

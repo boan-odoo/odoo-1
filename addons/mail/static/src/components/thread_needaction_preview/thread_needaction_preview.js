@@ -3,10 +3,11 @@
 import * as mailUtils from '@mail/js/utils';
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useRef } = owl;
 
-export class ThreadNeedactionPreview extends Component {
+export class ThreadNeedactionPreview extends LegacyComponent {
 
     /**
      * @override

@@ -1,10 +1,11 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class MobileMessagingNavbar extends Component {
+export class MobileMessagingNavbar extends LegacyComponent {
 
     /**
      * @returns {MobileMessagingNavbarView}

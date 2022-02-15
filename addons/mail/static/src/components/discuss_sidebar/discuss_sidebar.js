@@ -2,10 +2,11 @@
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { useUpdate } from '@mail/component_hooks/use_update/use_update';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useRef } = owl;
 
-export class DiscussSidebar extends Component {
+export class DiscussSidebar extends LegacyComponent {
 
     /**
      * @override

@@ -1,9 +1,10 @@
 odoo.define('point_of_sale.PosComponent', function (require) {
     'use strict';
 
-    const { Component, onRendered } = owl;
+    const { LegacyComponent } = require("@web/legacy/legacy_component");
+    const { onRendered } = owl;
 
-    class PosComponent extends Component {
+    class PosComponent extends LegacyComponent {
         setup() {
             onRendered(() => {
                 if (this.env.isDebug()) {

@@ -13,6 +13,7 @@ import { cleanDomFromBootstrap } from "@web/legacy/utils";
 import { View } from "@web/views/view";
 import { ActionDialog } from "./action_dialog";
 import { CallbackRecorder } from "./action_hook";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, markup, onMounted, onWillUnmount, onError, useChildSubEnv, xml } = owl;
 
@@ -559,7 +560,7 @@ function makeActionManager(env) {
             }
         };
 
-        class ControllerComponent extends Component {
+        class ControllerComponent extends LegacyComponent {
             setup() {
                 this.Component = controller.Component;
                 this.titleService = useService("title");

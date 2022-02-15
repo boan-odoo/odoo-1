@@ -3,8 +3,9 @@ odoo.define('web.DropdownMenu', function (require) {
 
     const { _t } = require('web.core');
     const DropdownMenuItem = require('web.DropdownMenuItem');
+    const { LegacyComponent } = require("@web/legacy/legacy_component");
 
-    const { Component, useExternalListener, useRef, useState } = owl;
+    const { useExternalListener, useRef, useState } = owl;
 
     /**
      * Dropdown menu
@@ -27,7 +28,7 @@ odoo.define('web.DropdownMenu', function (require) {
      *      the behaviour of these items, @see DropdownMenuItem.
      * @extends Component
      */
-    class DropdownMenu extends Component {
+    class DropdownMenu extends LegacyComponent {
         setup() {
             this.dropdownMenu = useRef('dropdown');
             this.state = useState({ open: false });

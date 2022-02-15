@@ -4,6 +4,7 @@ odoo.define('board.AddToGoogleSpreadsheetMenu', function (require) {
     const Domain = require('web.Domain');
     const { DropdownItem } = require('@web/core/dropdown/dropdown_item');
     const FavoriteMenu = require('web.FavoriteMenu');
+    const { LegacyComponent } = require("@web/legacy/legacy_component");
 
     const { Component } = owl;
 
@@ -14,7 +15,7 @@ odoo.define('board.AddToGoogleSpreadsheetMenu', function (require) {
      * view to the user's spreadsheet configuration.
      * This component is only available in actions of type 'ir.actions.act_window'.
      */
-    class AddToGoogleSpreadsheetMenu extends Component {
+    class AddToGoogleSpreadsheetMenu extends LegacyComponent {
 
         //---------------------------------------------------------------------
         // Handlers
@@ -30,7 +31,7 @@ odoo.define('board.AddToGoogleSpreadsheetMenu', function (require) {
             const domain = Domain.prototype.arrayToString(searchQuery.domain);
             const groupBys = searchQuery.groupBy.join(" ");
             const listViewId = listView ? listView.viewID : false;
-            const result = await this.rpc({
+            const result = await this.env.services.rpc({
                 model: 'google.drive.config',
                 method: 'set_spreadsheet',
                 args: [modelName, domain, groupBys, listViewId],

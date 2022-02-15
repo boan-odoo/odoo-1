@@ -3,14 +3,15 @@ odoo.define('account.ShowGroupedList', function (require) {
 
 const AbstractFieldOwl = require('web.AbstractFieldOwl');
 const field_registry = require('web.field_registry_owl');
+const { LegacyComponent } = require("@web/legacy/legacy_component");
 
 const { Component, onWillUpdateProps } = owl;
 
-class ListItem extends Component { }
+class ListItem extends LegacyComponent { }
 ListItem.template = 'account.GroupedItemTemplate';
 ListItem.props = ["item_vals", "options"];
 
-class ListGroup extends Component { }
+class ListGroup extends LegacyComponent { }
 ListGroup.template = 'account.GroupedItemsTemplate';
 ListGroup.components = { ListItem }
 ListGroup.props = ["group_vals", "options"];

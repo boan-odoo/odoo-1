@@ -1,10 +1,11 @@
 /** @odoo-module **/
 
 import { Popover } from "./popover";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onMounted, onWillUnmount, useExternalListener, useState, xml } = owl;
 
-class PopoverController extends Component {
+class PopoverController extends LegacyComponent {
     setup() {
         this.state = useState({ displayed: false });
         this.targetObserver = new MutationObserver(this.onTargetMutate.bind(this));
@@ -60,7 +61,7 @@ PopoverController.template = xml/*xml*/ `
     </Popover>
 `;
 
-export class PopoverContainer extends Component {
+export class PopoverContainer extends LegacyComponent {
     setup() {
         this.props.bus.addEventListener("UPDATE", this.render.bind(this));
     }

@@ -2,12 +2,13 @@
 
 import { useComponentToModel } from '@mail/component_hooks/use_component_to_model/use_component_to_model';
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 import { usePosition } from '@web/core/position/position_hook';
 
 const { Component } = owl;
 
-export class PopoverView extends Component {
+export class PopoverView extends LegacyComponent {
 
     /**
      * @override

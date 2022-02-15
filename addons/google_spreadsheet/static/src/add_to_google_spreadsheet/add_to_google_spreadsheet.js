@@ -3,6 +3,7 @@
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 const favoriteMenuRegistry = registry.category("favoriteMenu");
@@ -15,7 +16,7 @@ const favoriteMenuRegistry = registry.category("favoriteMenu");
  * This component is only available in actions of type 'ir.actions.act_window'.
  * @extends Component
  */
-export class AddToGoogleSpreadsheet extends Component {
+export class AddToGoogleSpreadsheet extends LegacyComponent {
     setup() {
         this.orm = useService("orm");
     }

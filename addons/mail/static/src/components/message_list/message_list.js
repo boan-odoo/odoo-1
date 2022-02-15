@@ -4,12 +4,13 @@ import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { useComponentToModel } from '@mail/component_hooks/use_component_to_model/use_component_to_model';
 import { useRenderedValues } from '@mail/component_hooks/use_rendered_values/use_rendered_values';
 import { useUpdate } from '@mail/component_hooks/use_update/use_update';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 import { Transition } from "@web/core/transition";
 
 const { Component, onWillPatch, useRef } = owl;
 
-export class MessageList extends Component {
+export class MessageList extends LegacyComponent {
 
     /**
      * @override

@@ -3,6 +3,7 @@
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 const favoriteMenuRegistry = registry.category("favoriteMenu");
@@ -13,7 +14,7 @@ const favoriteMenuRegistry = registry.category("favoriteMenu");
  * This component is used to import the records for particular model.
  * @extends Component
  */
-export class ImportRecords extends Component {
+export class ImportRecords extends LegacyComponent {
     setup() {
         this.action = useService("action");
     }

@@ -4,10 +4,11 @@ import { _lt } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { fuzzyLookup } from "@web/core/utils/search";
 import { computeAppsAndMenuItems } from "@web/webclient/menus/menu_helpers";
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-class AppIconCommand extends Component {}
+class AppIconCommand extends LegacyComponent {}
 AppIconCommand.template = "web.AppIconCommand";
 
 const commandCategoryRegistry = registry.category("command_categories");

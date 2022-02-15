@@ -8,8 +8,9 @@ import { useSetupAction } from "../webclient/actions/action_hook";
 import { ClientActionAdapter } from "./action_adapters";
 import { breadcrumbsToLegacy } from "./backend_utils";
 import { useLegacyRefs } from "./utils";
+import { LegacyComponent } from "./legacy_component";
 
-const { Component, xml } = owl;
+const { xml } = owl;
 const actionRegistry = registry.category("actions");
 
 const legacyClientActionTemplate = xml`
@@ -21,7 +22,7 @@ const legacyClientActionTemplate = xml`
 function registerClientAction(name, action) {
     if (action.prototype instanceof Widget) {
         // the action is a widget, wrap it into a Component and register that component
-        class Action extends Component {
+        class Action extends LegacyComponent {
             setup() {
                 this.Widget = action;
                 const options = {};

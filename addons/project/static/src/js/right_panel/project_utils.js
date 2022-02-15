@@ -4,10 +4,11 @@ import { _lt } from 'web.core';
 import fieldUtils from 'web.field_utils';
 import { ComponentAdapter, standaloneAdapter } from 'web.OwlCompatibility';
 import { FormViewDialog } from 'web.view_dialogs';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onWillUpdateProps, useRef, useState } = owl;
 
-class MilestoneComponent extends Component {
+class MilestoneComponent extends LegacyComponent {
     setup() {
         super.setup();
         this.contextValue = Object.assign({}, {
@@ -85,7 +86,7 @@ export class OpenMilestone extends MilestoneComponent {
     }
 
     async onDeleteMilestone() {
-        await this.rpc({
+        await this.env.services.rpc({
             model: 'project.milestone',
             method: 'unlink',
             args: [this.milestone.id]
@@ -111,7 +112,7 @@ export class OpenMilestone extends MilestoneComponent {
     async onMilestoneClick() {
         if (!this.write_mutex) {
             this.write_mutex = true;
-            this.milestone = await this.rpc({
+            this.milestone = await this.env.services.rpc({
                 model: 'project.milestone',
                 method: 'toggle_is_reached',
                 args: [[this.milestone.id], !this.milestone.is_reached],

@@ -1,10 +1,11 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useState } = owl;
 
-export class DropZone extends Component {
+export class DropZone extends LegacyComponent {
 
     /**
      * @override

@@ -3,10 +3,11 @@
 import { useService } from '@web/core/utils/hooks';
 import { getLangDateFormat } from 'web.time';
 import widgetRegistry from 'web.widgetRegistry';
+import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useState, onWillStart, onWillUpdateProps } = owl;
 
-export class LeaveStatsComponent extends Component {
+export class LeaveStatsComponent extends LegacyComponent {
     setup() {
         this.rpc = useService('rpc');
 

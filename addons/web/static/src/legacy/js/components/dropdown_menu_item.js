@@ -2,8 +2,9 @@ odoo.define('web.DropdownMenuItem', function (require) {
     "use strict";
 
     const { useListener } = require("@web/core/utils/hooks");
+    const { LegacyComponent } = require("@web/legacy/legacy_component");
 
-    const { Component, useExternalListener, useRef, useState } = owl;
+    const { useExternalListener, useRef, useState } = owl;
 
     /**
      * Dropdown menu item
@@ -26,7 +27,7 @@ odoo.define('web.DropdownMenuItem', function (require) {
      * be put inside of a dropdown menu (@see CustomFilterItem as example).
      * @extends Component
      */
-    class DropdownMenuItem extends Component {
+    class DropdownMenuItem extends LegacyComponent {
         setup() {
             this.canBeOpened = Boolean(this.props.options && this.props.options.length);
 
