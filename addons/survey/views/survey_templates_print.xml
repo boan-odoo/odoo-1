@@ -35,35 +35,56 @@
                                             <span t-if="scoring_display_correction" class="badge badge-pill" t-att-data-score-question="question.id"></span>
                                         </h2>
                                         <t t-if="not is_html_empty(question.description)"><div class="text-muted oe_no_empty mt-1" t-field='question.description'/></t>
-                                        <t t-if="question.question_type == 'text_box'"><t t-call="survey.question_text_box"/></t>
-                                        <t t-if="question.question_type == 'char_box'"><t t-call="survey.question_char_box"/></t>
-                                        <t t-if="question.question_type in ['numerical_box', 'date', 'datetime']">
-                                            <t t-if="question.is_scored_question and answer_lines">
-                                                <div class="row no-gutters o_survey_scored_question">
-                                                    <t t-set="is_question_skipped" t-value="not answer_lines[0]['value_%s' % question.question_type]"/>
-                                                    <t t-set="answer_bg_class" t-if="is_question_skipped" t-value="'o_survey_question_skipped'"/>
-                                                    <t t-set="answer_bg_class" t-elif="answer_lines[0].answer_is_correct" t-value="'bg-success'"/>
-                                                    <t t-set="answer_bg_class" t-else="" t-value="'bg-danger'"/>
-                                                    <div t-attf-class="col-12 col-md-6 col-lg-4 rounded pl-4 {{answer_bg_class}}">
-                                                        <t t-if="is_question_skipped">
-                                                            <input type="text" t-attf-class="form-control font-italic o_survey_question_{{question.question_type}} bg-transparent rounded-0 p-0" name="skipped_answers" value="Skipped"/>
-                                                        </t>
-                                                        <t t-else="">
-                                                            <t t-call="survey.survey_scored_fields"/>
-                                                        </t>
-                                                    </div>
-                                                    <div class="col-12 text-success mt-1" t-if="not answer_lines[0].answer_is_correct">
-                                                        <t t-set="correct_answer" t-value="question['answer_%s' % question.question_type ]"/>
-                                                        <t t-if="correct_answer">
-                                                            Correct answer is:
-                                                            <strong t-esc="correct_answer" t-if="question.question_type == 'numerical_box'"/>
-                                                            <strong t-esc="format_date(correct_answer)" t-if="question.question_type == 'date'"/>
-                                                            <strong t-esc="format_datetime(correct_answer)" t-if="question.question_type == 'datetime'"/>
-                                                        </t>
-                                                    </div>
-                                                </div>
+                                        <t t-if="question.question_type in ['numerical_box', 'date', 'datetime', 'text_box', 'char_box']">
+                                            <t t-if="answer_lines">
+                                                <t t-set="is_question_skipped" t-value="not answer_lines[0]['value_%s' % question.question_type]"/>
+                                                <t t-if="question.question_type in ['text_box', 'char_box']">
+                                                    <t t-if="is_question_skipped">
+                                                        <div class="row no-gutters o_survey_questions">
+                                                            <t t-set="answer_bg_class" t-if="is_question_skipped" t-value="'o_survey_question_skipped'"/>
+                                                            <div t-attf-class="col-12 col-md-6 col-lg-4 rounded pl-4 {{answer_bg_class}}">
+                                                                <input type="text" t-attf-class="form-control font-italic o_survey_question_{{question.question_type}} bg-transparent rounded-0 p-0" name="skipped_answers" value="Skipped"/>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <t t-call="survey.survey_text_fields"/>
+                                                    </t>
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-if="is_question_skipped or question['answer_%s' % question.question_type ]">
+                                                        <div class="row no-gutters o_survey_questions">
+                                                            <t t-set="answer_bg_class" t-if="is_question_skipped" t-value="'o_survey_question_skipped'"/>
+                                                            <t t-set="answer_bg_class" t-elif="answer_lines[0].answer_is_correct" t-value="'bg-success'"/>
+                                                            <t t-set="answer_bg_class" t-else="" t-value="'bg-danger'"/>
+                                                            <div t-attf-class="col-12 col-md-6 col-lg-4 rounded pl-4 {{answer_bg_class}}">
+                                                                <t t-if="is_question_skipped">
+                                                                    <input type="text" t-attf-class="form-control font-italic o_survey_question_{{question.question_type}} bg-transparent rounded-0 p-0" name="skipped_answers" value="Skipped"/>
+                                                                </t>
+                                                                <t t-else="">
+                                                                    <t t-call="survey.survey_scored_fields"/>
+                                                                </t>
+                                                            </div>
+                                                            <t t-if="question['answer_%s' % question.question_type ]">
+                                                                <div class="col-12 text-success mt-1" t-if="not answer_lines[0].answer_is_correct">
+                                                                    <t t-set="correct_answer" t-value="question['answer_%s' % question.question_type ]"/>
+                                                                    <t t-if="correct_answer">
+                                                                        Correct answer is:
+                                                                        <strong t-esc="correct_answer" t-if="question.question_type == 'numerical_box'"/>
+                                                                        <strong t-esc="format_date(correct_answer)" t-if="question.question_type == 'date'"/>
+                                                                        <strong t-esc="format_datetime(correct_answer)" t-if="question.question_type == 'datetime'"/>
+                                                                    </t>
+                                                                </div>
+                                                            </t>
+                                                        </div>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <t t-call="survey.survey_scored_fields"/>
+                                                    </t>
+                                                </t>
                                             </t>
                                             <t t-else="">
+                                                <t t-call="survey.survey_text_fields"/>
                                                 <t t-call="survey.survey_scored_fields"/>
                                             </t>
                                         </t>
@@ -101,6 +122,12 @@
         <t t-if="question.question_type == 'numerical_box'"><t t-call="survey.question_numerical_box"/></t>
         <t t-if="question.question_type == 'date'"><t t-call="survey.question_date"/></t>
         <t t-if="question.question_type == 'datetime'"><t t-call="survey.question_datetime"/></t>
+    </template>
+
+    <!-- simple Char and multi text fields -->
+    <template id="survey_text_fields" name="Survey: Text and Char fields">
+        <t t-if="question.question_type == 'text_box'"><t t-call="survey.question_text_box"/></t>
+        <t t-if="question.question_type == 'char_box'"><t t-call="survey.question_char_box"/></t>
     </template>
 </data>
 </odoo>
