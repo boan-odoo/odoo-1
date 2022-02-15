@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
+from odoo import Command, models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 
 
 class AccountPayment(models.Model):
     _name = "account.payment"
     _inherits = {'account.move': 'move_id'}
-    _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = "Payments"
     _order = "date desc, name desc"
     _check_company_auto = True
@@ -696,8 +695,38 @@ class AccountPayment(models.Model):
 
     def write(self, vals):
         # OVERRIDE
+        # Tracking stuff can be skipped for perfs using tracking_disable context key
+        if not self.env.context.get('tracking_disable', False):
+            # Get all tracked fields (without related fields because these fields must be manage on their own model)
+            tracking_fields = []
+            for value in vals:
+                field = self._fields[value]
+                if hasattr(field, 'related') and field.related:
+                    continue  # We don't want to track related field.
+                if hasattr(field, 'tracking') and field.tracking:
+                    tracking_fields.append(value)
+            ref_fields = self.env['account.payment'].fields_get(tracking_fields)
+
+            # Get initial values
+            move_initial_values = {}
+            for payment in self.filtered(lambda l: l.move_id):  # Only lines with posted once move.
+                for field in tracking_fields:
+                    # Group initial values by move_id
+                    if payment.move_id.id not in move_initial_values:
+                        move_initial_values[payment.move_id.id] = {}
+                    move_initial_values[payment.move_id.id].update({field: payment[field]})
+
         res = super().write(vals)
         self._synchronize_to_moves(set(vals.keys()))
+
+        # Log changes to payment on the move
+        for move_id, modified_payments in move_initial_values.items():
+            for payment in self.filtered(lambda l: l.move_id.id == move_id):
+                tracking_value_ids = payment._mail_track(ref_fields, modified_payments)[1]
+                if tracking_value_ids:
+                    payment.move_id._message_log(
+                        tracking_value_ids=tracking_value_ids
+                    )
         return res
 
     def unlink(self):
@@ -896,6 +925,31 @@ class AccountPayment(models.Model):
             lines.reconcile()
 
     # -------------------------------------------------------------------------
+    # TRACKING METHODS
+    # -------------------------------------------------------------------------
+
+    def _valid_field_parameter(self, field, name):
+        # Mark tracking as valid, while this model does not inherit mail_thread the move behind does
+        return name == 'tracking' or super()._valid_field_parameter(field, name)
+
+    def _mail_track(self, tracked_fields, initial):
+        changes, tracking_value_ids = super()._mail_track(tracked_fields, initial)
+        if len(changes) > len(tracking_value_ids):
+            for i, changed_field in enumerate(changes):
+                if tracked_fields[changed_field]['type'] in ['one2many', 'many2many']:
+                    field = self.env['ir.model.fields']._get(self._name, changed_field)
+                    vals = {
+                        'field': field.id,
+                        'field_desc': field.field_description,
+                        'field_type': field.ttype,
+                        'tracking_sequence': field.tracking,
+                        'old_value_char': ', '.join(initial[changed_field].mapped('name')),
+                        'new_value_char': ', '.join(self[changed_field].mapped('name')),
+                    }
+                    tracking_value_ids.insert(i, Command.create(vals))
+        return changes, tracking_value_ids
+
+    # -------------------------------------------------------------------------
     # BUSINESS METHODS
     # -------------------------------------------------------------------------
 
@@ -904,6 +958,12 @@ class AccountPayment(models.Model):
 
     def unmark_as_sent(self):
         self.write({'is_move_sent': False})
+
+    @api.returns('mail.message', lambda value: value.id)
+    def message_post(self, **kwargs):
+        if self.move_id:
+            return self.move_id.message_post(**kwargs)
+        return False
 
     def action_post(self):
         ''' draft -> posted '''

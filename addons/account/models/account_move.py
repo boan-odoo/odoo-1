@@ -3496,11 +3496,6 @@ class AccountMove(models.Model):
         # OVERRIDE to add custom subtype depending of the state.
         self.ensure_one()
 
-        if not self.is_invoice(include_receipts=True):
-            if self.payment_id and 'state' in init_values:
-                self.payment_id._message_track(['state'], {self.payment_id.id: init_values})
-            return super(AccountMove, self)._track_subtype(init_values)
-
         if 'payment_state' in init_values and self.payment_state == 'paid':
             return self.env.ref('account.mt_invoice_paid')
         elif 'state' in init_values and self.state == 'posted' and self.is_sale_document(include_receipts=True):
