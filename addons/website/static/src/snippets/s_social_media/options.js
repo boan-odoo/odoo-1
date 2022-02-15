@@ -100,15 +100,9 @@ options.registry.SocialMedia = options.Class.extend({
                         // Propose an icon only for valid URLs (no mailto).
                         const socialMedia = this._findRelevantSocialMedia(entry.display_name);
 
-                        // Remove social media social media classes
-                        let regx = new RegExp('\\b' + "s_social_media_" + '[^1-9][^ ]*[ ]?\\b', 'g');
-                        anchorEl.className = anchorEl.className.replace(regx, '');
+                        this._removeSocialMediaClasses(anchorEl);
 
-                        // Remove every fa classes except fa-x sizes
                         const iEl = anchorEl.querySelector('i');
-                        regx = new RegExp('\\b' + "fa-" + '[^1-9][^ ]*[ ]?\\b', 'g');
-                        iEl.className = iEl.className.replace(regx, '');
-
                         if (socialMedia) {
                             anchorEl.classList.add(`s_social_media_${socialMedia}`);
                             iEl.classList.add(`fa-${socialMedia}`);
@@ -136,6 +130,23 @@ options.registry.SocialMedia = options.Class.extend({
             return this._super(methodName, params);
         }
         const listEntries = [];
+        for (const socialMedia of Object.keys(dbSocialValues)) {
+            const mediaName = socialMedia.split('social_')[1];
+            const dbAEl = this.$target[0].querySelector(`a[href="/website/social/${mediaName}"]`);
+            if (!dbAEl) {
+                // If a social media exists in DB but not in target, create it.
+                const anchorEl = this.$target[0].querySelector(':scope > a').cloneNode(true);
+                anchorEl.href = `/website/social/${mediaName}`;
+                this._removeSocialMediaClasses(anchorEl);
+                anchorEl.classList.add(`s_social_media_${mediaName}`, 'd-none');
+                anchorEl.querySelector('i').classList.add(`fa-${mediaName}`);
+                this.$target[0].appendChild(anchorEl);
+                $(anchorEl).data('social_id', generateHTMLId());
+            } else if (dbSocialValues[socialMedia] === '') {
+                // Hide existing <a> if there is no url in DB.
+                dbAEl.classList.add('d-none');
+            }
+        }
         for (const anchorEl of this.$target[0].querySelectorAll(':scope > a')) {
             const dbField = anchorEl.href.split('/website/social/')[1];
             const entry = {
@@ -190,6 +201,20 @@ options.registry.SocialMedia = options.Class.extend({
             return false;
         }
         return true;
+    },
+    /**
+     * Removes social media classes from the given element.
+     *
+     * @param  {HTMLElement} anchorEl
+     */
+    _removeSocialMediaClasses(anchorEl) {
+        // Remove social media social media classes
+        let regx = new RegExp('\\b' + 's_social_media_' + '[^1-9][^ ]*[ ]?\\b', 'g');
+        anchorEl.className = anchorEl.className.replace(regx, '');
+        // Remove every fa classes except fa-x sizes
+        const iEl = anchorEl.querySelector('i');
+        regx = new RegExp('\\b' + 'fa-' + '[^1-9][^ ]*[ ]?\\b', 'g');
+        iEl.className = iEl.className.replace(regx, '');
     },
     /**
      * @override
