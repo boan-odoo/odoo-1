@@ -13915,7 +13915,8 @@ function getDefaultPreferences() {
       "enableWebGL": false,
       // Odoo: This change is needed here as we can't change this parameter in an iframe.
       "eventBusDispatchToDOM": true, 
-      "externalLinkTarget": 0,
+      // Odoo: This change is needed here as we can't change this parameter in an iframe.
+      "externalLinkTarget": 2,
       "historyUpdateUrl": false,
       "pdfBugEnabled": false,
       "renderer": "canvas",
