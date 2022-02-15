@@ -48,10 +48,6 @@ class SaleOrder(models.Model):
             })
         return action
 
-    def _get_additional_order_page_values(self):
-        rendering_context_values = super()._get_additional_order_page_values()
-        rendering_context_values['mrp_production_ids'] = self.mrp_production_ids
-        return rendering_context_values
 
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
