@@ -83,6 +83,7 @@ class WebsiteSale(main.WebsiteSale):
 
             if value['quantity'] <= 0:
                 # TODO TLE: It's rather a bug ? May happen in stock & renting
+                # Should disappear with VFE fix.
                 return str(order.cart_quantity)
 
             # Link option with its parent.
