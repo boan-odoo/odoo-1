@@ -508,7 +508,7 @@ class MrpProduction(models.Model):
             if not production.bom_id or not production.product_id:
                 production.workorder_ids = False
                 continue
-            if self.bom_id != self._origin.bom_id:
+            if self.bom_id != self._origin.bom_id or not self.workorder_ids:
                 workorders_values = []
                 product_qty = production.product_uom_id._compute_quantity(production.product_qty, production.bom_id.product_uom_id)
                 exploded_boms, dummy = production.bom_id.explode(production.product_id, product_qty / production.bom_id.product_qty, picking_type=production.bom_id.picking_type_id)
