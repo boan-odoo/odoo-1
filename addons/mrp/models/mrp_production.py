@@ -697,11 +697,10 @@ class MrpProduction(models.Model):
                         Command.update(m.id, {'date': production.date_planned_finished}) for m in production.move_finished_ids
                     ]
                 continue
-            mo_product = production.product_id
-            if mo_product and mo_product != production._origin.product_id:
-                production.move_finished_ids = [Command.clear()]
+            production.move_finished_ids = [Command.clear()]
+            if production.product_id:
                 production._create_update_move_finished()
-            elif not mo_product:
+            else:
                 production.move_finished_ids = [
                     Command.delete(move.id) for move in production.move_finished_ids.filtered(lambda m: m.bom_line_id)
                 ]
@@ -728,6 +727,9 @@ class MrpProduction(models.Model):
                 raise ValidationError(_("The total cost share for a manufacturing order's by-products cannot exceed 100."))
 
     def write(self, vals):
+        if 'move_byproduct_ids' in vals and 'move_finished_ids' not in vals:
+            vals['move_finished_ids'] = vals['move_byproduct_ids']
+            del vals['move_byproduct_ids']
         if 'workorder_ids' in self:
             production_to_replan = self.filtered(lambda p: p.is_planned)
         if 'move_raw_ids' in vals and self.state not in ['draft', 'cancel', 'done']:
