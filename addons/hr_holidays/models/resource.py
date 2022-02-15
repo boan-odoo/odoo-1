@@ -94,10 +94,11 @@ class CalendarLeaves(models.Model):
             leaves._compute_number_of_days()
             for previous_duration, leave, state in zip(previous_durations, leaves, previous_states):
                 duration_difference = previous_duration - leave.number_of_days
-                if duration_difference > 0:
+                if duration_difference > 0 and leave.number_of_days > 0\
+                        and leave['holiday_allocation_id']:
                     leave.message_post(body=_("Due to a change in global time offs, you have been granted %s day(s) back", duration_difference), subtype_id=1)
                 if leave.number_of_days > previous_duration\
-                        and leave['holiday_status_id']['name'] != 'Sick Time Off':
+                        and leave['holiday_status_id']['name'] not in ['Sick Time Off']:
                     new_leaves = self._split_leave(leave, time_domain_dict)
                     leaves |= new_leaves
                     previous_states += [state for i in range(len(new_leaves))]
