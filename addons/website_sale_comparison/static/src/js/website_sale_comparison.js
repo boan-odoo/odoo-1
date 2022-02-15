@@ -299,7 +299,6 @@ publicWidget.registry.ProductComparison = publicWidget.Widget.extend(cartHandler
      * @param {Event} ev
      */
     _onFormSubmit(ev) {
-        // TODO TLE Maybe there is something to change here (Simply disable a direct add to cart.)
         ev.preventDefault();
         const $form = $(ev.currentTarget);
         const cellIndex = $(ev.currentTarget).closest('td')[0].cellIndex;
@@ -314,9 +313,22 @@ publicWidget.registry.ProductComparison = publicWidget.Widget.extend(cartHandler
                 productTrackingInfo.quantity = 1;
                 $inputProduct.trigger('add_to_cart_event', [productTrackingInfo]);
             }
-            return this.addToCart({product_id: productId, add_qty: 1});
+            return this.addToCart(this._getAddToCartParams(productId, $form));
         }
     },
+    /**
+     * Get the addToCart Params
+     *
+     * @param {number} productId
+     * @param {JQuery} $form
+     * @override
+     */
+    _getAddToCartParams(productId, $form) {
+        return {
+            product_id: productId,
+            add_qty: 1,
+        };
+    }
 });
 return ProductComparison;
 });
