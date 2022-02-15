@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+from odoo import osv
 
 
 class AccountAccountTag(models.Model):
@@ -38,13 +39,13 @@ class AccountAccountTag(models.Model):
 
     def _get_related_tax_report_expressions(self):
         domain = []
-        for expression in self:
+        for record in self:
             expr_domain = [
                 '&',
                 ('report_line_id.report_id.country_id', '=', record.country_id.id),
-                ('formula', '=', self.name[1:]),
+                ('formula', '=', record.name[1:]),
             ]
-            domain = expression.OR(domain, expr_domain)
+            domain = osv.expression.OR([domain, expr_domain])
         domain += [('engine', '=', 'tax_tags')]
 
         return self.env['account.report.expression'].search(domain)

@@ -3,7 +3,7 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
-from odoo.osv import expression
+from odoo import osv
 
 from collections import defaultdict
 import itertools
@@ -57,14 +57,14 @@ class AccountReport(models.Model):
 
     def write(self, vals):
         #TODO OCO reDOC: tax tag management
+        # TODO OCO s'assurer que ces changements de pays et leur impact sur le rapport sont testés
         if 'country_id' in vals:
             tags_cache = {}
             impacted_reports = self.filtered(lambda x: x.country_id.id != vals['country_id'])
             tax_tags_expressions = impacted_reports.line_ids.expression_ids.filtered(lambda x: x.engine == 'tax_tags')
-            expressions_formulas = tax_tags_expressions.mapped('formula')
 
-            for formula in expressions_formulas:
-                tax_tags = self.env['account.account.tag']._get_tax_tags(formula, country.id)
+            for expression in tax_tags_expressions:
+                tax_tags = self.env['account.account.tag']._get_tax_tags(expression.formula, expression.report_line_id.report_id.country_id.id)
                 tag_reports = tax_tags._get_related_tax_report_expressions().report_line_id.report_id
 
                 if all(report in self for report in tag_reports):
@@ -72,7 +72,7 @@ class AccountReport(models.Model):
                     tax_tags.write({'country_id': vals['country_id']})
                 else:
                     # Another report uses these tags as well; let's keep them and create new tags in the target country
-                    tag_vals = self.env['account.report.expression']._get_tags_create_vals(formula, vals['country_id'])
+                    tag_vals = self.env['account.report.expression']._get_tags_create_vals(expression.formula, vals['country_id'])
                     self.env['account.account.tag'].create(tag_vals)
 
         return super(AccountReport, self).write(vals)
@@ -240,11 +240,11 @@ class AccountReportExpression(models.Model):
                 labels_by_code = to_expand._get_aggregation_terms_details()
 
                 cross_report_domain = []
-                if candidate.expr.subformula != 'cross_report':
+                if candidate_expr.subformula != 'cross_report':
                     cross_report_domain = [('report_line_id.report_id', '=', candidate_expr.report_line_id.report_id.id)]
 
-                for line_code, expr_labels in labels.by.code.items():
-                    dependency_domain = [('report_line_id.code', '=', line_code), ('total', 'in', expr_labels)] + cross_report_domain
+                for line_code, expr_labels in labels_by_code.items():
+                    dependency_domain = [('report_line_id.code', '=', line_code), ('total', 'in', tuple(expr_labels))] + cross_report_domain
                     domains.append(dependency_domain)
 
             sub_expressions = self.env['account.report.expression'].search(osv.expression.OR(domains))
@@ -277,7 +277,7 @@ class AccountReportExpression(models.Model):
         domain = []
         for tag_expression in tag_expressions:
             country = tag_expression.report_line_id.report_id.country_id
-            domain = expression.OR([domain, self.env['account.account.tag']._get_tax_tags_domain(tag_expression.formula, country.id)])
+            domain = osv.expression.OR([domain, self.env['account.account.tag']._get_tax_tags_domain(tag_expression.formula, country.id)])
 
         return self.env['account.account.tag'].search(domain)
 
@@ -296,6 +296,26 @@ class AccountReportExpression(models.Model):
           'country_id': country_id,
         }
         return [(minus_tag_vals), (plus_tag_vals)]
+
+    def _get_carryover_target_expression(self):
+        self.ensure_one()
+
+        if self.carryover_target:
+            line_code, expr_label = self.carryover_target.split('.')
+            return self.env['account.report.expression'].search([
+                ('report_line_id.code', '=', line_code),
+                ('total', '=', expr_label),
+                ('report_line_id.report_id', '=', self.report_line_id.report_id.id),
+            ])
+
+        main_expr_label = re.sub("^_carryover_", '', self.total)
+        target_label = '_applied_carryover_%s' % main_expr_label
+        auto_chosen_target = self.report_line_id.expression_ids.filtered(lambda x: x.total == target_label)
+
+        if not auto_chosen_target:
+            raise UserError(_("Could not determine carryover target automatically for expression %s.", self.total))
+
+        return auto_chosen_target
 
 
 class AccountReportColumn(models.Model):
@@ -336,7 +356,7 @@ class AccountReportExternalValue(models.Model):
     carryover_origin_expression_id = fields.Many2one(string="Origin Expression", comodel_name='account.report.expression')
     carryover_origin_report_line_id = fields.Many2one(string="Origin Line", related='carryover_origin_expression_id.report_line_id') # TODO OCO pour l'UI
 
-    @api.constrains('carryover_foreign_vat_fiscal_position_id', 'target_report_line_id')
+    @api.constrains('foreign_vat_fiscal_position_id', 'target_report_line_id')
     def _check_fiscal_position(self):
-        if self.carryover_foreign_vat_fiscal_position_id and self.carryover_foreign_vat_fiscal_position_id.country_id != self.report_country_id:
+        if self.foreign_vat_fiscal_position_id and self.foreign_vat_fiscal_position_id.country_id != self.report_country_id:
             raise ValidationError(_("The country set on the the foreign VAT fiscal position must match the one set on the report."))

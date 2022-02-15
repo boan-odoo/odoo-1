@@ -24,7 +24,6 @@
             <field name="filter_tax_exigible" eval="True"/>
             <field name="dynamic_lines_generator">_generic_tax_report_account_tax_grouping</field>
             <field name="root_report_id" ref="generic_tax_report"/>
-            <field name="allow_showing_draft" eval="False"/>
             <field name="column_ids" eval="[(5, 0, 0),
                 (0, 0, {'name': 'NET', 'expression_label': 'net', 'sequence': 1}),
                 (0, 0, {'name': 'TAX', 'expression_label': 'tax', 'sequence': 2}),
@@ -217,17 +216,41 @@
 
         <record id="oco_test_carryover_be" model="account.report.line">
             <field name="name">Carryover: Belgian case</field>
-            <field name="code">test_carryover</field>
+            <field name="code">test_carryover_be</field>
             <field name="report_id" ref="test_report"/>
             <field name="expression_ids" eval="[(5, 0, 0),
-                (0, 0, {'total': 'main', 'engine': 'aggregation', 'formula': 'test_carryover.main_unbounded', 'subformula': 'if_above(EUR(0))'}),
-                (0, 0, {'total': '_carryover_main', 'engine': 'aggregation', 'formula': 'test_carryover.main_unbounded', 'subformula': 'if_below(EUR(0))'}),
+                (0, 0, {'total': 'main', 'engine': 'aggregation', 'formula': 'test_carryover_be.main_unbounded', 'subformula': 'if_above(EUR(0))'}),
+                (0, 0, {'total': '_carryover_main', 'engine': 'aggregation', 'formula': 'test_carryover_be.main_unbounded', 'subformula': 'if_below(EUR(0))'}),
                 (0, 0, {'total': '_applied_carryover_main', 'engine': 'external', 'formula': 'sum', 'date_scope': 'to_beginning_of_period'}),
-                (0, 0, {'total': 'main_tags', 'engine': 'tax_tags', 'formula': 'carryover_test'}),
-                (0, 0, {'total': 'main_unbounded', 'engine': 'aggregation', 'formula': 'test_carryover.main_tags + test_carryover._applied_carryover_main'}),
+                (0, 0, {'total': 'main_tags', 'engine': 'tax_tags', 'formula': 'carryover_test_be'}),
+                (0, 0, {'total': 'main_unbounded', 'engine': 'aggregation', 'formula': 'test_carryover_be.main_tags + test_carryover_be._applied_carryover_main'}),
+            ]"/> <!--TODO OCO pour _applied_carryover_main, faire un nouveau date_scope previous_period => PAS garder to_beginning, suite à ce qu'on a dit avec tsb-->
+            <field name="hierarchy_level">1</field>
+            <field name="sequence">11</field>
+        </record>
+
+        <record id="oco_test_carryover_fr_27" model="account.report.line">
+            <field name="name">Carryover: French case - grid 27</field>
+            <field name="code">test_carryover_fr_27</field>
+            <field name="report_id" ref="test_report"/>
+            <field name="expression_ids" eval="[(5, 0, 0),
+                (0, 0, {'total': '_carryover_main', 'engine': 'aggregation', 'formula': 'test_carryover_fr_27.main', 'carryover_target': 'test_carryover_fr_22._applied_carryover_main'}),
+                (0, 0, {'total': 'main', 'engine': 'tax_tags', 'formula': 'carryover_test_fr'}),
             ]"/>
             <field name="hierarchy_level">1</field>
-            <field name="sequence">10</field>
+            <field name="sequence">12</field>
+        </record>
+
+        <record id="oco_test_carryover_fr_22" model="account.report.line">
+            <field name="name">Carryover: French case - grid 22</field>
+            <field name="code">test_carryover_fr_22</field>
+            <field name="report_id" ref="test_report"/>
+            <field name="expression_ids" eval="[(5, 0, 0),
+                (0, 0, {'total': '_applied_carryover_main', 'engine': 'external', 'formula': 'sum', 'date_scope': 'to_beginning_of_period'}),
+                (0, 0, {'total': 'main', 'engine': 'aggregation', 'formula': 'test_carryover_fr_22._applied_carryover_main'}),
+            ]"/>
+            <field name="hierarchy_level">1</field>
+            <field name="sequence">13</field>
         </record>
 
         <!--TODO OCO le print du test report déconne complet (les colonnes sont bonnes, mais les lignes viennent du rapport générique) => sans doute un souci de passage d'options-->
