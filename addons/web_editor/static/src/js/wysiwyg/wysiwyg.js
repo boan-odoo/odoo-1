@@ -265,7 +265,9 @@ const Wysiwyg = Widget.extend({
                     })();
                 }
                 $target.focus();
-                if ($target.closest('#wrapwrap').length) {
+                // If link contains a media without text, the link is editable in the media options.
+                // Otherwise it must be configued using the link tools.
+                if ($target.closest('#wrapwrap').length && !($target[0].querySelector(mediaSelector) && !$target[0].textContent.trim())) {
                     this.toggleLinkTools({
                         forceOpen: true,
                         link: $target[0],

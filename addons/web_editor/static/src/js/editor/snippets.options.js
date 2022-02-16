@@ -4799,6 +4799,7 @@ registry.ReplaceMedia = SnippetOptionWidget.extend({
         }
         linkEl.setAttribute('href', url);
         this.rerender = true;
+        this.$target.trigger('href_changed');
     },
     /**
      * @override
