@@ -29,5 +29,6 @@ INTENT_STATUS_MAPPING = {
 
 # Events which are handled by the webhook
 WEBHOOK_HANDLED_EVENTS = [
-    'checkout.session.completed',
+    'payment_intent.succeeded',
+    'setup_intent.succeeded',
 ]

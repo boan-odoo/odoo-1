@@ -116,6 +116,7 @@ class PaymentTransaction(models.Model):
                     'mode': 'setup',
                     'success_url': return_url,
                     'cancel_url': return_url,
+                    'setup_intent_data[description]': self.reference,
                 }
             )
         return checkout_session

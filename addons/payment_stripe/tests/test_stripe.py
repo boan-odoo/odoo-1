@@ -38,13 +38,27 @@ class StripeTest(StripeCommon, PaymentHttpCommon):
         with patch(
             'odoo.addons.payment_stripe.controllers.main.StripeController'
             '._verify_notification_signature'
-        ), patch(
-            'odoo.addons.payment_stripe.models.payment_acquirer.PaymentAcquirer'
-            '._stripe_make_request',
-            return_value={'status': 'succeeded'},
         ):
             self._make_json_request(url, data=self.notification_data)
         self.assertEqual(tx.state, 'done')
+
+    @mute_logger('odoo.addons.payment_stripe.controllers.main')
+    def test_webhook_notification_verify_token(self):
+        """ Test the processing of a webhook notification. """
+        tx = self.create_transaction(flow='redirect', operation='validation', tokenize=True)
+        url = self._build_url(StripeController._webhook_url)
+        with patch(
+            'odoo.addons.payment_stripe.controllers.main.StripeController'
+            '._verify_notification_signature'
+        ), patch(
+            'odoo.addons.payment_stripe.models.payment_acquirer.PaymentAcquirer'
+            '._stripe_make_request',
+            return_value=self.setup_intent_response,
+        ):
+            self._make_json_request(
+                url, data=dict(self.notification_data, type="setup_intent.succeeded")
+            )
+        self.assertEqual(tx.token_id.verified, True)
 
     @mute_logger('odoo.addons.payment_stripe.controllers.main')
     def test_webhook_notification_triggers_signature_check(self):
@@ -55,10 +69,6 @@ class StripeTest(StripeCommon, PaymentHttpCommon):
             'odoo.addons.payment_stripe.controllers.main.StripeController'
             '._verify_notification_signature'
         ) as signature_check_mock, patch(
-            'odoo.addons.payment_stripe.models.payment_acquirer.PaymentAcquirer'
-            '._stripe_make_request',
-            return_value={},
-        ), patch(
             'odoo.addons.payment.models.payment_transaction.PaymentTransaction'
             '._handle_notification_data'
         ):

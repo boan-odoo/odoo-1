@@ -13,6 +13,8 @@ from odoo import http
 from odoo.exceptions import ValidationError
 from odoo.http import request
 
+from odoo.addons.payment_stripe.const import WEBHOOK_HANDLED_EVENTS
+
 _logger = logging.getLogger(__name__)
 
 
@@ -84,29 +86,21 @@ class StripeController(http.Controller):
         event = json.loads(request.httprequest.data)
         _logger.info("notification received from Stripe with data:\n%s", pprint.pformat(event))
         try:
-            if event['type'] == 'checkout.session.completed':
-                checkout_session = event['data']['object']
+            if event['type'] in WEBHOOK_HANDLED_EVENTS:
+                intent = event['data']['object']
 
                 # Check the integrity of the event
-                data = {'reference': checkout_session['client_reference_id']}
+                data = {'reference': intent['description']}
                 tx_sudo = request.env['payment.transaction'].sudo()._get_tx_from_notification_data(
                     'stripe', data
                 )
                 self._verify_notification_signature(tx_sudo)
-                # Fetch the PaymentIntent, Charge and PaymentMethod objects from Stripe
-                if checkout_session.get('payment_intent'):  # Can be None
-                    payment_intent = tx_sudo.acquirer_id._stripe_make_request(
-                        f'payment_intents/{tx_sudo.stripe_payment_intent}', method='GET'
-                    )
-                    _logger.info(
-                        "received payment_intents response:\n%s", pprint.pformat(payment_intent)
-                    )
-                    self._include_payment_intent_in_notification_data(payment_intent, data)
-
-                # Fetch the SetupIntent and PaymentMethod objects from Stripe
-                if checkout_session.get('setup_intent'):  # Can be None
+                if event['type'] == 'payment_intent.succeeded':
+                    self._include_payment_intent_in_notification_data(intent, data)
+                else:  # Validation
+                    # Fetch the complete SetupIntent object from Stripe
                     setup_intent = tx_sudo.acquirer_id._stripe_make_request(
-                        f'setup_intents/{checkout_session.get("setup_intent")}',
+                        f'setup_intents/{intent.get("id")}',
                         payload={'expand[]': 'payment_method'},
                         method='GET'
                     )
