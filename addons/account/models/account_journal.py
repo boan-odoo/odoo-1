@@ -277,7 +277,7 @@ class AccountJournal(models.Model):
             else:
                 journal.default_account_type = False
 
-    @api.depends('type')
+    @api.depends('type', 'currency_id')
     def _compute_inbound_payment_method_line_ids(self):
         for journal in self:
             pay_method_line_ids_commands = [Command.clear()]
@@ -289,7 +289,7 @@ class AccountJournal(models.Model):
                 }) for pay_method in default_methods]
             journal.inbound_payment_method_line_ids = pay_method_line_ids_commands
 
-    @api.depends('type')
+    @api.depends('type', 'currency_id')
     def _compute_outbound_payment_method_line_ids(self):
         for journal in self:
             pay_method_line_ids_commands = [Command.clear()]
