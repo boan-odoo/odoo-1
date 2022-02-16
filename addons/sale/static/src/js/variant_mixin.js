@@ -382,6 +382,31 @@ var VariantMixin = {
                 }
             });
         }
+        // combination exclusions: array of array of ptav
+        // for example a product with 3 variation and one specific variation is disabled (archived)
+        //  requires the first 2 to be selected for the third to be disabled
+        if (combinationData.combination_exclusions) {
+            combinationData.combination_exclusions.forEach((excludedCombination) => {
+                const ptavDifference = excludedCombination.filter((ptav) => !combination.includes(ptav));
+                if (ptavDifference.length == 0) {
+                    combination.forEach((ptav) => {
+                        self._disableInput(
+                            $parent,
+                            ptav,
+                            combination[0],
+                            combinationData.mapped_attribute_names,
+                        );
+                    });
+                } else if (ptavDifference.length == 1) {
+                    self._disableInput(
+                        $parent,
+                        ptavDifference[0],
+                        combination[0],
+                        combinationData.mapped_attribute_names,
+                    );
+                }
+            });
+        }
 
         // parent exclusions (tell which attributes are excluded from parent)
         _.each(combinationData.parent_exclusions, function (exclusions, excluded_by){
