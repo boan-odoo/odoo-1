@@ -360,8 +360,12 @@ class Import(models.TransientModel):
         if handler:
             try:
                 return getattr(self, '_read_' + file_extension)(options)
+            except ValueError as e:
+                _logger.warning("Failed to read file '%s' (transient id %d): %s", self.file_name or '<unknown>', self.id, e)
+                raise ImportError(_("Failed to read file '%s' (transient id %d): %s", self.file_name or '<unknown>', self.id, e))
             except Exception:
                 _logger.warning("Failed to read file '%s' (transient id %d) using user-provided mimetype %s", self.file_name or '<unknown>', self.id, self.file_type)
+                raise ImportError(_("Failed to read file '%s' (transient id %d) using user-provided mimetype %s", self.file_name or '<unknown>', self.id, self.file_type))
 
         # fallback on file extensions as mime types can be unreliable (e.g.
         # software setting incorrect mime types, or non-installed software
