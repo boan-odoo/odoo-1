@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class PaymentWizard(models.TransientModel):
@@ -18,7 +18,6 @@ class PaymentWizard(models.TransientModel):
         ('digital_signature', "Electronic signature"),
         ('stripe', "Credit & Debit card (via Stripe)"),
         ('paypal', "PayPal"),
-        ('other', "Other payment acquirer"),
         ('manual', "Custom payment instructions"),
     ], default=_get_default_payment_method)
     #
