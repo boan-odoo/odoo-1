@@ -20,7 +20,7 @@ class PaymentTransaction(models.Model):
     mercado_pago_payment_intent = fields.Char(string="Mercado Pago Payment Intent ID", readonly=True)
 
     def _get_specific_processing_values(self, processing_values):
-        """ Override of payment to return Stripe-specific processing values.
+        """ Override of payment to return Mercado Pago-specific processing values.
 
         Note: self.ensure_one() from `_get_processing_values`
 
@@ -30,33 +30,82 @@ class PaymentTransaction(models.Model):
         """
 
         res = super()._get_specific_processing_values(processing_values)
-        if self.provider != 'mercado_pago' or self.operation == 'online_token':
+        if self.provider != 'mercado_pago':
             return res
+
+        # Create a preference to get a redirection url of Mercado Pago to initiate
+        # the payment flow
+        preference = {}  # self._mercado_pago_create_preference(self.reference)
+
+        redirection_url = ""
+        if self.acquirer_id.state == "test":
+            redirection_url = preference.get("sandbox_init_point", '')
+        else:
+            redirection_url = preference.get("init_point", '')
 
         return {
             'public_key': self.acquirer_id.mercado_pago_public_key,
+            'redirection_url': redirection_url,
+            "token_id": preference.get("id", '')
         }
 
-    def _mercado_pago_create_customer(self):
-        """ Create and return a Customer.
-
-        :return: The Customer
-        :rtype: dict
+    def _mercado_pago_create_preference(self, external_reference, items=None, **kwargs):
         """
-        customer = self.acquirer_id._mercado_pago_make_request(
-            'customers', payload={
-                'address[city]': self.partner_city or None,
-                'address[country]': self.partner_country_id.code or None,
-                'address[line1]': self.partner_address or None,
-                'address[postal_code]': self.partner_zip or None,
-                'address[state]': self.partner_state_id.name or None,
-                'description': f'Odoo Partner: {self.partner_id.name} (id: {self.partner_id.id})',
-                'email': self.partner_email,
-                'name': self.partner_name,
-                'phone': self.partner_phone or None,
+        Create a preference for mercado pago to get the redirection url to begin the
+        payment flow
+
+        """
+
+        if self.operation == "validation":
+            back_urls = {
+                "success": MercadoPagoController._url_validation_return,
+                "pending": MercadoPagoController._url_validation_return,
+                "failure": MercadoPagoController._url_validation_return,
+
             }
-        )
-        return customer
+        if self.operation == "online_redirect":
+            back_urls = {
+                "success": MercadoPagoController._url_checkout_return,
+                "pending": MercadoPagoController._url_checkout_return,
+                "failure": MercadoPagoController._url_checkout_return,
+
+            }
+        else:
+            back_urls = {}
+
+        if items is None:
+            items = [{
+                "title": "Payment",
+                "quantity": 1,
+                "unit_price": self.amount,
+                "currency_id": self.currency_id.name
+            }]
+
+        payer = {
+            "name": self.partner_name or {},
+            "email": self.partner_email or {},
+            "phone": {
+                "area_code": "",
+                "number": self.partner_phone or "",
+            },
+            "address": {
+                "zip_code": self.partner_zip or "",
+                "street_name": self.partner_address or "",
+                "street_number": "",
+            },
+        }
+
+        data = {
+            "auto_return": "all",
+            "back_urls": back_urls,
+            "external_reference": external_reference,
+            "payer": payer,
+            "items": items,
+            "statement_descriptor": "MERCADOPAGO",
+            **kwargs
+        }
+
+        return self.acquirer_id._mercado_pago_make_request("/checkout/preferences", "POST", data)
 
     def _send_payment_request(self):
         """ Override of payment to send a payment request to Stripe with a confirmed PaymentIntent.
@@ -70,54 +119,14 @@ class PaymentTransaction(models.Model):
         if self.provider != 'mercado_pago':
             return
 
-        # Make the payment request to Stripe
-        if not self.token_id:
-            raise UserError("Mercado Pago: " + _("The transaction is not linked to a token."))
+        response = {}  # to get the response from Mercado Pago
+        feedback_data = ""
 
-        payment_intent = self._mercado_pago_create_payment_intent()
-        feedback_data = {'reference': self.reference}
-        MercadoPagoController._include_payment_intent_in_notification_data(payment_intent, feedback_data)
         _logger.info(
             "payment request response for transaction with reference %s:\n%s",
-            self.reference, pprint.pformat(feedback_data)
+            self.reference, pprint.pformat(response)
         )
         self._handle_notification_data('mercado_pago', feedback_data)
-
-    def _mercado_pago_create_payment_intent(self):
-        """ Create and return a PaymentIntent.
-
-        Note: self.ensure_one()
-
-        :return: The Payment Intent
-        :rtype: dict
-        """
-        if not self.token_id.mercado_pago_payment_method:  # Pre-SCA token -> migrate it
-            self.token_id._mercado_pago_sca_migrate_customer()
-
-        response = self.acquirer_id._mercado_pago_make_request(
-            'payment_intents',
-            payload={
-                'amount': payment_utils.to_minor_currency_units(self.amount, self.currency_id),
-                'currency': self.currency_id.name.lower(),
-                'confirm': True,
-                'customer': self.token_id.acquirer_ref,
-                'off_session': True,
-                'payment_method': self.token_id.mercado_pago_payment_method,
-                'description': self.reference,
-            },
-            offline=self.operation == 'offline',
-        )
-        if 'error' not in response:
-            payment_intent = response
-        else:  # A processing error was returned in place of the payment intent
-            error_msg = response['error'].get('message')
-            self._set_error("Mercado Pago: " + _(
-                "The communication with the API failed.\n"
-                "Mercado Pago gave us the following info about the problem:\n'%s'", error_msg
-            ))  # Flag transaction as in error now as the intent status might have a valid value
-            payment_intent = response['error'].get('payment_intent')  # Get the PI from the error
-
-        return payment_intent
 
     def _get_tx_from_notification_data(self, provider, notification_data):
         """ Override of payment to find the transaction based on Stripe data.
@@ -130,7 +139,7 @@ class PaymentTransaction(models.Model):
         :raise: ValidationError if the data match no transaction
         """
         tx = super()._get_tx_from_notification_data(provider, notification_data)
-        if provider != 'mercado_pago' or len(tx) == 1:
+        if provider != 'mercado_pago':
             return tx
 
         reference = notification_data.get('reference')
@@ -145,15 +154,12 @@ class PaymentTransaction(models.Model):
         return tx
 
     def _process_notification_data(self, notification_data):
-        """ Override of payment to process the transaction based on Adyen data.
+        """ Override of payment to process the transaction based on Mercado Pago data.
 
         Note: self.ensure_one()
 
         :param dict notification_data: The notification data build from information passed to the
-                                       return route. Depending on the operation of the transaction,
-                                       the entries with the keys 'payment_intent', 'charge',
-                                       'setup_intent' and 'payment_method' can be populated with
-                                       their corresponding Stripe API objects.
+                                       return route.
         :return: None
         :raise: ValidationError if inconsistent data were received
         """
@@ -161,19 +167,9 @@ class PaymentTransaction(models.Model):
         if self.provider != 'mercado_pago':
             return
 
-        if 'charge' in notification_data:
-            self.acquirer_reference = notification_data['charge']['id']
+        # Handle the notification data here and get the necessary values
 
-        # Handle the intent status
-        if self.operation == 'validation':
-            intent_status = notification_data.get('setup_intent', {}).get('status')
-        else:  # 'online_redirect', 'online_token', 'offline'
-            intent_status = notification_data.get('payment_intent', {}).get('status')
-        if not intent_status:
-            raise ValidationError(
-                "Mercado Pago: " + _("Received data with missing intent status.")
-            )
-
+        # this part should process the notification and alter self in dependency
         if intent_status in INTENT_STATUS_MAPPING['draft']:
             pass
         elif intent_status in INTENT_STATUS_MAPPING['pending']:
@@ -190,7 +186,7 @@ class PaymentTransaction(models.Model):
                 intent_status, self.reference
             )
             self._set_error(
-                "Mercado Pago: " + _("Received data with invalid intent status: %s", intent_status)
+                "Mercado Pago: " + _("Received data with invalid status: %s", "")
             )
 
     def _mercado_pago_tokenize_from_notification_data(self, notification_data):

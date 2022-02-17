@@ -17,42 +17,8 @@ class MercadoPagoAPI:
         self._public_key = acquirer.mercado_pago_public_key
         self._private_key = acquirer.mercado_pago_private_key
 
-    def _make_request(self, endpoint, method, data=None):
-
-        request_methods = {
-            "post": requests.post,
-            "get": requests.get,
-            "put": requests.put,
-            "delete": requests.delete,
-        }
-
-        headers = {
-            'Authorization': f"Bearer {self._private_key}",
-            'Content-Type': 'application/json'
-        }
-
-        request_url = self._url + endpoint
-
-        _logger.info("sending request to %s:\n%s\n%s", request_url, pprint.pformat(headers),
-                     pprint.pformat(data or {}))
-        response = (request_methods[method])(request_url, data=json.dumps(data), headers=headers,
-                                             timeout=60)
-        response.raise_for_status()
-        response = json.loads(response.content)
-        _logger.info("response received:\n%s", pprint.pformat(response))
-
-        if "error" in response and response["error"]:
-            err_msg = "\n".join(cause["description"] for cause in response["cause"])
-            return {
-                "err_code": response["cause"][0]["code"],
-                "err_msg": err_msg,
-            }
-
-        return response
-
     def create_payment(self, description, installments, issuer_id, order, payer, payment_method_id,
-                        transaction_amount, additional_info=None, binary_mode=False, capture=True,
-                       **kwargs):
+                       transaction_amount, binary_mode=False, capture=True, **kwargs):
 
         data = {
             "binary_mode": str(binary_mode),
@@ -152,17 +118,8 @@ class MercadoPagoAPI:
     def update_order(self, order_id, **kwargs):
         response = self._make_request(f"/merchant_orders/{order_id}", "put", data=kwargs)
 
-    def create_preference(self, auto_return, back_urls, external_reference, payer, **kwargs):
 
-        data = {
-            "auto_return": auto_return,
-            "back_urls": back_urls,
-            "external_reference": external_reference,
-            "payer": payer,
-            **kwargs
-        }
-
-        response = self._make_request("/checkout/preferences", "post", data)
+        return self._make_request("/checkout/preferences", "post", data)
 
     def search_preferences(self):
         response = self._make_request("/checkout/preferences/search", "get")

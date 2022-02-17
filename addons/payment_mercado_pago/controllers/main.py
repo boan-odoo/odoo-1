@@ -18,7 +18,10 @@ _logger = logging.getLogger(__name__)
 
 class MercadoPagoController(http.Controller):
 
-    @http.route('/payment/mercado_pago/checkout_return', type='http', auth='public', csrf=False)
+    _url_checkout_return = '/payment/mercado_pago/checkout_return'
+    _url_validation_return = '/payment/mercado_pago/validation_return'
+
+    @http.route(_url_checkout_return, type='http', auth='public', csrf=False)
     def mercado_pago_return_from_checkout(self, **data):
         """ Process the notification data sent by Mercado Pago after redirection from checkout.
 
@@ -36,7 +39,7 @@ class MercadoPagoController(http.Controller):
         # Redirect the user to the status page
         return request.redirect('/payment/status')
 
-    @http.route('/payment/mercado_pago/validation_return', type='http', auth='public', csrf=False)
+    @http.route(_url_validation_return, type='http', auth='public', csrf=False)
     def mercado_pago_return_from_validation(self, **data):
         """ Process the notification data sent by Mercado Pago after redirection for validation.
 
@@ -48,68 +51,11 @@ class MercadoPagoController(http.Controller):
             'mercado_pago', data
         )
 
-        # Fetch the Session, SetupIntent and PaymentMethod objects from Stripe
-        checkout_session = tx_sudo.acquirer_id._mercado_pago_make_request(
-            f'checkout/sessions/{data.get("checkout_session_id")}',
-            payload={'expand[]': 'setup_intent.payment_method'},  # Expand all required objects
-            method='GET'
-        )
-        _logger.info("received checkout/session response:\n%s", pprint.pformat(checkout_session))
-        self._include_setup_intent_in_notification_data(
-            checkout_session.get('setup_intent', {}), data
-        )
-
         # Handle the notification data crafted with Stripe API objects
         tx_sudo._handle_notification_data('mercado_pago', data)
 
         # Redirect the user to the status page
         return request.redirect('/payment/status')
-
-    def _verify_notification_signature(self, tx_sudo):
-        """ Check that the received signature matches the expected one.
-
-        See https://stripe.com/docs/webhooks/signatures#verify-manually.
-
-        :param recordset tx_sudo: The sudoed transaction referenced by the notification data, as a
-                                  `payment.transaction` record
-        :return: None
-        :raise: :class:`werkzeug.exceptions.Forbidden` if the timestamp is too old or if the
-                signatures don't match
-        """
-        webhook_secret = tx_sudo.acquirer_id.mercado_pago_webhook_secret
-        if not webhook_secret:
-            _logger.warning("ignored webhook event due to undefined webhook secret")
-            return
-
-        notification_payload = request.httprequest.data.decode('utf-8')
-        signature_entries = request.httprequest.headers['MercadoPago-Signature'].split(',')
-        signature_data = {k: v for k, v in [entry.split('=') for entry in signature_entries]}
-
-        # Retrieve the timestamp from the data
-        event_timestamp = int(signature_data.get('t', '0'))
-        if not event_timestamp:
-            _logger.warning("received notification with missing timestamp")
-            raise Forbidden()
-
-        # Check if the timestamp is not too old
-        if datetime.utcnow().timestamp() - event_timestamp > self.WEBHOOK_AGE_TOLERANCE:
-            _logger.warning("received notification with outdated timestamp: %s", event_timestamp)
-            raise Forbidden()
-
-        # Retrieve the received signature from the data
-        received_signature = signature_data.get('v1')
-        if not received_signature:
-            _logger.warning("received notification with missing signature")
-            raise Forbidden()
-
-        # Compare the received signature with the expected signature computed from the data
-        signed_payload = f'{event_timestamp}.{notification_payload}'
-        expected_signature = hmac.new(
-            webhook_secret.encode('utf-8'), signed_payload.encode('utf-8'), hashlib.sha256
-        ).hexdigest()
-        if not hmac.compare_digest(received_signature, expected_signature):
-            _logger.warning("received notification with invalid signature")
-            raise Forbidden()
 
     @http.route('/payment/mercado_pago/get_acquirer_info', type='json', auth='public')
     def mercado_pago_get_acquirer_info(self, acquirer_id):

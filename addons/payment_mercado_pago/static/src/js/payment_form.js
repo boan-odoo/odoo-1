@@ -8,7 +8,7 @@ odoo.define('payment_mercado_pago.payment_form', require => {
     const MercadoPagoMixin = {
 
         /**
-         * Redirect the customer to Stripe hosted payment page.
+         * Redirect the customer to Mercado Pago hosted payment page.
          *
          * @override method from payment.payment_form_mixin
          * @private
@@ -22,17 +22,21 @@ odoo.define('payment_mercado_pago.payment_form', require => {
                 return this._super(...arguments);
             }
 
-            console.log(processingValues);
+            const mercadoPagoJS = new MercadoPago(processingValues['public_key']);
 
-            const mercadoPagoJS = MercadoPago(processingValues['public_key']);
-            mercadoPagoJS.redirectToCheckout({
-                sessionId: processingValues['session_id']
+            const checkout = mercadoPagoJS.checkout({
+                preference: {
+                    id: processingValues["token_id"]
+                },
             });
+
+            checkout.open()
+
         },
 
     };
 
-    checkoutForm.include(mercadoPagoMixin);
-    manageForm.include(mercadoPagoMixin);
+    checkoutForm.include(MercadoPagoMixin);
+    manageForm.include(MercadoPagoMixin);
 
 });

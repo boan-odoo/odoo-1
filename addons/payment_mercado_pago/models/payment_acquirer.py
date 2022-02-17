@@ -15,6 +15,8 @@ _logger = logging.getLogger(__name__)
 class PaymentAcquirer(models.Model):
     _inherit = 'payment.acquirer'
 
+    mercado_pago_base_url =  "https://api.mercadopago.com"
+
     provider = fields.Selection(
         selection_add=[('mercado_pago', "Mercado Pago")], ondelete={'mercado_pago': 'set default'})
     mercado_pago_public_key = fields.Char(
@@ -33,14 +35,15 @@ class PaymentAcquirer(models.Model):
             'Authorization': f"Bearer {self.mercado_pago_secret_key}",
             'Content-Type': 'application/json'
         }
-        request_url = urls.url_join("https://api.mercadopago.com", endpoint)
+
+        request_url = urls.url_join(self.mercado_pago_base_url, endpoint)
 
         _logger.info("sending request to %s:\n%s\n%s", request_url, pprint.pformat(headers),
                      pprint.pformat(data or {}))
 
         try:
             response = requests.request(method, request_url, data=json.dumps(data), headers=headers,
-                                    timeout=60)
+                                        timeout=60)
 
             if not response.ok and 400 <= response.status_code < 500:
                 # Mercado Pago errors have status in the 400s values
@@ -48,7 +51,7 @@ class PaymentAcquirer(models.Model):
                     response.raise_for_status()
                 except requests.exceptions.HTTPError:
                     _logger.exception("invalid API request at %s with data %s",
-                                      request_url, data)
+                                      request_url, pprint.pformat(data))
 
                     response = json.loads(response.content)
 
