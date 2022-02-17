@@ -20,6 +20,10 @@ class MailPluginController(mail_plugin.MailPluginController):
         supports it.
         """
         contact_values = super(MailPluginController, self)._get_contact_data(partner)
+
+        if not request.env.user.has_group('project.group_project_user'):
+            return contact_values
+
         if not partner:
             contact_values['tasks'] = []
         else:
@@ -40,7 +44,13 @@ class MailPluginController(mail_plugin.MailPluginController):
         return contact_values
 
     def _mail_content_logging_models_whitelist(self):
-        return super(MailPluginController, self)._mail_content_logging_models_whitelist() + ['project.task']
+        models_whitelist = super(MailPluginController, self)._mail_content_logging_models_whitelist()
+        if not request.env.user.has_group('project.group_project_user'):
+            return models_whitelist
+        return models_whitelist + ['project.task']
 
     def _translation_modules_whitelist(self):
-        return super(MailPluginController, self)._translation_modules_whitelist() + ['project_mail_plugin']
+        modules_whitelist = super(MailPluginController, self)._translation_modules_whitelist()
+        if not request.env.user.has_group('project.group_project_user'):
+            return modules_whitelist
+        return modules_whitelist + ['project_mail_plugin']

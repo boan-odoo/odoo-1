@@ -53,6 +53,10 @@ class MailPluginController(mail_plugin.MailPluginController):
 
     def _get_contact_data(self, partner):
         contact_values = super(MailPluginController, self)._get_contact_data(partner)
+
+        if not request.env.user.has_group('sales_team.group_sale_salesman'):
+            return contact_values
+
         if not partner:
             contact_values['leads'] = []
         else:
@@ -60,7 +64,18 @@ class MailPluginController(mail_plugin.MailPluginController):
         return contact_values
 
     def _mail_content_logging_models_whitelist(self):
-        return super(MailPluginController, self)._mail_content_logging_models_whitelist() + ['crm.lead']
+        models_whitelist = super(MailPluginController, self)._mail_content_logging_models_whitelist()
+        if not request.env.user.has_group('sales_team.group_sale_salesman'):
+            return models_whitelist
+        return models_whitelist + ['crm.lead']
 
     def _translation_modules_whitelist(self):
-        return super(MailPluginController, self)._translation_modules_whitelist() + ['crm_mail_plugin']
+        modules_whitelist = super(MailPluginController, self)._translation_modules_whitelist()
+        if not request.env.user.has_group('sales_team.group_sale_salesman'):
+            return modules_whitelist
+        return modules_whitelist + ['crm_mail_plugin']
+
+    def _user_can_create_contact(self):
+        if request.env.user.has_group('sales_team.group_sale_salesman'):
+            return True
+        return super()._user_can_create_contact()
