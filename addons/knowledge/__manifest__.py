@@ -27,10 +27,13 @@
     'assets': {
         'web.assets_backend': [
             'knowledge/static/src/scss/knowledge_views.scss',
+            'knowledge/static/src/scss/knowledge_emoji_picker.scss',
             'knowledge/static/src/js/knowledge_controller.js',
             'knowledge/static/src/js/knowledge_model.js',
             'knowledge/static/src/js/knowledge_renderers.js',
             'knowledge/static/src/js/knowledge_views.js',
+            'knowledge/static/src/js/widgets/knowledge_emoji.js',
+            'knowledge/static/src/js/widgets/knowledge_emoji_picker.js',
             'knowledge/static/src/webclient/commands/*.js',
             'knowledge/static/src/models/*/*.js',
         ],
@@ -39,6 +42,7 @@
         ],
         'web.assets_qweb': [
             'knowledge/static/src/xml/knowledge_editor.xml',
+            'knowledge/static/src/xml/knowledge_emoji_picker.xml',
             'knowledge/static/src/xml/knowledge_templates.xml',
             'knowledge/static/src/xml/chatter_topbar.xml',
         ],

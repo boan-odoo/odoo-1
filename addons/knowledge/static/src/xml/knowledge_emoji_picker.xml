@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <div t-name="knowledge.knowledge_emoji_panel" class="o_emoji_dropdown">
+        <div class="border-bottom p-2">
+            <input class="form-control" type="text" placeholder="Search..."/>
+        </div>
+        <div class="d-flex">
+            <nav class="flex-shrink-0 border-right">
+                <ul class="nav nav-pills flex-column p-0">
+                    <li t-foreach="sections" t-as="section" class="nav-item">
+                        <a class="nav-link" t-att-href="'#' + section.id">
+                            <t t-out="section.icon" />
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="o_emoji_container flex-grow-1 position-relative bg-white">
+                <div class="o_emoji_pane px-2">
+                    <div t-foreach="sections" t-as="section" class="o_section">
+                        <div t-att-id="section.id" t-esc="section.title" class="py-2"/>
+                        <div class="d-flex flex-wrap">
+                            <span t-foreach="section.emojis" t-as="emoji"
+                                t-out="emoji.unicode"
+                                t-att-data-description="emoji.description"
+                                t-att-title="emoji.description"
+                                class="o_emoji px-1 rounded" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</templates>

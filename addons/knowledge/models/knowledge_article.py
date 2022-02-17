@@ -90,6 +90,10 @@ class Article(models.Model):
                 if len(write_members) == 0:
                     raise ValidationError(_("You must have at least one writer."))
 
+    def name_get(self):
+        """Override the `name_get` function to add the article icon"""
+        return [(rec.id, "%s %s" % (rec.icon, rec.name)) for rec in self]
+
     ##############################
     # Computes, Searches, Inverses
     ##############################

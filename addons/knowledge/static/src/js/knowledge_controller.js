@@ -18,6 +18,10 @@ const KnowledgeFormController = FormController.extend({
         'change .o_breadcrumb_article_name': '_onRename',
     }),
 
+    custom_events: Object.assign({}, FormController.prototype.custom_events, {
+        emoji_picked: '_onIconChange',
+    }),
+
     // Listeners:
 
     /**
@@ -263,6 +267,27 @@ const KnowledgeFormController = FormController.extend({
         return this._super.apply(this, arguments).then(() => {
             this.renderer.initTree();
         });
+    },
+
+    /**
+     * @param {Event} event
+     */
+    _onIconChange: async function (event) {
+        const { unicode } = event.data;
+        const { $el } = event.target;
+        const $li = $el.closest('li');
+        const article_id = $li.data('article-id');
+        const result = await this._rpc({
+            model: 'knowledge.article',
+            method: 'write',
+            args: [[article_id], { icon: unicode }],
+        });
+        if (result) {
+            this.$el.find(`[data-article-id="${article_id}"]`).each(function() {
+                const $icon = $(this).find('.o_article_icon:first');
+                $icon.text(unicode);
+            });
+        }
     },
 });
 

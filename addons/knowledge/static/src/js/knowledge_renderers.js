@@ -1,6 +1,7 @@
 /** @odoo-module */
 
 import core from 'web.core';
+import EmojiPickerWidget from './widgets/knowledge_emoji_picker.js';
 import FormRenderer from 'web.FormRenderer';
 
 const KnowledgeFormRenderer = FormRenderer.extend({
@@ -41,6 +42,7 @@ const KnowledgeFormRenderer = FormRenderer.extend({
             aside.empty();
             aside.append(res);
             this.createTree();
+            this._renderEmojiPicker();
         }).catch(error => {
             aside.empty();
         });
@@ -225,6 +227,16 @@ const KnowledgeFormRenderer = FormRenderer.extend({
         });
         const $container = this.$el.find('.breadcrumb');
         $container.prepend(items);
+    },
+
+    /**
+     * Attaches the emoji picker to the renderer
+     */
+    _renderEmojiPicker: function () {
+        this.$el.find('.o_article_dropdown').each((_index, $dropdown) => {
+            const $picker = new EmojiPickerWidget(this, {});
+            $picker.attachTo($dropdown);
+        });
     },
 
     /**
