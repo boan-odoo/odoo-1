@@ -154,7 +154,29 @@ class MailTemplate(models.Model):
     # RESET MAIL TEMPLATE
     # ------------------------------------------------------------
 
-    def _get_translation_data(self, trans_file, lang, xml_ids):
+    def _process_translation_data(self, trans_file, lang, xml_ids):
+        with file_open(trans_file, mode='rb') as fileobj:
+            fileformat = os.path.splitext(trans_file)[-1][1:].lower()
+            reader = TranslationFileReader(fileobj, fileformat=fileformat)
+            for row in reader:
+                if row.get('value') and row.get('imd_name') in xml_ids:
+                    self.env['ir.translation']._set_ids(
+                        row['name'], 'model', lang, self._ids, row['value'], row['src'],
+                    )
+
+    def _override_translation_term(self, lang, module_name, xml_ids):
+        lang_code = tools.get_iso_codes(lang)
+        base_lang_code = None
+        if '_' in lang_code:
+            base_lang_code = lang_code.split('_')[0]
+        # Step 1: for sub-languages, load base language first (e.g. es_CL.po is loaded over es.po)
+        if base_lang_code:
+            base_trans_file = get_module_resource(module_name, 'i18n', base_lang_code + '.po')
+            if base_trans_file:
+                self._process_translation_data(base_trans_file, lang_code, xml_ids)
+
+        # Step 2: then load the main translation file, possibly overriding the terms coming from the base language
+        trans_file = get_module_resource(module_name, 'i18n', lang_code + '.po')
         if lang == "en_US" and not trans_file:
             translation_terms = self.env['ir.translation'].search([
                 ('res_id', '=', self.id),
@@ -166,21 +188,7 @@ class MailTemplate(models.Model):
                     'value': term.src
                 })
         elif trans_file:
-            with file_open(trans_file, mode='rb') as fileobj:
-                fileformat = os.path.splitext(trans_file)[-1][1:].lower()
-                reader = TranslationFileReader(fileobj, fileformat=fileformat)
-                for row in reader:
-                    if row.get('value') and row.get('imd_name') in xml_ids:
-                        self.env['ir.translation']._set_ids(
-                            row['name'], 'model', lang, self._ids, row['value'], row['src'],
-                        )
-        return True
-
-    def _override_translation_term(self, lang, module_name, xml_ids):
-        lang_code = tools.get_iso_codes(lang)
-        if '_' in lang_code:
-            lang_code = lang_code.split('_')[0]
-        self._get_translation_data(get_module_resource(module_name, 'i18n', lang_code + '.po'), lang, xml_ids)
+            self._process_translation_data(trans_file, lang_code, xml_ids)
 
     def reset_mail_template(self):
         if self.template_fs and self.is_body_updated:
