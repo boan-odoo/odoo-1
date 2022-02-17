@@ -2216,6 +2216,7 @@ var SnippetsMenu = Widget.extend({
 
         // Force non editable part to contentEditable=false
         $html.find('.o_not_editable').attr('contentEditable', false);
+        this.getEditableArea().find('.o_not_editable').attr('contentEditable', false);
 
         // Add the computed template and make elements draggable
         this.$el.html($html);
