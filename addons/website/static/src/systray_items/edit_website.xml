@@ -2,9 +2,11 @@
 <templates xml:space="preserve">
 
     <t t-name="website.EditWebsiteSystray" owl="1">
-        <div class="o_menu_systray_item o_edit_website_container">
-            <a href="#" accesskey="a"><span class="oi oi-pencil mr-2"/>Edit</a>
+        <div class="o_edit_website_container">
+            <a href="#" accesskey="a" t-on-click="startEdit">
+                <span t-att-class="state.editState === 'loading' ? 'fa fa-refresh fa-spin mr-2' : 'oi oi-pencil mr-2'"/>
+                Edit
+            </a>
         </div>
     </t>
-
 </templates>

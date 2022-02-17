@@ -158,6 +158,7 @@ weSnippetEditor.SnippetsMenu.include({
                 finalOptions.offsetElements.$top = $header;
             }
         }
+        finalOptions.jQueryDraggableOptions.iframeFix = true;
         return finalOptions;
     },
     /**

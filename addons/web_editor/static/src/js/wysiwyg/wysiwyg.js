@@ -604,7 +604,11 @@ const Wysiwyg = Widget.extend({
             };
             this.$resizer.on('mousedown', resizerMousedown);
         } else {
-            this._replaceElement(this.$editable);
+            if (this.options.websiteIframe) {
+                return this._super(...arguments);
+            } else {
+                this._replaceElement(this.$editable);
+            }
         }
     },
     //--------------------------------------------------------------------------
@@ -1549,6 +1553,9 @@ const Wysiwyg = Widget.extend({
         return Object.assign({}, this.defaultOptions, this.options);
     },
     _insertSnippetMenu: function () {
+        if (this.options.websiteIframe) {
+            return this.snippetsMenu.appendTo(this.$el);
+        }
         return this.snippetsMenu.insertBefore(this.$el);
     },
     /**

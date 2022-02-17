@@ -2,23 +2,34 @@
 
 import { registry } from '@web/core/registry';
 import { useService } from '@web/core/utils/hooks';
+import { getWysiwygClass } from 'web_editor.loader';
+import legacyEnv from 'web.commonEnv';
 
-const { Component, onWillStart, useEffect, useRef } = owl;
+import { WysiwygAdapterComponent } from '../../components/wysiwyg_adapter/wysiwyg';
+
+const { Component, onWillStart, useEffect, useRef, useState, useChildSubEnv } = owl;
 
 export class WebsiteEditorClientAction extends Component {
     setup() {
         super.setup(...arguments);
         this.websiteService = useService('website');
+        this.userService = useService('user');
         this.title = useService('title');
+
+        useChildSubEnv(legacyEnv);
 
         this.iframeFallbackUrl = '/website/iframefallback';
 
         this.iframe = useRef('iframe');
         this.iframefallback = useRef('iframefallback');
+        this.websiteEditRegistery = registry.category('website_edit');
+        this.websiteContext = useState(this.websiteService.context);
+
 
         onWillStart(async () => {
             await this.websiteService.fetchWebsites();
             this.initialUrl = await this.websiteService.sendRequest(`/website/force/${this.websiteId}`, { path: this.path });
+            this.Wysiwyg = await getWysiwygClass({}, ['website.compiled_assets_wysiwyg']);
         });
 
         useEffect(() => {
@@ -35,6 +46,7 @@ export class WebsiteEditorClientAction extends Component {
                 this.title.setParts({ action: this.currentTitle });
 
                 this.websiteService.pageDocument = this.iframe.el.contentDocument;
+                this.websiteService.contentWindow = this.iframe.el.contentWindow;
 
                 this.iframe.el.contentWindow.addEventListener('beforeunload', () => {
                     this.iframefallback.el.contentDocument.body.replaceWith(this.iframe.el.contentDocument.body.cloneNode(true));
@@ -64,5 +76,6 @@ export class WebsiteEditorClientAction extends Component {
     }
 }
 WebsiteEditorClientAction.template = 'website.WebsiteEditorClientAction';
+WebsiteEditorClientAction.components = { WysiwygAdapterComponent };
 
 registry.category('actions').add('website_editor', WebsiteEditorClientAction);

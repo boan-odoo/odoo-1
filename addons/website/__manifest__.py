@@ -135,6 +135,7 @@
             'website/static/src/js/show_password.js',
             'website/static/src/js/post_link.js',
             'website/static/src/js/user_custom_javascript.js',
+            'website/static/src/js/editor_helper.js',
         ],
         'web.assets_frontend_minimal': [
             'website/static/src/js/content/inject_dom.js',
@@ -182,6 +183,7 @@
             'website/static/src/components/switch/switch.scss',
             'website/static/src/components/webclient/webclient.js',
             'website/static/src/components/webclient/webclient.scss',
+            'website/static/src/components/wysiwyg_adapter/wysiwyg.js',
             'website/static/src/components/fullscreen_indication/fullscreen_indication.js',
             'website/static/src/components/fullscreen_indication/fullscreen_indication.scss',
             'website/static/src/systray_items/*.js',
