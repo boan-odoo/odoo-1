@@ -56,7 +56,10 @@ const Wysiwyg = Widget.extend({
         this.colorpickers = {};
         this._onDocumentMousedown = this._onDocumentMousedown.bind(this);
         this._onBlur = this._onBlur.bind(this);
-        this.customizableLinksSelector = 'a:not([data-toggle="tab"]):not([data-toggle="collapse"])';
+        this.customizableLinksSelector = 'a'
+            + ':not([data-toggle="tab"])'
+            + ':not([data-toggle="collapse"])'
+            + ':not([data-toggle="dropdown"])';
     },
     /**
      *
