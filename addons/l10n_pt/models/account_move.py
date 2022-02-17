@@ -41,10 +41,16 @@ class AccountMove(models.Model):
         gross_total = float_repr(self.amount_total, 2)
         previous_hash = prev_move.inalterable_hash if prev_move else ""
         message = f"{invoice_date};{system_entry_date};{self.invoice_no};{gross_total};{previous_hash}"
-        return self._compute_hash(message)
+        return self.l10n_pt_compute_hash(message)
 
-    def _compute_hash(self, message):
+    def l10n_pt_compute_hash(self, message):
+        """
+        This method's purpose is only to test that the hash is correctly
+        computed as we have multilple hash chains: one per move_type.
+        In each chain, we simply add one I to show the length of the chain
+        and confirm that the chain is correctly linked.
+        This method will be overriden in SaaS which will provide the real hash
+        """
         self.ensure_one()
-        # This is only temporary
         hash_string = message[message.rfind(';')+1:] + "I"
         return hash_string
