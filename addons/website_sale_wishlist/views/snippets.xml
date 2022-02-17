@@ -11,6 +11,20 @@
                          data-no-preview="true"
                          data-reload="/"/>
         </div>
+        <div data-selector="#products_grid .o_wsale_products_grid_table_wrapper > table"
+            data-no-check="true"
+            groups="website.group_website_designer">
+            <we-checkbox string="Wishlist Button"
+                         data-customize-website-views="website_sale_wishlist.add_to_wishlist"
+                         data-no-preview="true"
+                         data-reload="/"/>
+        </div>
+        <div data-selector=".js_sale #product_details" data-no-check="true">
+            <we-checkbox string="Wishlist Button"
+                         data-customize-website-views="website_sale_wishlist.product_add_to_wishlist"
+                         data-no-preview="true"
+                         data-reload="/"/>
+        </div>
     </xpath>
 </template>
 
