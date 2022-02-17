@@ -56,7 +56,7 @@ from .exceptions import AccessError, MissingError, ValidationError, UserError
 from .osv.query import Query
 from .tools import frozendict, lazy_classproperty, ormcache, \
                    LastOrderedSet, OrderedSet, ReversedIterable, \
-                   groupby, discardattr, partition
+                   groupby, discardattr, partition, html_escape
 from .tools.config import config
 from .tools.func import frame_codeinfo
 from .tools.misc import CountingStream, clean_context, DEFAULT_SERVER_DATETIME_FORMAT, DEFAULT_SERVER_DATE_FORMAT, get_lang, split_every
@@ -3444,6 +3444,12 @@ Fields:
         if len(self) > 1:
             raise ValueError("Expected singleton or no record: %s" % self)
         return self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+
+    def _get_html_link(self, title=None):
+        self.ensure_one()
+        return f"<a href=# data-oe-model={self._name} data-oe-id={self.id}>"\
+               f"{html_escape(title if title else self.display_name)}"\
+               f"</a>"
 
     def _check_concurrency(self):
         if not (self._log_access and self._context.get(self.CONCURRENCY_CHECK_FIELD)):
