@@ -2174,6 +2174,9 @@ const ListUserValueWidget = UserValueWidget.extend({
         }
         this._addItemToTable(id, this.el.dataset.defaultValue);
         this._notifyCurrentState();
+        const scrollableEl = this.$el[0].querySelector('.o_we_table_wrapper');
+        // Scroll to the new list element.
+        scrollableEl.scrollTop = scrollableEl.scrollHeight;
     },
     /**
      * @private
