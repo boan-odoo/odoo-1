@@ -60,7 +60,7 @@
                     width: 100% !important;
                 }
             }
-            @media screen and (max-width: 737px) {
+            @media screen and (max-width: 1135px) {
                 td {
                     max-width: inherit !important;
                 }
