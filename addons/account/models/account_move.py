@@ -276,6 +276,7 @@ class AccountMove(models.Model):
     tax_cash_basis_origin_move_id = fields.Many2one(
         comodel_name='account.move',
         string="Cash Basis Origin",
+        index='btree_not_null',
         readonly=1,
         help="The journal entry from which this tax cash basis journal entry has been created.")
     tax_cash_basis_created_move_ids = fields.One2many(
@@ -295,8 +296,14 @@ class AccountMove(models.Model):
         help='If this checkbox is ticked, this entry will be automatically posted at its date.')
 
     # ==== Reverse feature fields ====
-    reversed_entry_id = fields.Many2one('account.move', string="Reversal of", readonly=True, copy=False,
-        check_company=True)
+    reversed_entry_id = fields.Many2one(
+        comodel_name='account.move',
+        string="Reversal of",
+        index='btree_not_null',
+        readonly=True,
+        copy=False,
+        check_company=True
+    )
     reversal_move_id = fields.One2many('account.move', 'reversed_entry_id')
 
     # =========================================================
