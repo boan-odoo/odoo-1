@@ -3274,7 +3274,18 @@ const SnippetOptionWidget = Widget.extend({
 
         function applyCSS(cssProp, cssValue, styles) {
             if (!weUtils.areCssValuesEqual(styles[cssProp], cssValue, cssProp, this.$target[0])) {
-                this.$target[0].style.setProperty(cssProp, cssValue, 'important');
+                this.$target[0].style.setProperty(cssProp, cssValue);
+                // If change had no effect then make it important.
+                if (params.extraClass) {
+                    this.$target[0].classList.add(params.extraClass);
+                }
+                const newStyles = window.getComputedStyle(this.$target[0]);
+                if (!weUtils.areCssValuesEqual(newStyles[cssProp], cssValue, cssProp, this.$target[0])) {
+                    this.$target[0].style.setProperty(cssProp, cssValue, 'important');
+                }
+                if (params.extraClass) {
+                    this.$target[0].classList.remove(params.extraClass);
+                }
                 return true;
             }
             return false;
