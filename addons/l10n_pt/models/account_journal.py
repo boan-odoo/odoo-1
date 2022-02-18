@@ -9,7 +9,7 @@ class AccountMove(models.Model):
 
     def _compute_restrict_mode_hash_table(self):
         super()._compute_restrict_mode_hash_table()
-        for move in self:
-            if move.company_id.country_id.code == 'PT':
-                move.restrict_mode_hash_table = True
-                move.write({'restrict_mode_hash_table': True})
+        for journal in self:
+            if journal.company_id.country_id.code == 'PT':
+                journal.restrict_mode_hash_table = True
+                journal.write({'restrict_mode_hash_table': True})

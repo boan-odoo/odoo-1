@@ -329,8 +329,8 @@ class AccountJournal(models.Model):
         self.alias_domain = self.env["ir.config_parameter"].sudo().get_param("mail.catchall.domain")
 
     def _compute_restrict_mode_hash_table(self):
-        for move in self:
-            move.restrict_mode_hash_table = False
+        for journal in self:
+            journal.restrict_mode_hash_table = False
 
     @api.constrains('type_control_ids')
     def _constrains_type_control_ids(self):
