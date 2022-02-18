@@ -1635,7 +1635,7 @@ class StockMove(models.Model):
         #
         #     moves_ids_todo |= move._create_extra_move().ids
 
-        moves_todo = self.browse(moves_ids_todo)
+        moves_todo = self.browse(moves_ids_todo) | self
         moves_todo._check_company()
         # Split moves where necessary and move quants
         if not cancel_backorder:
