@@ -1036,6 +1036,7 @@ class Picking(models.Model):
         self.move_ids.filtered(lambda m: float_compare(m.quantity_done, m.reserved_availability, precision_rounding=m.product_uom.rounding) == 0)._clear_quantities_to_zero()
 
     def _pre_action_done_hook(self):
+        skip_immediate, skip_backorder = self.env.context.get('skip_immediate'), self.env.context.get('skip_backorder')
         if not self.env.context.get('skip_immediate'):
             pickings_to_immediate = self._check_immediate()
             if pickings_to_immediate:
