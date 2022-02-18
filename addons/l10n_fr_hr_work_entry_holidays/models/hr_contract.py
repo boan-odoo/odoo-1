@@ -40,7 +40,6 @@ class HrContract(models.Model):
 
             for leave in leaves_per_employee[employee]:
                 leave_start_dt = max(start_dt, leave.date_from.astimezone(tz))
-                leave_end_dt = min(end_dt, leave.date_to.astimezone(tz))
                 leave_end_dt_fr = min(end_dt, leave.l10n_fr_date_to.astimezone(tz))
 
                 # Compute the attendances for the company calendar and the employee calendar
