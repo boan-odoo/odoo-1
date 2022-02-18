@@ -304,7 +304,8 @@ class Cursor(BaseCursor):
         else:
             self.__caller = False
         self._closed = False   # real initialisation value
-        self.autocommit(False)
+        # See the docstring of this class.
+        self.connection.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)
 
         self._default_log_exceptions = True
 
@@ -469,51 +470,18 @@ class Cursor(BaseCursor):
             self.__pool.give_back(self._cnx, keep_in_pool=keep_in_pool)
 
     def autocommit(self, on):
+        warnings.warn(
+            f"Deprecated Methods, use {'`_cnx.autocommit = True`' if on else '`_cnx.set_isolation_level`'} instead.",
+            DeprecationWarning, stacklevel=2
+        )
         if on:
-            warnings.warn(
-                "Since Odoo 13.0, the ORM delays UPDATE queries for "
-                "performance reasons. Since then, using the ORM with "
-                " autocommit(True) is unsafe, as computed fields may not be "
-                "fully computed at commit.", DeprecationWarning, stacklevel=2)
             isolation_level = ISOLATION_LEVEL_AUTOCOMMIT
         else:
-            # If a serializable cursor was requested, we
-            # use the appropriate PotsgreSQL isolation level
-            # that maps to snapshot isolation.
-            # For all supported PostgreSQL versions (8.3-9.x),
-            # this is currently the ISOLATION_REPEATABLE_READ.
-            # See also the docstring of this class.
-            # NOTE: up to psycopg 2.4.2, repeatable read
-            #       is remapped to serializable before being
-            #       sent to the database, so it is in fact
-            #       unavailable for use with pg 9.1.
             isolation_level = \
                 ISOLATION_LEVEL_REPEATABLE_READ \
                 if self._serialized \
                 else ISOLATION_LEVEL_READ_COMMITTED
         self._cnx.set_isolation_level(isolation_level)
-
-    def after(self, event, func):
-        """ Register an event handler.
-
-            :param event: the event, either `'commit'` or `'rollback'`
-            :param func: a callable object, called with no argument after the
-                event occurs
-
-            Be careful when coding an event handler, since any operation on the
-            cursor that was just committed/rolled back will take place in the
-            next transaction that has already begun, and may still be rolled
-            back or committed independently. You may consider the use of a
-            dedicated temporary cursor to do some database operation.
-        """
-        warnings.warn(
-            "Cursor.after() is deprecated, use Cursor.postcommit.add() instead.",
-            DeprecationWarning,
-        )
-        if event == 'commit':
-            self.postcommit.add(func)
-        elif event == 'rollback':
-            self.postrollback.add(func)
 
     def commit(self):
         """ Perform an SQL `COMMIT` """
@@ -610,7 +578,7 @@ class TestCursor(BaseCursor):
             self._lock.release()
 
     def autocommit(self, on):
-        _logger.debug("TestCursor.autocommit(%r) does nothing", on)
+        warnings.warn("Deprecated method and does nothing")
 
     def commit(self):
         """ Perform an SQL `COMMIT` """
