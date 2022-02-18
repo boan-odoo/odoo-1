@@ -59,7 +59,9 @@ const Wysiwyg = Widget.extend({
         this.customizableLinksSelector = 'a'
             + ':not([data-toggle="tab"])'
             + ':not([data-toggle="collapse"])'
-            + ':not([data-toggle="dropdown"])';
+            + ':not([data-toggle="dropdown"])'
+            + ':not(.dropdown-item)'
+            + ':not([contenteditable="false"])';
     },
     /**
      *
