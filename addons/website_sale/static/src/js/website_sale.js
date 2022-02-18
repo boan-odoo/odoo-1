@@ -25,6 +25,21 @@ publicWidget.registry.websiteSaleCartLink = publicWidget.Widget.extend({
     /**
      * @override
      */
+    willStart() {
+        const defs = [];
+        defs.push(this._super.apply(this, arguments));
+        defs.push(
+            this._rpc({
+                route: "/shop/cart/quantity",
+            }).then((cartQty) => {
+                this.cartQty = cartQty;
+            })
+        );
+        return Promise.all(defs);
+    },
+    /**
+     * @override
+     */
     start: function () {
         this.$el.popover({
             trigger: 'manual',
@@ -37,6 +52,9 @@ publicWidget.registry.websiteSaleCartLink = publicWidget.Widget.extend({
             placement: 'auto',
             template: '<div class="popover mycart-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
         });
+        if (this.cartQty !== undefined) {
+            this.el.querySelector('.my_cart_quantity').innerText = this.cartQty;
+        }
         return this._super.apply(this, arguments);
     },
 
