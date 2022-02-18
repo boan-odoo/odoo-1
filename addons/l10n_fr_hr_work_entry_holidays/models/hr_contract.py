@@ -45,17 +45,14 @@ class HrContract(models.Model):
 
                 # Compute the attendances for the company calendar and the employee calendar
                 # and then compute and keep the difference between those two
-                employee_attendances = employee_calendar._attendance_intervals_batch(
-                    leave_start_dt, leave_end_dt, resources=resource, tz=tz,
-                )[resource.id]
                 company_attendances = company_calendar._attendance_intervals_batch(
                     leave_start_dt, leave_end_dt_fr, resources=resource, tz=tz,
                 )[resource.id]
                 # Dates on which work entries should already be generated
                 employee_dates = set()
-                for interval in employee_attendances:
-                    employee_dates.add(interval[0].date())
-                    employee_dates.add(interval[1].date())
+                for vals in result:
+                    employee_dates.add(vals['date_start'].date())
+                    employee_dates.add(vals['date_stop'].date())
                 leave_work_entry_type = leave.holiday_status_id.work_entry_type_id
                 result += [{
                     'name': '%s%s' % (leave_work_entry_type.name + ': ' if leave_work_entry_type else "", employee.name),

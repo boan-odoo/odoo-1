@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import logging
+import time
+
 from datetime import datetime
 from odoo.tests.common import TransactionCase, tagged
+
+_logger = logging.getLogger(__name__)
 
 @tagged('post_install_l10n', 'post_install', '-at_install', 'french_work_entries')
 class TestFrenchWorkEntries(TransactionCase):
@@ -69,7 +74,11 @@ class TestFrenchWorkEntries(TransactionCase):
         leave.action_validate()
 
         # Since the gaps have been filled, we should now get 10 work entries
-        work_entry_create_vals = self.employee_contract._get_contract_work_entries_values(datetime(2021, 9, 6), datetime(2021, 9, 10, 23, 59, 59))
+        with self.assertQueryCount(45):
+            start_time = time.time()
+            work_entry_create_vals = self.employee_contract._get_contract_work_entries_values(datetime(2021, 9, 6), datetime(2021, 9, 10, 23, 59, 59))
+            # --- 0.11486363410949707 seconds ---
+            _logger.info("Get Contract Work Entries: --- %s seconds ---", time.time() - start_time)
         self.assertEqual(len(work_entry_create_vals), 10, 'Should have generated 10 work entries.')
 
         # Make sure that the gap filling does not go past the requested date

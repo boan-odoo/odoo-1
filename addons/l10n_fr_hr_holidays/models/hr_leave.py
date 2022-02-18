@@ -11,7 +11,7 @@ class HrLeave(models.Model):
 
     l10n_fr_date_to = fields.Datetime('End Date For French Rules', readonly=True)
 
-    def _compute_fr_number_of_days(self, employee, date_from, date_to, employee_calendar, company_calendar):
+    def _get_fr_number_of_days(self, employee, date_from, date_to, employee_calendar, company_calendar):
         self.ensure_one()
 
         self.l10n_fr_date_to = False
@@ -79,13 +79,11 @@ class HrLeave(models.Model):
         Returns a dict containing two keys: 'days' and 'hours' with the value being the duration for the requested time period.
         """
         basic_amount = super()._get_number_of_days(date_from, date_to, employee_id)
-        if not basic_amount['days'] and not basic_amount['hours']:
-            return basic_amount
-        if employee_id and super()._get_number_of_days(date_from, date_to, employee_id):
+        if employee_id and (basic_amount['days'] or basic_amount['hours']):
             employee = self.env['hr.employee'].browse(employee_id).sudo()
             company = employee.company_id
             if company.country_id.code == 'FR' and company.resource_calendar_id:
                 calendar = self._get_calendar()
                 if calendar and calendar != company.resource_calendar_id:
-                    return self._compute_fr_number_of_days(employee, date_from, date_to, calendar, company.resource_calendar_id)
+                    return self._get_fr_number_of_days(employee, date_from, date_to, calendar, company.resource_calendar_id)
         return basic_amount

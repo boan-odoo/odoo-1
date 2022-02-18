@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import logging
+import time
+
 from odoo.tests.common import TransactionCase, tagged
+
+_logger = logging.getLogger(__name__)
 
 @tagged('post_install_l10n', 'post_install', '-at_install', 'french_leaves')
 class TestFrenchLeaves(TransactionCase):
@@ -245,12 +250,16 @@ class TestFrenchLeaves(TransactionCase):
         leave.unlink()
 
         # Both ending with week type 0
-        leave = self.env['hr.leave'].create({
-            'name': 'Test',
-            'holiday_status_id': self.time_off_type.id,
-            'employee_id': self.employee.id,
-            'date_from': '2021-09-13',
-            'date_to': '2021-09-22 23:59:59',
-        })
+        with self.assertQueryCount(45):
+            start_time = time.time()
+            leave = self.env['hr.leave'].create({
+                'name': 'Test',
+                'holiday_status_id': self.time_off_type.id,
+                'employee_id': self.employee.id,
+                'date_from': '2021-09-13',
+                'date_to': '2021-09-22 23:59:59',
+            })
+            # --- 0.11486363410949707 seconds ---
+            _logger.info("French Leave Creation: --- %s seconds ---", time.time() - start_time)
         self.assertEqual(leave.number_of_days, 8, 'The number of days should be equal to 3.')
         leave.unlink()
