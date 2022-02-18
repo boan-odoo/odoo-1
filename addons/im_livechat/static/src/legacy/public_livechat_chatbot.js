@@ -9,6 +9,7 @@ var utils = require('web.utils');
 const LivechatButton = require('im_livechat.legacy.im_livechat.im_livechat').LivechatButton;
 
 var _t = core._t;
+var QWeb = core.qweb;
 
 /**
  * Override of the LivechatButton to include chatbot capabilities.
@@ -19,6 +20,30 @@ var _t = core._t;
  *   message for a couple seconds and then trigger the next step of the script
  */
 LivechatButton.include({
+    init: function () {
+        this._super(...arguments);
+
+        this._chatbotMessageDelay = 3500;
+    },
+
+    /**
+     * This override handles the following use cases:
+     *
+     * - If the chat is started for the first time (first visit of a visitor)
+     *   We register the chatbot configuration and the rest of the behavior is triggered by various
+     *   method overrides ('sendWelcomeMessage', 'sendMessage', ...)
+     *
+     * - If the chat has been started before, but the user did not interact with the bot
+     *   The default behavior is to open an empty chat window, without any messages.
+     *   In addition, we fetch the configuration (with a '/init' call), to see if we have a bot
+     *   configured.
+     *   Indeed we want to trigger the bot script on every page where the associated rule is matched.
+     *
+     * - If we have a non-empty chat history, resume the chat script where the end-user left it by
+     *   fetching the necessary information from the 'im_livechat_session' cookie.
+     *
+     * @override
+     */
     async willStart() {
         return this._super(...arguments).then(async () => {
             if (this._rule) {
@@ -33,6 +58,7 @@ LivechatButton.include({
                     utils.set_cookie('im_livechat_auto_popup', '', -1);
                     this._history = null;
                     this._rule = result.rule;
+                    this._chatbot = result.rule.chatbot;
                     this._isChatbot = true;
                     this._chatbotBatchWelcomeMessages = true;  // see '_sendWelcomeChatbotMessage'
                 }
@@ -62,6 +88,9 @@ LivechatButton.include({
             .val('');
     },
     /**
+     * Once the script ends, adds a visual element at the end of the chat window allowing to restart
+     * the whole script.
+     *
      * @private
      */
     _chatbotEndScript: function () {
@@ -72,6 +101,9 @@ LivechatButton.include({
 
     },
     /**
+     * Disable the input allowing the user to type.
+     * This is typically used when we want to force him to click on one of the chatbot options.
+     *
      * @private
      */
     _chatbotDisableInput: function (disableText) {
@@ -79,6 +111,26 @@ LivechatButton.include({
             .prop('disabled', true)
             .addClass('text-center font-italic bg-200')
             .val(disableText);
+    },
+    /**
+     * Adds a small "is typing" animation into the chat window.
+     *
+     * @private
+     */
+    _chatbotSetIsTyping: function (isWelcomeMessage=false) {
+        this._chatbotDisableInput('');
+
+        setTimeout(() => {
+            this._chatWindow.$('.o_mail_thread_content').append(
+                $(QWeb.render('im_livechat.legacy.chatbot.is_typing_message', {
+                    'chatbotImageSrc': `/web/image/im_livechat.chatbot.script/${this._chatbot.chatbot_id}/image_128`,
+                    'chatbotName': this._chatbot.chatbot_name,
+                    'isWelcomeMessage': isWelcomeMessage
+                }))
+            );
+
+            this._chatWindow.scrollToBottom();
+        }, this._chatbotMessageDelay / 3);
     },
     /**
      * @private
@@ -97,7 +149,8 @@ LivechatButton.include({
                 this._chatbotEndScript();
             } else if (this._chatbotCurrentStep.chatbot_step_type === 'text'
                 && !this._chatbotCurrentStep.chatbot_step_is_last) {
-                setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
+                this._chatbotSetIsTyping();
+                setTimeout(this._chatbotTriggerNextStep.bind(this), this._chatbotMessageDelay);
             } else {
                 this._chatbotEnableInput();
             }
@@ -127,6 +180,9 @@ LivechatButton.include({
         return parameters;
     },
     /**
+     * Add chatbot configuration into the cookies data.
+     * This allows to "resume" the chatbot script on a page refresh.
+     *
      * @private
      * @override
      */
@@ -161,10 +217,8 @@ LivechatButton.include({
     _sendMessage: function (message, additionalParameters=false) {
         if (this._isChatbot && this._chatbotCurrentStep) {
             if (!this._chatbotCurrentStep.chatbot_step_is_last) {
-                this._chatbotDisableInput(
-                    _.str.sprintf(_t('%s is typing...'), this._chatbot.chatbot_name));
-
-                setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
+                this._chatbotSetIsTyping();
+                setTimeout(this._chatbotTriggerNextStep.bind(this), this._chatbotMessageDelay);
             } else if (!this._chatbotCurrentStep.step_type === 'forward_operator') {
                 this._chatbotEndScript();
             }
@@ -173,11 +227,12 @@ LivechatButton.include({
         return this._super(...arguments);
     },
     /**
+     * Small override to handle chatbot welcome message(s).
      * @private
      */
     _sendWelcomeMessage: function () {
         if (this._isChatbot) {
-            let welcomeMessageDelay = 2000;
+            let welcomeMessageDelay = this._chatbotMessageDelay;
             if (this._chatbotBatchWelcomeMessages) {
                 welcomeMessageDelay = 0;
             }
@@ -224,8 +279,7 @@ LivechatButton.include({
         });
 
         if (stepIndex + 1 < this._chatbot.chatbot_welcome_steps.length) {
-            this._chatbotDisableInput(
-                _.str.sprintf(_t('%s is typing...'), this._chatbot.chatbot_name));
+            this._chatbotSetIsTyping(true);
 
             setTimeout(() => {
                 this._sendWelcomeChatbotMessage(stepIndex + 1);
@@ -241,6 +295,7 @@ LivechatButton.include({
     /**
      *
      * @param {MouseEvent} ev
+     * @private
      */
     _onChatbotRestartScript: async function (ev) {
         this._chatWindow.$('.o_composer_text_field').removeClass('d-none');
@@ -250,15 +305,14 @@ LivechatButton.include({
             channel_uuid: this._livechat.getUUID(),
         });
 
-        this._chatbotDisableInput(
-            _.str.sprintf(_t('%s is typing...'), this._chatbot.chatbot_name));
-
-        setTimeout(this._chatbotTriggerNextStep.bind(this), 2000);
+        this._chatbotSetIsTyping();
+        setTimeout(this._chatbotTriggerNextStep.bind(this), this._chatbotMessageDelay);
     },
 
     /**
      *
      * @param {MouseEvent} ev
+     * @private
      */
     _onChatbotOptionClicked: function (ev) {
         ev.stopPropagation();

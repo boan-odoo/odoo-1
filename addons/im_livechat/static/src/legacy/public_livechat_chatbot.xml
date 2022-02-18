@@ -23,4 +23,34 @@
             </div>
         </t>
     </t>
+
+    <!--
+        This small template simulates a fake message from the bot.
+        The goal is to have something like:
+        [image] The bot
+                . . .
+
+        With a small animation on the dots to make them bounce.
+        This fake message is then removed when the chat window is refreshed with the real message.
+    -->
+    <t t-name="im_livechat.legacy.chatbot.is_typing_message">
+        <div t-attf-class="o_thread_message #{isWelcomeMessage ? 'o_mail_not_discussion' : ''}">
+            <div class="o_thread_message_sidebar">
+                <img alt="chatbot_image" t-att-src="chatbotImageSrc"
+                    class="o_thread_message_avatar rounded-circle"/>
+            </div>
+            <div class="o_thread_message_core">
+                <p class="o_mail_info text-muted">
+                    <strong class="o_thread_author" t-out="chatbotName"/>
+                </p>
+                <div class="o_thread_message_content">
+                    <div class="o_livechat_chatbot_typing">
+                        <div class="o_livechat_chatbot_typing_dot"/>
+                        <div class="o_livechat_chatbot_typing_dot"/>
+                        <div class="o_livechat_chatbot_typing_dot"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
 </templates>
