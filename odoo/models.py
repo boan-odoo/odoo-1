@@ -2264,11 +2264,14 @@ class BaseModel(metaclass=MetaModel):
             for key in ('field', 'groupby')
         }
         for order_part in orderby.split(','):
-            order_split = order_part.split()
+            order_split = order_part.split()  # potentially ["field:agg", "desc"]
             order_field = order_split[0]
             if order_field == 'id' or order_field in groupby_fields:
-                if self._fields[order_field.split(':')[0]].type == 'many2one':
-                    order_clause = self._generate_order_by(order_part, query).replace('ORDER BY ', '')
+                order_field_without_aggregate = order_field.split(':')[0]
+                if self._fields[order_field_without_aggregate].type == 'many2one' and not self.env.context.get(
+                        'ignore_sort_x2many_name'):
+                    order_clause = self._generate_order_by(order_part, query)
+                    order_clause = order_clause.replace('ORDER BY ', '')
                     if order_clause:
                         orderby_terms.append(order_clause)
                         groupby_terms += [order_term.split()[0] for order_term in order_clause.split(',')]
@@ -2432,6 +2435,14 @@ class BaseModel(metaclass=MetaModel):
             data['__context'] = {'group_by': groupby[len(annotated_groupbys):]}
         del data['id']
         return data
+
+    @api.model
+    def _read_group(self, domain, fields, groupby, offset=0, limit=None, orderby=False, lazy=True):
+        """
+        Executes exactly what the public read_group, except it doesn't order the manyToOne on their names but on their ID instead
+        """
+        return self.with_context(ignore_sort_x2many_name=True).read_group(domain, fields, groupby, offset, limit,
+                                                                               orderby, lazy)
 
     @api.model
     def read_group(self, domain, fields, groupby, offset=0, limit=None, orderby=False, lazy=True):
