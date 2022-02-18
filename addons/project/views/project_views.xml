@@ -764,12 +764,52 @@
             </field>
         </record>
 
+        <record id="view_project_calendar" model="ir.ui.view">
+            <field name="name">project.project.calendar</field>
+            <field name="model">project.project</field>
+            <field name="arch" type="xml">
+                <calendar date_start="date_start" date_stop="date" string="Projects" mode="month" 
+                          event_open_popup="true" quick_add="false" color="color">
+                    <field name="partner_id"/>
+                    <field name="user_id" widget="many2one_avatar_user"/>
+                    <field name="is_favorite" widget="boolean_favorite" nolabel="1" string="Favorite"/>
+                    <field name="stage_id" groups="project.group_project_stages"/>
+                    <field name="last_update_color" invisible="1"/>
+                    <field name="last_update_status" string="Status" widget="status_with_color" options="{'color_field': 'last_update_color'}"/>
+                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" attrs="{'invisible': [('tag_ids', '=', [])]}"/>
+                </calendar>
+            </field>
+        </record>
+
+        <record id="view_project_pivot" model="ir.ui.view">
+            <field name="name">project.project.pivot</field>
+            <field name="model">project.project</field>
+            <field name="arch" type="xml">
+                <pivot string="Projects">
+                    <field name="user_id" type="row"/>
+                    <field name="last_update_status" type="col"/>
+                </pivot>
+            </field>
+        </record>
+
+        <record id="view_project_graph" model="ir.ui.view">
+            <field name="name">project.project.graph</field>
+            <field name="model">project.project</field>
+            <field name="arch" type="xml">
+                <graph string="Tasks" sample="1" js_class="project_graph">
+                    <field name="last_update_status"/>
+                    <field name="stage_id"/>
+                    <field name="sequence" invisible="1"/>
+                </graph>
+            </field>
+        </record>
+
         <!-- Please update both act_window when modifying one (open_view_project_all or open_view_project_all_group_stage) as one or the other is used in the menu menu_project_config -->
         <record id="open_view_project_all" model="ir.actions.act_window">
             <field name="name">Projects</field>
             <field name="res_model">project.project</field>
             <field name="domain">[]</field>
-            <field name="view_mode">kanban,form</field>
+            <field name="view_mode">kanban,form,calendar,pivot,graph,activity</field>
             <field name="view_id" ref="view_project_kanban"/>
             <field name="search_view_id" ref="view_project_project_filter"/>
             <field name="target">main</field>
@@ -786,7 +826,7 @@
             <field name="name">Projects</field>
             <field name="res_model">project.project</field>
             <field name="domain">[]</field>
-            <field name="view_mode">kanban,form</field>
+            <field name="view_mode">kanban,form,calendar,pivot,graph,activity</field>
             <field name="view_id" ref="view_project_kanban"/>
             <field name="search_view_id" ref="view_project_project_filter"/>
             <field name="target">main</field>
@@ -804,7 +844,7 @@
             <field name="name">Projects</field>
             <field name="res_model">project.project</field>
             <field name="domain">[]</field>
-            <field name="view_mode">tree,kanban,form</field>
+            <field name="view_mode">tree,kanban,form,calendar,pivot,graph,activity</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_project')}),
                 (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_project_kanban')})]"/>
