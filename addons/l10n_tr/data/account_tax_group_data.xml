@@ -193,19 +193,17 @@
 
         <record id="tax_group_not_subjected" model="account.tax.group">
             <field name="name">ÖZEL MATRAH</field>
-            <field name="l10n_tr_tax_type">exception</field>
             <field name="country_id" ref="base.tr"/>
         </record>
 
         <record id="tax_group_zero_vat" model="account.tax.group">
             <field name="name">ISTISNA</field>
-            <field name="l10n_tr_tax_type">exception</field>
+            <field name="l10n_tr_code">0015</field>
             <field name="country_id" ref="base.tr"/>
         </record>
 
         <record id="tax_group_vat_partial_withdrawal" model="account.tax.group">
             <field name="name">KDV TEVKIFAT</field>
-            <field name="l10n_tr_tax_type">withdraw</field>
             <field name="country_id" ref="base.tr"/>
         </record>
     </data>
