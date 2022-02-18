@@ -2367,6 +2367,7 @@ var SnippetsMenu = Widget.extend({
                 cursor: 'move',
                 greedy: true,
                 scroll: false,
+                iframeFix: true,
             }, options.jQueryDraggableOptions),
             disableHorizontalScroll: true,
         });

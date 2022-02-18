@@ -3,7 +3,7 @@
 import { ComponentAdapter } from 'web.OwlCompatibility';
 import { _t } from "@web/core/l10n/translation";
 
-const { onWillStart } = owl;
+const { onWillStart, useExternalListener } = owl;
 
 
 export class WysiwygAdapterComponent extends ComponentAdapter {
@@ -22,14 +22,12 @@ export class WysiwygAdapterComponent extends ComponentAdapter {
        onWillStart(() => {
            this.editable.classList.add('o_editable');
            this.editableFromEditorMenu(this.$editable).addClass('o_editable');
-           debugger;
            this._addEditorMessages();
        });
        super.setup();
     }
 
     _trigger_up(event) {
-        console.log(event);
         super._trigger_up(...arguments);
     }
      /**
@@ -96,11 +94,15 @@ export class WysiwygAdapterComponent extends ComponentAdapter {
         return this.iframe.el.contentDocument.getElementById('wrapwrap');
     }
     get $editable() {
-        return this.iframe.el.contentWindow.$(this.editable);
+        return $(this.editable);
     }
 
     _getContentEditableAreas() {
         const savableElements = this.iframe.el.contentDocument.querySelectorAll('input, [data-oe-readonly],[data-oe-type="monetary"],[data-oe-many2one-id], [data-oe-field="arch"]:empty');
         return Array.from(savableElements).filter(element => !element.closest('.o_not_editable'));
+    }
+
+    _onClick(event) {
+        console.log('wysiwyg got click');
     }
 }
