@@ -2,6 +2,7 @@ odoo.define('im_livechat.legacy.im_livechat_chatbot.im_livechat', function (requ
 "use strict";
 
 var core = require('web.core');
+var localStorage = require('web.local_storage');
 var session = require('web.session');
 var time = require('web.time');
 var utils = require('web.utils');
@@ -40,7 +41,7 @@ LivechatButton.include({
      *   Indeed we want to trigger the bot script on every page where the associated rule is matched.
      *
      * - If we have a non-empty chat history, resume the chat script where the end-user left it by
-     *   fetching the necessary information from the 'im_livechat_session' cookie.
+     *   fetching the necessary information from the local storage.
      *
      * @override
      */
@@ -64,11 +65,9 @@ LivechatButton.include({
                 }
                 return Promise.resolve();
             } else if (this._history !== null && this._history.length !== 0) {
-                var sessionCookie = utils.get_cookie('im_livechat_session');
-                this._isChatbot = sessionCookie.chatbot;
-
-                if (this._isChatbot) {
-                    this._chatbot = sessionCookie.chatbot;
+                const sessionCookie = utils.get_cookie('im_livechat_session');
+                if (sessionCookie) {
+                    this._chatbotRestoreSession(sessionCookie);
                 }
             }
         });
@@ -135,6 +134,32 @@ LivechatButton.include({
     /**
      * @private
      */
+     _chatbotRestoreSession: function (sessionCookie) {
+        let chatbotState = localStorage.getItem(
+            'im_livechat.chatbot.state.uuid_' + JSON.parse(sessionCookie).uuid);
+
+        if (chatbotState) {
+            chatbotState = JSON.parse(chatbotState);
+            this._isChatbot = true;
+            this._chatbot = chatbotState._chatbot;
+            this._chatbotCurrentStep = chatbotState._chatbotCurrentStep;
+        }
+     },
+    /**
+     * Triggers the next step of the script by calling the associated route.
+     * This will receive the next step and act accordingly:
+     *
+     * - If we are on the last step of the script
+     *   -> end it (display a custom message and disable input)
+     *
+     * - If the received step is of type "text"
+     *   -> trigger the next step after a delay.
+     *
+     * - Otherwise
+     *   -> Enable the input and let the user type
+     *
+     * @private
+     */
      _chatbotTriggerNextStep: async function () {
          let result = await session.rpc('/im_livechat/chatbot_trigger_step', {
             channel_uuid: this._livechat.getUUID(),
@@ -157,14 +182,40 @@ LivechatButton.include({
          } else {
             this._chatbotEnableInput();
          }
-     },
 
+         // register current state into localStorage to be able to resume
+         // will not fully work if browser switch & we identify the same visitor... unlikely
+         let chatUuid = this._livechat.toData().uuid;
+         localStorage.setItem('im_livechat.chatbot.state.uuid_' + chatUuid, JSON.stringify({
+             '_chatbot': this._chatbot,
+             '_chatbotCurrentStep': this._chatbotCurrentStep
+         }));
+
+         return result;
+     },
     /**
      * @private
      * @override
      */
      _isAutoPopup: function () {
         return ['auto_popup', 'use_chatbot'].includes(this._rule.action);
+    },
+    /**
+     * Small override:
+     * If we resume an existing chatbot script, check after opening the chat window if we are on
+     * the last step, and "end script" if so.
+     *
+     * @private
+     * @override
+     */
+    _openChatWindow: function () {
+        return this._super(...arguments).then(() => {
+            if (this._chatbotCurrentStep
+                && this._chatbotCurrentStep.chatbot_step_type === 'text'
+                && this._chatbotCurrentStep.chatbot_step_is_last) {
+                this._chatbotEndScript();
+            }
+        });
     },
     /**
      * @private
@@ -178,19 +229,6 @@ LivechatButton.include({
         }
 
         return parameters;
-    },
-    /**
-     * Add chatbot configuration into the cookies data.
-     * This allows to "resume" the chatbot script on a page refresh.
-     *
-     * @private
-     * @override
-     */
-    _prepareSessionCookiesData: function () {
-        const cookiesData = this._super(...arguments);
-        cookiesData['chatbot'] = this._chatbot ? this._chatbot : false;
-
-        return cookiesData;
     },
     /**
      * @private
@@ -279,7 +317,9 @@ LivechatButton.include({
         });
 
         if (stepIndex + 1 < this._chatbot.chatbot_welcome_steps.length) {
-            this._chatbotSetIsTyping(true);
+            if (welcomeMessageDelay !== 0) {
+                this._chatbotSetIsTyping(true);
+            }
 
             setTimeout(() => {
                 this._sendWelcomeChatbotMessage(stepIndex + 1);
