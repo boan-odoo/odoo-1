@@ -88,20 +88,28 @@ class Channel(models.Model):
         ('groups', 'Selected group of users')], string='Privacy',
         required=True, default='groups',
         help='This group is visible by non members. Invisible groups can add members through the invite button.')
-    group_public_id = fields.Many2one('res.groups', string='Authorized Group',
-                                      default=lambda self: self.env.ref('base.group_user'))
+    group_public_id = fields.Many2one('res.groups', string='Authorized Group', compute='_compute_group_public_id', readonly=False, store=True)
 
     _sql_constraints = [
         ('uuid_unique', 'UNIQUE(uuid)', 'The channel UUID must be unique'),
+        ('group_public_id_check',
+         "CHECK (channel_type = 'channel' OR (group_public_id IS NULL AND channel_type != 'channel'))",
+         'Group authorization and group auto-subscription are only supported on channels.')
     ]
 
-    # CHAT CONSTRAINT
+    # CONSTRAINTS
 
     @api.constrains('channel_last_seen_partner_ids', 'channel_partner_ids')
     def _constraint_partners_chat(self):
         for ch in self.sudo().filtered(lambda ch: ch.channel_type == 'chat'):
             if len(ch.channel_last_seen_partner_ids) > 2 or len(ch.channel_partner_ids) > 2:
                 raise ValidationError(_("A channel of type 'chat' cannot have more than two users."))
+
+    @api.constrains('group_public_id', 'group_ids')
+    def _constraint_group_id_channel(self):
+        failing_channel = self.sudo().filtered(lambda channel: channel.channel_type!='channel' and (channel.group_public_id or channel.group_ids))
+        if failing_channel:
+            raise ValidationError(_("The following channels have group-based authorization but are not of right type 'channel': %(channel_names)s"), channel_names = ', '.join(failing_channel.mapped('name')))
 
     # COMPUTE / INVERSE
 
@@ -167,6 +175,14 @@ class Channel(models.Model):
         member_count_by_channel_id = {item['channel_id'][0]: item['channel_id_count'] for item in read_group_res}
         for channel in self:
             channel.member_count = member_count_by_channel_id.get(channel.id, 0)
+
+    @api.depends('channel_type')
+    def _compute_group_public_id(self):
+        group_user = self.env.ref('base.group_user')
+        groups_chats = self.filtered(lambda channel: channel.channel_type != 'channel')
+        groups_chats.group_public_id = None
+        channels = (self - groups_chats).filtered(lambda channel: not channel.group_public_id)
+        channels.group_public_id = group_user
 
     # ONCHANGE
 
