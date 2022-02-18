@@ -1152,6 +1152,11 @@ Reason(s) of this behavior could be:
     def add_option_to_order_with_taxcloud(self):
         self.ensure_one()
 
+    def _get_additional_template_data(self):
+        # TO OVERRIDE
+        self.ensure_one()
+        return []
+
 
 class SaleOrderLine(models.Model):
     _name = 'sale.order.line'

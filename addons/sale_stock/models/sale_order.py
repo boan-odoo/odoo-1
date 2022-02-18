@@ -260,6 +260,14 @@ class SaleOrder(models.Model):
                 return True
         return res
 
+    def _get_additional_template_data(self):
+        # OVERRIDE
+        self.ensure_one()
+        data = super(SaleOrder, self)._get_additional_template_data()
+        if self.incoterm:
+            data.append((_("Incoterm"), self.incoterm.code))
+        return data
+
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
