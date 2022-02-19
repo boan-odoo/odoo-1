@@ -267,7 +267,6 @@ class SaleOrderOption(models.Model):
         for option in self:
             if not option.product_id or not option.order_id.pricelist_id:
                 continue
-
             # To compute the price_unit a so line is created in cache
             values = option._get_values_to_add_to_order()
             new_sol = self.env['sale.order.line'].new(values)

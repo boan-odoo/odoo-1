@@ -15,7 +15,7 @@ odoo.define('sale.product_discount', function (require) {
      */
     const ProductDiscountWidget = BasicFields.FieldFloat.extend(SaleorderLineMixin, {
         _getUpdateAllLinesAction: function () {
-            return 'open_discount_wizard';
+            return 'open_update_all_wizard';
         },
     });
 

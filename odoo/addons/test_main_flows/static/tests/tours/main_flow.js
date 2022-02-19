@@ -859,18 +859,18 @@ tour.stepUtils.openBuggerMenu("li.breadcrumb-item.active:contains('Quotations')"
     position: "bottom"
 }, {
     mobile: false,
-    trigger: ".o_data_row:first",
+    trigger: ".o_data_cell:contains('the_flow.customer')",
     extra_trigger: '.o_control_panel .breadcrumb:contains("Sales Orders")',
     content: _t("Go to the last sale order"),
     position: "right"
 }, {
     mobile: true,
-    trigger: ".o_kanban_record:first",
+    trigger: ".o_kanban_record .o_kanban_record_title:contains('the_flow.customer')",
     extra_trigger: '.o_control_panel .breadcrumb:contains("Sales Orders")',
     content: _t("Go to the last sale order"),
     position: "bottom"
 },
-tour.stepUtils.mobileModifier(tour.stepUtils.autoExpandMoreButtons('.o_control_panel .breadcrumb:contains("Test")')),
+tour.stepUtils.mobileModifier(tour.stepUtils.autoExpandMoreButtons('.o_control_panel .breadcrumb:contains("S0")')),
 {
     mobile: false,
     trigger: '.oe_button_box .oe_stat_button:has(div[name=tasks_count])',
@@ -879,7 +879,7 @@ tour.stepUtils.mobileModifier(tour.stepUtils.autoExpandMoreButtons('.o_control_p
 }, {
     mobile: true,
     trigger: '.oe_button_box .oe_stat_button:has(div[name=tasks_count])',
-    extra_trigger: '.o_control_panel .breadcrumb:contains("Test")',
+    extra_trigger: '.o_control_panel .breadcrumb:contains("S0")',
     content: _t('See Tasks'),
     position: 'bottom',
 }, {
