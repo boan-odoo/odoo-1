@@ -123,3 +123,9 @@ class WebsiteTest(Home):
     @http.route(['/get_post_nomultilang'], type='http', auth="public", methods=['GET', 'POST'], website=True, multilang=False)
     def get_post_method_no_multilang(self, **kw):
         return request.make_response('get_post_nomultilang')
+
+    # Test Redirects
+
+    @http.route(['/test_website/country/<model("res.country"):country>'], type='http', auth="public", website=True, sitemap=False)
+    def test_model_converter_country(self, country, **kw):
+        return request.render('test_website.test_redirect_view', {'country': country})
