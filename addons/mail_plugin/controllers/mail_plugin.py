@@ -60,6 +60,9 @@ class MailPluginController(http.Controller):
         """
         Enriches an existing company using IAP
         """
+        if not self._user_can_create_contact():
+            return None, {'error': _('You can not create contact.')}
+
         partner = request.env['res.partner'].browse(partner_id).exists()
 
         if not partner:
@@ -213,6 +216,10 @@ class MailPluginController(http.Controller):
         """
         # old route name "/mail_client_extension/partner/create is deprecated as of saas-14.3,it is not needed for newer
         # versions of the mail plugin but necessary for supporting older versions
+
+        if not self._user_can_create_contact():
+            raise Forbidden()
+
         # TODO search the company again instead of relying on the one provided here?
         # Create the partner if needed.
         partner_info = {
@@ -304,6 +311,9 @@ class MailPluginController(http.Controller):
         return company_values
 
     def _create_company_from_iap(self, email):
+        if not self._user_can_create_contact():
+            return None, {'type': 'unknown', 'info': _('You can not create contact.')}
+
         domain = tools.email_domain_extract(email)
         iap_data = self._iap_enrich(domain)
         if 'enrichment_info' in iap_data:
@@ -426,3 +436,6 @@ class MailPluginController(http.Controller):
             for message in messages:
                 translations_dict.update({message['id']: message['string']})
         return translations_dict
+
+    def _user_can_create_contact(self):
+        return request.env.user.has_group('base.group_partner_manager')
