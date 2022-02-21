@@ -5051,6 +5051,7 @@ class AccountMoveLine(models.Model):
                 recon_debit_amount = remaining_debit_amount
                 recon_credit_amount = -remaining_credit_amount
 
+            # Check if there is something left to reconcile. Move to the next loop iteration if not.
             skip_reconciliation = False
             if recon_currency.is_zero(recon_debit_amount):
                 debit_line = None
@@ -5097,28 +5098,30 @@ class AccountMoveLine(models.Model):
                 else:
                     partial_credit_amount_currency = 0.0
 
-                # Computation of the partial exchange difference.
-                exchange_lines_to_fix = self.env['account.move.line']
-                amounts_list = []
-                if debit_fully_matched:
-                    debit_exchange_amount = remaining_debit_amount_curr - partial_debit_amount_currency
-                    if not debit_line.currency_id.is_zero(debit_exchange_amount):
-                        exchange_lines_to_fix += debit_line
-                        amounts_list.append({'amount_residual_currency': debit_exchange_amount})
-                        remaining_credit_amount_curr -= debit_exchange_amount
-                if credit_fully_matched:
-                    credit_exchange_amount = remaining_credit_amount_curr + partial_credit_amount_currency
-                    if not credit_line.currency_id.is_zero(credit_exchange_amount):
-                        exchange_lines_to_fix += credit_line
-                        amounts_list.append({'amount_residual_currency': credit_exchange_amount})
-                        remaining_credit_amount_curr += credit_exchange_amount
+                # Computation of the partial exchange difference. You can skip this part using the
+                # `no_exchange_difference` context key (when reconciling an exchange difference for example).
+                if not self._context.get('no_exchange_difference'):
+                    exchange_lines_to_fix = self.env['account.move.line']
+                    amounts_list = []
+                    if debit_fully_matched:
+                        debit_exchange_amount = remaining_debit_amount_curr - partial_debit_amount_currency
+                        if not debit_line.currency_id.is_zero(debit_exchange_amount):
+                            exchange_lines_to_fix += debit_line
+                            amounts_list.append({'amount_residual_currency': debit_exchange_amount})
+                            remaining_credit_amount_curr -= debit_exchange_amount
+                    if credit_fully_matched:
+                        credit_exchange_amount = remaining_credit_amount_curr + partial_credit_amount_currency
+                        if not credit_line.currency_id.is_zero(credit_exchange_amount):
+                            exchange_lines_to_fix += credit_line
+                            amounts_list.append({'amount_residual_currency': credit_exchange_amount})
+                            remaining_credit_amount_curr += credit_exchange_amount
 
-                if not self._context.get('no_exchange_difference') and exchange_lines_to_fix:
-                    exchange_vals = exchange_lines_to_fix._prepare_exchange_difference_move_vals(
-                        amounts_list,
-                        exchange_date=max(debit_line.date, credit_line.date),
-                    )
-                    exchange_data[len(partials_vals_list)] = exchange_vals
+                    if exchange_lines_to_fix:
+                        exchange_vals = exchange_lines_to_fix._prepare_exchange_difference_move_vals(
+                            amounts_list,
+                            exchange_date=max(debit_line.date, credit_line.date),
+                        )
+                        exchange_data[len(partials_vals_list)] = exchange_vals
 
             else: # recon_currency != company_currency
 
@@ -5135,40 +5138,51 @@ class AccountMoveLine(models.Model):
                     partial_credit_amount = 0.0
                 partial_amount = min(partial_debit_amount, partial_credit_amount)
 
-                # Computation of the partial exchange difference.
-                exchange_lines_to_fix = self.env['account.move.line']
-                amounts_list = []
-                if debit_fully_matched:
-                    debit_exchange_amount = remaining_debit_amount - partial_amount
-                    if not debit_line.company_currency_id.is_zero(debit_exchange_amount):
-                        exchange_lines_to_fix += debit_line
-                        amounts_list.append({'amount_residual': debit_exchange_amount})
-                        remaining_debit_amount -= debit_exchange_amount
-                else:
-                    debit_exchange_amount = partial_debit_amount - partial_amount
-                    if debit_line.company_currency_id.compare_amounts(debit_exchange_amount, 0.0) > 0:
-                        exchange_lines_to_fix += debit_line
-                        amounts_list.append({'amount_residual': debit_exchange_amount})
-                        remaining_debit_amount -= debit_exchange_amount
-                if credit_fully_matched:
-                    credit_exchange_amount = remaining_credit_amount + partial_amount
-                    if not credit_line.company_currency_id.is_zero(credit_exchange_amount):
-                        exchange_lines_to_fix += credit_line
-                        amounts_list.append({'amount_residual': credit_exchange_amount})
-                        remaining_credit_amount += credit_exchange_amount
-                else:
-                    credit_exchange_amount = partial_amount - partial_credit_amount
-                    if credit_line.company_currency_id.compare_amounts(credit_exchange_amount, 0.0) < 0:
-                        exchange_lines_to_fix += credit_line
-                        amounts_list.append({'amount_residual': credit_exchange_amount})
-                        remaining_credit_amount += credit_exchange_amount
+                # Computation of the partial exchange difference. You can skip this part using the
+                # `no_exchange_difference` context key (when reconciling an exchange difference for example).
+                if not self._context.get('no_exchange_difference'):
+                    exchange_lines_to_fix = self.env['account.move.line']
+                    amounts_list = []
+                    if debit_fully_matched:
+                        # Create an exchange difference on the remaining amount expressed in company's currency.
+                        debit_exchange_amount = remaining_debit_amount - partial_amount
+                        if not debit_line.company_currency_id.is_zero(debit_exchange_amount):
+                            exchange_lines_to_fix += debit_line
+                            amounts_list.append({'amount_residual': debit_exchange_amount})
+                            remaining_debit_amount -= debit_exchange_amount
+                    else:
+                        # Create an exchange difference ensuring the rate between the residual amounts expressed in
+                        # both foreign and company's currency is still consistent regarding the rate between
+                        # 'amount_currency' & 'balance'.
+                        debit_exchange_amount = partial_debit_amount - partial_amount
+                        if debit_line.company_currency_id.compare_amounts(debit_exchange_amount, 0.0) > 0:
+                            exchange_lines_to_fix += debit_line
+                            amounts_list.append({'amount_residual': debit_exchange_amount})
+                            remaining_debit_amount -= debit_exchange_amount
 
-                if not self._context.get('no_exchange_difference') and exchange_lines_to_fix:
-                    exchange_vals = exchange_lines_to_fix._prepare_exchange_difference_move_vals(
-                        amounts_list,
-                        exchange_date=max(debit_line.date, credit_line.date),
-                    )
-                    exchange_data[len(partials_vals_list)] = exchange_vals
+                    if credit_fully_matched:
+                        # Create an exchange difference on the remaining amount expressed in company's currency.
+                        credit_exchange_amount = remaining_credit_amount + partial_amount
+                        if not credit_line.company_currency_id.is_zero(credit_exchange_amount):
+                            exchange_lines_to_fix += credit_line
+                            amounts_list.append({'amount_residual': credit_exchange_amount})
+                            remaining_credit_amount += credit_exchange_amount
+                    else:
+                        # Create an exchange difference ensuring the rate between the residual amounts expressed in
+                        # both foreign and company's currency is still consistent regarding the rate between
+                        # 'amount_currency' & 'balance'.
+                        credit_exchange_amount = partial_amount - partial_credit_amount
+                        if credit_line.company_currency_id.compare_amounts(credit_exchange_amount, 0.0) < 0:
+                            exchange_lines_to_fix += credit_line
+                            amounts_list.append({'amount_residual': credit_exchange_amount})
+                            remaining_credit_amount += credit_exchange_amount
+
+                    if exchange_lines_to_fix:
+                        exchange_vals = exchange_lines_to_fix._prepare_exchange_difference_move_vals(
+                            amounts_list,
+                            exchange_date=max(debit_line.date, credit_line.date),
+                        )
+                        exchange_data[len(partials_vals_list)] = exchange_vals
 
                 # Compute the partial amount expressed in foreign currency.
                 # Take care to handle the case when a line expressed in company currency is mimicking the foreign
@@ -5204,6 +5218,7 @@ class AccountMoveLine(models.Model):
 
         partials = self.env['account.partial.reconcile'].create(partials_vals_list)
 
+        # ==== Create exchange difference moves ====
         for index, exchange_vals in exchange_data.items():
             partials[index].exchange_move_id = self._create_exchange_difference_move(exchange_vals)
 
@@ -5353,7 +5368,7 @@ class AccountMoveLine(models.Model):
 
             move_values = move._collect_tax_cash_basis_values()
 
-            # The cash basis doesn't need to be handle for this move because there is another payment term
+            # The cash basis doesn't need to be handled for this move because there is another payment term
             # line that is not yet fully paid.
             if not move_values or not move_values['is_fully_paid']:
                 continue
