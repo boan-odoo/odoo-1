@@ -1813,6 +1813,15 @@ td {
     padding: 12px 8px;
 }
 
+.pos .clientlist-screen .fa.fa-phone,
+.pos .clientlist-screen .fa.fa-paper-plane-o {
+    margin-right: 4px;
+}
+
+.pos .clientlist-screen .e-mail-field {
+    white-space: nowrap;
+}
+
 .pos .clientlist-screen .client-list th.client-line-last-column-placeholder,
 .pos .clientlist-screen .client-list td.client-line-last-column-placeholder {
     padding: 0;

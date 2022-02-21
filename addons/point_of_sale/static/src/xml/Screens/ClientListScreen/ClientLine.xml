@@ -12,10 +12,12 @@
                 <t t-esc="shortAddress" />
             </td>
             <td class="client-line-email" t-if="!env.isMobile">
-                <t t-esc="props.partner.phone or ''"/>
-                <span t-if="props.partner.phone"><br/></span>
-                <t t-esc="props.partner.email or ''" />
-                <span t-if="highlight"><br/></span>
+                <div t-if="props.partner.phone">
+                    <i class="fa fa-phone"/><t t-esc="props.partner.phone"/>
+                </div>
+                <div t-if="props.partner.email" class="e-mail-field">
+                    <i class="fa fa-paper-plane-o"/><t t-esc="props.partner.email" />
+                </div>
             </td>
             <td t-if="env.isMobile">
                 <t t-esc="props.partner.zip or ''" />

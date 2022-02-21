@@ -10,8 +10,7 @@ odoo.define('point_of_sale.ClientLine', function(require) {
         }
         get shortAddress() {
             const { partner } = this.props;
-            const addressWithoutState = partner.zip + ', ' + partner.city;
-            return partner.state_id ? addressWithoutState + ', ' + partner.state_id[1] : addressWithoutState;
+            return [partner.zip, partner.city, partner.state_id[1]].filter(field => field).join(', ');
         }
     }
     ClientLine.template = 'ClientLine';
