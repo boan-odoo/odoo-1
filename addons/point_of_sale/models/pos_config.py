@@ -133,7 +133,6 @@ class PosConfig(models.Model):
     tax_regime_selection = fields.Boolean("Tax Regime Selection value")
     start_category = fields.Boolean("Start Category", default=False)
     limit_categories = fields.Boolean("Restrict Categories")
-    module_account = fields.Boolean(string='Invoicing', default=True, help='Enables invoice generation from the Point of Sale.')
     module_pos_restaurant = fields.Boolean("Is a Bar/Restaurant")
     module_pos_discount = fields.Boolean("Global Discounts")
     module_pos_loyalty = fields.Boolean("Loyalty Program")
@@ -366,11 +365,6 @@ class PosConfig(models.Model):
         self.iface_print_auto = self.iface_print_via_proxy
         if not self.iface_print_via_proxy:
             self.iface_cashdrawer = False
-
-    @api.onchange('module_account')
-    def _onchange_module_account(self):
-        if self.module_account and not self.invoice_journal_id:
-            self.invoice_journal_id = self._default_invoice_journal()
 
     @api.onchange('use_pricelist')
     def _onchange_use_pricelist(self):
@@ -678,8 +672,6 @@ class PosConfig(models.Model):
             invoice_journal_id = pos_config.invoice_journal_id or self.env['account.journal'].search([('type', '=', 'sale'), ('company_id', '=', company.id)], limit=1)
             if invoice_journal_id:
                 pos_config.write({'invoice_journal_id': invoice_journal_id.id})
-            else:
-                pos_config.write({'module_account': False})
 
     def get_limited_products_loading(self, fields):
         query = """

@@ -239,7 +239,6 @@ class TestPoSCommon(ValuationReconciliationTestCommon):
     def _create_basic_config(cls):
         config = cls.env['pos.config'].create({
             'name': 'PoS Shop Test',
-            'module_account': True,
             'invoice_journal_id': cls.invoice_journal.id,
             'journal_id': cls.pos_sale_journal.id,
             'available_pricelist_ids': cls.currency_pricelist.ids,

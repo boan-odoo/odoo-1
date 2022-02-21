@@ -9,7 +9,6 @@
             <xpath expr="//div[hasclass('settings')]" position="inside">
                 <field name="pos_selectable_categ_ids" invisible="1"/>
                 <field name="pos_has_active_session" invisible="1"/>
-                <field name="pos_module_account" invisible="1"/>
                 <field name="pos_allowed_pricelist_ids" invisible="1"/>
                 <field name="pos_cash_control" invisible="1"/>
                 <field name="pos_iface_print_via_proxy" invisible="1"/>
@@ -202,7 +201,7 @@
                                         <label string="Invoices" for="pos_invoice_journal_id" class="col-lg-3 o_light_label"/>
                                         <field name="pos_invoice_journal_id"
                                                domain="[('company_id', '=', company_id), ('type', '=', 'sale')]"
-                                               attrs="{'required': [('pos_module_account', '=', True), ('pos_company_has_template', '=', True)]}"
+                                               attrs="{'required': [('pos_company_has_template', '=', True)]}"
                                                context="{'default_company_id': company_id, 'default_type': 'sale'}"/>
                                     </div>
                                 </div>

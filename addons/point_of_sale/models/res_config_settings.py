@@ -19,7 +19,6 @@ class ResConfigSettings(models.TransientModel):
     account_default_pos_receivable_account_id = fields.Many2one(string='Default Account Receivable (PoS)', related='company_id.account_default_pos_receivable_account_id', readonly=False)
 
     # pos.config fields
-    pos_module_account = fields.Boolean(related='pos_config_id.module_account', string="Invoicing (Pos)")
     pos_module_pos_coupon = fields.Boolean(related='pos_config_id.module_pos_coupon', readonly=False, string="Coupons & Promotions (PoS)")
     pos_module_pos_discount = fields.Boolean(related='pos_config_id.module_pos_discount', readonly=False)
     pos_module_pos_gift_card = fields.Boolean(related='pos_config_id.module_pos_gift_card', readonly=False, string="Gift Card (PoS)")
