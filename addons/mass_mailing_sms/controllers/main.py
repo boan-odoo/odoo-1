@@ -2,11 +2,13 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import http, _
-from odoo.addons.phone_validation.tools import phone_validation
 from odoo.http import request
 
+from odoo.addons.phone_validation.tools import phone_validation
+from odoo.addons.sms.controller.main import SmsController
 
-class MailingSMSController(http.Controller):
+
+class MailingSMSController(SmsController):
 
     def _check_trace(self, mailing_id, trace_code):
         try:
@@ -101,3 +103,10 @@ class MailingSMSController(http.Controller):
             mailing_trace_id=trace_id
         )
         return request.redirect(request.env['link.tracker'].get_url_from_code(code), code=301, local=False)
+
+    @http.route('/sms/status', type='json', auth='public', csrf=False)
+    def update_sms_status(self, request_uuid, sms_status):
+        if sms_status != 'delivered':
+            traces = request.env['mailing.trace'].sudo().search([('sms_request_uuid', '=', request_uuid)])
+            traces.set_bounced(failure_type=request.env['sms.sms'].IAP_TO_SMS_STATE[sms_status])
+        return super(MailingSMSController, self).update_sms_status(request_uuid, sms_status)

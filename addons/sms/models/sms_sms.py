@@ -3,6 +3,8 @@
 
 import logging
 import threading
+from uuid import uuid4
+from itertools import groupby
 
 from odoo import api, fields, models, tools, _
 
@@ -20,7 +22,13 @@ class SmsSms(models.Model):
         'insufficient_credit': 'sms_credit',
         'wrong_number_format': 'sms_number_format',
         'server_error': 'sms_server',
-        'unregistered': 'sms_acc'
+        'unregistered': 'sms_acc',
+        # delivery report errors (DLR)
+        'not_delivered': 'sms_not_delivered',
+        'not_allowed': 'sms_not_allowed',
+        'invalid_destination': 'sms_invalid_destination',
+        'rejected': 'sms_rejected',
+        'expired': 'sms_expired',
     }
 
     number = fields.Char('Number')
@@ -43,7 +51,20 @@ class SmsSms(models.Model):
         ('sms_blacklist', 'Blacklisted'),
         ('sms_duplicate', 'Duplicate'),
         ('sms_optout', 'Opted Out'),
+        # delivery report errors (DLR)
+        ('sms_not_delivered', 'Not Delivered'),
+        ('sms_not_allowed', 'Not Allowed'),
+        ('sms_invalid_destination', 'Invalid Destination'),
+        ('sms_rejected', 'Rejected'),
+        ('sms_expired', 'Expired'),
     ], copy=False)
+    request_uuid = fields.Char(
+        'Request UUID', help="Request UUID used by sms service",
+        required=True, copy=False, readonly=True, index=True, default=lambda r: uuid4().hex)
+
+    _sql_constraints = [
+        ('request_uuid_unique', 'unique(request_uuid)', 'Request UUID should be unique'),
+    ]
 
     def action_set_canceled(self):
         self.state = 'canceled'
@@ -85,7 +106,10 @@ class SmsSms(models.Model):
             if not self._context.get('sms_skip_msg_notification', False):
                 notifications.mail_message_id._notify_message_notification_update()
 
-    def send(self, unlink_failed=False, unlink_sent=True, auto_commit=False, raise_exception=False):
+    def action_set_delivered(self):
+        self.unlink()
+
+    def send(self, unlink_failed=False, unlink_sent=False, auto_commit=False, raise_exception=False):
         """ Main API method to send SMS.
 
           :param unlink_failed: unlink failed SMS after IAP feedback;
@@ -125,6 +149,9 @@ class SmsSms(models.Model):
             }
         }
 
+    def update_status(self, status):
+        self.action_set_delivered() if status == 'delivered' else self.action_set_error(self.IAP_TO_SMS_STATE[status])
+
     @api.model
     def _process_queue(self, ids=None):
         """ Send immediately queued messages, committing after each message is sent.
@@ -146,7 +173,7 @@ class SmsSms(models.Model):
         try:
             # auto-commit except in testing mode
             auto_commit = not getattr(threading.currentThread(), 'testing', False)
-            res = self.browse(ids).send(unlink_failed=False, unlink_sent=True, auto_commit=auto_commit, raise_exception=False)
+            res = self.browse(ids).send(unlink_failed=False, unlink_sent=False, auto_commit=auto_commit, raise_exception=False)
         except Exception:
             _logger.exception("Failed processing SMS queue")
         return res
@@ -156,60 +183,60 @@ class SmsSms(models.Model):
         for sms_batch in tools.split_every(batch_size, self.ids):
             yield sms_batch
 
-    def _send(self, unlink_failed=False, unlink_sent=True, raise_exception=False):
+    def _send(self, unlink_failed=False, unlink_sent=False, raise_exception=False):
         """ This method tries to send SMS after checking the number (presence and
         formatting). """
-        iap_data = [{
-            'res_id': record.id,
-            'number': record.number,
-            'content': record.body,
-        } for record in self]
-
         try:
-            iap_results = self.env['sms.api']._send_sms_batch(iap_data)
+            iap_results = self.env['sms.api']._send_sms_batch([{
+                'request_uuid': record.request_uuid,
+                'number': record.number,
+                'content': record.body,
+            } for record in self])
         except Exception as e:
             _logger.info('Sent batch %s SMS: %s: failed with exception %s', len(self.ids), self.ids, e)
             if raise_exception:
                 raise
             self._postprocess_iap_sent_sms(
-                [{'res_id': sms.id, 'state': 'server_error'} for sms in self],
+                [{'request_uuid': sms.request_uuid, 'state': 'server_error'} for sms in self],
                 unlink_failed=unlink_failed, unlink_sent=unlink_sent)
         else:
             _logger.info('Send batch %s SMS: %s: gave %s', len(self.ids), self.ids, iap_results)
             self._postprocess_iap_sent_sms(iap_results, unlink_failed=unlink_failed, unlink_sent=unlink_sent)
 
-    def _postprocess_iap_sent_sms(self, iap_results, failure_reason=None, unlink_failed=False, unlink_sent=True):
-        todelete_sms_ids = []
+    def _postprocess_iap_sent_sms(self, iap_results, failure_reason=None, unlink_failed=False, unlink_sent=False):
+        todelete_sms_uuids = []
         if unlink_failed:
-            todelete_sms_ids += [item['res_id'] for item in iap_results if item['state'] != 'success']
+            todelete_sms_uuids += [item['request_uuid'] for item in iap_results if item['state'] != 'success']
         if unlink_sent:
-            todelete_sms_ids += [item['res_id'] for item in iap_results if item['state'] == 'success']
+            todelete_sms_uuids += [item['request_uuid'] for item in iap_results if item['state'] == 'success']
 
-        for state in self.IAP_TO_SMS_STATE.keys():
-            sms_ids = [item['res_id'] for item in iap_results if item['state'] == state]
-            if sms_ids:
-                if state != 'success' and not unlink_failed:
-                    self.env['sms.sms'].sudo().browse(sms_ids).write({
-                        'state': 'error',
-                        'failure_type': self.IAP_TO_SMS_STATE[state],
-                    })
-                if state == 'success' and not unlink_sent:
-                    self.env['sms.sms'].sudo().browse(sms_ids).write({
-                        'state': 'sent',
-                        'failure_type': False,
-                    })
-                notifications = self.env['mail.notification'].sudo().search([
-                    ('notification_type', '=', 'sms'),
-                    ('sms_id', 'in', sms_ids),
-                    ('notification_status', 'not in', ('sent', 'canceled')),
-                ])
-                if notifications:
-                    notifications.write({
-                        'notification_status': 'sent' if state == 'success' else 'exception',
-                        'failure_type': self.IAP_TO_SMS_STATE[state] if state != 'success' else False,
-                        'failure_reason': failure_reason if failure_reason else False,
-                    })
+        key = lambda result: result['state']
+        for state, results in groupby(sorted(iap_results, key=key), key=key):
+            request_uuids = tuple(result['request_uuid'] for result in results)
+            sms = self.env['sms.sms'].sudo().search(
+                [('request_uuid', 'in', request_uuids)])
+            if state != 'success' and not unlink_failed:
+                sms.write({
+                    'state': 'error',
+                    'failure_type': self.IAP_TO_SMS_STATE[state],
+                })
+            elif state == 'success':
+                sms.write({
+                    'state': 'sent',
+                    'failure_type': False,
+                })
+            notifications = self.env['mail.notification'].sudo().search([
+                ('notification_type', '=', 'sms'),
+                ('sms_id', 'in', sms.ids),
+                ('notification_status', 'not in', ('sent', 'canceled')),
+            ])
+            if notifications:
+                notifications.write({
+                    'notification_status': 'sent' if state == 'success' else 'exception',
+                    'failure_type': self.IAP_TO_SMS_STATE[state] if state != 'success' else False,
+                    'failure_reason': failure_reason if failure_reason else False,
+                })
         self.mail_message_id._notify_message_notification_update()
 
-        if todelete_sms_ids:
-            self.browse(todelete_sms_ids).sudo().unlink()
+        if todelete_sms_uuids:
+            self.env['sms.sms'].sudo().search([('request_uuid', 'in', todelete_sms_uuids)]).unlink()

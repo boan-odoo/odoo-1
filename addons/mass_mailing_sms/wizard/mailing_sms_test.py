@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from uuid import uuid4
+
 from odoo import fields, models, _
 from odoo.addons.phone_validation.tools import phone_validation
 
@@ -33,7 +35,7 @@ class MassSMSTest(models.TransientModel):
         # res_id is used to map the result to the number to log notifications as IAP does not return numbers...
         # TODO: clean IAP to make it return a clean dict with numbers / use custom keys / rename res_id to external_id
         sent_sms_list = self.env['sms.api']._send_sms_batch([{
-            'res_id': number,
+            'request_uuid': uuid4().hex,
             'number': number,
             'content': body,
         } for number in sanitized_numbers])
@@ -54,7 +56,7 @@ class MassSMSTest(models.TransientModel):
             elif sent_sms.get('state'):
                 notification_messages.append(
                     _('Test SMS could not be sent to %s:<br>%s',
-                    sent_sms.get('res_id'),
+                    sent_sms.get('request_uuid'),
                     error_messages.get(sent_sms['state'], _("An error occurred.")))
                 )
 
