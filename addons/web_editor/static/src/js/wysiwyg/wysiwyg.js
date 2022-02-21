@@ -247,7 +247,8 @@ const Wysiwyg = Widget.extend({
                     && $target.is('a')
                     && !$target.attr('data-oe-model')
                     && !$target.find('> [data-oe-model]').length
-                    && !$target[0].closest('.o_extra_menu_items')) {
+                    && !$target[0].closest('.o_extra_menu_items')
+                    && !$target.is('.table_of_content_link')) {
                 this.linkPopover = $target.data('popover-widget-initialized');
                 if (!this.linkPopover) {
                     // TODO this code is ugly maybe the mutex should be in the
