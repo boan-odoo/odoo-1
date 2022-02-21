@@ -42,11 +42,6 @@ registerModel({
              */
             this._disconnectAudioMonitor = undefined;
             /**
-             * Object { token: timeoutId<Number> }
-             * Contains the timeoutIds of the reconnection attempts.
-             */
-            this._fallBackTimeouts = {};
-            /**
              * Set of peerTokens, used to track which calls are outgoing,
              * which is used when attempting to recover a failed peer connection by
              * inverting the call direction.
@@ -223,12 +218,12 @@ registerModel({
 
             this._disconnectAudioMonitor = undefined;
             this._dataChannels = {};
-            this._fallBackTimeouts = {};
             this._outGoingCallTokens = new Set();
             this._peerConnections = {};
 
             this.update({
                 currentRtcSession: clear(),
+                fallBackTimeouts: clear(),
                 logs: clear(),
                 sendUserVideo: clear(),
                 sendDisplay: clear(),
@@ -702,6 +697,32 @@ registerModel({
             }
         },
         /**
+         * @private
+         * @param {string} token 
+         * @param {string} [reason]
+         */
+        async _onRecoverConnectionTimeout(token, reason) {
+            const newFallBackTimeouts = { ...this.fallBackTimeouts };
+            delete newFallBackTimeouts[token];
+            this.update({ fallBackTimeouts: newFallBackTimeouts });
+            const peerConnection = this._peerConnections[token];
+            if (!peerConnection || !this.channel) {
+                return;
+            }
+            if (this._outGoingCallTokens[token]) {
+                return;
+            }
+            if (peerConnection.iceConnectionState === 'connected') {
+                return;
+            }
+            this._addLogEntry(token, `calling back to recover ${peerConnection.iceConnectionState} connection, reason: ${reason}`);
+            await this._notifyPeers([token], {
+                event: 'disconnect',
+            });
+            this._removePeer(token);
+            this._callPeer(token);
+        },
+        /**
          * Attempts a connection recovery by closing and restarting the call
          * from the receiving end.
          *
@@ -712,28 +733,18 @@ registerModel({
          * @param {string} [param1.reason]
          */
         _recoverConnection(token, { delay = 0, reason = '' } = {}) {
-            if (this._fallBackTimeouts[token]) {
+            if (this.fallBackTimeouts[token]) {
                 return;
             }
-            this._fallBackTimeouts[token] = browser.setTimeout(async () => {
-                delete this._fallBackTimeouts[token];
-                const peerConnection = this._peerConnections[token];
-                if (!peerConnection || !this.channel) {
-                    return;
-                }
-                if (this._outGoingCallTokens.has(token)) {
-                    return;
-                }
-                if (peerConnection.iceConnectionState === 'connected') {
-                    return;
-                }
-                this._addLogEntry(token, `calling back to recover ${peerConnection.iceConnectionState} connection, reason: ${reason}`);
-                await this._notifyPeers([token], {
-                    event: 'disconnect',
-                });
-                this._removePeer(token);
-                this._callPeer(token);
-            }, delay);
+            this.update({
+                fallBackTimeouts: {
+                    ...this.fallBackTimeouts,
+                    [token]: browser.setTimeout(
+                        this._onRecoverConnectionTimeout.bind(this, token, reason),
+                        delay,
+                    ),
+                },
+            });
         },
         /**
          * Cleans up a peer by closing all its associated content and the connection.
@@ -757,8 +768,10 @@ registerModel({
                 peerConnection.close();
             }
             delete this._peerConnections[token];
-            browser.clearTimeout(this._fallBackTimeouts[token]);
-            delete this._fallBackTimeouts[token];
+            browser.clearTimeout(this.fallBackTimeouts[token]);
+            const newFallBackTimeouts = { ...this.fallBackTimeouts };
+            delete newFallBackTimeouts[token];
+            this.update({ fallBackTimeouts: newFallBackTimeouts });
             this._outGoingCallTokens.delete(token);
             this._addLogEntry(token, 'peer removed', { step: 'peer removed' });
         },
@@ -1213,6 +1226,13 @@ registerModel({
          */
         currentRtcSession: one('RtcSession', {
             inverse: 'rtc',
+        }),
+        /**
+         * Object { token: timeoutId<Number> }
+         * Contains the timeoutIds of the reconnection attempts.
+         */
+        fallBackTimeouts: attr({
+            default: {},
         }),
         /**
          * ICE servers used by RTCPeerConnection to retrieve the public IP address (STUN)
