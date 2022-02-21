@@ -52,13 +52,6 @@ registerModel({
              * inverting the call direction.
              */
             this._outGoingCallTokens = new Set();
-             /**
-             * Object { token: peerConnection<RTCPeerConnection> }
-             * Contains the RTCPeerConnection established with the other rtc sessions.
-             * Exposing this field and keeping references to closed peer connections may lead
-             * to difficulties reconnecting to the same peer.
-             */
-            this._peerConnections = {};
             /**
              *  timeoutId for the push to talk release delay.
              */
@@ -106,10 +99,10 @@ registerModel({
          */
         async filterCallees(currentSessions) {
             const currentSessionsTokens = new Set(currentSessions.map(session => session.peerToken));
-            for (const token of Object.keys(this._peerConnections)) {
-                if (!currentSessionsTokens.has(token)) {
-                    this._addLogEntry(token, 'session removed from the server');
-                    this._removePeer(token);
+            for (const rtcPeerConnection of this.rtcPeerConnections) {
+                if (!currentSessionsTokens.has(rtcPeerConnection.token)) {
+                    this._addLogEntry(rtcPeerConnection.token, 'session removed from the server');
+                    this._removePeer(rtcPeerConnection.token);
                 }
             }
             if (this.channel && this.currentRtcSession && !currentSessionsTokens.has(this.currentRtcSession.peerToken)) {
@@ -124,14 +117,14 @@ registerModel({
          */
         filterIncomingVideoTraffic(allowedTokens) {
             const tokenSet = new Set(allowedTokens);
-            for (const [token, peerConnection] of Object.entries(this._peerConnections)) {
+            for (const rtcPeerConnection of this.rtcPeerConnections) {
                 const fullDirection = this.videoTrack ? 'sendrecv' : 'recvonly';
                 const limitedDirection = this.videoTrack ? 'sendonly' : 'inactive';
-                const transceiver = this._getTransceiver(peerConnection, 'video');
+                const transceiver = this._getTransceiver(rtcPeerConnection.peerConnection, 'video');
                 if (!transceiver) {
                     continue;
                 }
-                if (!tokenSet.size || tokenSet.has(token)) {
+                if (!tokenSet.size || tokenSet.has(rtcPeerConnection.token)) {
                     transceiver.direction = fullDirection;
                 } else {
                     transceiver.direction = limitedDirection;
@@ -152,7 +145,7 @@ registerModel({
             if (!this.isClientRtcCompatible) {
                 return;
             }
-            if (!this._peerConnections[sender] && (!channelId || !this.channel || channelId !== this.channel.id)) {
+            if (!this.messaging.models['RtcPeerConnection'].findFromIdentifyingData({ token: sender }) && (!channelId || !this.channel || channelId !== this.channel.id)) {
                 return;
             }
             switch (event) {
@@ -210,10 +203,9 @@ registerModel({
          * @private
          */
         reset() {
-            if (this._peerConnections) {
-                const peerTokens = Object.keys(this._peerConnections);
-                for (const token of peerTokens) {
-                    this._removePeer(token);
+            if (this.rtcPeerConnections) {
+                for (const rtcPeerConnection of this.rtcPeerConnections) {
+                    this._removePeer(rtcPeerConnection.token);
                 }
             }
 
@@ -225,11 +217,11 @@ registerModel({
             this._dataChannels = {};
             this._fallBackTimeouts = {};
             this._outGoingCallTokens = new Set();
-            this._peerConnections = {};
 
             this.update({
                 currentRtcSession: clear(),
                 logs: clear(),
+                rtcPeerConnections: clear(),
                 sendUserVideo: clear(),
                 sendDisplay: clear(),
                 videoTrack: clear(),
@@ -317,8 +309,8 @@ registerModel({
                 audioTrack.enabled = !this.currentRtcSession.isMute && this.currentRtcSession.isTalking;
                 this.update({ audioTrack });
                 await this.async(() => this.updateVoiceActivation());
-                for (const [token, peerConnection] of Object.entries(this._peerConnections)) {
-                    await this._updateRemoteTrack(peerConnection, 'audio', { token });
+                for (const rtcPeerConnection of this.rtcPeerConnections) {
+                    await this._updateRemoteTrack(rtcPeerConnection.peerConnection, 'audio', { token: rtcPeerConnection.token });
                 }
             }
         },
@@ -400,9 +392,9 @@ registerModel({
          * @param {String} token
          */
         async _callPeer(token) {
-            const peerConnection = this._createPeerConnection(token);
+            const rtcPeerConnection = this._createPeerConnection(token);
             for (const trackKind of TRANSCEIVER_ORDER) {
-                await this._updateRemoteTrack(peerConnection, trackKind, { initTransceiver: true, token });
+                await this._updateRemoteTrack(rtcPeerConnection.peerConnection, trackKind, { initTransceiver: true, token });
             }
             this._outGoingCallTokens.add(token);
         },
@@ -416,7 +408,7 @@ registerModel({
                 return;
             }
             for (const session of this.channel.rtcSessions) {
-                if (session.peerToken in this._peerConnections) {
+                if (this.messaging.models['RtcPeerConnection'].findFromIdentifyingData({ token: session.peerToken })) {
                     continue;
                 }
                 if (session === this.currentRtcSession) {
@@ -441,6 +433,7 @@ registerModel({
          *
          * @private
          * @param {String} token
+         * @returns {RtcPeerConnection}
          */
         _createPeerConnection(token) {
             const peerConnection = new window.RTCPeerConnection({ iceServers: this.iceServers });
@@ -511,9 +504,10 @@ registerModel({
                     this._addLogEntry(token, `failed to send on datachannel; dataChannelInfo: ${this._serializeRTCDataChannel(dataChannel)}`, { error: e });
                 }
             };
-            this._peerConnections[token] = peerConnection;
+            this.update({ peerConnections: insert({ token, peerConnection }) });
             this._dataChannels[token] = dataChannel;
-            return peerConnection;
+            const rtcPeerConnection = this.messaging.models['RtcPeerConnection'].findFromIdentifyingData({ token });
+            return rtcPeerConnection;
         },
         /**
          * @private
@@ -532,17 +526,21 @@ registerModel({
          * @param {Object} param1.sdp Session Description Protocol
          */
         async _handleRtcTransactionAnswer(fromToken, { sdp }) {
-            const peerConnection = this._peerConnections[fromToken];
-            if (!peerConnection || this.invalidIceConnectionStates.has(peerConnection.iceConnectionState) || peerConnection.signalingState === 'stable') {
+            const rtcPeerConnection = this.messaging.models['RtcPeerConnection'].findFromIdentifyingData({ token: fromToken });
+            if (
+                !rtcPeerConnection ||
+                this.invalidIceConnectionStates.has(rtcPeerConnection.peerConnection.iceConnectionState) ||
+                rtcPeerConnection.peerConnection.signalingState === 'stable'
+            ) {
                 return;
             }
-            if (peerConnection.signalingState === 'have-remote-offer') {
+            if (rtcPeerConnection.peerConnection.signalingState === 'have-remote-offer') {
                 // we already have an offer
                 return;
             }
             const rtcSessionDescription = new window.RTCSessionDescription(sdp);
             try {
-                await peerConnection.setRemoteDescription(rtcSessionDescription);
+                await rtcPeerConnection.peerConnection.setRemoteDescription(rtcSessionDescription);
             } catch (e) {
                 this._addLogEntry(fromToken, 'answer handling: Failed at setting remoteDescription', { error: e });
                 // ignored the transaction may have been resolved by another concurrent offer.
@@ -555,13 +553,13 @@ registerModel({
          * @param {Object} param1.candidate RTCIceCandidateInit
          */
         async _handleRtcTransactionICECandidate(fromToken, { candidate }) {
-            const peerConnection = this._peerConnections[fromToken];
-            if (!peerConnection || this.invalidIceConnectionStates.has(peerConnection.iceConnectionState)) {
+            const rtcPeerConnection = this.messaging.models['RtcPeerConnection'].findFromIdentifyingData({ token: fromToken });
+            if (!rtcPeerConnection || this.invalidIceConnectionStates.has(rtcPeerConnection.peerConnection.iceConnectionState)) {
                 return;
             }
             const rtcIceCandidate = new window.RTCIceCandidate(candidate);
             try {
-                await peerConnection.addIceCandidate(rtcIceCandidate);
+                await rtcPeerConnection.peerConnection.addIceCandidate(rtcIceCandidate);
             } catch (error) {
                 this._addLogEntry(fromToken, 'ICE candidate handling: failed at adding the candidate to the connection', { error });
                 this._recoverConnection(fromToken, { delay: this.recoveryTimeout, reason: 'failed at adding ice candidate' });
@@ -574,34 +572,37 @@ registerModel({
          * @param {Object} param1.sdp Session Description Protocol
          */
         async _handleRtcTransactionOffer(fromToken, { sdp }) {
-            const peerConnection = this._peerConnections[fromToken] || this._createPeerConnection(fromToken);
+            const rtcPeerConnection = (
+                this.messaging.models['RtcPeerConnection'].findFromIdentifyingData({ token: fromToken }) ||
+                this._createPeerConnection(fromToken)
+            );
 
-            if (!peerConnection || this.invalidIceConnectionStates.has(peerConnection.iceConnectionState)) {
+            if (!rtcPeerConnection || this.invalidIceConnectionStates.has(rtcPeerConnection.peerConnection.iceConnectionState)) {
                 return;
             }
-            if (peerConnection.signalingState === 'have-remote-offer') {
+            if (rtcPeerConnection.peerConnection.signalingState === 'have-remote-offer') {
                 // we already have an offer
                 return;
             }
             const rtcSessionDescription = new window.RTCSessionDescription(sdp);
             try {
-                await peerConnection.setRemoteDescription(rtcSessionDescription);
+                await rtcPeerConnection.peerConnection.setRemoteDescription(rtcSessionDescription);
             } catch (e) {
                 this._addLogEntry(fromToken, 'offer handling: failed at setting remoteDescription', { error: e });
                 return;
             }
-            await this._updateRemoteTrack(peerConnection, 'audio', { token: fromToken });
-            await this._updateRemoteTrack(peerConnection, 'video', { token: fromToken });
+            await this._updateRemoteTrack(rtcPeerConnection.peerConnection, 'audio', { token: fromToken });
+            await this._updateRemoteTrack(rtcPeerConnection.peerConnection, 'video', { token: fromToken });
 
             let answer;
             try {
-                answer = await peerConnection.createAnswer();
+                answer = await rtcPeerConnection.peerConnection.createAnswer();
             } catch (e) {
                 this._addLogEntry(fromToken, 'offer handling: failed at creating answer', { error: e });
                 return;
             }
             try {
-                await peerConnection.setLocalDescription(answer);
+                await rtcPeerConnection.peerConnection.setLocalDescription(answer);
             } catch (e) {
                 this._addLogEntry(fromToken, 'offer handling: failed at setting localDescription', { error: e });
                 return;
@@ -610,7 +611,7 @@ registerModel({
             this._addLogEntry(fromToken, `sending notification: answer`, { step: 'sending answer' });
             await this._notifyPeers([fromToken], {
                 event: 'answer',
-                payload: { sdp: peerConnection.localDescription },
+                payload: { sdp: rtcPeerConnection.peerConnection.localDescription },
             });
             this._recoverConnection(fromToken, { delay: this.recoveryTimeout, reason: 'standard answer timeout' });
         },
@@ -717,17 +718,17 @@ registerModel({
             }
             this._fallBackTimeouts[token] = browser.setTimeout(async () => {
                 delete this._fallBackTimeouts[token];
-                const peerConnection = this._peerConnections[token];
-                if (!peerConnection || !this.channel) {
+                const rtcPeerConnection = this.messaging.models['RtcPeerConnection'].findFromIdentifyingData({ token });
+                if (!rtcPeerConnection || !this.channel) {
                     return;
                 }
                 if (this._outGoingCallTokens.has(token)) {
                     return;
                 }
-                if (peerConnection.iceConnectionState === 'connected') {
+                if (rtcPeerConnection.peerConnection.iceConnectionState === 'connected') {
                     return;
                 }
-                this._addLogEntry(token, `calling back to recover ${peerConnection.iceConnectionState} connection, reason: ${reason}`);
+                this._addLogEntry(token, `calling back to recover ${rtcPeerConnection.peerConnection.iceConnectionState} connection, reason: ${reason}`);
                 await this._notifyPeers([token], {
                     event: 'disconnect',
                 });
@@ -751,12 +752,12 @@ registerModel({
                 dataChannel.close();
             }
             delete this._dataChannels[token];
-            const peerConnection = this._peerConnections[token];
-            if (peerConnection) {
-                this._removeRemoteTracks(peerConnection);
-                peerConnection.close();
+            const rtcPeerConnection = this.messaging.models['RtcPeerConnection'].findFromIdentifyingData({ token });
+            if (rtcPeerConnection) {
+                this._removeRemoteTracks(rtcPeerConnection.peerConnection);
+                rtcPeerConnection.peerConnection.close();
             }
-            delete this._peerConnections[token];
+            rtcPeerConnection.delete();
             browser.clearTimeout(this._fallBackTimeouts[token]);
             delete this._fallBackTimeouts[token];
             this._outGoingCallTokens.delete(token);
@@ -900,8 +901,8 @@ registerModel({
                 return;
             }
             await this._toggleLocalVideoTrack(trackOptions);
-            for (const [token, peerConnection] of Object.entries(this._peerConnections)) {
-                await this._updateRemoteTrack(peerConnection, 'video', { token });
+            for (const rtcPeerConnection of this.rtcPeerConnections) {
+                await this._updateRemoteTrack(rtcPeerConnection.peerConnection, 'video', { token: rtcPeerConnection.token });
             }
             if (!this.currentRtcSession) {
                 return;
@@ -974,7 +975,7 @@ registerModel({
                 return;
             }
             this.audioTrack.enabled = !this.currentRtcSession.isMute && this.currentRtcSession.isTalking;
-            await this._notifyPeers(Object.keys(this._peerConnections), {
+            await this._notifyPeers(this.rtcPeerConnections.map(rtcPeerConnection => rtcPeerConnection.token), {
                 event: 'trackChange',
                 type: 'peerToPeer',
                 payload: {
@@ -1278,6 +1279,13 @@ registerModel({
         recoveryDelay: attr({
             default: 3000,
         }),
+        /**
+         * Object { token: peerConnection<RTCPeerConnection> }
+         * Contains the RTCPeerConnection established with the other rtc sessions.
+         * Exposing this field and keeping references to closed peer connections may lead
+         * to difficulties reconnecting to the same peer.
+         */
+        rtcPeerConnections: many('RtcPeerConnection'),
         /**
          * True if we want to enable the video track of the current partner.
          */
