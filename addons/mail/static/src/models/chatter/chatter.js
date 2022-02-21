@@ -25,9 +25,6 @@ registerModel({
     name: 'Chatter',
     identifyingFields: ['id'],
     lifecycleHooks: {
-        _created() {
-            this._isPreparingAttachmentsLoading = undefined;
-        },
         _willDelete() {
             this.messaging.browser.clearTimeout(this.attachmentsLoaderTimeout);
         },
@@ -176,8 +173,10 @@ registerModel({
          * @private
          */
         _onAttachmentsLoadingTimeout() {
-            this.update({ isShowingAttachmentsLoading: true });
-            this._isPreparingAttachmentsLoading = false;
+            this.update({
+                isPreparingAttachmentsLoading: clear(),
+                isShowingAttachmentsLoading: true,
+            });
         },
         /**
          * @private
@@ -227,7 +226,7 @@ registerModel({
                 this.update({ isShowingAttachmentsLoading: false });
                 return;
             }
-            if (this._isPreparingAttachmentsLoading || this.isShowingAttachmentsLoading) {
+            if (this.isPreparingAttachmentsLoading || this.isShowingAttachmentsLoading) {
                 return;
             }
             this._prepareAttachmentsLoading();
@@ -236,12 +235,12 @@ registerModel({
          * @private
          */
         _prepareAttachmentsLoading() {
-            this._isPreparingAttachmentsLoading = true;
             this.update({
                 attachmentsLoaderTimeout: this.messaging.browser.setTimeout(
                     this._onAttachmentsLoadingTimeout,
                     this.messaging.loadingBaseDelayDuration,
                 ),
+                isPreparingAttachmentsLoading: true
             });
         },
         /**
@@ -249,8 +248,10 @@ registerModel({
          */
         _stopAttachmentsLoading() {
             this.messaging.browser.clearTimeout(this.attachmentsLoaderTimeout);
-            this.update({ attachmentsLoaderTimeout: clear() });
-            this._isPreparingAttachmentsLoading = false;
+            this.update({
+                attachmentsLoaderTimeout: clear(),
+                isPreparingAttachmentsLoading: false,
+            });
         },
     },
     fields: {
@@ -338,6 +339,9 @@ registerModel({
         }),
         isDisabled: attr({
             compute: '_computeIsDisabled',
+            default: false,
+        }),
+        isPreparingAttachmentsLoading: attr({
             default: false,
         }),
         isShowingAttachmentsLoading: attr({
