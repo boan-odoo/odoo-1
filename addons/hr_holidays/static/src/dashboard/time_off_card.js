@@ -1,17 +1,16 @@
 /* @odoo-module */
 
 import Popover from "web.Popover";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class TimeOffCardPopover extends LegacyComponent {}
+export class TimeOffCardPopover extends Component {}
 TimeOffCardPopover.components = { Popover };
 
 TimeOffCardPopover.template = 'hr_holidays.TimeOffCardPopover';
 TimeOffCardPopover.props = ['allocated', 'approved', 'planned', 'left'];
 
-export class TimeOffCard extends LegacyComponent {}
+export class TimeOffCard extends Component {}
 
 TimeOffCard.components = { TimeOffCardPopover };
 TimeOffCard.template = 'hr_holidays.TimeOffCard';
