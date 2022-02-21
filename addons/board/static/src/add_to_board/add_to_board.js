@@ -4,7 +4,6 @@ import { Dropdown } from "@web/core/dropdown/dropdown";
 import { registry } from "@web/core/registry";
 import { useAutofocus, useService } from "@web/core/utils/hooks";
 import { sprintf } from "@web/core/utils/strings";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useState } = owl;
 const favoriteMenuRegistry = registry.category("favoriteMenu");
@@ -22,7 +21,7 @@ const favoriteMenuRegistry = registry.category("favoriteMenu");
  * This component is only available in actions of type 'ir.actions.act_window'.
  * @extends Component
  */
-export class AddToBoard extends LegacyComponent {
+export class AddToBoard extends Component {
     setup() {
         this.notification = useService("notification");
         this.rpc = useService("rpc");

@@ -7,7 +7,6 @@ odoo.define('board.AddToBoardMenu', function (require) {
     const FavoriteMenu = require('web.FavoriteMenu');
     const { sprintf } = require('web.utils');
     const { useAutofocus } = require("@web/core/utils/hooks");
-    const { LegacyComponent } = require("@web/legacy/legacy_component");
 
     const { Component, useState } = owl;
 
@@ -23,7 +22,7 @@ odoo.define('board.AddToBoardMenu', function (require) {
      * user's dashboard.
      * This component is only available in actions of type 'ir.actions.act_window'.
      */
-    class AddToBoardMenu extends LegacyComponent {
+    class AddToBoardMenu extends Component {
         setup() {
             this.interactive = true;
             this.state = useState({
