@@ -226,37 +226,45 @@ var BaseSettingRenderer = FormRenderer.extend({
      * @private
      */
     _searchSetting: function () {
-        var self = this;
         this.count = 0;
-        _.each(this.modules, function (module) {
-            self.inVisibleCount = 0;
-            module.settingView.find('.o_setting_box').addClass('o_hidden');
-            module.settingView.find('h2').addClass('o_hidden');
-            module.settingView.find('.settingSearchHeader').addClass('o_hidden');
-            module.settingView.find('.o_settings_container').removeClass('mt16').addClass('mb-0');
-            var resultSetting = module.settingView.find(".o_form_label:containsTextLike('" + self.searchText + "')");
-            if (resultSetting.length > 0) {
-                resultSetting.each(function () {
-                    var settingBox = $(this).closest('.o_setting_box');
-                    if (!settingBox.hasClass('o_invisible_modifier')) {
-                        settingBox.removeClass('o_hidden');
-                        $(this).html(self._wordHighlighter($(this).html(), self.searchText));
-                    } else {
-                        self.inVisibleCount++;
-                    }
-                });
-                if (self.inVisibleCount !== resultSetting.length) {
-                    module.settingView.find('.settingSearchHeader').removeClass('o_hidden');
-                    module.settingView.removeClass('o_hidden');
-                }
-            } else {
-                ++self.count;
-            }
-        });
+        _.each(this.modules, module => this._searchModule(module));
         this.count === _.size(this.modules) ? this.$('.notFound').removeClass('o_hidden') : this.$('.notFound').addClass('o_hidden');
         if (this.searchText.length === 0) {
             this._resetSearch();
         }
+    },
+    /**
+     * @param {*} module
+     * @returns whether the module is visible or not
+     */
+    _searchModule: function (module) {
+        var self = this;
+        let inVisibleCount = 0;
+        let isModuleVisible = false;
+        module.settingView.find('.o_setting_box').addClass('o_hidden');
+        module.settingView.find('h2').addClass('o_hidden');
+        module.settingView.find('.settingSearchHeader').addClass('o_hidden');
+        module.settingView.find('.o_settings_container').removeClass('mt16').addClass('mb-0');
+        var resultSetting = module.settingView.find(".o_form_label:containsTextLike('" + self.searchText + "')");
+        if (resultSetting.length > 0) {
+            resultSetting.each(function () {
+                var settingBox = $(this).closest('.o_setting_box');
+                if (!settingBox.hasClass('o_invisible_modifier')) {
+                    settingBox.removeClass('o_hidden');
+                    $(this).html(self._wordHighlighter($(this).html(), self.searchText));
+                } else {
+                    inVisibleCount++;
+                }
+            });
+            isModuleVisible = inVisibleCount !== resultSetting.length
+            if (isModuleVisible) {
+                module.settingView.find('.settingSearchHeader').removeClass('o_hidden');
+                module.settingView.removeClass('o_hidden');
+            }
+        } else {
+            ++self.count;
+        }
+        return isModuleVisible;
     },
     /**
      * highlight search word

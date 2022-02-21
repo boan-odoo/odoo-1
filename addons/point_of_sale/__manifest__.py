@@ -79,7 +79,7 @@
             'point_of_sale/static/src/scss/pos_dashboard.scss',
             'point_of_sale/static/src/backend/tours/point_of_sale.js',
             'point_of_sale/static/src/backend/debug_manager.js',
-            'point_of_sale/static/src/backend/web_overrides/pos_config_form.js',
+            'point_of_sale/static/src/backend/web_overrides/**/*.js',
         ],
         'web.assets_tests': [
             'point_of_sale/static/tests/tours/**/*',
