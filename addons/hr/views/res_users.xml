@@ -12,9 +12,12 @@
             <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
             <field name="mode">primary</field>
             <field name="arch" type="xml">
-                <footer position="attributes">
+                <!-- This is the only way to hide the buttons -->
+                <xpath expr="//button[@name='preference_save']" position="replace" />
+                <xpath expr="//button[@name='preference_cancel']" position="replace" />
+                <xpath expr="//button[@special='cancel']" position="attributes">
                     <attribute name="invisible">1</attribute>
-                </footer>
+                </xpath>
                 <h1 position="replace"/>
                 <xpath expr="//field[@name='image_1920']" position="replace"/>
                 <xpath expr="//field[@name='company_id']" position="attributes">
