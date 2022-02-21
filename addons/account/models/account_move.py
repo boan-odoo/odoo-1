@@ -3,7 +3,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import RedirectWarning, UserError, ValidationError, AccessError
 from odoo.tools import float_compare, date_utils, email_split, email_re
-from odoo.tools.misc import formatLang, format_date, get_lang
+from odoo.tools.misc import formatLang, format_date, get_lang, clean_context
 
 from datetime import date, timedelta
 from collections import defaultdict
@@ -5121,7 +5121,7 @@ class AccountMoveLine(models.Model):
     def action_automatic_entry(self):
         action = self.env['ir.actions.act_window']._for_xml_id('account.account_automatic_entry_wizard_action')
         # Force the values of the move line in the context to avoid issues
-        ctx = dict(self.env.context)
+        ctx = dict(clean_context(self.env.context))
         ctx.pop('active_id', None)
         ctx['active_ids'] = self.ids
         ctx['active_model'] = 'account.move.line'
