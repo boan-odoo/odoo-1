@@ -4,7 +4,7 @@ import { browser } from "@web/core/browser/browser";
 
 import { registerModel } from '@mail/model/model_core';
 import { attr, many, one } from '@mail/model/model_field';
-import { clear, insert, unlink } from '@mail/model/model_field_command';
+import { clear, insert, insertAndUnlink, unlink } from '@mail/model/model_field_command';
 
 import { monitorAudio } from '@mail/utils/media_monitoring/media_monitoring';
 
@@ -46,12 +46,6 @@ registerModel({
              * Contains the timeoutIds of the reconnection attempts.
              */
             this._fallBackTimeouts = {};
-            /**
-             * Set of peerTokens, used to track which calls are outgoing,
-             * which is used when attempting to recover a failed peer connection by
-             * inverting the call direction.
-             */
-            this._outGoingCallTokens = new Set();
              /**
              * Object { token: peerConnection<RTCPeerConnection> }
              * Contains the RTCPeerConnection established with the other rtc sessions.
@@ -224,12 +218,12 @@ registerModel({
             this._disconnectAudioMonitor = undefined;
             this._dataChannels = {};
             this._fallBackTimeouts = {};
-            this._outGoingCallTokens = new Set();
             this._peerConnections = {};
 
             this.update({
                 currentRtcSession: clear(),
                 logs: clear(),
+                rtcOutGoingCalls: clear(),
                 sendUserVideo: clear(),
                 sendDisplay: clear(),
                 videoTrack: clear(),
@@ -404,7 +398,7 @@ registerModel({
             for (const trackKind of TRANSCEIVER_ORDER) {
                 await this._updateRemoteTrack(peerConnection, trackKind, { initTransceiver: true, token });
             }
-            this._outGoingCallTokens.add(token);
+            this.update({ rtcOutGoingCalls: insert({ token }) });
         },
         /**
          * Call all the sessions that do not have an already initialized peerConnection.
@@ -721,7 +715,7 @@ registerModel({
                 if (!peerConnection || !this.channel) {
                     return;
                 }
-                if (this._outGoingCallTokens.has(token)) {
+                if (this.messaging.models['RtcOutgoingCall'].findFromIdentifyingData({ token })) {
                     return;
                 }
                 if (peerConnection.iceConnectionState === 'connected') {
@@ -759,7 +753,7 @@ registerModel({
             delete this._peerConnections[token];
             browser.clearTimeout(this._fallBackTimeouts[token]);
             delete this._fallBackTimeouts[token];
-            this._outGoingCallTokens.delete(token);
+            this.update({ rtcOutGoingCalls: insertAndUnlink({ token }) });
             this._addLogEntry(token, 'peer removed', { step: 'peer removed' });
         },
         /**
@@ -1277,6 +1271,18 @@ registerModel({
          */
         recoveryDelay: attr({
             default: 3000,
+        }),
+        /**
+         * Object that represents a set of peerTokens, used to track which calls are outgoing,
+         * which is used when attempting to recover a failed peer connection by
+         * inverting the call direction.
+         *
+         * Key: token
+         * Value: truthy when set
+         */
+        rtcOutgoingCalls: many('RtcOutgoingCall', {
+            inverse: 'rtc',
+            isCausal: true,
         }),
         /**
          * True if we want to enable the video track of the current partner.
