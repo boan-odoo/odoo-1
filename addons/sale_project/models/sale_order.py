@@ -369,11 +369,11 @@ class SaleOrderLine(models.Model):
             elif self.project_id.analytic_account_id:
                 values['analytic_account_id'] = self.project_id.analytic_account_id.id
             elif self.is_service and not self.is_expense:
-                task_analytic_account_id = self.env['project.task'].read_group([
+                task_analytic_account_id = self.env['project.task']._read_group([
                     ('sale_line_id', '=', self.id),
                     ('analytic_account_id', '!=', False),
                 ], ['analytic_account_id'], ['analytic_account_id'])
-                project_analytic_account_id = self.env['project.project'].read_group([
+                project_analytic_account_id = self.env['project.project']._read_group([
                     ('analytic_account_id', '!=', False),
                     '|',
                         ('sale_line_id', '=', self.id),

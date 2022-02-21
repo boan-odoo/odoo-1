@@ -153,7 +153,7 @@ class RatingMixin(models.AbstractModel):
             since the query is different, to avoid computing if it is not necessary"""
         domain = expression.AND([self._rating_domain(), [('rating', '>=', RATING_LIMIT_MIN)]])
         # See `_compute_rating_percentage_satisfaction` above
-        read_group_res = self.env['rating.rating'].read_group(domain, ['res_id', 'rating'], groupby=['res_id', 'rating'], lazy=False)
+        read_group_res = self.env['rating.rating']._read_group(domain, ['res_id', 'rating'], groupby=['res_id', 'rating'], lazy=False)
         default_grades = {'great': 0, 'okay': 0, 'bad': 0}
         grades_per_record = {record_id: default_grades.copy() for record_id in self.ids}
         for group in read_group_res:
