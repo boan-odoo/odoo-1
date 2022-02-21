@@ -59,10 +59,6 @@ registerModel({
              * to difficulties reconnecting to the same peer.
              */
             this._peerConnections = {};
-            /**
-             *  timeoutId for the push to talk release delay.
-             */
-            this._pushToTalkTimeoutId = undefined;
 
             browser.addEventListener('keydown', this._onKeyDown);
             browser.addEventListener('keyup', this._onKeyUp);
@@ -1164,9 +1160,7 @@ registerModel({
             if (this.messaging.userSetting.rtcConfigurationMenu.isRegisteringKey) {
                 return;
             }
-            if (this._pushToTalkTimeoutId) {
-                browser.clearTimeout(this._pushToTalkTimeoutId);
-            }
+            browser.clearTimeout(this.pushToTalkTimeout);
             if (!this.currentRtcSession.isTalking) {
                 this.messaging.soundEffects.pushToTalkOn.play();
                 this._setSoundBroadcast(true);
@@ -1189,12 +1183,18 @@ registerModel({
             if (!this.currentRtcSession.isMute) {
                 this.messaging.soundEffects.pushToTalkOff.play();
             }
-            this._pushToTalkTimeoutId = browser.setTimeout(
-                () => {
-                    this._setSoundBroadcast(false);
-                },
-                this.messaging.userSetting.voiceActiveDuration || 0,
-            );
+            this.update({
+                pushToTalkTimeout: browser.setTimeout(
+                    this._onPushToTalkTimeout,
+                    this.messaging.userSetting.voiceActiveDuration,
+                ),
+            });
+        },
+        /**
+         * @private
+         */
+        _onPushToTalkTimeout() {
+            this._setSoundBroadcast(false);
         },
     },
     fields: {
@@ -1266,6 +1266,10 @@ registerModel({
         peerNotificationWaitDelay: attr({
             default: 50,
         }),
+        /**
+         *  timeoutId for the push to talk release delay.
+         */
+        pushToTalkTimeout: attr(),
         /**
          * How long to wait before considering a connection as needing recovery in ms.
          */
