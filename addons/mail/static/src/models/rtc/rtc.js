@@ -27,14 +27,6 @@ registerModel({
     identifyingFields: ['messaging'],
     lifecycleHooks: {
         _created() {
-            // technical fields that are not exposed
-            // Especially important for _peerConnections, as garbage collection of peerConnections is important for
-            // peerConnection.close().
-            /**
-             * Object { token: dataChannel<RTCDataChannel> }
-             * Contains the RTCDataChannels with the other rtc sessions.
-             */
-            this._dataChannels = {};
             /**
              * callback to properly end the audio monitoring.
              * If set it indicates that we are currently monitoring the local
@@ -222,7 +214,6 @@ registerModel({
             this.videoTrack && this.videoTrack.stop();
 
             this._disconnectAudioMonitor = undefined;
-            this._dataChannels = {};
             this._fallBackTimeouts = {};
             this._outGoingCallTokens = new Set();
             this._peerConnections = {};
@@ -230,6 +221,7 @@ registerModel({
             this.update({
                 currentRtcSession: clear(),
                 logs: clear(),
+                rtcDataChannels: clear(),
                 sendUserVideo: clear(),
                 sendDisplay: clear(),
                 videoTrack: clear(),
@@ -512,7 +504,7 @@ registerModel({
                 }
             };
             this._peerConnections[token] = peerConnection;
-            this._dataChannels[token] = dataChannel;
+            this.update({ rtcDataChannels: insert({ token, dataChannel }) });
             return peerConnection;
         },
         /**
@@ -672,11 +664,11 @@ registerModel({
             }
             if (type === 'peerToPeer') {
                 for (const token of targetTokens) {
-                    const dataChannel = this._dataChannels[token];
-                    if (!dataChannel || dataChannel.readyState !== 'open') {
+                    const rtcDataChannel = this.rtcDataChannels[token];
+                    if (!rtcDataChannel || rtcDataChannel.dataChannel.readyState !== 'open') {
                         continue;
                     }
-                    dataChannel.send(JSON.stringify({
+                    rtcDataChannel.dataChannel.send(JSON.stringify({
                         event,
                         channelId: this.channel.id,
                         payload,
@@ -746,11 +738,10 @@ registerModel({
             if (rtcSession) {
                 rtcSession.reset();
             }
-            const dataChannel = this._dataChannels[token];
-            if (dataChannel) {
-                dataChannel.close();
+            const rtcDataChannel = this.messaging.models['RtcDataChannels'].findFromIdentifyingData({ token });
+            if (rtcDataChannel) {
+                rtcDataChannel.delete();
             }
-            delete this._dataChannels[token];
             const peerConnection = this._peerConnections[token];
             if (peerConnection) {
                 this._removeRemoteTracks(peerConnection);
@@ -1278,6 +1269,10 @@ registerModel({
         recoveryDelay: attr({
             default: 3000,
         }),
+        /**
+         * Contains the RTCDataChannels with the other rtc sessions.
+         */
+        rtcDataChannels: many('RtcDataChannel'),
         /**
          * True if we want to enable the video track of the current partner.
          */
