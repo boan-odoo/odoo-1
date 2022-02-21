@@ -10,9 +10,6 @@ registerModel({
     name: 'RtcSession',
     identifyingFields: ['id'],
     lifecycleHooks: {
-        _created() {
-            this._timeoutId = undefined;
-        },
         _willDelete() {
             this.reset();
         },
@@ -22,7 +19,7 @@ registerModel({
          * restores the session to its default values
          */
         reset() {
-            this._timeoutId && browser.clearTimeout(this._timeoutId);
+            browser.clearTimeout(this.broadcastTimeout);
             this._removeAudio();
             this.removeVideo();
             this.update({
@@ -147,28 +144,10 @@ registerModel({
                 return;
             }
             this.update(data);
-            this._debounce(async () => {
-                if (!this.exists()) {
-                    return;
-                }
-                await this.async(() => {
-                    this.env.services.rpc(
-                        {
-                            route: '/mail/rtc/session/update_and_broadcast',
-                            params: {
-                                session_id: this.id,
-                                values: {
-                                    is_camera_on: this.isCameraOn,
-                                    is_deaf: this.isDeaf,
-                                    is_muted: this.isSelfMuted,
-                                    is_screen_sharing_on: this.isScreenSharingOn,
-                                },
-                            },
-                        },
-                        { shadow: true }
-                    );
-                });
-            }, 3000);
+            browser.clearTimeout(this.broadcastTimeout);
+            this.update({
+                broadcastTimeout: browser.setTimeout(this._onBroadcastTimeout, 3000),
+            });
         },
         /**
          * @private
@@ -239,14 +218,25 @@ registerModel({
         /**
          * @private
          */
-        _debounce(f, delay) {
-            this._timeoutId && browser.clearTimeout(this._timeoutId);
-            this._timeoutId = browser.setTimeout(() => {
-                if (!this.exists()) {
-                    return;
-                }
-                f();
-            }, delay);
+         _onBroadcastTimeout() {
+            if (!this.exists()) {
+                return;
+            }
+            this.env.services.rpc(
+                {
+                    route: '/mail/rtc/session/update_and_broadcast',
+                    params: {
+                        session_id: this.id,
+                        values: {
+                            is_camera_on: this.isCameraOn,
+                            is_deaf: this.isDeaf,
+                            is_muted: this.isSelfMuted,
+                            is_screen_sharing_on: this.isScreenSharingOn,
+                        },
+                    },
+                },
+                { shadow: true },
+            );
         },
         /**
          * cleanly removes the audio stream of the session
@@ -289,6 +279,7 @@ registerModel({
         avatarUrl: attr({
             compute: '_computeAvatarUrl',
         }),
+        broadcastTimeout: attr(),
         /**
          * The mail.channel of the session, rtc sessions are part and managed by
          * mail.channel
