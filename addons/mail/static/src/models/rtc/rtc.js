@@ -68,30 +68,12 @@ registerModel({
             browser.addEventListener('keyup', this._onKeyUp);
             // Disconnects the RTC session if the page is closed or reloaded.
             browser.addEventListener('beforeunload', this._onBeforeUnload);
-            /**
-             * Call all sessions for which no peerConnection is established at
-             * a regular interval to try to recover any connection that failed
-             * to start.
-             *
-             * This is distinct from this._recoverConnection which tries to restores
-             * connection that were established but failed or timed out.
-             */
-            this._intervalId = browser.setInterval(async () => {
-                if (!this.currentRtcSession || !this.channel) {
-                    return;
-                }
-                await this._pingServer();
-                if (!this.currentRtcSession || !this.channel) {
-                    return;
-                }
-                this._callSessions();
-            }, 30000); // 30 seconds
         },
         async _willDelete() {
             browser.removeEventListener('beforeunload', this._onBeforeUnload);
             browser.removeEventListener('keydown', this._onKeyDown);
             browser.removeEventListener('keyup', this._onKeyUp);
-            browser.clearInterval(this._intervalId);
+            browser.clearInterval(this.connectInterval);
         },
     },
     recordMethods: {
@@ -428,6 +410,13 @@ registerModel({
                 this._addLogEntry(session.peerToken, 'init call', { step: 'init call' });
                 this._callPeer(session.peerToken);
             }
+        },
+        /**
+         * @private
+         * @returns {integer}
+         */
+        _computeConnectInterval() {
+            return browser.setInterval(this._onConnectInterval, 30000); // 30 seconds
         },
         /**
          * @private
@@ -1108,6 +1097,19 @@ registerModel({
         },
         /**
          * @private
+         */
+        async _onConnectInterval() {
+            if (!this.currentRtcSession || !this.channel) {
+                return;
+            }
+            await this._pingServer();
+            if (!this.currentRtcSession || !this.channel) {
+                return;
+            }
+            this._callSessions();
+        },
+        /**
+         * @private
          * @param {String} state the new state of the connection
          * @param {String} token of the peer whose the connection changed
          */
@@ -1207,6 +1209,17 @@ registerModel({
          */
         channel: one('Thread', {
             inverse: 'rtc',
+        }),
+        /**
+         * Call all sessions for which no peerConnection is established at
+         * a regular interval to try to recover any connection that failed
+         * to start.
+         *
+         * This is distinct from this._recoverConnection which tries to restores
+         * connection that were established but failed or timed out.
+         */
+        connectInterval: attr({
+            compute: '_computeConnectInterval',
         }),
         /**
          * String, peerToken of the current session used to identify him during the peer-to-peer transactions.
