@@ -1,7 +1,5 @@
 <?xml version="1.0"?>
-<odoo>
-  <data noupdate="1">
-
+<odoo noupdate="1">
     <record id="base.user_demo" model="res.users">
         <field name="groups_id" eval="[(4, ref('hr_recruitment.group_hr_recruitment_user'))]"/>
     </record>
@@ -11,6 +9,7 @@
         <field name="state">recruit</field>
         <field name="no_of_recruitment">4</field>
         <field name="no_of_hired_employee">56</field>
+        <field name="user_id" ref="base.user_admin" />
     </record>
     <record id="hr.job_ceo" model="hr.job">
         <field name="state">open</field>
@@ -19,11 +18,13 @@
     <record id="hr.job_cto" model="hr.job">
         <field name="state">open</field>
         <field name="no_of_hired_employee">1</field>
+        <field name="user_id" ref="base.user_admin" />
     </record>
     <record id="hr.job_consultant" model="hr.job">
         <field name="state">recruit</field>
         <field name="no_of_recruitment">1</field>
         <field name="no_of_hired_employee">17</field>
+        <field name="user_id" ref="base.user_demo" />
     </record>
     <record id="hr.job_hrm" model="hr.job">
         <field name="no_of_recruitment">1</field>
@@ -34,6 +35,7 @@
         <field name="state">recruit</field>
         <field name="no_of_recruitment">3</field>
         <field name="no_of_hired_employee">2</field>
+        <field name="user_id" ref="base.user_demo" />
     </record>
     <record id="hr.job_trainee" model="hr.job">
         <field name="state">recruit</field>
@@ -460,6 +462,4 @@
         <field name="create_uid" ref="base.user_admin"/>
         <field name="user_id" ref="base.user_admin"/>
     </record>
-
-  </data>
 </odoo>

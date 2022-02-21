@@ -1,6 +1,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import ast
+from collections import defaultdict
+import json
 
 from odoo import api, fields, models, _
 
@@ -46,6 +48,40 @@ class Job(models.Model):
     favorite_user_ids = fields.Many2many('res.users', 'job_favorite_user_rel', 'job_id', 'user_id', default=_get_default_favorite_user_ids)
     interviewer_ids = fields.Many2many('res.users', string='Interviewers', domain="[('share', '=', False), ('company_ids', 'in', company_id)]")
     extended_interviewer_ids = fields.Many2many('res.users', 'hr_job_extended_interviewer_res_users', compute='_compute_extended_interviewer_ids', store=True)
+
+    stage_infos = fields.Text(compute='_compute_stage_infos')
+    activities_overdue = fields.Integer(compute='_compute_activities')
+    activities_today = fields.Integer(compute='_compute_activities')
+
+    @api.depends_context('uid')
+    def _compute_activities(self):
+        self.env.cr.execute("""
+            SELECT
+                app.job_id,
+                COUNT(*) AS act_count,
+                CASE
+                    WHEN %(today)s::date - act.date_deadline::date = 0 THEN 'today'
+                    WHEN %(today)s::date - act.date_deadline::date > 0 THEN 'overdue'
+                END AS act_state
+             FROM mail_activity act
+             JOIN hr_applicant app ON app.id = act.res_id
+             JOIN hr_recruitment_stage sta ON app.stage_id = sta.id
+            WHERE act.user_id = %(user_id)s AND act.res_model = 'hr.applicant'
+              AND act.date_deadline <= %(today)s::date AND app.active
+              AND app.job_id IN %(job_ids)s
+              AND sta.hired_stage IS NOT TRUE
+            GROUP BY app.job_id, act_state
+        """, {
+            'today': fields.Date.context_today(self),
+            'user_id': self.env.uid,
+            'job_ids': tuple(self.ids),
+        })
+        job_activities = defaultdict(dict)
+        for activity in self.env.cr.dictfetchall():
+            job_activities[activity['job_id']][activity['act_state']] = activity['act_count']
+        for job in self:
+            job.activities_overdue = job_activities[job.id].get('overdue', 0)
+            job.activities_today = job_activities[job.id].get('today', 0)
 
     @api.depends('application_ids.interviewer_id')
     def _compute_extended_interviewer_ids(self):
@@ -114,6 +150,29 @@ class Job(models.Model):
         for job in self:
             job.old_application_count = job.application_count - job.new_application_count
 
+    @api.depends_context('lang')
+    def _compute_stage_infos(self):
+        applicant_count = self.env['hr.applicant'].read_group([
+            ('job_id', 'in', self.ids),
+            ('stage_id.hired_stage', '=', False),
+        ], ['job_id', 'stage_id'], ['job_id', 'stage_id'], lazy=False)
+
+        stage_data = defaultdict(dict)
+        for c in applicant_count:
+            stage_data[c['job_id'][0]][c['stage_id'][0]] = c['__count']
+
+        all_stages = self.env['hr.recruitment.stage'].search([('hired_stage', '=', False)])
+        for job in self:
+            stage_infos = []
+            # TODO show all or only non-empty?
+            for stage in all_stages.filtered(lambda s: not s.job_ids or job in s.job_ids):
+                stage_infos.append({
+                    'name': stage.name,
+                    'applicants': stage_data[job.id].get(stage.id, 0)
+                })
+
+            job.stage_infos = json.dumps(stage_infos)
+
     def _alias_get_creation_values(self):
         values = super(Job, self)._alias_get_creation_values()
         values['alias_model_id'] = self.env['ir.model']._get('hr.applicant').id
@@ -144,6 +203,9 @@ class Job(models.Model):
 
     def write(self, vals):
         old_interviewers = self.interviewer_ids
+        if 'active' in vals and not vals['active']:
+            self.application_ids.active = False
+            vals['state'] = 'open'
         res = super().write(vals)
         if 'interviewer_ids' in vals:
             interviewers_to_clean = old_interviewers - self.interviewer_ids
@@ -171,6 +233,13 @@ class Job(models.Model):
         }
         action['search_view_id'] = (self.env.ref('hr_recruitment.ir_attachment_view_search_inherit_hr_recruitment').id, )
         action['domain'] = ['|', '&', ('res_model', '=', 'hr.job'), ('res_id', 'in', self.ids), '&', ('res_model', '=', 'hr.applicant'), ('res_id', 'in', self.mapped('application_ids').ids)]
+        return action
+
+    def action_open_activities(self):
+        action = self.env["ir.actions.actions"]._for_xml_id("hr_recruitment.action_hr_job_applications")
+        views = ['activity'] + [view for view in action['view_mode'].split(',') if view != 'activity']
+        action['view_mode'] = ','.join(views)
+        action['views'] = [(False, view) for view in views]
         return action
 
     def close_dialog(self):

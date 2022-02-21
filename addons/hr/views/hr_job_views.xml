@@ -7,8 +7,9 @@
             <field name="model">hr.job</field>
             <field name="arch" type="xml">
                 <form string="Job">
+                    <field name="active" invisible="1"/>
                     <header>
-                        <button name="set_recruit" string="Start Recruitment" states="open" type="object" class="oe_highlight" groups="base.group_user"/>
+                        <button name="set_recruit" string="Start Recruitment" attrs="{'invisible': ['|', ('active', '=', False), ('state', '!=', 'open')]}" type="object" class="oe_highlight" groups="base.group_user"/>
                         <button name="set_open" string="Stop Recruitment" states="recruit" type="object" groups="base.group_user"/>
                         <field name="state" widget="statusbar" statusbar_visible="recruit,open"/>
                     </header>
@@ -19,9 +20,6 @@
                             <h1><field name="name" placeholder="e.g. Sales Manager"/></h1>
                         </div>
                         <notebook> 
-                            <page string="Job Description">
-                                <field name="description" options="{'collaborative': true}" attrs="{'invisible': [('state', '!=', 'recruit')]}"/>
-                            </page>
                             <page string="Recruitment">
                                 <group>
                                     <group name="recruitment">
@@ -29,9 +27,16 @@
                                         <field name="department_id"/>
                                     </group>
                                     <group>
-                                        <field name="no_of_recruitment"/>
+                                        <label for="no_of_recruitment"/>
+                                        <div class="o_row" name="recruitment_target">
+                                            <field name="no_of_recruitment" class="col-3"/>
+                                            New Employees
+                                        </div>
                                     </group>
                                 </group>
+                            </page>
+                            <page string="Job Description">
+                                <field name="description" options="{'collaborative': true}" attrs="{'invisible': [('state', '!=', 'recruit')]}"/>
                             </page>
                         </notebook>
                     </sheet>
@@ -95,6 +100,7 @@
                 <search string="Jobs">
                     <field name="name" string="Job Position"/>
                     <field name="department_id" operator="child_of"/>
+                    <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
                     <filter name="in_position" string="In Position" domain="[('state', '=', 'open')]"/>
                     <filter name="in_recruitment" string="In Recruitment" domain="[('state', '=', 'recruit')]"/>
                     <separator/>

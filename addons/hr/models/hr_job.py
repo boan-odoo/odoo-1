@@ -11,13 +11,14 @@ class Job(models.Model):
     _inherit = ['mail.thread']
     _order = 'sequence'
 
+    active = fields.Boolean(default=True)
     name = fields.Char(string='Job Position', required=True, index='trigram', translate=True)
     sequence = fields.Integer(default=10)
     expected_employees = fields.Integer(compute='_compute_employees', string='Total Forecasted Employees', store=True,
         help='Expected number of employees for this job position after new recruitment.')
     no_of_employee = fields.Integer(compute='_compute_employees', string="Current Number of Employees", store=True,
         help='Number of employees currently occupying this job position.')
-    no_of_recruitment = fields.Integer(string='Expected New Employees', copy=False,
+    no_of_recruitment = fields.Integer(string='Target', copy=False,
         help='Number of new employees you expect to recruit.', default=1)
     no_of_hired_employee = fields.Integer(string='Hired Employees', copy=False,
         help='Number of hired employees for this job position during recruitment phase.')

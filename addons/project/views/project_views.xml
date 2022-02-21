@@ -734,7 +734,7 @@
                                         <i class="fa fa-ellipsis-v" role="img" aria-label="Manage" title="Manage"/>
                                     </a>
                                     <span>
-                                       <field name="is_favorite" widget="boolean_favorite" nolabel="1" force_save="1" />
+                                        <field name="is_favorite" widget="boolean_favorite" nolabel="1" force_save="1" />
                                     </span>
                                 </div>
                                 <div class="o_kanban_record_bottom mt-3">

@@ -24,8 +24,12 @@ class RecruitmentSource(models.Model):
     _inherit = ['utm.source.mixin']
 
     email = fields.Char(related='alias_id.display_name', string="Email", readonly=True)
+    has_domain = fields.Char(compute='_compute_has_domain')
     job_id = fields.Many2one('hr.job', "Job", ondelete='cascade')
     alias_id = fields.Many2one('mail.alias', "Alias ID")
+
+    def _compute_has_domain(self):
+        self.has_domain = bool(self.env["ir.config_parameter"].sudo().get_param("mail.catchall.domain"))
 
     def create_alias(self):
         campaign = self.env.ref('hr_recruitment.utm_campaign_job')
@@ -111,7 +115,7 @@ class Applicant(models.Model):
     _inherit = ['mail.thread.cc', 'mail.activity.mixin', 'utm.mixin']
     _mailing_enabled = True
 
-    name = fields.Char("Subject / Application Name", required=True, help="Email subject for applications sent via email", index='trigram')
+    name = fields.Char("Subject / Application", required=True, help="Email subject for applications sent via email", index='trigram')
     active = fields.Boolean("Active", default=True, help="If the active field is set to false, it will allow you to hide the case without removing it.")
     description = fields.Html("Description")
     email_from = fields.Char("Email", size=128, help="Applicant email", compute='_compute_partner_phone_email',
@@ -177,6 +181,12 @@ class Applicant(models.Model):
     medium_id = fields.Many2one(ondelete='set null')
     source_id = fields.Many2one(ondelete='set null')
     interviewer_id = fields.Many2one('res.users', string='Interviewer', domain="[('share', '=', False), ('company_ids', 'in', company_id)]")
+
+    @api.onchange('job_id')
+    def _onchange_job_id(self):
+        for applicant in self:
+            if applicant.job_id.name:
+                applicant.name = applicant.job_id.name
 
     @api.depends('date_open', 'date_closed')
     def _compute_day(self):
@@ -478,6 +488,17 @@ class Applicant(models.Model):
                 'active_test': False
             },
         }
+
+    def action_open_employee(self):
+        self.ensure_one()
+        return {
+            'name': _('Employee'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'hr.employee',
+            'view_mode': 'form',
+            'res_id': self.emp_id.id,
+        }
+
 
     def _track_template(self, changes):
         res = super(Applicant, self)._track_template(changes)

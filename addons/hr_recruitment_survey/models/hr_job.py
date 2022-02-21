@@ -11,7 +11,8 @@ class Job(models.Model):
         help="Choose an interview form for this job position and you will be able to print/answer this interview from all applicants who apply for this job")
 
     def action_print_survey(self):
-        return self.survey_id.action_print_survey()
+        action = self.survey_id.action_print_survey()
+        return {**action, 'target': 'new'}
 
     def action_new_survey(self):
         self.ensure_one()
