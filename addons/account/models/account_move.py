@@ -1420,6 +1420,39 @@ class AccountMove(models.Model):
         'line_ids.payment_id.state',
         'line_ids.full_reconcile_id')
     def _compute_amount(self):
+        stored_ids = tuple(self.ids)
+        if stored_ids:
+            self.env['account.partial.reconcile'].flush(self.env['account.partial.reconcile']._fields)
+
+            queries = []
+            for source_field, counterpart_field in (('debit', 'credit'), ('credit', 'debit')):
+                queries.append(f'''
+                    SELECT
+                        source_line.id AS source_line_id,
+                        source_line.move_id AS source_move_id,
+                        account_type.type AS source_line_account_type,
+                        ARRAY_AGG(DISTINCT counterpart_move.move_type) AS counterpart_move_types,
+                        COALESCE(BOOL_AND(COALESCE(pay.is_matched, FALSE))
+                            FILTER (WHERE counterpart_move.payment_id IS NOT NULL), TRUE) AS all_payments_matched
+                    FROM account_partial_reconcile part
+                    JOIN account_move_line source_line ON source_line.id = part.{source_field}_move_id
+                    JOIN account_account account ON account.id = source_line.account_id
+                    JOIN account_account_type account_type ON account_type.id = account.user_type_id
+                    JOIN account_move_line counterpart_line ON counterpart_line.id = part.{counterpart_field}_move_id
+                    JOIN account_move counterpart_move ON counterpart_move.id = counterpart_line.move_id
+                    LEFT JOIN account_payment pay ON pay.id = counterpart_move.payment_id
+                    WHERE source_line.move_id IN %s AND counterpart_line.move_id != source_line.move_id
+                    GROUP BY source_line_id, source_move_id, source_line_account_type
+                ''')
+
+            self._cr.execute(' UNION ALL '.join(queries), [stored_ids, stored_ids])
+
+            payment_data = defaultdict(lambda: [])
+            for row in self._cr.dictfetchall():
+                payment_data[row['source_move_id']].append(row)
+        else:
+            payment_data = {}
+
         for move in self:
 
             if move.payment_state == 'invoicing_legacy':
@@ -1484,37 +1517,38 @@ class AccountMove(models.Model):
 
             currency = currencies if len(currencies) == 1 else move.company_id.currency_id
 
-            # Compute 'payment_state'.
-            new_pmt_state = 'not_paid' if move.move_type != 'entry' else False
+            # === Compute 'payment_state' ===
+            reconciliation_vals = payment_data.get(move.id, [])
+            payment_state_matters = move._payment_state_matters()
 
-            if move._payment_state_matters() and move.state == 'posted':
-                if currency.is_zero(move.amount_residual):
-                    reconciled_payments = move._get_reconciled_payments()
-                    if not reconciled_payments or all(payment.is_matched for payment in reconciled_payments):
-                        new_pmt_state = 'paid'
-                    else:
-                        new_pmt_state = move._get_invoice_in_payment_state()
-                elif currency.compare_amounts(total_to_pay, total_residual) != 0:
-                    new_pmt_state = 'partial'
+            # Restrict on 'receivable'/'payable' lines for invoices/expense entries.
+            if payment_state_matters:
+                reconciliation_vals = [x for x in reconciliation_vals if x['source_line_account_type'] in ('receivable', 'payable')]
 
-            if new_pmt_state == 'paid' and move.move_type in ('in_invoice', 'out_invoice', 'entry'):
-                reverse_type = move.move_type == 'in_invoice' and 'in_refund' or move.move_type == 'out_invoice' and 'out_refund' or 'entry'
-                reverse_moves = self.env['account.move'].search([('reversed_entry_id', '=', move.id), ('state', '=', 'posted'), ('move_type', '=', reverse_type)])
-                if reverse_moves:
-                    # We only set 'reversed' state in cas of 1 to 1 full reconciliation with a reverse entry; otherwise, we use the regular 'paid' state
-                    if move.is_invoice():
-                        current_lines = move.line_ids.filtered(lambda line: line.account_id.user_type_id.type in ('receivable', 'payable'))
-                        target_lines = reverse_moves.line_ids.filtered(lambda line: line.account_id.user_type_id.type in ('receivable', 'payable'))
-                    else:
-                        current_lines = move.line_ids
-                        target_lines = reverse_moves.line_ids
-                    reverse_moves_full_recs = target_lines.full_reconcile_id
-                    excluded_moves = set(
-                        (current_lines.matched_debit_ids + current_lines.matched_credit_ids).exchange_move_id
-                        + reverse_moves_full_recs.exchange_move_id
-                        + reverse_moves
-                    )
-                    if reverse_moves_full_recs.reconciled_line_ids.move_id.filtered(lambda x: x not in excluded_moves) == move:
+            new_pmt_state = 'not_paid'
+            if move.state == 'posted':
+
+                # Posted invoice/expense entry.
+                if payment_state_matters:
+
+                    if currency.is_zero(move.amount_residual):
+                         # Check if the invoice/expense entry is fully paid or 'in_payment'.
+                        if all(x['all_payments_matched'] for x in reconciliation_vals):
+                            new_pmt_state = 'paid'
+                        else:
+                            new_pmt_state = move._get_invoice_in_payment_state()
+                    elif reconciliation_vals:
+                        new_pmt_state = 'partial'
+
+                # Check if the journal entry is 'reversed'.
+                if new_pmt_state == 'paid':
+                    counterpart_move_types = set()
+                    for x in reconciliation_vals:
+                        counterpart_move_types.update(x['counterpart_move_types'])
+
+                    if (move.move_type in ('in_invoice', 'in_receipt') and 'in_refund' in counterpart_move_types) \
+                        or (move.move_type in ('out_invoice', 'out_receipt') and 'out_refund' in counterpart_move_types) \
+                        or (move.move_type in ('entry', 'out_refund', 'in_refund') and counterpart_move_types == {'entry'}):
                         new_pmt_state = 'reversed'
 
             move.payment_state = new_pmt_state
