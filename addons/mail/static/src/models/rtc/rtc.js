@@ -504,6 +504,7 @@ registerModel({
                             },
                         },
                     });
+                    console.log({ pc: peerConnection });
                 } catch (e) {
                     if (!(e instanceof DOMException) || e.name !== "OperationError") {
                         throw e;
