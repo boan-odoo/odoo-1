@@ -25763,6 +25763,12 @@ msgid "This Window"
 msgstr ""
 
 #. module: base
+#: code:addons/base/models/ir_actions.py:0
+#, python-format
+msgid "This action is linked to a Home Action for a User."
+msgstr ""
+
+#. module: base
 #: code:addons/base/models/ir_model.py:0
 #, python-format
 msgid "This column contains module data and cannot be removed!"

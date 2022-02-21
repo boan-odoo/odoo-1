@@ -66,6 +66,12 @@ class IrActions(models.Model):
         self.clear_caches()
         return res
 
+    @api.ondelete(at_uninstall=False)
+    def _unlink_check_home_action(self):
+        home_action = self.env['res.users'].search([('action_id', 'in', self.ids)])
+        if home_action:
+            raise UserError(_("This action is linked to a Home Action for a User."))
+
     @api.model
     def _get_eval_context(self, action=None):
         """ evaluation context to pass to safe_eval """
