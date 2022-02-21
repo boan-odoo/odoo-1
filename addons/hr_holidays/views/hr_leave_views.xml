@@ -477,7 +477,6 @@
                     color="color"
                     hide_time="True"
                     mode="year">
-                    <!-- js_mode="#{self.env.isMobile ? 'month' : 'year'}"> -->
                 <field name="display_name"/>
                 <field name="holiday_status_id" filters="1" invisible="1" color="color"/>
                 <field name="state" invisible="1"/>

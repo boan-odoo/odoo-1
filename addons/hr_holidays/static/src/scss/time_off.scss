@@ -52,6 +52,20 @@
     }
 }
 
+.o_timeoff_calendar .o_cp_bottom {
+    @include media-breakpoint-down(sm) {
+        flex-direction: column;
+    }
+    .o_cp_bottom_left {
+        flex: 1;
+        width: auto;
+    }
+    .o_cp_bottom_right {
+        flex: none;
+        width: auto;
+    }
+}
+
 .o_timeoff_dashboard_popover {
     hr {
         margin-top: 0px;
