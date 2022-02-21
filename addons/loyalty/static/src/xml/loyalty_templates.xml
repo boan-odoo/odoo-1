@@ -11,4 +11,13 @@
             </t>
         </div>
     </t>
+
+    <t t-name="LoyaltyControlPanelX2Many" owl="1">
+        <div t-ref="controlPanel">
+            <h4 class="d-inline"><t t-esc="props.label or ''"/></h4>
+            <div class="o_cp_buttons float-right" role="toolbar" aria-label="Control panel buttons" t-ref="buttons">
+                <t t-slot="buttons"/>
+            </div>
+        </div>
+    </t>
 </odoo>

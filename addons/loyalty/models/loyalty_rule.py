@@ -12,9 +12,10 @@ class LoyaltyRule(models.Model):
     _description = 'Loyalty Rule'
 
     def _get_reward_point_mode_selection(self):
+        symbol = self.env.context.get('currency_symbol', self.env.company.currency_id.symbol)
         return [
             ('order', _('per order')),
-            ('money', _('per %s spent', self.env.company.currency_id.symbol)),
+            ('money', _('per %s spent', symbol)),
             ('unit', _('per unit paid')),
         ]
 
@@ -25,7 +26,7 @@ class LoyaltyRule(models.Model):
     currency_id = fields.Many2one(related='program_id.currency_id')
 
     # Only for dev mode
-    product_domain = fields.Char(default="[['sale_ok', '=', True]]")
+    product_domain = fields.Char(default="[]")
 
     product_ids = fields.Many2many('product.product', string='Products')
     product_category_id = fields.Many2one('product.category', string='Categories')
@@ -48,7 +49,7 @@ class LoyaltyRule(models.Model):
     mode = fields.Selection([
         ('auto', 'Automatic'),
         ('with_code', 'With a promotion code'),
-    ], default="auto")
+    ], string="Application", default="auto")
     code = fields.Char(string='Promotion Code')
 
     _sql_constraints = [

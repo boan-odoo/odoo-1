@@ -68,7 +68,7 @@
                 <field name="clear_wallet"/>
                 <templates>
                     <t t-name="kanban-box">
-                        <div class="oe_kanban_global_click_edit">
+                        <div class="oe_kanban_global_click_edit mx-0">
                             <field name="description"/>
                             <t t-if="record.reward_type.raw_value === 'discount' &amp;&amp; record.discount_applicability.raw_value === 'specific'">
                                 <p>For Products: <field name="all_discount_product_ids" widget="many2many_tags"/></p>

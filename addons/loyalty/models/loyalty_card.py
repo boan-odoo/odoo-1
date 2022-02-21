@@ -47,6 +47,15 @@ class LoyaltyCard(models.Model):
         self.ensure_one()
         return False
 
+    def _get_mail_partner(self):
+        self.ensure_one()
+        return self.partner_id
+
+    def _get_signature(self):
+        """To be overriden"""
+        self.ensure_one()
+        return None
+
     def action_coupon_send(self):
         """ Open a window to compose an email, with the default template returned by `_get_default_template`
             message loaded by default
@@ -74,10 +83,6 @@ class LoyaltyCard(models.Model):
             'target': 'new',
             'context': ctx,
         }
-
-    def _get_mail_partner(self):
-        self.ensure_one()
-        return self.partner_id.id
 
     def _send_creation_communication(self):
         """

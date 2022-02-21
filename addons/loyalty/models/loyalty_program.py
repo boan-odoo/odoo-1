@@ -18,6 +18,7 @@ class LoyaltyProgram(models.Model):
     company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env.company)
     currency_id = fields.Many2one('res.currency', 'Currency', compute='_compute_currency_id',
         readonly=False, required=True, store=True, precompute=True)
+    currency_symbol = fields.Char(related='currency_id.symbol')
 
     total_order_count = fields.Integer("Total Order Count", compute="_compute_total_order_count")
 
@@ -116,7 +117,7 @@ class LoyaltyProgram(models.Model):
                 })],
                 'communication_plan_ids': [(5,), (0, 0, {
                     'trigger': 'create',
-                    # TODO: do we need a default value? `mail_template_sale_loyalty` -> `mail_template_loyalty_card`?
+                    'mail_template_id': (self.env.ref('loyalty.mail_template_loyalty_card', raise_if_not_found=False) or self.env['mail.template']).id,
                 })],
             },
             'promotion': {
@@ -197,10 +198,6 @@ class LoyaltyProgram(models.Model):
         for program_type, programs in grouped_programs.items():
             if program_type in program_types_default:
                 programs.write(program_types_default[program_type])
-
-    def action_new_trigger(self):
-        self.ensure_one()
-        return True
 
     def _get_valid_products(self, products):
         '''

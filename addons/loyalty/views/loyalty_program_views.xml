@@ -46,17 +46,22 @@
                                     Once a sale order is validated, the customers get Loyalty Points that can be used in the current order, or accumulated in future orders.
                                 </p>
                                 <p class="text-muted" attrs="{'invisible': [('program_type', '!=', 'gift_card')]}" colspan="2">
-                                    Gift Cards are created and sent by email when the customer orders a product definer in your triggers. Then, Gift Cards can be used to pay orders.
+                                    Gift Cards are created and sent by email when the customer orders a product definer in your triggers.
+                                    <br/>
+                                    Then, Gift Cards can be used to pay orders.
                                 </p>
                                 <p class="text-muted" attrs="{'invisible': [('program_type', '!=', 'promotion')]}" colspan="2">
                                     Set up triggers based on a promotional code and/or products purchased, that give access to reward on the current order.
                                 </p>
                                 <p class="text-muted" attrs="{'invisible': [('program_type', '!=', 'ewallet')]}" colspan="2">
-                                    Personal eWallet are created when the customer orders a product defined in the triggers. Then, eWallets are proposed during the checkout, to pay orders.
+                                    Personal eWallet are created when the customer orders a product defined in the triggers.
+                                    <br/>
+                                    Then, eWallets are proposed during the checkout, to pay orders.
                                 </p>
                             </div>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="currency_id"/>
+                            <field name="currency_symbol" invisible="1"/>
                         </group>
                         <group>
                             <field name="date_to"/>
@@ -70,23 +75,23 @@
                                 <field name="portal_visible" class="oe_inline"/>
                                 <span attrs="{'invisible': [('portal_visible', '=', False)]}"> as <field name="portal_point_name" class="oe_inline"/></span>
                             </span>
-                            <field name="applies_on" widget="radio" invisible="1"/>
-                            <field name="trigger" widget="radio" invisible="1"/>
+                            <field name="applies_on" widget="radio" groups="base.group_no_one"/>
+                            <field name="trigger" widget="radio" groups="base.group_no_one" attrs="{'invisible': [('applies_on', '!=', 'current')]}"/>
                         </group>
                     </group>
 
                     <notebook>
                         <page string="Triggers &amp; Rewards" name="rules_rewards">
-                        <group>
                             <group>
-                                <h4>Triggers</h4>
-                                <button string="Add a trigger" type="object" name="action_new_trigger" class="btn btn-secondary float-right oe_edit_only"/>
-                                <field name="rule_ids" colspan="2" mode="kanban" nolabel="1" add-label="Add a trigger" class="o_loyalty_kanban_inline" readonly="1"/>
+                                <group>
+                                    <field name="rule_ids" colspan="2" mode="kanban" nolabel="1" add-label="Add a trigger"
+                                        class="o_loyalty_kanban_inline" widget="loyalty_one2many" context="{'currency_symbol': currency_symbol}"/>
+                                </group>
+                                <group>
+                                    <field name="reward_ids" colspan="2" mode="kanban" nolabel="1" add-label="Add a reward"
+                                        class="o_loyalty_kanban_inline" widget="loyalty_one2many" context="{'currency_symbol': currency_symbol}"/>
+                                </group>
                             </group>
-                            <group string="Rewards">
-                                <field name="reward_ids" mode="kanban" nolabel="1" add-label="Add a reward" class="o_loyalty_kanban_inline"/>
-                            </group>
-                        </group>
                         </page>
                         <page string="Communications" name="communications" attrs="{'invisible': [('applies_on', '=', 'current')]}">
                             <field name="communication_plan_ids" mode="tree"/>

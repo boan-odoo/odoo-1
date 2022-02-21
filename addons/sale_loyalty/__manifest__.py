@@ -9,7 +9,6 @@
     'depends': ['sale', 'loyalty'],
     'data': [
         'security/ir.model.access.csv',
-        # 'data/mail_template_data.xml',
         'data/sale_loyalty_data.xml',
         'wizard/sale_loyalty_coupon_wizard_views.xml',
         'wizard/sale_loyalty_reward_wizard_views.xml',

@@ -8,18 +8,17 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="code"/>
+                            <field name="product_domain" groups="base.group_no_one" widget="domain" options="{'model': 'product.product', 'in_dialog': true}"/>
                             <field name="product_ids" widget="many2many_tags"/>
                             <field name="product_category_id"/>
                             <field name="product_tag_id"/>
                         </group>
                         <group>
                             <label for="reward_point_amount"/>
-                            <div class="row m-0">
+                            <span>
                                 <field name="reward_point_amount" class="oe_inline"/>
                                 <field name="reward_point_name" class="oe_inline"/>
-                            </div>
-                            <!-- Align to the right -->
+                            </span>
                             <label for="reward_point_mode" string=""/>
                             <field name="reward_point_mode" widget="radio" nolabel="1"/>
                         </group>
@@ -34,7 +33,9 @@
                         </group>
                         <group>
                             <field name="mode" widget="radio"/>
-                            <field name="code" attrs="{'invisible': [('mode', '!=', 'with_code')]}"/>
+                            <field name="code"
+                                attrs="{'invisible': [('mode', '!=', 'with_code')],
+                                    'required': [('mode', '=', 'with_code')]}"/>
                         </group>
                     </group>
                 </sheet>
@@ -62,6 +63,9 @@
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_global_click_edit mx-0">
+                            <t t-if="record.product_domain.raw_value &amp;&amp; record.product_domain.raw_value !== '[]'" groups="base.group_no_one">
+                                <a><i class="fa fa-search fa-fw" title="Product Domain"/> <field name="product_domain"/></a>
+                            </t>
                             <t t-if="record.product_ids.raw_value.length > 0">
                                 <div class="d-flex"><i class="fa fa-cube fa-fw" title="Products"/> <field name="product_ids" widget="many2many_tags" class="d-inline"/></div>
                             </t>

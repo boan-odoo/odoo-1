@@ -19,6 +19,7 @@ export const PosCouponOrderWidget = (OrderWidget) =>
                 const dbCoupon = this.env.pos.couponCache[line.coupon_id];
                 const couponCode = dbCoupon ? dbCoupon.code : false;
                 activeRewards.push({
+                    id: line.cid,
                     name: line.get_product().display_name,
                     code: couponCode,
                 });

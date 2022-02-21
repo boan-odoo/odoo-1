@@ -9,7 +9,7 @@ class LoyaltyReward(models.Model):
     _rec_name = 'description'
 
     def _get_discount_mode_select(self):
-        symbol = self.env.company.currency_id.symbol
+        symbol = self.env.context.get('currency_symbol', self.env.company.currency_id.symbol)
         return [
             ('percent', '%'),
             ('per_point', _('%s per point', symbol)),
@@ -50,6 +50,7 @@ class LoyaltyReward(models.Model):
     discount_max_amount = fields.Monetary('Max Discount', 'currency_id')
     discount_line_product_id = fields.Many2one('product.product', copy=False, ondelete='restrict',
         help="Product used in the sales order to apply the discount. Each reward has its own product for reporting purpose")
+    is_global_discount = fields.Boolean(compute='_compute_is_global_discount')
 
     # Product rewards
     reward_product_id = fields.Many2one('product.product', string='Product')
@@ -119,6 +120,13 @@ class LoyaltyReward(models.Model):
                     else:
                         reward_string += _('specific products')
             reward.description = reward_string
+
+    @api.depends('reward_type', 'discount_applicability', 'discount_mode')
+    def _compute_is_global_discount(self):
+        for reward in self:
+            reward.is_global_discount = reward.reward_type == 'discount' and\
+                                        reward.discount_applicability == 'order' and\
+                                        reward.discount_mode == 'percent'
 
     @api.model_create_multi
     def create(self, vals_list):

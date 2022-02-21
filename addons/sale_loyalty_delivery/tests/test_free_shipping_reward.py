@@ -201,6 +201,7 @@ class TestSaleCouponProgramRules(TestSaleCouponCommon):
             'name': 'Free shipping if > 872 tax excl',
             'trigger': 'with_code',
             'rule_ids': [(0, 0, {
+                'mode': 'with_code',
                 'code': 'free_shipping',
                 'minimum_amount': 872,
             })],

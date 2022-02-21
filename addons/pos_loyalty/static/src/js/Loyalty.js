@@ -128,6 +128,13 @@ const PosLoyaltyGlobalState = (PosGlobalState) => class PosLoyaltyGlobalState ex
      * @param {int} clientId
      */
     async fetchLoyaltyCard(programId, clientId) {
+        if (programId === this.config.loyalty_program_id[0]) {
+            // In this case we actually have it loaded separately to avoid needing to be online
+            //  for the loyalty program functionalities
+            // see `_get_pos_ui_res_partner` in pos_session.py
+            const client = this.db.get_partner_by_id(clientId);
+            return new PosLoyaltyCard(null, client.loyalty_card_id, programId, clientId, client.loyalty_points);
+        }
         for (const coupon of Object.values(this.couponCache)) {
             if (coupon.partner_id === clientId && coupon.program_id === programId) {
                 return coupon;
@@ -156,6 +163,8 @@ const PosLoyaltyOrderline = (Orderline) => class PosLoyaltyOrderline extends Ord
             this.is_reward_line = json.is_reward_line;
             this.reward_id = json.reward_id;
             this.reward_product_id = json.reward_product_id;
+            // Since non existing coupon have a negative id, of which the counter is lost upon reloading
+            //  we make sure that they are kept the same between after a reload between the order and the lines.
             this.coupon_id = this.order.oldCouponMapping[json.coupon_id] || json.coupon_id;
             this.reward_identifier_code = json.reward_identifier_code;
             this.points_cost = json.points_cost;
@@ -219,6 +228,12 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         this.codeActivatedCoupons = json.codeActivatedCoupons;
         this.invalidCoupons = true;
     }
+    /**
+     * We need to update the rewards upon changing the client as it may impact the points available
+     *  for rewards.
+     *
+     * @override
+     */
     set_client(client) {
         const oldClient = this.get_client();
         super.set_client(...arguments);
@@ -229,9 +244,13 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
     wait_for_push_order() {
         return (!_.isEmpty(this.couponPointChanges) || this._get_reward_lines().length || super.wait_for_push_order(...arguments));
     }
+    /**
+     * Add additional information for our ticket, such as new coupons and loyalty point gains.
+     *
+     * @override
+     */
     export_for_printing() {
         const result = super.export_for_printing(...arguments);
-        //TODO: add gift cards for the receipt
         if (this.pos.config.loyalty_program_id && this.get_client()) {
             const loyaltyProgram = this.pos.program_by_id[this.pos.config.loyalty_program_id[0]];
             result.loyalty = {
@@ -242,6 +261,33 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         }
         result.new_coupon_info = this.new_coupon_info;
         return result;
+    }
+    /**
+     * Apply changes to loyalty program points directly to support offline loyalty.
+     *
+     * @override
+     */
+    finalize() {
+        const client = this.get_client();
+        const loyaltyProgramId = this.pos.config.loyalty_program_id ? this.pos.config.loyalty_program_id[0]: 0;
+        if (client && loyaltyProgramId) {
+            for (const pe of Object.values(this.couponPointChanges)) {
+                if (pe.program_id === loyaltyProgramId) {
+                    client.loyalty_points += pe.points;
+                    break;
+                }
+            }
+            for (const line of this.get_orderlines()) {
+                if (line.reward_id) {
+                    const reward = this.pos.reward_by_id[line.reward_id];
+                    if (reward.program_id.id !== loyaltyProgramId) {
+                        continue;
+                    }
+                    client.loyalty_points -= line.points_cost;
+                }
+            }
+        }
+        super.finalize(...arguments);
     }
 
     get_orderlines() {
@@ -325,12 +371,15 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         }
         dropPrevious.add(this._updateLoyaltyPrograms()).then(() => {
             this._updateRewardLines();
-        }).catch((ex) => {/* catch the reject of dp when calling `add` to avoid unhandledrejection */});
+        }).catch((ex) => {console.log(ex);/* catch the reject of dp when calling `add` to avoid unhandledrejection */});
     }
     async _updateLoyaltyPrograms() {
         await this._checkMissingCoupons();
         await this._updatePrograms();
     }
+    /**
+     * Checks that all 'existing' coupons are in our cache, and if not load/update them.
+     */
     async _checkMissingCoupons() {
         // This function must stay sequential to avoid potential concurrency errors.
         await mutex.exec(async () => {
@@ -394,6 +443,9 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
             this._applyReward(claimedReward.reward, claimedReward.coupon_id, claimedReward.args);
         }
     }
+    /**
+     * Update our couponPointChanges, meaning the points/coupons each program give etc.
+     */
     async _updatePrograms() {
         const changesPerProgram = {};
         const programsToCheck = new Set();
@@ -464,17 +516,11 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         let total = 0;
         const client = this.get_client();
         if (client && this.pos.config.loyalty_program_id) {
-            const loyaltyProgramId = this.pos.config.loyalty_program_id[0];
-            const coupon = Object.values(this.pos.couponCache).find((coupon) => coupon.program_id === loyaltyProgramId && coupon.partner_id === client.id);
-            let couponId = 0;
-            let balance = 0;
-            if (coupon) {
-                couponId = coupon.id;
-                balance = coupon.balance;
-            }
+            let couponId = client.loyalty_card_id;
+            let balance = client.loyalty_points;
             for (const pe of Object.values(this.couponPointChanges)) {
-                if (pe.program_id === loyaltyProgramId) {
-                    if (couponId === 0) {
+                if (pe.program_id === this.pos.config.loyalty_program_id[0]) {
+                    if (!couponId) {
                         couponId = pe.coupon_id;
                     }
                     won += pe.points;
@@ -488,8 +534,8 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
                     }
                 }
             }
-            if (postValidate && coupon) {
-                total = coupon.balance;
+            if (postValidate) {
+                total = client.loyalty_points;
             } else {
                 total = balance + won - spent;
             }
@@ -560,6 +606,12 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         }
         return true;
     }
+    /**
+     * Computes how much points each program gives.
+     *
+     * @param {Array} programs list of loyalty.program
+     * @returns {Object} Containing the points gained per program
+     */
     pointsForPrograms(programs) {
         const totalTaxed = this.get_total_with_tax();
         const totalUntaxed = this.get_total_without_tax();
@@ -662,6 +714,17 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         }
         return result;
     }
+    /**
+     * @returns {Array} List of lines composing the global discount
+     */
+    _getGlobalDiscountLines() {
+        return this.get_orderlines().filter((line) => line.reward_id && this.pos.reward_by_id[line.reward_id].is_global_discount);
+    }
+    /**
+     * @param {Integer} coupon_id (optional) Coupon id
+     * @param {Integer} program_id (optional) Program id
+     * @returns {Array} List of {Object} containing the coupon_id and reward keys
+     */
     getClaimableRewards(coupon_id=false, program_id=false) {
         const allCouponPrograms = Object.values(this.couponPointChanges).map((pe) => {
             return {
@@ -675,6 +738,9 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
             };
         }));
         const result = [];
+        const globalDiscountLines = this._getGlobalDiscountLines();
+        const globalDiscountPercent = globalDiscountLines.length ?
+            this.pos.reward_by_id[globalDiscountLines[0].reward_id].discount : 0;
         for (const couponProgram of allCouponPrograms) {
             if ((coupon_id && couponProgram.coupon_id !== coupon_id) ||
                 (program_id && couponProgram.program_id !== program_id)) {
@@ -683,6 +749,17 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
             const program = this.pos.program_by_id[couponProgram.program_id];
             const points = this._getRealCouponPoints(couponProgram.coupon_id);
             for (const reward of program.rewards) {
+                // Try to filter out rewards that will not be claimable anyway.
+                if (reward.is_global_discount && reward.discount <= globalDiscountPercent) {
+                    continue;
+                }
+                if (reward.reward_type === 'product' && !reward.multi_product) {
+                    const product = this.pos.db.get_product_by_id(reward.reward_product_ids[0]);
+                    const availableQty = this._computeAvailableFreeProduct(reward, couponProgram.coupon_id, product);
+                    if (availableQty <= 0) {
+                        continue;
+                    }
+                }
                 if (points >= reward.required_points) {
                     result.push({
                         coupon_id: couponProgram.coupon_id,
@@ -693,9 +770,30 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         }
         return result;
     }
+    /**
+     * Applies a reward to the order, `_updateRewards` is expected to be called right after.
+     *
+     * @param {loyalty.reward} reward 
+     * @param {Integer} coupon_id
+     * @param {Object} args Reward options
+     * @returns True if everything went right or an error message
+     */
     _applyReward(reward, coupon_id, args) {
         if (this._getRealCouponPoints(coupon_id) < reward.required_points) {
             return _t("There are not enough points on the coupon to claim this reward.");
+        }
+        if (reward.is_global_discount) {
+            const globalDiscountLines = this._getGlobalDiscountLines();
+            if (globalDiscountLines.length) {
+                const rewardId = globalDiscountLines[0].reward_id;
+                if (rewardId != reward.id && this.pos.reward_by_id[rewardId].discount >= reward.discount) {
+                    return _t("A better global discount is already applied.");
+                } else if (rewardId != rewardId.id) {
+                    for (const line of globalDiscountLines) {
+                        this.orderlines.remove(line);
+                    }
+                }
+            }
         }
         args = args || {};
         const rewardLines = this._getRewardLineValues({
@@ -873,6 +971,10 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         }
         return {discountable, discountablePerTax};
     }
+    /**
+     * @param {Object} args See `_applyReward`
+     * @returns {Array} List of values to create the reward lines
+     */
     _getRewardLineValues(args) {
         const reward = args['reward'];
         if (reward.reward_type === 'discount') {
@@ -883,6 +985,10 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         // NOTE: we may reach this step if for some reason there is a free shipping reward
         return [];
     }
+    /**
+     * @param {Object} args See `_applyReward`
+     * @returns {Array} List of values to create the discount lines
+     */
     _getRewardLineValuesDiscount(args) {
         const reward = args['reward'];
         const coupon_id = args['coupon_id'];
@@ -953,6 +1059,18 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
         }
         return result;
     }
+    /**
+     * Tries to compute how many free product can be given out for the given product.
+     * Contrary to sale_loyalty, the product must be in the order lines in order to give it out
+     *  (resulting in discount lines for the product's value).
+     * As such we need to approximate the effect of removing 1 quantity on the counting of points in order
+     *  to avoid feedback loops between giving a product and it removing the required points for it.
+     *
+     * @param {loyalty.reward} reward
+     * @param {Integer} coupon_id
+     * @param {Product} product
+     * @returns {Integer} Available quantity to be given as reward for the given product
+     */
     _computeAvailableFreeProduct(reward, coupon_id, product) {
         // Might not be perfect but good enough
         let productPriceWithTax = null;
@@ -1071,13 +1189,14 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
                 }
                 lostPoints = localLostPoints;
             }
-            if (pointChangeEntry) {
-                pointChangeEntry.points -= lostPoints;
-            }
-            available = Math.max(0, units - freeClaimed);
+            available = Math.max(0, Math.min(units, available) - freeClaimed);
         }
         return available;
     }
+    /**
+     * @param {Object} args See `_applyReward`
+     * @returns {Array} List of values to create the reward lines
+     */
     _getRewardLineValuesProduct(args) {
         const reward = args['reward'];
         const product = this.pos.db.get_product_by_id(args['product'] || reward.reward_product_ids[0]);
@@ -1103,6 +1222,16 @@ const PosLoyaltyOrder = (Order) => class PosLoyaltyOrder extends Order {
             merge: false,
         }]
     }
+    /**
+     * Full routine for activating a code for the order.
+     * If only one more reward is claimable after activating the code, that reward is claimed
+     *  directly, to avoid more steps than necessary.
+     * If more rewards are claimable, the employee will have to manually select the reward
+     *  in the reward selection menu.
+     *
+     * @param {String} code
+     * @returns true if everything went right, error message if not.
+     */
     async _activateCode(code) {
         const rule = this.pos.rules.find((rule) => {
             return rule.mode === 'with_code' && (rule.promo_barcode === code || rule.code === code)

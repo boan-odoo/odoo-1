@@ -9,6 +9,8 @@
     'data': [
         'security/ir.model.access.csv',
         'security/loyalty_security.xml',
+        'report/loyalty_report_templates.xml',
+        'report/loyalty_report.xml',
         'data/loyalty_data.xml',
         'data/mail_template_data.xml',
         'wizard/loyalty_generate_wizard_views.xml',
@@ -17,14 +19,13 @@
         'views/loyalty_program_views.xml',
         'views/loyalty_reward_views.xml',
         'views/loyalty_rule_views.xml',
-        'report/coupon_report_templates.xml',
-        'report/coupon_report.xml',
     ],
     'demo': [
         'data/loyalty_demo.xml',
     ],
     'assets': {
         'web.assets_backend': [
+            'loyalty/static/src/js/loyalty_kanban_widget.js',
             'loyalty/static/src/js/loyalty_views.js',
             'loyalty/static/src/js/loyalty_list_view.js',
             'loyalty/static/src/scss/loyalty.scss',

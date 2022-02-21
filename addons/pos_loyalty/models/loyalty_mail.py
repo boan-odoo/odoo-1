@@ -6,8 +6,6 @@ from odoo import fields, models
 class LoyaltyMail(models.Model):
     _inherit = 'loyalty.mail'
 
-    print_in_pos = fields.Boolean(string='PoS Coupon Print',
-        help="""
-        If this option is enabled the template will be printed upon validating the order.
-        May be useful for digital gift cards.
-        """)
+    pos_report_print_id = fields.Many2one('ir.actions.report', string="Print Report", domain=[('model', '=', 'loyalty.card')],
+        help="The report action to be executed when creating a coupon/gift card/loyalty card in the PoS.",
+    )

@@ -5,6 +5,7 @@
         <field name="program_type">promotion</field>
         <field name="trigger">with_code</field>
         <field name="rule_ids" eval="[(0, 0, {
+            'mode': 'with_code',
             'code': '10pc',
         })]"/>
         <field name="reward_ids" eval="[(0, 0, {
@@ -42,6 +43,10 @@
             'discount': 10,
             'discount_mode': 'percent',
             'discount_applicability': 'order',
+        })]"/>
+        <field name="communication_plan_ids" eval="[(0, 0, {
+            'trigger': 'create',
+            'mail_template_id': ref('loyalty.mail_template_loyalty_card'),
         })]"/>
     </record>
     

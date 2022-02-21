@@ -22,7 +22,7 @@
                 </div>
                 <div t-if="loyaltyData.activeRewards.length">
                     <div class="title">Active Rewards</div>
-                    <t t-foreach="loyaltyData.activeRewards" t-as="reward" t-key="reward.name">
+                    <t t-foreach="loyaltyData.activeRewards" t-as="reward" t-key="reward.id">
                         <div class="active-reward">
                             <t t-esc="reward.name"/>
                         </div>

@@ -94,7 +94,7 @@ class SaleOrder(models.Model):
         if len(claimable_rewards) == 1:
             coupon = next(iter(claimable_rewards))
             if len(claimable_rewards[coupon]) == 1:
-                self._apply_program_reward(claimable_rewards, coupon)
+                self._apply_program_reward(claimable_rewards[coupon], coupon)
                 return True
         elif not claimable_rewards:
             return True
@@ -457,7 +457,7 @@ class SaleOrder(models.Model):
         """
         self.ensure_one()
         points = coupon.points
-        if coupon.program_id.applies_on != 'future':
+        if coupon.program_id.applies_on != 'future' and self.state not in ('sale', 'done'):
             # Points that will be given by the order upon confirming the order
             points += self.coupon_point_ids.filtered(lambda p: p.coupon_id == coupon).points
         # Points already used by rewards
@@ -476,7 +476,7 @@ class SaleOrder(models.Model):
             if pe.coupon_id in coupon_points:
                 pe.points = coupon_points.pop(pe.coupon_id)
         if coupon_points:
-            self.sudo().write({
+            self.sudo().with_context(tracking_disable=True).write({
                 'coupon_point_ids': [(0, 0, {
                     'coupon_id': coupon.id,
                     'points': points,
@@ -663,7 +663,7 @@ class SaleOrder(models.Model):
                 if len(program_point_entries) < len(all_point_changes):
                     new_coupon_points = all_point_changes[len(program_point_entries):]
                     # NOTE: Maybe we could batch the creation of coupons across multiple programs but this really only applies to gift cards.
-                    new_coupons = self.env['loyalty.card'].with_context(create_mail=False).create([{
+                    new_coupons = self.env['loyalty.card'].with_context(create_mail=False, tracking_disable=True).create([{
                         'program_id': program.id,
                         'partner_id': False,
                         'points': 0,
@@ -754,8 +754,6 @@ class SaleOrder(models.Model):
                 continue
             for program in programs:
                 # Do not consider the program's discount + automatic discount lines for the amount to check.
-                # NOTE: since rewards are not applied without manual input anymore, does it make sense to subtract
-                #  them from the amounts?
                 if line.reward_id.program_id.trigger == 'auto' or line.reward_id.program_id == program:
                     amounts_per_program[program]['untaxed'] -= line.price_subtotal
                     amounts_per_program[program]['tax'] -= line.price_tax
@@ -858,7 +856,7 @@ class SaleOrder(models.Model):
                 # Loyalty programs and ewallets are nominative
                 if program.is_nominative:
                     partner = self.partner_id.id
-                coupons = self.env['loyalty.card'].sudo().with_context(create_mail=False).create([{
+                coupons = self.env['loyalty.card'].sudo().with_context(create_mail=False, tracking_disable=True).create([{
                     'program_id': program.id,
                     'partner_id': partner,
                     'points': 0,
@@ -894,6 +892,7 @@ class SaleOrder(models.Model):
     def _try_apply_code(self, code):
         """
         Tries to apply a promotional code to the sales order.
+        It can be either from a coupon or a program rule.
 
         Returns a dict with the following possible keys:
          - 'not_found': Populated with True if the code did not yield any result.

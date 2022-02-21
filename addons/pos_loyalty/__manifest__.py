@@ -12,7 +12,6 @@
     'data': [
         'security/ir.model.access.csv',
         'data/default_barcode_patterns.xml',
-        # 'data/mail_template_data.xml',
         'views/loyalty_card_views.xml',
         'views/loyalty_mail_views.xml',
         'views/pos_config_views.xml',

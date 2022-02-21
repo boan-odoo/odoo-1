@@ -56,7 +56,7 @@ export class RewardButton extends PosComponent {
         if (rewards.length === 0) {
             await this.showPopup('ErrorPopup', {
                 title: this.env._t('No rewards available.'),
-                body: this.env._t('There are not rewards claimable for this customer.')
+                body: this.env._t('There are no rewards claimable for this customer.')
             });
             return false;
         } else if (rewards.length === 1) {

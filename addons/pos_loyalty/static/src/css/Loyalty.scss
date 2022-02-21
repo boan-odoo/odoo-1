@@ -37,13 +37,15 @@
     }
 
     .gift-card-button {
-        width: 100%;
-        margin: 6px;
+        width: auto !important;
+        height: auto !important;
+        padding: 10px;
     }
 
     .gift-card-button-confirm {
-        width: 47%;
-        margin: 0px;
+        flex-grow: 1;
+        height: auto !important;
+        padding: 10px;
     }
 
     .gift-card-input-container {

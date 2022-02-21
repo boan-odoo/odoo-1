@@ -7,7 +7,7 @@ from odoo import _, models
 class PosOrder(models.Model):
     _inherit = 'pos.order'
 
-    def validate_coupon_programs(self, point_changes, new_codes, *args):
+    def validate_coupon_programs(self, point_changes, new_codes):
         """
         This is called upon validating the order in the pos.
 
@@ -51,7 +51,7 @@ class PosOrder(models.Model):
             'payload': {},
         }
 
-    def confirm_coupon_programs(self, coupon_data, *args):
+    def confirm_coupon_programs(self, coupon_data):
         """
         This is called after the order is created.
 
@@ -91,6 +91,15 @@ class PosOrder(models.Model):
                 coupon.points += coupon_data[coupon_new_id_map[coupon.id]]['points']
             for reward_code in coupon_data[coupon_new_id_map[coupon.id]].get('line_codes', []):
                 lines_per_reward_code[reward_code].write({'coupon_id': coupon.id})
+        # Reports per program
+        report_per_program = {}
+        coupon_per_report = defaultdict(list)
+        for coupon in new_coupons:
+            if coupon.program_id not in report_per_program:
+                report_per_program[coupon.program_id] = coupon.program_id.communication_plan_ids.\
+                    filtered(lambda c: c.trigger == 'create').pos_report_print_id
+            for report in report_per_program[coupon.program_id]:
+                coupon_per_report[report.id].append(coupon.id)
         return {
             'coupon_updates': [{
                 'old_id': coupon_new_id_map[coupon.id],
@@ -109,6 +118,7 @@ class PosOrder(models.Model):
                 'expiration_date': coupon.expiration_date,
                 'code': coupon.code,
             } for coupon in new_coupons if coupon.program_id.applies_on == 'future'],
+            'coupon_report': coupon_per_report,
         }
 
     def _add_mail_attachment(self, name, ticket):
