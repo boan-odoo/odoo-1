@@ -11,12 +11,11 @@ registerModel({
     identifyingFields: ['id'],
     lifecycleHooks: {
         _created() {
-            this._timeoutIds = {};
             this._loadLocalSettings();
         },
         _willDelete() {
-            for (const timeoutId of Object.values(this._timeoutIds)) {
-                browser.clearTimeout(timeoutId);
+            for (const timeout of Object.values(this.timeouts)) {
+                browser.clearTimeout(timeout);
             }
         },
     },
@@ -130,23 +129,18 @@ registerModel({
          * @param {number} param0.volume
          */
         async saveVolumeSetting({ guestId, partnerId, volume }) {
-            this._debounce(async () => {
-                await this.async(() => this.env.services.rpc(
-                    {
-                        model: 'res.users.settings',
-                        method: 'set_volume_setting',
-                        args: [
-                            [this.messaging.currentUser.resUsersSettingsId],
-                            partnerId,
-                            volume,
-                        ],
-                        kwargs: {
-                            guest_id: guestId,
-                        },
-                    },
-                    { shadow: true },
-                ));
-            }, 5000, `sound_${partnerId}`);
+            if (this.timeouts[`sound_${partnerId}`]) {
+                browser.clearTimeout(this.timeouts[`sound_${partnerId}`]);
+            }
+            this.update({
+                timeouts: {
+                    ...this.timeouts,
+                    [`sound_${partnerId}`]: browser.setTimeout(
+                        this._onSaveVolumeSettingTimeout.bind(this, { guestId, partnerId, volume }),
+                        5000,
+                    ),
+                },
+            });
         },
         /**
          * @param {float} voiceActivationThreshold
@@ -174,21 +168,6 @@ registerModel({
         },
         /**
          * @private
-         * @param {function} f
-         * @param {number} delay in ms
-         * @param {any} key
-         */
-        _debounce(f, delay, key) {
-            this._timeoutIds[key] && browser.clearTimeout(this._timeoutIds[key]);
-            this._timeoutIds[key] = browser.setTimeout(() => {
-                if (!this.exists()) {
-                    return;
-                }
-                f();
-            }, delay);
-        },
-        /**
-         * @private
          */
         _loadLocalSettings() {
             const voiceActivationThresholdString = this.env.services.local_storage.getItem(
@@ -208,21 +187,65 @@ registerModel({
         /**
          * @private
          */
-        async _saveSettings() {
-            this._debounce(async () => {
-                await this.async(() => this.env.services.rpc(
-                    {
-                        model: 'res.users.settings',
-                        method: 'set_res_users_settings',
-                        args: [[this.messaging.currentUser.resUsersSettingsId], {
-                            push_to_talk_key: this.pushToTalkKey,
-                            use_push_to_talk: this.usePushToTalk,
-                            voice_active_duration: this.voiceActiveDuration,
-                        }],
+        async _onSaveGlobalSettingsTimeout() {
+            if (!this.exists()) {
+                return;
+            }
+            await this.async(() => this.env.services.rpc(
+                {
+                    model: 'res.users.settings',
+                    method: 'set_res_users_settings',
+                    args: [[this.messaging.currentUser.resUsersSettingsId], {
+                        push_to_talk_key: this.pushToTalkKey,
+                        use_push_to_talk: this.usePushToTalk,
+                        voice_active_duration: this.voiceActiveDuration,
+                    }],
+                },
+                { shadow: true },
+            ));
+        },
+        /**
+         * @param {Object} param0
+         * @param {number} [param0.guestId]
+         * @param {number} [param0.partnerId]
+         * @param {number} param0.volume
+         */
+        async _onSaveVolumeSettingTimeout({ guestId, partnerId, volume }) {
+            if (!this.exists()) {
+                return;
+            }
+            await this.async(() => this.env.services.rpc(
+                {
+                    model: 'res.users.settings',
+                    method: 'set_volume_setting',
+                    args: [
+                        [this.messaging.currentUser.resUsersSettingsId],
+                        partnerId,
+                        volume,
+                    ],
+                    kwargs: {
+                        guest_id: guestId,
                     },
-                    { shadow: true },
-                ));
-            }, 2000, 'globalSettings');
+                },
+                { shadow: true },
+            ));
+        },
+        /**
+         * @private
+         */
+        async _saveSettings() {
+            if (this.timeouts.globalSettings) {
+                browser.clearTimeout(this.timeouts.globalSettings);
+            }
+            this.update({
+                timeouts: {
+                    ...this.timeouts,
+                    globalSettings: browser.setTimeout(
+                        this._onSaveGlobalSettingsTimeout,
+                        2000,
+                    ),
+                },
+            });
         },
     },
     fields: {
@@ -262,6 +285,9 @@ registerModel({
          */
         rtcLayout: attr({
             default: 'tiled',
+        }),
+        timeouts: attr({
+            default: {},
         }),
         /**
          * true if the user wants to use push to talk (over voice activation)
