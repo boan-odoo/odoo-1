@@ -5,6 +5,7 @@ import { TimeOffCalendarView } from "./time_off_calendar_views";
 import viewRegistry from 'web.view_registry';
 
 export const TimeOffCalendarEmployeeView = TimeOffCalendarView.extend({
+    mobile_friendly: true,
     config: Object.assign({}, TimeOffCalendarView.prototype.config, {
         Controller: TimeOffCalendarEmployeeController,
     }),
