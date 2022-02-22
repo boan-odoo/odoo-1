@@ -140,10 +140,10 @@ odoo.define('website.s_website_form', function (require) {
                 // behavior as a feature.
                 _.each(fields, function (field) {
                     var $field = self.$target.find('input[name="' + field + '"], textarea[name="' + field + '"]');
-                    if (!$field.val() && _.has(dataForValues, field) && dataForValues[field]) {
+                    if (_.has(dataForValues, field) && dataForValues[field]) {
                         $field.val(dataForValues[field]);
                         $field.data('website_form_original_default_value', $field.val());
-                    } else if (!$field.val() && $field.data('fill-with')) {
+                    } else if ($field.data('fill-with')) {
                         $field.val(self.preFillValues[$field.data('fill-with')] || '');
                         $field.data('website_form_original_default_value', $field.val());
                     }
