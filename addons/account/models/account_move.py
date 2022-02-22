@@ -5175,7 +5175,7 @@ class AccountMoveLine(models.Model):
                         if credit_line.company_currency_id.compare_amounts(credit_exchange_amount, 0.0) < 0:
                             exchange_lines_to_fix += credit_line
                             amounts_list.append({'amount_residual': credit_exchange_amount})
-                            remaining_credit_amount += credit_exchange_amount
+                            remaining_credit_amount -= credit_exchange_amount
 
                     if exchange_lines_to_fix:
                         exchange_vals = exchange_lines_to_fix._prepare_exchange_difference_move_vals(

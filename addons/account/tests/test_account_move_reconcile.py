@@ -283,6 +283,21 @@ class TestAccountMoveReconcile(AccountTestInvoicingCommon):
                 )
                 batch.remove_move_reconcile()
 
+    def test_reconcile_lines_multiple_in_foreign_currency(self):
+        currency = self.currency_data['currency']
+
+        rates = (1/3, 1/2)
+        for rate1 in rates:
+            for rate2 in rates:
+                for rate3 in rates:
+                    with self.subTest(rate1=rate1, rate2=rate2, rate3=rate3):
+                        line_1 = self._create_line_for_reconciliation(120.0 * rate1, 120.0, currency, '2017-01-01')
+                        line_2 = self._create_line_for_reconciliation(120.0 * rate2, 120.0, currency, '2017-01-01')
+                        line_3 = self._create_line_for_reconciliation(-240.0 * rate3, -240.0, currency, '2017-01-01')
+
+                        (line_1 + line_2 + line_3).reconcile()
+                        self.assertTrue(line_1.full_reconcile_id)
+
     def test_reverse_exchange_difference(self):
         """ Test the reversing of the exchange difference to ensure there is no unexpected recursion inside the
         'reconcile' method.
