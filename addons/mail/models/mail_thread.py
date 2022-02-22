@@ -1675,6 +1675,8 @@ class MailThread(models.AbstractModel):
         if not attachments and not attachment_ids:
             return dict(attachment_ids=[])
 
+        self.ensure_one()  # Posting attachments on multiple records is not supported ATM
+
         return_values = {}
         body = message_values.get('body')
         model = message_values['model']
@@ -1853,12 +1855,11 @@ class MailThread(models.AbstractModel):
         if self._context.get('mail_post_autofollow') and partner_ids:
             self.message_subscribe(partner_ids=list(partner_ids))
 
-        parent_id = self._message_compute_parent_id(parent_id)
-
         msg_values = dict(msg_kwargs)
         if 'email_add_signature' not in msg_values:
             msg_values['email_add_signature'] = True
         msg_values.update({
+            'attachment_ids': [],
             'author_id': author_id,
             'author_guest_id': author_guest_id,
             'email_from': email_from,
@@ -1867,24 +1868,26 @@ class MailThread(models.AbstractModel):
             'body': body,
             'subject': subject or False,
             'message_type': message_type,
-            'parent_id': parent_id,
             'subtype_id': subtype_id,
             # recipients
             'partner_ids': partner_ids,
         })
 
-        attachments = attachments or []
-        attachment_ids = attachment_ids or []
-        attachement_values = self._message_post_process_attachments(attachments, attachment_ids, msg_values)
-        msg_values.update(attachement_values)  # attachement_ids, [body]
-
         msg_vals_list = [
             {
-                'record_name': record.display_name,  # Only applied if not already provided
+                'record_name': thread.display_name,  # Only applied if not already provided
                 **msg_values,
-                'res_id': record.id,
-            } for record in self
+                'parent_id': thread._message_compute_parent_id(parent_id),
+                'res_id': thread.id,
+            } for thread in self
         ]
+
+        attachments = attachments or []
+        attachment_ids = attachment_ids or []
+        if attachments or attachment_ids:
+            for thread, msg_vals in zip(self, msg_vals_list):
+                attachement_values = thread._message_post_process_attachments(attachments, attachment_ids, msg_vals)
+                msg_vals.update(attachement_values)  # attachement_ids, [body]
 
         new_messages = self._message_create(msg_vals_list)
 
