@@ -7,6 +7,167 @@ import logging
 import requests
 from odoo import api, fields, models
 
+RESPONSE = '''
+[
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145672,
+    "id_str": "1128358947772145672",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145673,
+    "id_str": "1128358947772145673",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145674,
+    "id_str": "1128358947772145674",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145675,
+    "id_str": "1128358947772145675",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145676,
+    "id_str": "1128358947772145676",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145677,
+    "id_str": "1128358947772145677",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145678,
+    "id_str": "1128358947772145678",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145679,
+    "id_str": "1128358947772145679",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145680,
+    "id_str": "1128358947772145680",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145681,
+    "id_str": "1128358947772145681",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145682,
+    "id_str": "1128358947772145682",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145683,
+    "id_str": "1128358947772145683",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  },
+  {
+    "created_at": "Tue May 14 17:58:31 +0000 2019",
+    "id": 1128358947772145684,
+    "id_str": "1128358947772145684",
+    "text": "Through the Twitter Developer Labs program, we'll soon preview new versions of GET /tweets and GET /users, followed… https://t.co/9i4c5bUUCu",
+    "user": {
+      "id": 6253282,
+      "id_str": "6253282",
+      "name": "Twitter API",
+      "screen_name": "TwitterAPI"
+    }
+  }
+]
+'''
+
 API_ENDPOINT = 'https://api.twitter.com'
 API_VERSION = '1.1'
 REQUEST_TOKEN_URL = '%s/oauth2/token' % API_ENDPOINT
@@ -49,9 +210,9 @@ class WebsiteTwitter(models.Model):
         WebsiteTweets = self.env['website.twitter.tweet']
         tweet_ids = []
         for website in self:
-            if not all((website.twitter_api_key, website.twitter_api_secret, website.twitter_screen_name)):
-                _logger.debug("Skip fetching favorite tweets for unconfigured website %s", website)
-                continue
+            # if not all((website.twitter_api_key, website.twitter_api_secret, website.twitter_screen_name)):
+            #     _logger.debug("Skip fetching favorite tweets for unconfigured website %s", website)
+            #     continue
             params = {'screen_name': website.twitter_screen_name}
             last_tweet = WebsiteTweets.search([('website_id', '=', website.id),
                                                      ('screen_name', '=', website.twitter_screen_name)],
@@ -59,7 +220,8 @@ class WebsiteTwitter(models.Model):
             if last_tweet:
                 params['since_id'] = int(last_tweet.tweet_id)
             _logger.debug("Fetching favorite tweets using params %r", params)
-            response = self._request(website, REQUEST_FAVORITE_LIST_URL, params=params)
+            # response = self._request(website, REQUEST_FAVORITE_LIST_URL, params=params)
+            response = json.loads(RESPONSE)
             for tweet_dict in response:
                 tweet_id = tweet_dict['id']  # unsigned 64-bit snowflake ID
                 tweet_ids = WebsiteTweets.search([('tweet_id', '=', tweet_id)]).ids

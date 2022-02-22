@@ -18,10 +18,10 @@ class Twitter(http.Controller):
         secret = request.website.twitter_api_secret
         screen_name = request.website.twitter_screen_name
         debug = request.env['res.users'].has_group('website.group_website_publisher')
-        if not key or not secret:
-            if debug:
-                return {"error": _("Please set the Twitter API Key and Secret in the Website Settings.")}
-            return []
+        # if not key or not secret:
+        #     if debug:
+        #         return {"error": _("Please set the Twitter API Key and Secret in the Website Settings.")}
+        #     return []
         if not screen_name:
             if debug:
                 return {"error": _("Please set a Twitter screen name to load favorites from, "
@@ -29,8 +29,7 @@ class Twitter(http.Controller):
             return []
         TwitterTweets = request.env['website.twitter.tweet']
         tweets = TwitterTweets.search(
-                [('website_id', '=', request.website.id),
-                 ('screen_name', '=', screen_name)],
+                [('website_id', '=', request.website.id)],
                 limit=int(limit), order="tweet_id desc")
         if len(tweets) < 12:
             if debug:

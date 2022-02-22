@@ -48,16 +48,7 @@ sOptions.registry.twitter = sOptions.Class.extend({
         this.$target.on('click.website_twitter', '.lnk_configure', function (e) {
             window.location = e.currentTarget.href;
         });
-        this.trigger_up('widgets_stop_request', {
-            $target: this.$target,
-        });
         return this._super.apply(this, arguments);
-    },
-    /**
-     * @override
-     */
-    cleanForSave: function () {
-        this.$target.find('.twitter_timeline').empty();
     },
     /**
      * @override

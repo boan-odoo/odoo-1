@@ -48,18 +48,19 @@ class ResConfigSettings(models.TransientModel):
             return _('HTTP Error: Something is misconfigured')
 
     def _check_twitter_authorization(self):
-        try:
-            self.website_id.fetch_favorite_tweets()
+        # try:
+        #     self.website_id.fetch_favorite_tweets()
 
-        except requests.HTTPError as e:
-            _logger.info("%s - %s" % (e.response.status_code, e.response.reason), exc_info=True)
-            raise UserError("%s - %s" % (e.response.status_code, e.response.reason) + ':' + self._get_twitter_exception_message(e.response.status_code))
-        except IOError:
-            _logger.info(_('We failed to reach a twitter server.'), exc_info=True)
-            raise UserError(_('Internet connection refused') + ' ' + _('We failed to reach a twitter server.'))
-        except Exception:
-            _logger.info(_('Please double-check your Twitter API Key and Secret!'), exc_info=True)
-            raise UserError(_('Twitter authorization error!') + ' ' + _('Please double-check your Twitter API Key and Secret!'))
+        # except requests.HTTPError as e:
+        #     _logger.info("%s - %s" % (e.response.status_code, e.response.reason), exc_info=True)
+        #     raise UserError("%s - %s" % (e.response.status_code, e.response.reason) + ':' + self._get_twitter_exception_message(e.response.status_code))
+        # except IOError:
+        #     _logger.info(_('We failed to reach a twitter server.'), exc_info=True)
+        #     raise UserError(_('Internet connection refused') + ' ' + _('We failed to reach a twitter server.'))
+        # except Exception:
+        #     _logger.info(_('Please double-check your Twitter API Key and Secret!'), exc_info=True)
+        #     raise UserError(_('Twitter authorization error!') + ' ' + _('Please double-check your Twitter API Key and Secret!'))
+        pass
 
     @api.model
     def create(self, vals):
