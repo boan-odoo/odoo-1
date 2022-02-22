@@ -27,6 +27,7 @@ registerModel({
             this.removeVideo();
             this.update({
                 audioElement: clear(),
+                candidateType: clear(),
                 isTalking: clear(),
             });
         },
@@ -289,6 +290,10 @@ registerModel({
         avatarUrl: attr({
             compute: '_computeAvatarUrl',
         }),
+        /**
+         * RTCIceCandidate.type String
+         */
+        candidateType: attr(),
         /**
          * The mail.channel of the session, rtc sessions are part and managed by
          * mail.channel

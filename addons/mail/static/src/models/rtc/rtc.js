@@ -504,7 +504,7 @@ registerModel({
                             },
                         },
                     });
-                    console.log({ pc: peerConnection });
+                    await this._registerConnectionType(token, peerConnection);
                 } catch (e) {
                     if (!(e instanceof DOMException) || e.name !== "OperationError") {
                         throw e;
@@ -783,6 +783,19 @@ registerModel({
                     transceiver.stop();
                 } catch (e) {
                     // transceiver may already be stopped by the remote.
+                }
+            }
+        },
+        async _registerConnectionType(token, peerConnection) {
+            const rtcSession = this.messaging.models['RtcSession'].findFromIdentifyingData({ id: token });
+            const stats = await peerConnection.getStats();
+            for (const { localCandidateId, state, type } of stats.values()) {
+                if (type === 'candidate-pair' && state === 'succeeded' && localCandidateId) {
+                    const localCandidate = stats.get(localCandidateId);
+                    if (localCandidate) {
+                        rtcSession.update({ candidateType: localCandidate.candidateType });
+                        return;
+                    }
                 }
             }
         },

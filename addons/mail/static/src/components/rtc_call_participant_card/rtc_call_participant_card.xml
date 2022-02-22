@@ -80,8 +80,11 @@
                         <t t-if="!callParticipantCard.rtcSession.isOwnSession">
                             <Popover>
                                 <i class="o_RtcCallParticipantCard_volumeMenuAnchor" t-on-click="callParticipantCard.onClickVolumeAnchor" t-ref="volumeMenuAnchor"/>
-                                <t t-set="opened">
-                                    <input type="range" min="0.0" max="1" step="0.01" t-att-value="callParticipantCard.rtcSession.volume" t-on-change="callParticipantCard.onChangeVolume"/>
+                                <t t-set-slot="opened">
+                                    <div class="d-flex flex-column">
+                                        <div>Candidate Type: <t t-esc="callParticipantCard.rtcSession.candidateType"/></div>
+                                        <input type="range" min="0.0" max="1" step="0.01" t-att-value="callParticipantCard.rtcSession.volume" t-on-change="callParticipantCard.onChangeVolume"/>
+                                    </div>
                                 </t>
                             </Popover>
                         </t>
