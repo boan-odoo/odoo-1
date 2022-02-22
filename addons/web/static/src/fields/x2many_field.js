@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Domain } from "@web/core/domain";
+import { evalDomain } from "@web/views/relational_model";
 import { FormViewDialog } from "@web/views/view_dialogs/form_view_dialog";
 import { KanbanRenderer } from "@web/views/kanban/kanban_renderer";
 import { ListRenderer } from "@web/views/list/list_renderer";
@@ -30,7 +30,7 @@ export class X2ManyField extends Component {
     get rendererProps() {
         const subViewInfo = this.fieldInfo.views[this.viewMode];
         return {
-            creates: this.creates,
+            activeActions: this.activeActions,
             info: {
                 ...subViewInfo,
                 editable: this.props.record.isInEdition && subViewInfo.editable,
@@ -42,25 +42,41 @@ export class X2ManyField extends Component {
         };
     }
 
-    get creates() {
+    get activeActions() {
+        // activeActions computed by getActiveActions is of the form
+        // interface ActiveActions {
+        //     edit: Boolean;
+        //     create: Boolean;
+        //     delete: Boolean;
+        //     duplicate: Boolean;
+        // }
         if (this.viewMode !== "list") {
             return null;
         }
         const { evalContext } = this.props.record;
         const { options } = this.fieldInfo;
         const subViewInfo = this.fieldInfo.views[this.viewMode];
-        // WOWL something of that taste?
-        const canCreate =
-            "create" in options ? new Domain(options.create).contains(evalContext) : true;
-        const canDelete =
-            "delete" in options ? new Domain(options.delete).contains(evalContext) : true;
-        const canLink = "link" in options ? new Domain(options.link).contains(evalContext) : true;
-        const canUnlink =
-            "unlink" in options ? new Domain(options.unlink).contains(evalContext) : true;
+        // options set on field is of the form
+        // interface Options {
+        //     create: Boolean;
+        //     delete: Boolean;
+        //     link: Boolean;
+        //     unlink: Boolean;
+        // }
 
-        const create = canCreate && subViewInfo.activeActions.create;
-        const unlink = canUnlink;
-        return { create, canDelete, canLink, unlink };
+        // We need to take care of tags "control" and "create" to set create stuff
+
+        let canCreate = "create" in options ? evalDomain(options.create, evalContext) : true;
+        let canDelete = "delete" in options ? evalDomain(options.delete, evalContext) : true;
+        const canLink = "link" in options ? evalDomain(options.link, evalContext) : true;
+        const canUnlink = "unlink" in options ? evalDomain(options.unlink, evalContext) : true;
+
+        canCreate = canCreate && subViewInfo.activeActions.create;
+        canDelete = canDelete && subViewInfo.activeActions.delete;
+
+        // We need to compute some object used by (x2many renderers) based on that
+
+        return { canCreate, canDelete, canLink, canUnlink };
     }
 
     get pagerProps() {

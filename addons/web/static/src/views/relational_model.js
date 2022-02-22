@@ -78,7 +78,7 @@ export function stringToOrderBy(string) {
     });
 }
 
-function evalDomain(modifier, evalContext) {
+export function evalDomain(modifier, evalContext) {
     if (Array.isArray(modifier)) {
         modifier = new Domain(modifier).contains(evalContext);
     }

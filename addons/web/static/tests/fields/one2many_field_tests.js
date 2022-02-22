@@ -2767,7 +2767,7 @@ QUnit.module("Fields", (hooks) => {
         await clickSave(target);
     });
 
-    QUnit.test("one2many list: deleting one records", async function (assert) {
+    QUnit.skipWOWL("one2many list: deleting one records", async function (assert) {
         assert.expect(7);
         serverData.models.partner.records[0].p = [1, 2, 4];
         serverData.views = {

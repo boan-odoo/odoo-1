@@ -31,7 +31,6 @@ export class ListRenderer extends Component {
         this.allColumns = this.props.info.columns;
         this.keyOptionalFields = this.createKeyOptionalFields();
         this.getOptionalActiveFields();
-        this.activeActions = this.props.info.activeActions;
         this.cellClassByColumn = {};
         this.groupByButtons = this.props.info.groupBy.buttons;
         this.state = useState({
@@ -473,6 +472,7 @@ export class ListRenderer extends Component {
 ListRenderer.template = "web.ListRenderer";
 ListRenderer.components = { CheckBoxDropdownItem, Field, ViewButton, CheckBox, Dropdown };
 ListRenderer.props = [
+    "activeActions?",
     "list",
     "fields",
     "info",
