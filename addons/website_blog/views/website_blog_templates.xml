@@ -66,7 +66,7 @@ list of filtered posts (by date or tag).
             <t t-set="search" t-value="original_search or search"/>
         </t>
 
-        <section id="o_wblog_index_content" t-att-class="opt_blog_cards_design and 'o_wblog_page_cards_bg'">
+        <section id="o_wblog_index_content" t-att-class="opt_blog_cards_design and 'o_wblog_page_cards_bg'" data-name="Blogs List">
             <div class="container py-4">
                 <div t-if="original_search and posts" class="alert alert-warning mt8">
                     No results found for '<span t-esc="original_search"/>'. Showing results for '<span t-esc="search"/>'.
@@ -92,7 +92,7 @@ list of filtered posts (by date or tag).
 <!-- (Option) Blog: Show latest-post as top banner
     Replace top-banner content with the latest published post
 -->
-<template id="opt_blog_cover_post" name="Top banner - Name / Latest Post" inherit_id="website_blog.blog_post_short" active="True" customize_show="True">
+<template id="opt_blog_cover_post" name="Top banner - Name / Latest Post" inherit_id="website_blog.blog_post_short" active="True">
     <xpath expr="//div[@id='o_wblog_blog_top_droppable']" position="replace">
         <div t-if="first_post or blog" class="container">
             <div class="row py-4">
@@ -135,7 +135,7 @@ list of filtered posts (by date or tag).
 </template>
 
 <!-- (Option) Blog: Show latest-post as top banner : 'Full Width' design -->
-<template id="opt_blog_cover_post_fullwidth_design" name="Full-Width Cover" inherit_id="website_blog.opt_blog_cover_post" active="True" customize_show="True">
+<template id="opt_blog_cover_post_fullwidth_design" name="Full-Width Cover" inherit_id="website_blog.opt_blog_cover_post" active="True">
     <xpath expr="//div[hasclass('container')]" position="replace">
         <t t-if="blog or first_post" t-call="website.record_cover">
             <t t-set="_record" t-value="blog or first_post"/>

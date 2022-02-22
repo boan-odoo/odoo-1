@@ -17,6 +17,38 @@
                 data-set-tags=""
                 data-create-method="createTag"/>
         </div>
+        <!-- Checkout page  -->
+        <div data-selector="main:has(#o_wblog_index_content)" data-no-check="true" data-force-name="Blogs Page">
+            <we-select string="Top Banner" data-no-preview="true" data-reload="/">
+                <we-button data-customize-website-views="website_blog.opt_blog_cover_post"
+                    data-name="latest_post_opt">Latest Post</we-button>
+                <we-button data-customize-website-views="">Drop Zone for Building Blocks</we-button>
+            </we-select>
+            <we-checkbox string="⌙ Full-Width"
+                         data-customize-website-views="website_blog.opt_blog_cover_post_fullwidth_design"
+                         data-dependencies="latest_post_opt"
+                         data-no-preview="true"
+                         data-reload="/"/>
+        </div>
+        <!-- Blogs list  -->
+        <div data-selector="#o_wblog_index_content" data-no-check="true">
+            <we-checkbox string="Author"
+                         data-customize-website-views="website_blog.opt_posts_loop_show_author"
+                         data-no-preview="true"
+                         data-reload="/"/>
+            <we-checkbox string="Comments/Views Stats"
+                         data-customize-website-views="website_blog.opt_posts_loop_show_stats"
+                         data-no-preview="true"
+                         data-reload="/"/>
+            <we-checkbox string="Cover"
+                         data-customize-website-views="website_blog.opt_posts_loop_show_cover"
+                         data-no-preview="true"
+                         data-reload="/"/>
+            <we-checkbox string="Teaser &amp; Tags"
+                         data-customize-website-views="website_blog.opt_posts_loop_show_teaser"
+                         data-no-preview="true"
+                         data-reload="/"/>
+        </div>
     </xpath>
     <xpath expr="//*[@data-js='anchor']" position="attributes">
         <attribute name="data-exclude" add=".o_wblog_post_content_field > :not(div, section)" separator=","/>
