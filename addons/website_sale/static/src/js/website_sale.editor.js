@@ -682,4 +682,39 @@ options.registry.WebsiteSaleProductsItem = options.Class.extend({
         }).then(reload);
     },
 });
+
+options.registry.WebsiteSaleProductAttribute = options.Class.extend({
+    /**
+     * @override
+     */
+     willStart: async function () {
+        const _super = this._super.bind(this);
+        this.attributeID = this.$target.closest('[data-attribute_id]').data('attribute_id');
+        return _super(...arguments);
+    },
+
+    /**
+     * @see this.selectClass for params
+     */
+    setDisplayType: function (previewMode, widgetValue, params) {
+        this._rpc({
+            route: '/shop/config/attribute',
+            params: {
+                attribute_id: this.attributeID,
+                display_type: widgetValue,
+            },
+        }).then(reload);
+    },
+
+    /**
+     * @override
+     */
+    async _computeWidgetState(methodName, params) {
+        switch (methodName) {
+            case 'setDisplayType':
+                return this.$target.closest('[data-attribute_display_type]').data('attribute_display_type');
+        }
+        return this._super(methodName, params);
+    },
+});
 });
