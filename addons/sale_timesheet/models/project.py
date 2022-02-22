@@ -329,22 +329,25 @@ class Project(models.Model):
         domain = self._get_sale_items_domain([('is_service', '=', True), ('is_downpayment', '=', False)])
         return self.env['sale.order.line'].search(domain)
 
-    def _get_profitability_aal_domain(self):
-        domain = [('so_line', 'in', self._get_all_sale_order_items().ids)]
-        if not self.allow_billable:  # Then useless to compute the revenues since the project should gains no money since it is not billable
-            domain = expression.AND([domain, [('amount', '<', 0)]])
+    def _get_profitability_sale_lines_domain(self, include_sol_linked_project=False):
+        super()._get_profitability_sale_lines_domain(include_sol_linked_project)
+
+    def _get_profitability_aal_domain(self, sol_ids=None, additional_domain=None):
+        domain = [('so_line', 'in', sol_ids or self._get_all_sale_order_items().ids)]
+        if additional_domain:
+            domain = expression.AND([domain, additional_domain])
         return expression.OR([
             super()._get_profitability_aal_domain(),
             domain,
         ])
 
-    def _get_profitability_items_from_aal(self):
+    def _get_profitability_items_from_aal(self, with_action=True):
         aa_line_read_group = self.env['account.analytic.line'].read_group(
             self._get_profitability_aal_domain(),
             ['timesheet_invoice_type', 'timesheet_invoice_id', 'so_line', 'product_id', 'unit_amount', 'amount', 'ids:array_agg(id)'],
             ['timesheet_invoice_type', 'timesheet_invoice_id', 'so_line', 'product_id'],
             lazy=False)
-        can_see_timesheets = self.user_has_groups('hr_timesheet.group_hr_timesheet_approver')
+        can_see_timesheets = with_action and len(self) == 1 and self.user_has_groups('hr_timesheet.group_hr_timesheet_approver')
         revenues_dict = defaultdict(lambda: {'invoiced': 0.0, 'to_invoice': 0.0, 'record_ids': []})
         costs_dict = defaultdict(lambda: {'billed': 0.0, 'to_bill': 0.0, 'record_ids': []})
         total_revenues = {'invoiced': 0.0, 'to_invoice': 0.0}
@@ -370,8 +373,11 @@ class Project(models.Model):
             aal_per_invoice[invoice_id] += res['ids']
             sol_id = res['so_line'] and res['so_line'][0]
             aal_per_sol[sol_id] += res['ids']
-        sol_read = self.env['sale.order.line'].search_read(
-            [('id', 'in', list(aal_per_sol.keys())), ('product_id', '!=', False), ('is_expense', '=', False)],
+        sol_read = self.env['sale.order.line'].search_read(  # could be move in sale_project.
+            [('id', 'in', list(aal_per_sol.keys())),
+             ('product_id', '!=', False), ('is_expense', '=', False),
+             ('is_downpayment', '=', False),
+             '|', ('qty_to_invoice', '>', 0), ('qty_delivered', '>', 0)],
             ['product_id', 'untaxed_amount_to_invoice', 'untaxed_amount_invoiced', 'is_downpayment'],
         )
         sols_per_product = {
@@ -417,7 +423,7 @@ class Project(models.Model):
         }
 
         basic_action_timesheets = None
-        if can_see_timesheets and len(self) == 1:
+        if can_see_timesheets:
             basic_action_timesheets = self.action_billable_time_button()
 
         def convert_dict_into_profitability_data(d):
@@ -449,9 +455,9 @@ class Project(models.Model):
             'costs': {'data': convert_dict_into_profitability_data(costs_dict), 'total': total_costs},
         }
 
-    def _get_profitability_items(self):
-        profitability_items = super()._get_profitability_items()
-        aal_profitability_items = self._get_profitability_items_from_aal()
+    def _get_profitability_items(self, with_action=True):
+        profitability_items = super()._get_profitability_items(with_action)
+        aal_profitability_items = self._get_profitability_items_from_aal(with_action)
 
         def merge_profitability_data(a, b):
             assert all(k in a and k in b for k in ['data', 'total']), 'the both dictionary given in parameter should have "data" and "total" as key'

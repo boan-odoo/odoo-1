@@ -7,10 +7,10 @@ from odoo import models, _
 class Project(models.Model):
     _inherit = 'project.project'
 
-    def _get_expenses_profitability_items(self):
+    def _get_expenses_profitability_items(self, with_action=True):
         if not self.analytic_account_id:
             return {}
-        can_see_expense = self.user_has_groups('hr_expense.group_hr_expense_team_approver')
+        can_see_expense = with_action and self.user_has_groups('hr_expense.group_hr_expense_team_approver')
         expenses_read_group = self.env['hr.expense'].read_group(
             [
                 ('analytic_account_id', 'in', self.analytic_account_id.ids),

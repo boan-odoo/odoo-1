@@ -3,6 +3,7 @@
 
 import json
 from ast import literal_eval
+from collections import defaultdict
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, AccessError
@@ -184,9 +185,11 @@ class Project(models.Model):
         return self._cr.fetchone()
 
     def _get_all_sale_order_items(self):
+        # FIXME should be rename to _get_service_sale_order_items
         return self.env['sale.order.line'].browse(self._fetch_sale_order_items())
 
     def _get_all_sale_order_items_query(self):
+        # FIXME should be rename to _get_service_sale_order_items_query
         Project = self.env['project.project']
         project_query_str, project_params = Project\
             ._where_calc([('id', 'in', self.ids), ('sale_line_id', '!=', False)])\
@@ -214,6 +217,56 @@ class Project(models.Model):
             'total': len(sol_ids),
             'data': self.get_sale_items_data([('id', 'in', sol_ids)]),
         }
+
+    def _get_profitability_sale_lines_domain(self, include_sol_linked_project=True):
+        if include_sol_linked_project:
+            return [('order_id', 'in', self._get_all_sales_orders().ids)]
+        service_sale_lines = self._get_all_sale_order_items()
+        return [
+            ('order_id', 'in', service_sale_lines.order_id.ids),
+            ('id', 'not in', service_sale_lines.ids),
+        ]
+
+    def _get_profitability_items_from_sol(self, with_action=True):
+        sale_line_read_group = self.env['sale.order.line'].read_group(
+            self._get_profitability_sale_lines_domain(),
+            ['product_id', 'ids:array_agg(id)', 'untaxed_amount_to_invoice', 'untaxed_amount_invoiced'],
+            ['product_id'],
+        )
+        sols_per_product = {
+            res['product_id'][0]: {
+                {'to_invoice': res['untaxed_amount_to_invoice'], 'invoiced': res['untaxed_amount_invoiced'], 'sol_ids': res['ids']}
+            } for res in sale_line_read_group
+        }
+        # product_read_group = self.env['product.product'].read_group(
+        #     [('id', 'in', list(sols_per_product)), ('expense_policy', '=', 'no')],
+        #     ['invoice_policy', 'service_type', 'type', 'ids:array_agg(id)'],
+        #     ['invoice_policy', 'service_type', 'type'],
+        #     lazy=False)
+        # sols_service_policy = defaultdict(dict)
+        # service_policy_to_invoice_type = {
+        #     'ordered_timesheet': 'billable_fixed',
+        #     'delivered_timesheet': 'billable_time',
+        #     'delivered_manual': 'service_revenues',
+        # }
+        # for res in product_read_group:
+        #     product_ids = res['ids']
+        #     service_policy = GENERAL_TO_SERVICE.get(
+        #         (res['invoice_policy'], res['service_type']),
+        #         res['type'] == 'service' and 'ordered_timesheet')
+        #     for product_id, sol_dict in sols_per_product.items():
+        #         if product_id in product_ids:
+        #             sols_service_policy[service_policy].update(sol_dict)  # just for testing purpose
+        #             invoice_type = service_policy_to_invoice_type.get(service_policy, 'other_revenues')
+        #             revenue = revenues_dict[invoice_type]
+        #             for sol_id, (untaxed_amount_to_invoice, untaxed_amount_invoiced, is_downpayment) in sol_dict.items():
+        #                 assert not is_downpayment, f"Normally no downpayment should be taken into account, see the problematic SOL ID: {sol_id}"  # FIXME: testing purpose
+        #                 revenue['to_invoice'] += untaxed_amount_to_invoice
+        #                 total_revenues['to_invoice'] += untaxed_amount_to_invoice
+        #                 revenue['invoiced'] += untaxed_amount_invoiced
+        #                 total_revenues['invoiced'] += untaxed_amount_invoiced
+        #                 if invoice_type == 'other_revenues':
+        #                     revenue['record_ids'].append(sol_id)
 
     def _get_stat_buttons(self):
         buttons = super(Project, self)._get_stat_buttons()

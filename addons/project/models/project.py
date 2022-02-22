@@ -737,7 +737,7 @@ class Project(models.Model):
     def _get_profitability_aal_domain(self):
         return [('account_id', 'in', self.analytic_account_id.ids)]
 
-    def _get_profitability_items(self):
+    def _get_profitability_items(self, with_action=True):
         return {
             'revenues': {'data': [], 'total': {'invoiced': 0.0, 'to_invoice': 0.0}},
             'costs': {'data': [], 'total': {'billed': 0.0, 'to_bill': 0.0}},
