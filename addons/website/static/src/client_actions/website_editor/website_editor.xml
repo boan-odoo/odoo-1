@@ -3,10 +3,10 @@
 
     <t t-name="website.WebsiteEditorClientAction" owl="1">
         <div class="o_website_editor">
-            <iframe t-att-src="iframeFallbackUrl" t-ref="iframefallback"/>
-            <iframe t-att-src="initialUrl" t-ref="iframe" t-att-class="this.websiteContext.edition ? 'editor_enabled' : ''"/>
+            <iframe t-att-src="iframeFallbackUrl" t-ref="iframefallback" t-att-class="this.websiteContext.edition ? 'd-none' : ''"/>
+            <iframe t-att-src="initialUrl" t-ref="iframe" t-att-class="this.websiteContext.edition ? 'editor_enable editor_has_snippets' : ''"/>
             <t t-if="this.websiteContext.edition">
-                <WysiwygAdapterComponent Component="this.Wysiwyg" iframe="this.iframe" context="this.userService.context"/>
+                <WysiwygAdapterComponent iframe="this.iframe" Component="this.Wysiwyg" context="this.userService.context"/>
             </t>
         </div>
     </t>
