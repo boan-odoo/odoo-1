@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="repair_repair_return_form" model="ir.ui.view">
+        <field name="name">repair.return</field>
+        <field name="model">repair.return</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="is_mismatch_location" invisible="1"/>
+                <field name="has_lots" invisible="1"/>
+                <field name="picking_id" invisible="1" force_save="1"/>
+                <group attrs="{'invisible': [('is_mismatch_location', '=', False)]}">
+                    <div class="oe_grey">
+                        <p>This picking appears to have a different destination location from your selected repair location. You may want to check that the final locations of the returned products matches the expected repair location.</p>
+                    </div>
+                </group>
+                <group>
+                    <field name="return_repair_lines" nolabel="1">
+                        <tree editable="top" create="0">
+                            <field name="product_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="lot_id" force_save="1" attrs="{'column_invisible': [('parent.has_lots', '=', False)]}"/>
+                            <field name="quantity"/>
+                            <field name="uom_id" groups="uom.group_uom"/>
+                            <field name="move_id" invisible="1"/>
+                        </tree>
+                    </field>
+                </group>
+                <group>
+                    <field name="location_id" options="{'no_create': True, 'no_open': True}" groups="stock.group_stock_multi_locations" required="1"/>
+                    <field name="partner_id" options="{'no_create': True}"/>
+                    <field name="company_id" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="create_repairs" string="Create" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z" />
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

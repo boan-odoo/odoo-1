@@ -84,6 +84,7 @@
                             <field name="partner_id" widget="res_partner_many2one" attrs="{'required':[('invoice_method','!=','none')]}" context="{'res_partner_search_mode': 'customer', 'show_vat': True}"/>
                             <field name="address_id" groups="account.group_delivery_invoice_address"/>
                             <field name="sale_order_id"/>
+                            <field name="picking_id" options="{'no_create': True}"/>
                             <field name="user_id" domain="[('share', '=', False)]"/>
                         </group>
                         <group>

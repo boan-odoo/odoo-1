@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from odoo.exceptions import UserError
 from odoo.tests import tagged, Form
 
 
@@ -321,3 +322,39 @@ class TestRepair(AccountTestInvoicingCommon):
         # tax02 should not be present since it belongs to the second company.
         self.assertEqual(repair_order.operations.tax_id, tax01)
         self.assertEqual(repair_order.fees_lines.tax_id, tax01)
+
+    def test_repair_return(self):
+        "Tests functionality of creating a repair directly from a return picking"
+        return_picking_type_id = self.stock_warehouse.return_type_id
+
+        # test return
+        picking_form = Form(self.env['stock.picking'])
+        picking_form.picking_type_id = return_picking_type_id
+        return_picking = picking_form.save()
+        # nothing in picking to repair => error when try to make RO
+        with self.assertRaises(UserError):
+            return_picking.action_repair_return()
+        picking_form = Form(return_picking)
+        with picking_form.move_ids_without_package.new() as move:
+            move.product_id = self.product_product_12
+            move.product_uom_qty = 2
+        with picking_form.move_ids_without_package.new() as move:
+            move.product_id = self.product_product_3
+            move.product_uom_qty = 3
+        return_picking = picking_form.save()
+
+        # test wizard to create repairs
+        res_dict = return_picking.action_repair_return()
+        wizard = Form(self.env[(res_dict.get('res_model'))].with_context(res_dict['context'])).save()
+        # no qtys to repair selected
+        with self.assertRaises(UserError):
+            wizard.create_repairs()
+        for line in wizard.return_repair_lines:
+            line.quantity = 2
+        wizard.create_repairs()
+
+        # test that the resulting repairs are correctly created
+        self.assertEqual(len(return_picking.repair_ids), 2, "A repair order for each returned product should have been created and linked to original return.")
+        for repair in return_picking.repair_ids:
+            self.assertEqual(repair.location_id, return_picking.location_dest_id, "Wizard should have defaulted ROs' repair location to same as return destination location")
+            self.assertEqual(repair.product_qty, 2, "ROs' quantity to repair should match the qty provided by the wizard")

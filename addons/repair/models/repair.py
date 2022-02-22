@@ -111,6 +111,10 @@ class Repair(models.Model):
         readonly=True, required=True, index=True,
         default=lambda self: self.env.company)
     sale_order_id = fields.Many2one('sale.order', 'Sale Order', copy=False, help="Sale Order from which the product to be repaired comes from.")
+    picking_id = fields.Many2one(
+        'stock.picking', 'Return Order',
+        domain="[('picking_type_id.is_return_type', '=', True), ('company_id', '=', company_id)]",
+        copy=False, help="Return Order from which the product to be repaired comes from.")
     tag_ids = fields.Many2many('repair.tags', string="Tags")
     invoiced = fields.Boolean('Invoiced', copy=False, readonly=True)
     repaired = fields.Boolean('Repaired', copy=False, readonly=True)
