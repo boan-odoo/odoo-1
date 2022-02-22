@@ -12,7 +12,12 @@ _logger = logging.getLogger(__name__)
 @odoo.tests.tagged('post_install', '-at_install', 'post_install_l10n')
 class TestReports(odoo.tests.TransactionCase):
     def test_reports(self):
-        domain = [('report_type', 'like', 'qweb')]
+        blacklisted_reports = [
+            'account.report_original_vendor_bill',
+            'account.report_invoice_with_payments',
+            'account.report_invoice',
+        ]
+        domain = [('report_type', 'like', 'qweb'), ('report_name', 'not in', blacklisted_reports)]
         for report in self.env['ir.actions.report'].search(domain):
             report_model = 'report.%s' % report.report_name
             try:
