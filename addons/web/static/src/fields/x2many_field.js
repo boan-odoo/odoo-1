@@ -38,7 +38,6 @@ export class X2ManyField extends Component {
             fields: Object.assign({}, this.props.fields, subViewInfo.fields), // WOWL is this necessary?
             list: this.props.value,
             openRecord: this.openRecord.bind(this),
-            hasTrashIcon: this.viewMode === "list",
         };
     }
 
@@ -76,7 +75,20 @@ export class X2ManyField extends Component {
 
         // We need to compute some object used by (x2many renderers) based on that
 
-        return { canCreate, canDelete, canLink, canUnlink };
+        const result = { canCreate, canLink, canUnlink };
+
+        const onDelete = (record) => {
+            const list = this.props.value;
+            list.delete(record);
+            // + update pager info
+            this.render();
+        };
+
+        if (canDelete) {
+            result.onDelete = onDelete;
+        }
+
+        return result;
     }
 
     get pagerProps() {

@@ -463,10 +463,6 @@ export class ListRenderer extends Component {
         }
         this.unselectRow();
     }
-
-    delete(record) {
-        this.props.list.delete(record);
-    }
 }
 
 ListRenderer.template = "web.ListRenderer";
@@ -479,6 +475,5 @@ ListRenderer.props = [
     "openRecord",
     "creates?",
     "hasSelectors?",
-    "hasTrashIcon?",
 ];
 ListRenderer.defaultProps = { hasSelectors: false };

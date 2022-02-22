@@ -9,8 +9,8 @@ import {
     serializeDate,
     serializeDateTime,
 } from "@web/core/l10n/dates";
-import { ORM } from "@web/core/orm_service";
 import { registry } from "@web/core/registry";
+import { Commands, ORM } from "@web/core/orm_service";
 import { Deferred, KeepLast, Mutex } from "@web/core/utils/concurrency";
 import { isTruthy } from "@web/core/utils/xml";
 import { session } from "@web/session";
@@ -1530,11 +1530,12 @@ export class Group extends DataPoint {
         this.count--;
     }
 }
+
 export class StaticList extends DataPoint {
     constructor(model, params, state) {
         super(...arguments);
 
-        this.resIds = params.resIds || [];
+        this.resIds = [...params.resIds] || [];
         this.records = [];
         this._cache = {};
         this.views = params.views || {};
@@ -1545,6 +1546,7 @@ export class StaticList extends DataPoint {
         this.limit = params.limit || state.limit || this.constructor.DEFAULT_LIMIT;
         this.offset = 0;
 
+        this._commands = [];
         this._changes = [];
 
         this.editedRecord = null;
@@ -1561,7 +1563,13 @@ export class StaticList extends DataPoint {
     }
 
     delete(record) {
-        debugger;
+        const { resId } = record;
+        // Where do we need to manage resId=false?
+        this._commands.push(Commands.delete(record.resId));
+        const i = this.resIds.findIndex((id) => id === resId);
+        this.resIds.splice(i, 1);
+        const j = this.records.findIndex((r) => r.resId === resId);
+        this.records.splice(j, 1);
     }
 
     exportState() {
