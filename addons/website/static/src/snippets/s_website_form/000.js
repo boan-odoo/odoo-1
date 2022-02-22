@@ -130,14 +130,23 @@ odoo.define('website.s_website_form', function (require) {
             if ($dataFor.length || !_.isEmpty(this.preFillValues)) {
                 var dataForValues = $dataFor.length ? JSON.parse($dataFor.data('values').replace('False', '""').replace('None', '""').replace(/'/g, '"')) : [];
                 var fields = _.pluck(this.$target.serializeArray(), 'name');
+                // All types of inputs do not have a value property (eg:hidden),
+                // for these inputs any function that is supposed to put a value
+                // property actually puts a HTML value attribute. Because of
+                // this, we have to clean up these values at the cleanForSave of
+                // option or else the data loaded here could become default
+                // values. We could set the values to submit() for these fields
+                // but this could break customizations that use the current
+                // behavior as a feature.
                 _.each(fields, function (field) {
                     var $field = self.$target.find('input[name="' + field + '"], textarea[name="' + field + '"]');
                     if (!$field.val() && _.has(dataForValues, field) && dataForValues[field]) {
                         $field.val(dataForValues[field]);
+                        $field.data('website_form_original_default_value', $field.val());
                     } else if (!$field.val() && $field.data('fill-with')) {
                         $field.val(self.preFillValues[$field.data('fill-with')] || '');
+                        $field.data('website_form_original_default_value', $field.val());
                     }
-                    $field.data('website_form_original_default_value', $field.val());
                 });
             }
 
