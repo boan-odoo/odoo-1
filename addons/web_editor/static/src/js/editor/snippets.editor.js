@@ -540,6 +540,11 @@ var SnippetEditor = Widget.extend({
         if (shouldRecordUndo) {
             this.options.wysiwyg.odooEditor.historyStep();
         }
+
+        // TODO Currently the only way to guarantee that options get updated
+        // after the snippet removal, is by triggering an options update. This
+        // call can probably be removed if the promise above can be awaited.
+        this.trigger_up('snippet_option_update', {onSuccess: () => null});
     },
     /**
      * Displays/Hides the editor overlay.
