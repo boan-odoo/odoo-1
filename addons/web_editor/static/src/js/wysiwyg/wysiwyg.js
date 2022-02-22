@@ -1800,6 +1800,7 @@ const Wysiwyg = Widget.extend({
      */
     _saveViewBlocks: function (context) {
 
+        const $ = (this.$editable[0].ownerDocument.defaultView.$ || window.$);
         const $allBlocks = $((this.options || {}).savableSelector).filter('.o_dirty');
 
         const $dirty = $('.o_dirty');
