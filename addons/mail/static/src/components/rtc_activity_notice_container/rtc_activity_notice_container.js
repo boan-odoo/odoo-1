@@ -2,11 +2,10 @@
 
 import { useModels } from "@mail/component_hooks/use_models/use_models";
 import { getMessagingComponent } from "@mail/utils/messaging_component";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useSubEnv } = owl;
 
-export class RtcActivityNoticeContainer extends LegacyComponent {
+export class RtcActivityNoticeContainer extends Component {
 
     /**
      * @override

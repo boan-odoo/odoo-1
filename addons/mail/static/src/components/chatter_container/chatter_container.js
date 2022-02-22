@@ -2,7 +2,6 @@
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { clear } from '@mail/model/model_field_command';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onWillDestroy, onWillUpdateProps } = owl;
 
@@ -22,7 +21,7 @@ const getChatterNextTemporaryId = (function () {
  * may attempt to create a chatter before messaging has been initialized, so
  * this component delays the mounting of chatter until it becomes initialized.
  */
-export class ChatterContainer extends LegacyComponent {
+export class ChatterContainer extends Component {
 
     /**
      * @override

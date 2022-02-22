@@ -4,11 +4,10 @@ import { useComponentToModel } from '@mail/component_hooks/use_component_to_mode
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { useUpdate } from '@mail/component_hooks/use_update/use_update';
 import { markEventHandled } from '@mail/utils/utils';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useRef } = owl;
 
-export class ComposerTextInput extends LegacyComponent {
+export class ComposerTextInput extends Component {
 
     /**
      * @override

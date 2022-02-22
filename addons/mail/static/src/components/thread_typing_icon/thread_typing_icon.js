@@ -1,11 +1,10 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class ThreadTypingIcon extends LegacyComponent {}
+export class ThreadTypingIcon extends Component {}
 
 Object.assign(ThreadTypingIcon, {
     defaultProps: {

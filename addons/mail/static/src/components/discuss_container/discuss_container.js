@@ -3,11 +3,10 @@
 import { useModels } from "@mail/component_hooks/use_models/use_models";
 import { useUpdate } from '@mail/component_hooks/use_update/use_update';
 import { getMessagingComponent } from "@mail/utils/messaging_component";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onWillUnmount } = owl;
 
-export class DiscussContainer extends LegacyComponent {
+export class DiscussContainer extends Component {
 
     /**
      * @override

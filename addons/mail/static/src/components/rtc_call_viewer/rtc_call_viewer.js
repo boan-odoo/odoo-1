@@ -2,7 +2,6 @@
 
 import { useUpdate } from '@mail/component_hooks/use_update/use_update';
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 import Dialog from 'web.OwlDialog';
 
@@ -14,7 +13,7 @@ const components = {
 
 // TODO a nice-to-have would be a resize handle under the videos.
 
-export class RtcCallViewer extends LegacyComponent {
+export class RtcCallViewer extends Component {
 
     /**
      * @override

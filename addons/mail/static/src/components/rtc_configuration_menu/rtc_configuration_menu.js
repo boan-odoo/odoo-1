@@ -1,13 +1,12 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 import { browser } from "@web/core/browser/browser";
 
 const { Component, onWillStart, useState } = owl;
 
-export class RtcConfigurationMenu extends LegacyComponent {
+export class RtcConfigurationMenu extends Component {
 
     /**
      * @override

@@ -5,11 +5,10 @@ import { useDragVisibleDropZone } from '@mail/component_hooks/use_drag_visible_d
 import { useRefToModel } from '@mail/component_hooks/use_ref_to_model/use_ref_to_model';
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { isEventHandled } from '@mail/utils/utils';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class Composer extends LegacyComponent {
+export class Composer extends Component {
 
     /**
      * @override

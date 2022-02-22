@@ -4,7 +4,6 @@ import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { useComponentToModel } from '@mail/component_hooks/use_component_to_model/use_component_to_model';
 import { useRefs } from '@mail/component_hooks/use_refs/use_refs';
 import { link } from '@mail/model/model_field_command';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 import { hidePDFJSButtons } from '@web/legacy/js/libs/pdfjs';
 
@@ -14,7 +13,7 @@ const MIN_SCALE = 0.5;
 const SCROLL_ZOOM_STEP = 0.1;
 const ZOOM_STEP = 0.5;
 
-export class AttachmentViewer extends LegacyComponent {
+export class AttachmentViewer extends Component {
 
     /**
      * @override

@@ -2,11 +2,10 @@
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { useRefToModel } from '@mail/component_hooks/use_ref_to_model/use_ref_to_model';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class MediaPreview extends LegacyComponent {
+export class MediaPreview extends Component {
 
     /**
      * @override

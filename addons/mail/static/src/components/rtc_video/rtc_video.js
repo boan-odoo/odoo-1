@@ -2,11 +2,10 @@
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { useUpdate } from '@mail/component_hooks/use_update/use_update';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class RtcVideo extends LegacyComponent {
+export class RtcVideo extends Component {
 
     /**
      * @override

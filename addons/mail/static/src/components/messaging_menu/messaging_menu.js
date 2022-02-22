@@ -1,11 +1,10 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onMounted, onWillUnmount } = owl;
 
-export class MessagingMenu extends LegacyComponent {
+export class MessagingMenu extends Component {
 
     /**
      * @override

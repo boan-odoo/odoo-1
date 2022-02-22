@@ -1,11 +1,10 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class ChatWindowManager extends LegacyComponent {}
+export class ChatWindowManager extends Component {}
 
 Object.assign(ChatWindowManager, {
     props: {},

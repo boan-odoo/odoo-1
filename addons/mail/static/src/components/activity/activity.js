@@ -3,11 +3,10 @@
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 
 import Popover from "web.Popover";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, markup } = owl;
 
-export class Activity extends LegacyComponent {
+export class Activity extends Component {
 
     get noteAsMarkup() {
         return markup(this.activityView.activity.note);

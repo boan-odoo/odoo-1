@@ -2,11 +2,10 @@
 
 import { _lt } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, xml } = owl;
 
-class DialogCommand extends LegacyComponent {}
+class DialogCommand extends Component {}
 DialogCommand.template = xml`
     <div class="o_command_default">
         <t t-slot="name"/>

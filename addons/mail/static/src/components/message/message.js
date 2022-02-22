@@ -5,7 +5,6 @@ import { useUpdateToModel } from '@mail/component_hooks/use_update_to_model/use_
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
 import { useUpdate } from '@mail/component_hooks/use_update/use_update';
 import { isEventHandled, markEventHandled } from '@mail/utils/utils';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 import { _lt } from 'web.core';
 import { format } from 'web.field_utils';
@@ -17,7 +16,7 @@ const { Component, onWillUnmount, useRef, useState } = owl;
 const READ_MORE = _lt("Read More");
 const READ_LESS = _lt("Read Less");
 
-export class Message extends LegacyComponent {
+export class Message extends Component {
 
     /**
      * @override

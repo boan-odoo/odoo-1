@@ -1,11 +1,10 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class MessageReactionGroup extends LegacyComponent {
+export class MessageReactionGroup extends Component {
 
     get messageReactionGroup() {
         return this.messaging.models['MessageReactionGroup'].get(this.props.localId);

@@ -5,7 +5,6 @@ import { useUpdate } from '@mail/component_hooks/use_update/use_update';
 
 import { FormViewDialog } from 'web.view_dialogs';
 import { ComponentAdapter } from 'web.OwlCompatibility';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useRef } = owl;
 
@@ -30,7 +29,7 @@ class FormViewDialogComponentAdapter extends ComponentAdapter {
     }
 }
 
-export class ComposerSuggestedRecipient extends LegacyComponent {
+export class ComposerSuggestedRecipient extends Component {
 
     /**
      * @override

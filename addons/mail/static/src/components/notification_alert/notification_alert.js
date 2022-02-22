@@ -1,11 +1,10 @@
 /** @odoo-module **/
 
 import { registerMessagingComponent } from '@mail/utils/messaging_component';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class NotificationAlert extends LegacyComponent {
+export class NotificationAlert extends Component {
 
     //--------------------------------------------------------------------------
     // Public

@@ -5,11 +5,10 @@ import {
     isEventHandled,
     markEventHandled,
 } from '@mail/utils/utils';
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class ChatWindowHeader extends LegacyComponent {
+export class ChatWindowHeader extends Component {
 
     //--------------------------------------------------------------------------
     // Public

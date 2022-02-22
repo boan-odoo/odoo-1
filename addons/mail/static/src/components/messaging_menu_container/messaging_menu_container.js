@@ -2,11 +2,10 @@
 
 import { useModels } from "@mail/component_hooks/use_models/use_models";
 import { getMessagingComponent } from "@mail/utils/messaging_component";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useSubEnv } = owl;
 
-export class MessagingMenuContainer extends LegacyComponent {
+export class MessagingMenuContainer extends Component {
 
     /**
      * @override
