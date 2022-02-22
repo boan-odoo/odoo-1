@@ -161,7 +161,7 @@ var SnippetEditor = Widget.extend({
         this.templateOptions = templateOptions;
         this.isTargetParentEditable = false;
         this.isTargetMovable = false;
-        this.$scrollingElement = $().getScrollingElement(this.ownerDocument);
+        this.$scrollingElement = $().getScrollingElement(this.$editable.ownerDocument);
         if (!this.$scrollingElement[0]) {
             this.$scrollingElement = $(this.ownerDocument).find('.o_editable');
         }
@@ -1327,6 +1327,9 @@ var SnippetsMenu = Widget.extend({
         this.$document.on('click.snippets_menu', '*', onClick);
         // Needed as bootstrap stop the propagation of click events for dropdowns
         this.$document.on('mouseup.snippets_menu', '.dropdown-toggle', onClick);
+        if (this.$body[0].document !== this.ownerDocument) {
+            this.$body.on('click.snippets_menu', '*', onClick);
+        }
 
         core.bus.on('deactivate_snippet', this, this._onDeactivateSnippet);
 
@@ -1358,7 +1361,7 @@ var SnippetsMenu = Widget.extend({
 
         // Hide the active overlay when scrolling.
         // Show it again and recompute all the overlays after the scroll.
-        this.$scrollingElement = $().getScrollingElement(this.ownerDocument);
+        this.$scrollingElement = $().getScrollingElement(this.$body[0].ownerDocument);
         if (!this.$scrollingElement[0]) {
             this.$scrollingElement = $(this.ownerDocument).find('.o_editable');
         }
@@ -2403,7 +2406,7 @@ var SnippetsMenu = Widget.extend({
         var $toInsert, dropped, $snippet;
 
         let dragAndDropResolve;
-        let $scrollingElement = $().getScrollingElement(this.ownerDocument);
+        let $scrollingElement = $().getScrollingElement(this.$body[0].ownerDocument);
         if (!$scrollingElement[0]) {
             $scrollingElement = $(this.ownerDocument).find('.o_editable');
         }
