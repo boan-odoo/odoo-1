@@ -239,6 +239,10 @@ class Channel(models.Model):
             raise UserError(_('You cannot delete those groups, as the Whole Company group is required by other modules.'))
 
     def write(self, vals):
+        if 'channel_type' in vals:
+            for channel in self:
+                if channel.channel_type:
+                    raise UserError(_('Cannot change channel type because \'%s\' is already been set to \'%s\'.') % (channel.name, channel.channel_type))
         result = super(Channel, self).write(vals)
         if vals.get('group_ids'):
             self._subscribe_users_automatically()
