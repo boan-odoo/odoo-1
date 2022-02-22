@@ -159,3 +159,55 @@ class TestSurveyInternals(common.TestSurveyCommon):
 
         for question in questions:
             self._assert_skipped_question(question, survey_user)
+
+    @users('survey_manager')
+    def test_copy_conditional_question_settings(self):
+        """ Create 2 questions that triggers each the display of 1 question among 2 depending on the given answer.
+        Then copy the survey and ensures that the cloned survey has the same conditional layout and the cloned survey
+        doesn't reference the original survey.
+        """
+        n_triggering_question = 2
+        n_question_per_triggering_question = 2
+
+        def get_question_by_title(survey, title):
+            return survey.question_ids.filtered(lambda q: q.title == title)[0]
+
+        # Create the survey questions
+        sequence = 100
+        title_prefix = 'test_copy_conditional_question_settings_'
+        for idx_trigger in range(n_triggering_question):
+            triggering_question = self._add_question(
+                self.page_0, f'{title_prefix}{idx_trigger}', 'multiple_choice', survey_id=self.survey.id,
+                sequence=sequence, labels=[{'value': 'Q1'}, {'value': 'no Q1'}])
+            sequence += 1
+            for idx_cond in range(n_question_per_triggering_question):
+                self._add_question(self.page_0, f'{title_prefix}{idx_trigger}_{idx_cond}', 'multiple_choice',
+                                   is_conditional=True, sequence=sequence,
+                                   triggering_question_id=triggering_question.id,
+                                   triggering_answer_id=triggering_question.suggested_answer_ids[idx_cond % 2].id,
+                                   survey_id=self.survey.id, labels=[{'value': 'A0'}, {'value': 'A1'}])
+                sequence += 1
+
+        # Clone the survey
+        survey_clone = self.survey.copy()
+
+        # Verify the conditional layout and that the cloned survey doesn't reference the original survey
+        for idx_trigger in range(n_triggering_question):
+            triggering_question = get_question_by_title(self.survey, f'{title_prefix}{idx_trigger}')
+            triggering_question_cloned = get_question_by_title(survey_clone, f'{title_prefix}{idx_trigger}')
+
+            self.assertFalse(triggering_question_cloned.is_conditional)
+
+            for idx_cond in range(n_question_per_triggering_question):
+                cond_question_cloned = get_question_by_title(survey_clone, f'{title_prefix}{idx_trigger}_{idx_cond}')
+                triggering_answer_idx = idx_cond % 2
+
+                self.assertTrue(cond_question_cloned.is_conditional)
+                # Correct conditional layout
+                self.assertEqual(cond_question_cloned.triggering_question_id.id, triggering_question_cloned.id)
+                self.assertEqual(cond_question_cloned.triggering_answer_id.id,
+                                 triggering_question_cloned.suggested_answer_ids[triggering_answer_idx].id)
+                # Doesn't reference the original survey
+                self.assertNotEqual(cond_question_cloned.triggering_question_id.id, triggering_question.id)
+                self.assertNotEqual(cond_question_cloned.triggering_answer_id.id,
+                                    triggering_question.suggested_answer_ids[triggering_answer_idx].id)

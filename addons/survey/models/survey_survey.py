@@ -349,6 +349,22 @@ class Survey(models.Model):
             return self.sudo()._handle_certification_badges(vals)
         return result
 
+    @api.returns('self', lambda value: value.id)
+    def copy(self, default=None):
+        self.ensure_one()
+        clone = super(Survey, self).copy(default)
+        # Copy conditional display while adapting question and answer references
+        question_mapping = {src.id: dst.id for src, dst in zip(self.question_ids, clone.question_ids)}
+        answer_mapping = {src_a.id: dst_a.id
+                          for src_q, dst_q in zip(self.question_ids, clone.question_ids)
+                          for src_a, dst_a in zip(src_q.suggested_answer_ids, dst_q.suggested_answer_ids)}
+        for src, dst in zip(self.question_ids, clone.question_ids):
+            if src.is_conditional:
+                dst.is_conditional = True
+                dst.triggering_question_id = question_mapping.get(src.triggering_question_id.id)
+                dst.triggering_answer_id = answer_mapping.get(src.triggering_answer_id.id)
+        return clone
+
     def copy_data(self, default=None):
         new_defaults = {'title': _("%s (copy)") % (self.title)}
         default = dict(new_defaults, **(default or {}))
