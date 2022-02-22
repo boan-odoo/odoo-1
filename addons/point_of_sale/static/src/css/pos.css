@@ -1822,6 +1822,14 @@ td {
     white-space: nowrap;
 }
 
+.pos .clientlist-screen tr div.company-field {
+    color: #888c8f;
+}
+
+.pos .clientlist-screen tr.highlight div.company-field {
+    color: white;
+}
+
 .pos .clientlist-screen .client-list th.client-line-last-column-placeholder,
 .pos .clientlist-screen .client-list td.client-line-last-column-placeholder {
     padding: 0;
@@ -1831,22 +1839,34 @@ td {
     transition: all 150ms linear;
     background: rgb(230,230,230);
 }
+.pos .clientlist-screen tr.client-line:hover {
+    cursor: pointer;
+}
 .pos .clientlist-screen .client-list thead > tr,
 .pos .clientlist-screen .client-list tr:nth-child(even) {
-    background: rgb(247,247,247);
+    background: rgb(247,247,247,0.1);
+}
+.pos .edit-client-button:hover {
+    background: #c7c7c7;
 }
 .pos .clientlist-screen .client-list tr.highlight{
-    transition: all 150ms linear;
-    background: rgb(110,200,155) !important;
+    background: rgb(110,200,155);
     color: white;
 }
-.pos .clientlist-screen .client-list tr.lowlight{
-    transition: all 150ms linear;
-    background: rgb(216, 238, 227);
+.pos .clientlist-screen .client-list tr.highlight:active {
+    background-color: black;
+    color: white;
 }
-.pos .clientlist-screen .client-list tr.lowlight:nth-child(even){
-    transition: all 150ms linear;
-    background: rgb(227, 246, 237);
+.pos .clientlist-screen tr.client-line:hover {
+    cursor: pointer;
+    background: rgb(207, 238, 222);
+}
+.pos .clientlist-screen tr.client-line:active {
+    background-color: black;
+    color: white;
+}
+.pos .edit-client-button:hover {
+    background: #c7c7c7;
 }
 .pos .client-line {
     vertical-align: text-top;
@@ -1854,6 +1874,10 @@ td {
 .pos .edit-client-button {
     margin-top: 6px;
     color: black;
+}
+.pos .client-list tr.client-line.highlight{
+    background: rgb(110,200,155);
+    color: white;
 }
 .pos .clientlist-screen .client-details{
     padding: 16px;

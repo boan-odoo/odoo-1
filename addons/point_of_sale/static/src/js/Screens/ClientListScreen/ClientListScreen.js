@@ -77,7 +77,18 @@ odoo.define('point_of_sale.ClientListScreen', function(require) {
             } else {
                 res = this.env.pos.db.get_partners_sorted(1000);
             }
-            return res.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') });
+            res.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') });
+            // the selected client (if any) is displayed at the top of the list
+            if (this.state.selectedClient) {
+                let indexOfSelectedPartner = res.findIndex( partner => 
+                    partner.id === this.state.selectedClient.id
+                );
+                if (indexOfSelectedPartner !== -1) {
+                    res.splice(indexOfSelectedPartner, 1);
+                    res.unshift(this.state.selectedClient);
+                }
+            }
+            return res
         }
         get isEveryPartnerLoadedAfterStartOfSession() {
             return !this.env.pos.config.limited_partners_loading || this.env.pos.config.partner_load_background;

@@ -5,8 +5,12 @@
         <tr t-attf-class="client-line {{highlight}}" t-att-data-id="props.partner.id"
             t-on-click="() => this.props.onClickClient(props.partner)">
             <td>
-                <t t-esc="props.partner.name or ''" />
-                <br/><t t-esc="props.partner.parent_name or ''"/>
+                <div>
+                    <t t-esc="props.partner.name or ''" />
+                </div>
+                <div class="company-field">
+                    <t t-esc="props.partner.parent_name or ''" />
+                </div>
             </td>
             <td t-if="!env.isMobile">
                 <t t-esc="shortAddress" />
@@ -15,7 +19,7 @@
                 <div t-if="props.partner.phone">
                     <i class="fa fa-phone"/><t t-esc="props.partner.phone"/>
                 </div>
-                <div t-if="props.partner.email" class="e-mail-field">
+                <div t-if="props.partner.email" class="email-field">
                     <i class="fa fa-paper-plane-o"/><t t-esc="props.partner.email" />
                 </div>
             </td>
