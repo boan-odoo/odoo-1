@@ -5,13 +5,12 @@ import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { browser } from "@web/core/browser/browser";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
 const userMenuRegistry = registry.category("user_menuitems");
 
-export class UserMenu extends LegacyComponent {
+export class UserMenu extends Component {
     setup() {
         this.user = useService("user");
         const { origin } = browser.location;

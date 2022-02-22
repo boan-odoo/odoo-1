@@ -4,11 +4,10 @@ import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { FACET_ICONS } from "../utils/misc";
 import { useBus } from "@web/core/utils/hooks";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class ComparisonMenu extends LegacyComponent {
+export class ComparisonMenu extends Component {
     setup() {
         this.icon = FACET_ICONS.comparison;
 

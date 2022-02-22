@@ -6,7 +6,6 @@ import { Transition } from "@web/core/transition";
 import { useService } from "@web/core/utils/hooks";
 import { BurgerUserMenu } from "./user_menu/user_menu";
 import { MobileSwitchCompanyMenu } from "./mobile_switch_company_menu/mobile_switch_company_menu";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onMounted, useState } = owl;
 
@@ -17,7 +16,7 @@ const { Component, onMounted, useState } = owl;
 
 const SWIPE_ACTIVATION_THRESHOLD = 100;
 
-export class BurgerMenu extends LegacyComponent {
+export class BurgerMenu extends Component {
     setup() {
         this.company = useService("company");
         this.user = useService("user");

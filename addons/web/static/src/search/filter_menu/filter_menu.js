@@ -5,11 +5,10 @@ import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { CustomFilterItem } from "./custom_filter_item";
 import { FACET_ICONS } from "../utils/misc";
 import { useBus } from "@web/core/utils/hooks";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class FilterMenu extends LegacyComponent {
+export class FilterMenu extends Component {
     setup() {
         this.icon = FACET_ICONS.filter;
 

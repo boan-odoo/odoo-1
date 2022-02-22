@@ -8,7 +8,6 @@ import { scrollTo } from "@web/core/utils/scrolling";
 import { fuzzyLookup } from "@web/core/utils/search";
 import { debounce } from "@web/core/utils/timing";
 import { escapeRegExp } from "../utils/strings";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onWillStart, useRef, useState, markRaw } = owl;
 
@@ -73,10 +72,10 @@ function splitCommandName(name, searchValue) {
     return searchValue.length && splitName.length > 1 ? splitName : [name];
 }
 
-export class DefaultCommandItem extends LegacyComponent {}
+export class DefaultCommandItem extends Component {}
 DefaultCommandItem.template = "web.DefaultCommandItem";
 
-export class CommandPalette extends LegacyComponent {
+export class CommandPalette extends Component {
     setup() {
         this.keyId = 1;
         this.keepLast = new KeepLast();

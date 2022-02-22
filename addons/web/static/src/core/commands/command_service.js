@@ -2,7 +2,6 @@
 
 import { registry } from "@web/core/registry";
 import { CommandPaletteDialog } from "./command_palette_dialog";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, xml } = owl;
 
@@ -37,7 +36,7 @@ const commandCategoryRegistry = registry.category("command_categories");
 const commandProviderRegistry = registry.category("command_provider");
 const commandSetupRegistry = registry.category("command_setup");
 
-class DefaultFooter extends LegacyComponent {
+class DefaultFooter extends Component {
     setup() {
         this.elements = commandSetupRegistry
             .getEntries()

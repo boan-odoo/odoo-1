@@ -1,11 +1,10 @@
 /** @odoo-module */
 import { registry } from "./registry";
 import { NotUpdatable, ErrorHandler } from "./utils/components";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, xml } = owl;
 
-export class MainComponentsContainer extends LegacyComponent {
+export class MainComponentsContainer extends Component {
     setup() {
         this.Components = registry.category("main_components").getEntries();
     }

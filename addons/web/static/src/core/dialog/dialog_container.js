@@ -1,11 +1,10 @@
 /** @odoo-module **/
 
 import { ErrorHandler, NotUpdatable } from "../utils/components";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, xml } = owl;
 
-export class DialogContainer extends LegacyComponent {
+export class DialogContainer extends Component {
     setup() {
         this.props.bus.addEventListener("UPDATE", this.render.bind(this));
     }

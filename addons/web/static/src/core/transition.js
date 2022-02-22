@@ -1,6 +1,5 @@
 /** @odoo-module */
 import { browser } from "./browser/browser";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useState, useEffect, xml, onWillUpdateProps, useComponent } = owl;
 
@@ -114,7 +113,7 @@ export function useTransition({
  * in a t-foreach loop) without knowing at setup-time how many transitions need
  * to be created. @see useTransition
  */
-export class Transition extends LegacyComponent {
+export class Transition extends Component {
     setup() {
         const { visible, leaveDuration, name, onLeave } = this.props;
         this.transition = useTransition({

@@ -4,7 +4,6 @@ import { useBus, useService } from "@web/core/utils/hooks";
 import { usePosition } from "../position/position_hook";
 import { useDropdownNavigation } from "./dropdown_navigation_hook";
 import { localization } from "../l10n/localization";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const {
     Component,
@@ -41,7 +40,7 @@ export const DROPDOWN = Symbol("Dropdown");
 /**
  * @extends Component
  */
-export class Dropdown extends LegacyComponent {
+export class Dropdown extends Component {
     setup() {
         this.state = useState({
             open: this.props.startOpen,
@@ -118,22 +117,22 @@ export class Dropdown extends LegacyComponent {
             useEffect(
                 () => {
                     const onClick = (ev) => {
-                        if (this.el.contains(ev.target)) {
+                        if (this.rootRef.el.contains(ev.target)) {
                             // ignore clicks inside the dropdown
                             return;
                         }
                         this.toggle();
                     };
-                    this.el.parentElement.addEventListener("click", onClick);
+                    this.rootRef.el.parentElement.addEventListener("click", onClick);
                     return () => {
-                        this.el.parentElement.removeEventListener("click", onClick);
+                        this.rootRef.el.parentElement.removeEventListener("click", onClick);
                     };
                 },
                 () => []
             );
 
             // Position menu relatively to parent element
-            usePosition(() => this.el.parentElement, positioningOptions);
+            usePosition(() => this.rootRef.el.parentElement, positioningOptions);
         } else {
             // Position menu relatively to inner toggler
             const togglerRef = useRef("togglerRef");
@@ -144,10 +143,6 @@ export class Dropdown extends LegacyComponent {
     // -------------------------------------------------------------------------
     // Private
     // -------------------------------------------------------------------------
-
-    get el() {
-        return this.rootRef.el;
-    }
 
     /**
      * Changes the dropdown state and notifies over the Dropdown bus.
@@ -217,13 +212,13 @@ export class Dropdown extends LegacyComponent {
      * @param {DropdownStateChangedPayload} args
      */
     onDropdownStateChanged(args) {
-        if (this.el.contains(args.emitter.el)) {
+        if (this.rootRef.el.contains(args.emitter.rootEl)) {
             // Do not listen to events emitted by self or children
             return;
         }
 
         // Emitted by direct siblings ?
-        if (args.emitter.el.parentElement === this.el.parentElement) {
+        if (args.emitter.rootEl.parentElement === this.rootRef.el.parentElement) {
             // Sync the group status
             this.state.groupIsOpen = args.newState.groupIsOpen;
 
@@ -272,7 +267,8 @@ export class Dropdown extends LegacyComponent {
         }
         // Close if we clicked outside the dropdown, or outside the parent
         // element if it is the toggler
-        const rootEl = this.props.toggler === "parent" ? this.el.parentElement : this.el;
+        const rootEl =
+            this.props.toggler === "parent" ? this.rootRef.el.parentElement : this.rootRef.el;
         const gotClickedInside = rootEl.contains(ev.target);
         if (!gotClickedInside) {
             this.close();

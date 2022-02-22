@@ -7,7 +7,6 @@ import { FavoriteMenu } from "../favorite_menu/favorite_menu";
 import { FilterMenu } from "../filter_menu/filter_menu";
 import { GroupByMenu } from "../group_by_menu/group_by_menu";
 import { SearchBar } from "../search_bar/search_bar";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
@@ -18,7 +17,7 @@ const MAPPING = {
     favorite: FavoriteMenu,
 };
 
-export class ControlPanel extends LegacyComponent {
+export class ControlPanel extends Component {
     setup() {
         this.actionService = useService("action");
     }

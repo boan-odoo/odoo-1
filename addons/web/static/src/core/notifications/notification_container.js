@@ -2,11 +2,10 @@
 
 import { Notification } from "./notification";
 import { Transition } from "@web/core/transition";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, xml, useState } = owl;
 
-export class NotificationContainer extends LegacyComponent {
+export class NotificationContainer extends Component {
     setup() {
         this.notifications = useState(this.props.notifications);
     }

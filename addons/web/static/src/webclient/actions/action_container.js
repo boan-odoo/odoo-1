@@ -1,14 +1,13 @@
 /** @odoo-module **/
 
 import { ActionDialog } from "./action_dialog";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, xml, onWillDestroy } = owl;
 
 // -----------------------------------------------------------------------------
 // ActionContainer (Component)
 // -----------------------------------------------------------------------------
-export class ActionContainer extends LegacyComponent {
+export class ActionContainer extends Component {
     setup() {
         this.info = {};
         this.onActionManagerUpdate = ({ detail: info }) => {

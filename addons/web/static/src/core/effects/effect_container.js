@@ -1,9 +1,8 @@
 /** @odoo-module **/
 
 const { Component, xml, onWillDestroy } = owl;
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
-export class EffectContainer extends LegacyComponent {
+export class EffectContainer extends Component {
     setup() {
         this.effect = null;
         const listenerRef = this.props.bus.addEventListener("UPDATE", (ev) => {

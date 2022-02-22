@@ -4,13 +4,12 @@ import { Dropdown } from "@web/core/dropdown/dropdown";
 import { CheckBox } from "@web/core/checkbox/checkbox";
 import { registry } from "@web/core/registry";
 import { useAutofocus, useService } from "@web/core/utils/hooks";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useState } = owl;
 
 const favoriteMenuRegistry = registry.category("favoriteMenu");
 
-export class CustomFavoriteItem extends LegacyComponent {
+export class CustomFavoriteItem extends Component {
     setup() {
         this.notificationService = useService("notification");
         this.descriptionRef = useAutofocus();

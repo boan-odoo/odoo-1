@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import { useAutofocus } from "../utils/hooks";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, useExternalListener, useState } = owl;
 
@@ -18,7 +17,7 @@ const { Component, useExternalListener, useState } = owl;
  * or previous).
  * @extends Component
  */
-export class Pager extends LegacyComponent {
+export class Pager extends Component {
     setup() {
         this.state = useState({
             isEditing: false,

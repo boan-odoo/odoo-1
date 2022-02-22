@@ -1,9 +1,8 @@
 /** @odoo-module **/
 
-import { LegacyComponent } from "@web/legacy/legacy_component";
 const { Component, onError, useComponent, xml } = owl;
 
-export class NotUpdatable extends LegacyComponent {
+export class NotUpdatable extends Component {
     setup() {
         const node = useComponent().__owl__;
         node.patch = () => {};
@@ -12,7 +11,7 @@ export class NotUpdatable extends LegacyComponent {
 }
 NotUpdatable.template = xml`<t t-slot="default" />`;
 
-export class ErrorHandler extends LegacyComponent {
+export class ErrorHandler extends Component {
     setup() {
         onError((error) => {
             this.props.onError(error);

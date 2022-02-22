@@ -4,7 +4,6 @@ import { browser } from "@web/core/browser/browser";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { Transition } from "@web/core/transition";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, onWillDestroy, useState } = owl;
 
@@ -18,7 +17,7 @@ const { Component, onWillDestroy, useState } = owl;
  *
  * After a delay of 3s, if a rpc is still not completed, we also block the UI.
  */
-export class LoadingIndicator extends LegacyComponent {
+export class LoadingIndicator extends Component {
     setup() {
         this.state = useState({
             count: 0,

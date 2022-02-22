@@ -2,11 +2,10 @@
 
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { useBus, useService } from "@web/core/utils/hooks";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component } = owl;
 
-export class ProfilingItem extends LegacyComponent {
+export class ProfilingItem extends Component {
     setup() {
         this.profiling = useService("profiling");
         useBus(this.props.bus, "UPDATE", this.render);
