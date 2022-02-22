@@ -2712,8 +2712,8 @@ QUnit.module("Fields", (hooks) => {
         assert.containsNone(target, "td.o_list_record_remove button");
     });
 
-    QUnit.skipWOWL("one2many list: unlink two records", async function (assert) {
-        assert.expect(8);
+    QUnit.skipWOWL("many2many list: unlink two records", async function (assert) {
+        assert.expect(7);
         serverData.models.partner.records[0].p = [1, 2, 4];
         serverData.views = {
             "partner,false,form": `
@@ -2756,7 +2756,6 @@ QUnit.module("Fields", (hooks) => {
         });
         await clickEdit(target);
         assert.containsN(target, "td.o_list_record_remove button", 3);
-        assert.hasClass(target.querySelector("td.o_list_record_remove button"), "fa fa-trash-o");
 
         await click(target.querySelector("td.o_list_record_remove button"));
         assert.containsN(target, "td.o_list_record_remove button", 2);
@@ -2768,10 +2767,17 @@ QUnit.module("Fields", (hooks) => {
         await clickSave(target);
     });
 
-    QUnit.skipWOWL("one2many list: deleting one records", async function (assert) {
+    QUnit.test("one2many list: deleting one records", async function (assert) {
         assert.expect(7);
         serverData.models.partner.records[0].p = [1, 2, 4];
-        const form = await makeView({
+        serverData.views = {
+            "partner,false,form": `
+                <form>
+                    <field name="display_name"/>
+                </form>
+            `,
+        };
+        await makeView({
             type: "form",
             resModel: "partner",
             serverData,
@@ -2801,25 +2807,13 @@ QUnit.module("Fields", (hooks) => {
                         "should have generated the command 2 (DELETE) with id 2"
                     );
                 }
-                return this._super.apply(this, arguments);
-            },
-            archs: {
-                "partner,false,form": '<form><field name="display_name"/></form>',
             },
         });
         await clickEdit(target);
+        assert.containsN(target, "td.o_list_record_remove button", 3);
 
-        assert.containsN(form, "td.o_list_record_remove button", 3, "should have 3 remove buttons");
-
-        assert.hasClass(
-            form.$("td.o_list_record_remove button").first(),
-            "fa fa-trash-o",
-            "should have trash bin icons to remove (delete) records"
-        );
-
-        await click(form.$("td.o_list_record_remove button").first());
-
-        assert.containsN(form, "td.o_list_record_remove button", 2, "should have 2 remove buttons");
+        await click(target.querySelector("td.o_list_record_remove button"));
+        assert.containsN(target, "td.o_list_record_remove button", 2);
 
         // save and check that the correct command has been generated
         await clickSave(target);

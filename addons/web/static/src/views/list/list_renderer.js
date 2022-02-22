@@ -466,7 +466,7 @@ export class ListRenderer extends Component {
     }
 
     delete(record) {
-        throw new Error("To implement");
+        this.props.list.delete(record);
     }
 }
 

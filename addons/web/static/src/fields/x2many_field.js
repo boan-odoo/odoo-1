@@ -46,16 +46,19 @@ export class X2ManyField extends Component {
         if (this.viewMode !== "list") {
             return null;
         }
-        const { data } = this.props.record;
+        const { evalContext } = this.props.record;
         const { options } = this.fieldInfo;
         const subViewInfo = this.fieldInfo.views[this.viewMode];
         // WOWL something of that taste?
-        const canCreate = "create" in options ? new Domain(options.create).contains(data) : true;
-        const canDelete = "delete" in options ? new Domain(options.delete).contains(data) : true;
-        const canLink = "link" in options ? new Domain(options.link).contains(data) : true;
-        const canUnlink = "unlink" in options ? new Domain(options.unlink).contains(data) : true;
+        const canCreate =
+            "create" in options ? new Domain(options.create).contains(evalContext) : true;
+        const canDelete =
+            "delete" in options ? new Domain(options.delete).contains(evalContext) : true;
+        const canLink = "link" in options ? new Domain(options.link).contains(evalContext) : true;
+        const canUnlink =
+            "unlink" in options ? new Domain(options.unlink).contains(evalContext) : true;
 
-        const create = canCreate && subViewInfo.creates.create;
+        const create = canCreate && subViewInfo.activeActions.create;
         const unlink = canUnlink;
         return { create, canDelete, canLink, unlink };
     }
@@ -86,10 +89,10 @@ export class X2ManyField extends Component {
     }
 }
 
-X2ManyField.useSubView = true;
 X2ManyField.components = { Pager };
 X2ManyField.props = { ...standardFieldProps };
 X2ManyField.template = "web.X2ManyField";
+X2ManyField.useSubView = true;
 
 registry.category("fields").add("one2many", X2ManyField);
 registry.category("fields").add("many2many", X2ManyField);

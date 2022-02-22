@@ -78,7 +78,7 @@ export function stringToOrderBy(string) {
     });
 }
 
-function evalModifier(modifier, evalContext) {
+function evalDomain(modifier, evalContext) {
     if (Array.isArray(modifier)) {
         modifier = new Domain(modifier).contains(evalContext);
     }
@@ -374,7 +374,7 @@ export class Record extends DataPoint {
      */
     isReadonly(fieldName) {
         const { readonly } = this.activeFields[fieldName].modifiers;
-        return evalModifier(readonly, this.evalContext);
+        return evalDomain(readonly, this.evalContext);
     }
 
     /**
@@ -384,7 +384,7 @@ export class Record extends DataPoint {
      */
     isRequired(fieldName) {
         const { required } = this.activeFields[fieldName].modifiers;
-        return evalModifier(required, this.evalContext);
+        return evalDomain(required, this.evalContext);
     }
 
     setInvalidField(fieldName) {
@@ -1558,6 +1558,10 @@ export class StaticList extends DataPoint {
                 this.editedRecord = record;
             }
         };
+    }
+
+    delete(record) {
+        debugger;
     }
 
     exportState() {
