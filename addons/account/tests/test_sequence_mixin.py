@@ -367,10 +367,12 @@ class TestSequenceMixin(TestSequenceMixinCommon):
                 'name': 'CT',
                 'user_type_id': env0.ref('account.data_account_type_fixed_assets').id,
             })
+            currency = env0['res.currency'].create({'name': 'Money Unit', 'symbol': 'U'})
             moves = env0['account.move'].create([{
                 'journal_id': journal.id,
                 'date': fields.Date.from_string('2016-01-01'),
-                'line_ids': [(0, 0, {'name': 'name', 'account_id': account.id})]
+                'line_ids': [(0, 0, {'name': 'name', 'account_id': account.id})],
+                'currency_id': currency.id,
             }] * 3)
             moves.name = '/'
             moves[0].action_post()
@@ -393,6 +395,7 @@ class TestSequenceMixin(TestSequenceMixinCommon):
             moves.with_context(force_delete=True).unlink()
             journal.unlink()
             account.unlink()
+            currency.unlink()
             env0.cr.commit()
 
 
