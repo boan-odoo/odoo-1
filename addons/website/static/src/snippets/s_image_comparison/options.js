@@ -7,13 +7,11 @@ options.registry.ImageComparison = options.Class.extend({
     start: function () {
         const leftPanelEl = this.$overlay.data('$optionsSection')[0];
         var titleTextEl = leftPanelEl.querySelector('we-title > span');
-        this.counterEl = document.createElement('span');
-        titleTextEl.prepend(this.counterEl);
+        titleTextEl.innerText = 'Left Image';
         return this._super(...arguments);
     },
     updateUI: async function () {
         await this._super(...arguments);
-        this.counterEl.textContent = 'Left ';
     },
     cleanForSave() {
         console.log('cleanForSave');
