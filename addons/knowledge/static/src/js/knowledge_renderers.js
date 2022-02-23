@@ -1,6 +1,10 @@
 /** @odoo-module */
 
+import core from 'web.core';
+import Dialog from 'web.Dialog';
 import FormRenderer from 'web.FormRenderer';
+
+var _t = core._t;
 
 const KnowledgeFormRenderer = FormRenderer.extend({
     className: 'o_knowledge_form_view',
@@ -108,20 +112,29 @@ const KnowledgeFormRenderer = FormRenderer.extend({
         if ($li.closest('ul.o_tree_private').length !== 0) {
             params.private = true;
         }
-
-        const result = await this._rpc({
-            model: 'knowledge.article',
-            method: 'move_to',
-            args: [
-                $li.data(key),
-            ],
-            kwargs: params,
+        // TODO FABA: Waiting for jbn to complete this function
+        const moveArticle = async () => {
+            const result = await this._rpc({
+                model: 'knowledge.article',
+                method: 'move_to',
+                args: [
+                    $li.data(key),
+                ],
+                kwargs: params,
+            });
+            if (result) {
+                const $tree = $li.closest('.o_tree');
+                this._refreshIcons($tree);
+            }
+        };
+        const numPartner = await this._rpc({
+            method: 'search_count',
+            model: 'res.partner',
+            args: [[]],
         });
-
-        if (result) {
-            const $tree = $li.closest('.o_tree');
-            this._refreshIcons($tree);
-        }
+        const message = _.str.sprintf(_t("Are you sure you want to share this article with %d partners?"), numPartner);
+        let dialog = Dialog.confirm(this, message, { confirm_callback: moveArticle });
+        // TODO: refresh view if dialog is cancelled
     },
 
     /**
