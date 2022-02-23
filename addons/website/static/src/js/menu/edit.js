@@ -330,8 +330,12 @@ var EditPageMenu = websiteNavbarData.WebsiteNavbarActionWidget.extend({
 
     _getContentEditableAreas () {
         return $(this.savableSelector).not('input, [data-oe-readonly],[data-oe-type="monetary"],[data-oe-many2one-id], [data-oe-field="arch"]:empty').filter((_, el) => {
-            return !$(el).closest('.o_not_editable').length;
+            return !$(el).closest('.o_not_editable, .oe_website_sale .products_header').length;
         }).toArray();
+    },
+
+    _getReadOnlyAreas () {
+        return $("#wrapwrap").find('.oe_website_sale .products_header, .oe_website_sale .products_header a').toArray();
     },
     /**
      * Call preventDefault of an event.
@@ -415,6 +419,7 @@ var EditPageMenu = websiteNavbarData.WebsiteNavbarActionWidget.extend({
             isRootEditable: false,
             controlHistoryFromDocument: true,
             getContentEditableAreas: this._getContentEditableAreas.bind(this),
+            getReadOnlyAreas: this._getReadOnlyAreas.bind(this),
         }, collaborationConfig);
         return wysiwygLoader.createWysiwyg(this,
             Object.assign(params, this.wysiwygOptions),
