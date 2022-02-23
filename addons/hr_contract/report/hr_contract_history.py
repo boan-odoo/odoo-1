@@ -38,27 +38,23 @@ class ContractHistory(models.Model):
     resource_calendar_id = fields.Many2one('resource.calendar', string="Working Schedule", readonly=True)
     wage = fields.Monetary('Wage', help="Employee's monthly gross wage.", readonly=True, group_operator="avg")
     company_id = fields.Many2one('res.company', string='Company', readonly=True)
-    company_country_id = fields.Many2one('res.country', string="Company country", related='company_id.country_id', readonly=True)
-    country_code = fields.Char(related='company_country_id.code', readonly=True)
-    currency_id = fields.Many2one(string='Currency', related='company_id.currency_id', readonly=True)
+    company_country_id = fields.Many2one(
+        'res.country', string="Company country", readonly=True)
+    country_code = fields.Char(readonly=True)
+    currency_id = fields.Many2one(string='Currency', readonly=True)
     contract_type_id = fields.Many2one('hr.contract.type', 'Contract Type', readonly=True)
     contract_ids = fields.One2many('hr.contract', string='Contracts', compute='_compute_contract_ids', readonly=True)
     contract_count = fields.Integer(compute='_compute_contract_count', string="# Contracts")
     under_contract_state = fields.Selection([
         ('done', 'Under Contract'),
         ('blocked', 'Not Under Contract')
-    ], string='Contractual Status', compute='_compute_under_contract_state')
+    ], string='Contractual Status')
     activity_state = fields.Selection(related='contract_id.activity_state')
 
     @api.depends('contract_ids')
     def _compute_contract_count(self):
         for history in self:
             history.contract_count = len(history.contract_ids)
-
-    @api.depends('is_under_contract')
-    def _compute_under_contract_state(self):
-        for history in self:
-            history.under_contract_state = 'done' if history.is_under_contract else 'blocked'
 
     @api.depends('employee_id.name')
     def _compute_display_name(self):
@@ -104,10 +100,16 @@ class ContractHistory(models.Model):
                        employee.active AS active_employee,
                        contract.id AS contract_id,
                        contract_information.is_under_contract::bool AS is_under_contract,
+                       CASE WHEN contract_information.is_under_contract::bool THEN 'done' ELSE 'blocked' END,
                        employee.first_contract_date AS date_hired,
+                       company.country_id AS company_country_id,
+                       company.currency_id AS currency_id,
+                       country.code AS country_code,
                        %s
             FROM       hr_contract AS contract
             INNER JOIN contract_information ON contract.id = contract_information.id
+            INNER JOIN res_company company ON company.id = contract_information.company_id
+            INNER JOIN res_country country ON company.country_id = country.id  
             RIGHT JOIN hr_employee AS employee
                 ON  contract_information.employee_id = employee.id
                 AND contract.company_id = employee.company_id
