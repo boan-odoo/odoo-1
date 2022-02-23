@@ -24,9 +24,10 @@
                         </a>
                     </li>
                     <li>Fill in your data in the template</li>
-                    <li>Import your contacts</li>
-                    <li>Import journal entries</li>
+                    <li><a class="o_import_action" action="account.partner_import_action" href="">Import your contacts</a></li>
+                    <li><a class="o_import_action" action="account.account_move_import_action" href="">Optional: Import journal entries </a></li>
                     <li>Import the Chart of Accounts</li>
+
                 </ol>
                 <p>
                     Tip 1: to simplify your settings, importing your initial balances (or recording them manually)

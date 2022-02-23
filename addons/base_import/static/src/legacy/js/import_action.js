@@ -134,6 +134,10 @@ var DataImport = AbstractAction.extend({
                 }
             }));
         },
+        'click .o_import_action': function (e) {
+            e.preventDefault();
+            this.do_action($(e.target).attr('action'));
+        },
     },
     init: function (parent, action) {
         this._super.apply(this, arguments);

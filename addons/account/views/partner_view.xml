@@ -289,5 +289,11 @@
               </p>
             </field>
         </record>
+
+        <record id="partner_import_action" model="ir.actions.client">
+            <field name="name">Import Partners</field>
+            <field name="tag">import</field>
+            <field name="params" eval="{'model': 'res.partner'}"/>
+        </record>
     </data>
 </odoo>
