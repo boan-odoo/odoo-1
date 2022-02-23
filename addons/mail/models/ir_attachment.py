@@ -65,6 +65,10 @@ class IrAttachment(models.Model):
                 'mimetype': 'application/octet-stream' if safari and attachment.mimetype and 'video' in attachment.mimetype else attachment.mimetype,
                 'url': attachment.url,
             }
+
+            if not attachment.store_fname and not attachment.db_datas:
+                res['is_empty'] = True
+
             if commands:
                 res['originThread'] = [('insert', {
                     'id': attachment.res_id,

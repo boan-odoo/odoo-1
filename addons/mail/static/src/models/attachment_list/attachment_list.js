@@ -7,6 +7,22 @@ import { clear, insertAndReplace, replace } from '@mail/model/model_field_comman
 registerModel({
     name: 'AttachmentList',
     identifyingFields: [['composerViewOwner', 'messageViewOwner', 'attachmentBoxViewOwner']],
+    lifecycleHooks: {
+        _created() {
+            for (const attachment of this.linkPreviewAttachments) {
+                if (attachment.isEmpty) {
+                    return this.env.services.rpc({
+                        route: '/mail/update_link_preview',
+                        params: {
+                            attachment_id: attachment.id
+                        }
+                    }).then((response) => {
+                        attachment.update(response[0]);
+                    });
+                }
+            }
+        },
+    },
     recordMethods: {
         /**
          * Select the next attachment.

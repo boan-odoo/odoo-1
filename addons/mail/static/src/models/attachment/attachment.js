@@ -43,6 +43,9 @@ registerModel({
             if ('url' in data) {
                 data2.url = data.url;
             }
+            if ('is_empty' in data) {
+                data2.isEmpty = data.is_empty;
+            }
             return data2;
         },
     },
@@ -345,6 +348,9 @@ registerModel({
             compute: '_computeIsLinkPreview',
         }),
         is_main: attr(),
+        isEmpty: attr({
+            default: false,
+        }),
         /**
          * States if the attachment is a PDF file.
          */

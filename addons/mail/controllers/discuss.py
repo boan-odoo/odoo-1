@@ -576,3 +576,15 @@ class DiscussController(http.Controller):
                 attachment_formated['accessToken'] = open_graph_data['access_token']
             return attachment_formated
         return False
+
+    @http.route('/mail/update_link_preview', type='json', auth='public')
+    def link_preview(self, attachment_id):
+        attachment = request.env['ir.attachment'].sudo().browse(int(attachment_id))
+        # for attachment with image that have a missing image
+        affected_mimetype = ['application/o-linkpreview-with-thumbnail', 'image/o-linkpreview-image']
+        if attachment.mimetype in affected_mimetype and not (attachment.store_fname or attachment.db_datas):
+            data = request.env['ir.attachment']._get_data_from_url(attachment.url)
+            if data:
+                attachment.update(data)
+                return attachment._attachment_format(commands=True)
+        return False

@@ -53,7 +53,7 @@ registerModel({
         },
         /**
          * @private
-         * @returns {number}
+         * @returns {number|FieldCommand}
          */
         _computeWidth() {
             if (!this.attachment) {
