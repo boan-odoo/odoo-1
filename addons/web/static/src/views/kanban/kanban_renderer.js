@@ -35,6 +35,7 @@ export class KanbanRenderer extends Component {
         const { arch, cards, className, fields, xmlDoc, examples } = this.props.info;
         this.cards = cards;
         this.className = className;
+        debugger;
         this.cardTemplate = useViewCompiler(KanbanCompiler, arch, fields, xmlDoc);
         this.state = useState({
             columnQuickCreateIsFolded:
@@ -127,6 +128,14 @@ export class KanbanRenderer extends Component {
     // ------------------------------------------------------------------------
     // Getters
     // ------------------------------------------------------------------------
+
+    getRawValue(record, fieldName) {
+        return "red";
+    }
+
+    getValue(record, fieldName) {
+        debugger;
+    }
 
     get canMoveRecords() {
         if (!this.canResequenceRecords) {

@@ -2815,11 +2815,11 @@ QUnit.module("Fields", (hooks) => {
         // if the changes haven't been saved
     });
 
-    QUnit.skipWOWL("one2many kanban: edition", async function (assert) {
+    QUnit.debug("one2many kanban: edition", async function (assert) {
         assert.expect(23);
 
         serverData.models.partner.records[0].p = [2];
-        const form = await makeView({
+        await makeView({
             type: "form",
             resModel: "partner",
             serverData,
@@ -2850,141 +2850,105 @@ QUnit.module("Fields", (hooks) => {
             resId: 1,
             mockRPC(route, args) {
                 if (route === "/web/dataset/call_kw/partner/write") {
-                    var commands = args.args[1].p;
-                    assert.strictEqual(commands.length, 2, "should have generated two commands");
-                    assert.strictEqual(
-                        commands[0][0],
-                        0,
-                        "generated command should be ADD WITH VALUES"
-                    );
-                    assert.strictEqual(
-                        commands[0][2].display_name,
-                        "new subrecord 3",
-                        'value of newly created subrecord should be "new subrecord 3"'
-                    );
-                    assert.strictEqual(
-                        commands[1][0],
-                        2,
-                        "generated command should be REMOVE AND DELETE"
-                    );
-                    assert.strictEqual(commands[1][1], 2, "deleted record id should be 2");
+                    const commands = args.args[1].p;
+                    assert.deepEqual(commands, []);
+                    assert.strictEqual(commands[0][0], 0);
+                    assert.strictEqual(commands[0][2].display_name, "new subrecord 3");
+                    assert.strictEqual(commands[1][0], 2);
                 }
-                return this._super.apply(this, arguments);
             },
         });
 
-        assert.ok(
-            !form.$(".o_kanban_view .delete_icon").length,
-            "delete icon should not be visible in readonly"
-        );
-        assert.ok(
-            !form.$(".o_field_one2many .o-kanban-button-new").length,
-            '"Create" button should not be visible in readonly'
-        );
+        assert.containsNone(target, ".o_kanban_view .delete_icon");
+        assert.containsNone(target, ".o_field_one2many .o-kanban-button-new");
 
         await clickEdit(target);
 
+        debugger;
+        assert.containsOnce(target, ".o_kanban_record:not(.o_kanban_ghost)");
         assert.strictEqual(
-            form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
-            1,
-            "should contain 1 record"
+            target.querySelector(".o_kanban_record span").innerText,
+            "second record"
         );
-        assert.strictEqual(
-            form.$(".o_kanban_record span:first").text(),
-            "second record",
-            "display_name of subrecord should be the one in DB"
-        );
-        assert.strictEqual(
-            form.$(".o_kanban_record span:nth(1)").text(),
-            "Red",
-            "color of subrecord should be the one in DB"
-        );
-        assert.ok(
-            form.$(".o_kanban_view .delete_icon").length,
-            "delete icon should be visible in edit"
-        );
-        assert.ok(
-            form.$(".o_field_one2many .o-kanban-button-new").length,
-            '"Create" button should be visible in edit'
-        );
+        assert.strictEqual(target.querySelectorAll(".o_kanban_record span")[1].innerText, "Red");
+        assert.containsOnce(target, ".o_kanban_view .delete_icon");
+        assert.containsOnce(target, ".o_field_one2many .o-kanban-button-new");
         assert.hasClass(
-            form.$(".o_field_one2many .o-kanban-button-new"),
-            "btn-secondary",
-            "'Create' button should have className 'btn-secondary'"
+            target.querySelector(".o_field_one2many .o-kanban-button-new"),
+            "btn-secondary"
         );
         assert.strictEqual(
-            form.$(".o_field_one2many .o-kanban-button-new").text().trim(),
-            "Add",
-            'Create button should have "Add" label'
+            target.querySelector(".o_field_one2many .o-kanban-button-new").innerText,
+            "Add"
         );
 
-        // edit existing subrecord
-        await click(form.$(".oe_kanban_global_click"));
+        // // edit existing subrecord
+        // await click(form.$(".oe_kanban_global_click"));
 
-        await testUtils.fields.editInput($(".modal .o_form_view input").first(), "new name");
-        await click($(".modal .modal-footer .btn-primary"));
-        assert.strictEqual(
-            form.$(".o_kanban_record span:first").text(),
-            "new name",
-            "value of subrecord should have been updated"
-        );
+        // await testUtils.fields.editInput($(".modal .o_form_view input").first(), "new name");
+        // await click($(".modal .modal-footer .btn-primary"));
+        // assert.strictEqual(
+        //     form.$(".o_kanban_record span:first").text(),
+        //     "new name",
+        //     "value of subrecord should have been updated"
+        // );
 
-        // create a new subrecord
-        await click(form.$(".o-kanban-button-new"));
-        await testUtils.fields.editInput($(".modal .o_form_view input").first(), "new subrecord 1");
-        await clickFirst($(".modal .modal-footer .btn-primary"));
-        assert.strictEqual(
-            form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
-            2,
-            "should contain 2 records"
-        );
-        assert.strictEqual(
-            form.$(".o_kanban_record:nth(1) span").text(),
-            "new subrecord 1Red",
-            'value of newly created subrecord should be "new subrecord 1"'
-        );
+        // // create a new subrecord
+        // await click(form.$(".o-kanban-button-new"));
+        // await testUtils.fields.editInput($(".modal .o_form_view input").first(), "new subrecord 1");
+        // await clickFirst($(".modal .modal-footer .btn-primary"));
+        // assert.strictEqual(
+        //     form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
+        //     2,
+        //     "should contain 2 records"
+        // );
+        // assert.strictEqual(
+        //     form.$(".o_kanban_record:nth(1) span").text(),
+        //     "new subrecord 1Red",
+        //     'value of newly created subrecord should be "new subrecord 1"'
+        // );
 
-        // create two new subrecords
-        await click(form.$(".o-kanban-button-new"));
-        await testUtils.fields.editInput($(".modal .o_form_view input").first(), "new subrecord 2");
-        await click($(".modal .modal-footer .btn-primary:nth(1)"));
-        await testUtils.fields.editInput($(".modal .o_form_view input").first(), "new subrecord 3");
-        await clickFirst($(".modal .modal-footer .btn-primary"));
-        assert.strictEqual(
-            form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
-            4,
-            "should contain 4 records"
-        );
+        // // create two new subrecords
+        // await click(form.$(".o-kanban-button-new"));
+        // await testUtils.fields.editInput($(".modal .o_form_view input").first(), "new subrecord 2");
+        // await click($(".modal .modal-footer .btn-primary:nth(1)"));
+        // await testUtils.fields.editInput($(".modal .o_form_view input").first(), "new subrecord 3");
+        // await clickFirst($(".modal .modal-footer .btn-primary"));
+        // assert.strictEqual(
+        //     form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
+        //     4,
+        //     "should contain 4 records"
+        // );
 
-        // delete subrecords
-        await click(form.$(".oe_kanban_global_click").first());
-        assert.strictEqual(
-            $(".modal .modal-footer .o_btn_remove").length,
-            1,
-            "There should be a modal having Remove Button"
-        );
-        await click($(".modal .modal-footer .o_btn_remove"));
-        assert.containsNone($(".o_modal"), "modal should have been closed");
-        assert.strictEqual(
-            form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
-            3,
-            "should contain 3 records"
-        );
-        await click(form.$(".o_kanban_view .delete_icon:first()"));
-        await click(form.$(".o_kanban_view .delete_icon:first()"));
-        assert.strictEqual(
-            form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
-            1,
-            "should contain 1 records"
-        );
-        assert.strictEqual(
-            form.$(".o_kanban_record span:first").text(),
-            "new subrecord 3",
-            'the remaining subrecord should be "new subrecord 3"'
-        );
+        // // delete subrecords
+        // await click(form.$(".oe_kanban_global_click").first());
+        // assert.strictEqual(
+        //     $(".modal .modal-footer .o_btn_remove").length,
+        //     1,
+        //     "There should be a modal having Remove Button"
+        // );
+        // await click($(".modal .modal-footer .o_btn_remove"));
+        // assert.containsNone($(".o_modal"), "modal should have been closed");
+        // assert.strictEqual(
+        //     form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
+        //     3,
+        //     "should contain 3 records"
+        // );
+        // await click(form.$(".o_kanban_view .delete_icon:first()"));
+        // await click(form.$(".o_kanban_view .delete_icon:first()"));
+        // assert.strictEqual(
+        //     form.$(".o_kanban_record:not(.o_kanban_ghost)").length,
+        //     1,
+        //     "should contain 1 records"
+        // );
+        // assert.strictEqual(
+        //     form.$(".o_kanban_record span:first").text(),
+        //     "new subrecord 3",
+        //     'the remaining subrecord should be "new subrecord 3"'
+        // );
 
-        // save and check that the correct command has been generated
-        await clickSave(target);
+        // // save and check that the correct command has been generated
+        // await clickSave(target);
     });
 
     QUnit.skipWOWL(
