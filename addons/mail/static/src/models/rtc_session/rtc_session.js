@@ -27,7 +27,8 @@ registerModel({
             this.removeVideo();
             this.update({
                 audioElement: clear(),
-                candidateType: clear(),
+                localCandidateType: clear(),
+                remoteCandidateType: clear(),
                 isTalking: clear(),
             });
         },
@@ -293,7 +294,8 @@ registerModel({
         /**
          * RTCIceCandidate.type String
          */
-        candidateType: attr(),
+        localCandidateType: attr(),
+        remoteCandidateType: attr(),
         /**
          * The mail.channel of the session, rtc sessions are part and managed by
          * mail.channel

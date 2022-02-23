@@ -789,13 +789,15 @@ registerModel({
         async _registerConnectionType(token, peerConnection) {
             const rtcSession = this.messaging.models['RtcSession'].findFromIdentifyingData({ id: token });
             const stats = await peerConnection.getStats();
-            for (const { localCandidateId, state, type } of stats.values()) {
+            for (const { localCandidateId, remoteCandidateId, state, type } of stats.values()) {
                 if (type === 'candidate-pair' && state === 'succeeded' && localCandidateId) {
                     const localCandidate = stats.get(localCandidateId);
-                    if (localCandidate) {
-                        rtcSession.update({ candidateType: localCandidate.candidateType });
+                    const remoteCandidate = stats.get(remoteCandidateId);
+                        rtcSession.update({
+                            localCandidateType: localCandidate ? localCandidate.candidateType : undefined,
+                            remoteCandidateType: remoteCandidate ? remoteCandidate.candidateType : undefined,
+                        });
                         return;
-                    }
                 }
             }
         },
