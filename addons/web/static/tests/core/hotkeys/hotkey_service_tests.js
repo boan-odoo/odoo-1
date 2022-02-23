@@ -514,13 +514,13 @@ QUnit.test("registrations and elements belong to the correct UI owner", async (a
     class MyComponent2 extends LegacyComponent {
         setup() {
             useHotkey("a", () => assert.step("MyComponent2 subscription"));
-            useActiveElement();
+            useActiveElement("active");
         }
         onClick() {
             assert.step("MyComponent2 [data-hotkey]");
         }
     }
-    MyComponent2.template = xml`<div><button data-hotkey="b" t-on-click="onClick"/></div>`;
+    MyComponent2.template = xml`<div><button data-hotkey="b" t-on-click="onClick" t-ref="active"/></div>`;
 
     await mount(MyComponent1, target, { env });
     triggerHotkey("a");

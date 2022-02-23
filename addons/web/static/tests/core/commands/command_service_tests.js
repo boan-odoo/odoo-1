@@ -139,11 +139,11 @@ QUnit.test("useCommand hook when the activeElement change", async (assert) => {
 
     class OtherComponent extends LegacyComponent {
         setup() {
-            useActiveElement();
+            useActiveElement("active");
             useCommand("I'm taking the throne", () => {});
         }
     }
-    OtherComponent.template = xml`<div></div>`;
+    OtherComponent.template = xml`<div t-ref="active"></div>`;
 
     await mount(MyComponent, target, { env });
     triggerHotkey("control+k");
@@ -202,10 +202,10 @@ QUnit.test("global command with hotkey", async (assert) => {
 
     class MyComponent extends LegacyComponent {
         setup() {
-            useActiveElement();
+            useActiveElement("active");
         }
     }
-    MyComponent.template = xml`<div></div>`;
+    MyComponent.template = xml`<div t-ref="active"></div>`;
     await mount(MyComponent, target, { env });
 
     triggerHotkey("a");
