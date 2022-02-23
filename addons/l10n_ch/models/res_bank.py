@@ -6,9 +6,8 @@ import re
 from odoo import api, fields, models, _
 from odoo.addons.base.models.res_bank import sanitize_account_number
 from odoo.addons.base_iban.models.res_partner_bank import normalize_iban, pretty_iban, validate_iban
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from odoo.tools.misc import mod10r
-
 
 ISR_SUBSCRIPTION_CODE = {'CHF': '01', 'EUR': '03'}
 CLEARING = "09000"
@@ -298,7 +297,8 @@ class ResPartnerBank(models.Model):
             return self._l10n_ch_get_qr_vals(amount, currency, debtor_partner, free_communication, structured_communication)
         return super()._get_qr_vals(qr_method, amount, currency, debtor_partner, free_communication, structured_communication)
 
-    def _get_qr_code_generation_params(self, qr_method, amount, currency, debtor_partner, free_communication, structured_communication):
+    def _get_qr_code_generation_params(self, qr_method, amount, currency, debtor_partner, free_communication,
+                                       structured_communication):
         if qr_method == 'ch_qr':
             return {
                 'barcode_type': 'QR',
@@ -332,14 +332,22 @@ class ResPartnerBank(models.Model):
                and re.match('\d+$', reference) \
                and reference == mod10r(reference[:-1])
 
-    def _eligible_for_qr_code(self, qr_method, debtor_partner, currency):
+    def _eligible_for_qr_code(self, qr_method, debtor_partner, currency, raises_error=True):
         if qr_method == 'ch_qr':
-
-            return self.acc_type == 'iban' and \
-                   self.partner_id.country_id.code == 'CH' and \
-                   (not debtor_partner or debtor_partner.country_id.code == 'CH') \
-                   and currency.name in ('EUR', 'CHF')
-
+            error_msg = "The QR code could not be generated for the following reason(s):"
+            if self.acc_type != 'iban':
+                error_msg += "The account type isn't QR-IBAN."
+            if self.partner_id.country_id.code != 'CH':
+                error_msg += "Your company isn't located in Switzerland."
+            if not debtor_partner or debtor_partner.country_id.code != 'CH':
+                error_msg += "The debtor partner's address isn't located in Switzerland."
+            if currency.id not in (self.env.ref('base.EUR').id, self.env.ref('base.CHF').id):
+                error_msg += "The currency isn't EUR nor CHF. \r\n"
+            if error_msg != "The QR code could not be generated for the following reason(s):":
+                if raises_error:
+                    raise UserError(error_msg)
+                return False
+            return True
         return super()._eligible_for_qr_code(qr_method, debtor_partner, currency)
 
     def _check_for_qr_code_errors(self, qr_method, amount, currency, debtor_partner, free_communication, structured_communication):
@@ -351,7 +359,8 @@ class ResPartnerBank(models.Model):
 
         if qr_method == 'ch_qr':
             if not _partner_fields_set(self.partner_id):
-                return _("The partner set on the bank account meant to receive the payment (%s) must have a complete postal address (street, zip, city and country).", self.acc_number)
+                return _("The partner set on the bank account meant to receive the payment (%s) must have a complete postal address (street, zip, city and country).",
+                    self.acc_number)
 
             if debtor_partner and not _partner_fields_set(debtor_partner):
                 return _("The partner must have a complete postal address (street, zip, city and country).")
