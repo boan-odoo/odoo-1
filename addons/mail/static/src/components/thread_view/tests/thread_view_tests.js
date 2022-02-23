@@ -1107,11 +1107,11 @@ QUnit.test('delete all attachments of a message with tracking fields should stil
         },
     );
     this.data['mail.tracking.value'].records.push({
-        changed_field: "Name",
+        field_desc: "Name",
         field_type: "char",
         id: 6,
-        new_value: "New name",
-        old_value: "Old name",
+        new_value_text: "New name",
+        old_value_text: "Old name",
     });
     const { createThreadViewComponent } = await this.start({ hasDialog: true });
     const threadViewer = this.messaging.models['ThreadViewer'].create({

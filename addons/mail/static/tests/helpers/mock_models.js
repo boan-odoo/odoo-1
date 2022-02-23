@@ -36,6 +36,13 @@ export class MockModels {
                 },
                 records: [],
             },
+            'ir.model.fields': {
+                fields: {
+                    model: { required: true, string: 'Model name', type: 'char' },
+                    name: { required: true, string: 'Field name', type: 'char' },
+                },
+                records: [],
+            },
             'mail.activity': {
                 fields: {
                     activity_category: { string: "Category", type: 'selection', selection: [['default', 'Other'], ['upload_file', 'Upload File']] },
@@ -185,10 +192,22 @@ export class MockModels {
             },
             'mail.tracking.value': {
                 fields: {
-                    changed_field: { string: 'Changed field', type: 'char' },
+                    field: {string: 'Field', type: 'many2one', required: true, relation: 'ir.model.fields' },
+                    field_desc: {string: 'Field description', type: 'char' },
                     field_type: { string: 'Field type', type: 'char' },
-                    new_value: { string: 'New value', type: 'char' },
-                    old_value: { string: 'Old value', type: 'char' },
+                    new_value_char: { string: 'New value Char', type: 'char' },
+                    new_value_datetime: { string: 'New value Datetime', type: 'datetime' },
+                    new_value_float: { string: 'New value Float', type: 'float' },
+                    new_value_integer: { string: 'New value Integer', type: 'integer' },
+                    new_value_monetary: { string: 'New value Monetary', type: 'monetary' },
+                    new_value_text: { string: 'New value Text', type: 'text' },
+                    old_value_char: { string: 'Old value Char', type: 'char' },
+                    old_value_datetime: { string: 'Old value Datetime', type: 'datetime' },
+                    old_value_float: { string: 'Old value Float', type: 'float' },
+                    old_value_integer: { string: 'Old value Integer', type: 'integer' },
+                    old_value_monetary: { string: 'Old value Monetary', type: 'monetary' },
+                    old_value_text: { string: 'Old value Text', type: 'text' },
+                    tracking_sequence: { string: 'Tracking sequence', type: 'integer', required: true, default: 100 },
                 },
                 records: [],
             },
