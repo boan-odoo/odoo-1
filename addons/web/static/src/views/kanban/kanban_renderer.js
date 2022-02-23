@@ -30,12 +30,13 @@ const MOVABLE_RECORD_TYPES = ["char", "boolean", "integer", "selection", "many2o
 const GLOBAL_CLICK_CANCEL_SELECTORS = ["a", ".dropdown", ".oe_kanban_action"];
 const isBinSize = (value) => /^\d+(\.\d*)? [^0-9]+$/.test(value);
 
+const formatterRegistry = registry.category("formatters");
+
 export class KanbanRenderer extends Component {
     setup() {
         const { arch, cards, className, fields, xmlDoc, examples } = this.props.info;
         this.cards = cards;
         this.className = className;
-        debugger;
         this.cardTemplate = useViewCompiler(KanbanCompiler, arch, fields, xmlDoc);
         this.state = useState({
             columnQuickCreateIsFolded:
@@ -130,11 +131,16 @@ export class KanbanRenderer extends Component {
     // ------------------------------------------------------------------------
 
     getRawValue(record, fieldName) {
-        return "red";
+        // problem data is not good (sometimes a StaticList),
+        // _values not good (does not take into account _changes)
+        // WOWL TO FIX!!!
+        return record._values[fieldName];
     }
 
     getValue(record, fieldName) {
-        debugger;
+        const field = record.fields[fieldName];
+        const formatter = formatterRegistry.get(field.type);
+        return formatter(this.getRawValue(record, fieldName), { field });
     }
 
     get canMoveRecords() {

@@ -2815,8 +2815,10 @@ QUnit.module("Fields", (hooks) => {
         // if the changes haven't been saved
     });
 
-    QUnit.debug("one2many kanban: edition", async function (assert) {
+    QUnit.skipWOWL("one2many kanban: edition", async function (assert) {
         assert.expect(23);
+
+        // wait for more kanban stuff
 
         serverData.models.partner.records[0].p = [2];
         await makeView({
@@ -2859,19 +2861,18 @@ QUnit.module("Fields", (hooks) => {
             },
         });
 
-        assert.containsNone(target, ".o_kanban_view .delete_icon");
+        // assert.containsNone(target, ".delete_icon");
         assert.containsNone(target, ".o_field_one2many .o-kanban-button-new");
 
         await clickEdit(target);
 
-        debugger;
         assert.containsOnce(target, ".o_kanban_record:not(.o_kanban_ghost)");
         assert.strictEqual(
             target.querySelector(".o_kanban_record span").innerText,
             "second record"
         );
         assert.strictEqual(target.querySelectorAll(".o_kanban_record span")[1].innerText, "Red");
-        assert.containsOnce(target, ".o_kanban_view .delete_icon");
+        assert.containsOnce(target, ".delete_icon");
         assert.containsOnce(target, ".o_field_one2many .o-kanban-button-new");
         assert.hasClass(
             target.querySelector(".o_field_one2many .o-kanban-button-new"),
