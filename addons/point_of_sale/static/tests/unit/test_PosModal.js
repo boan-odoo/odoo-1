@@ -7,6 +7,7 @@ odoo.define('point_of_sale.tests.PosModal', function(require) {
     const makeTestEnvironment = require('web.test_env');
     const testUtils = require('web.test_utils');
     const Registries = require('point_of_sale.Registries');
+    const { mount } = require('@web/../tests/helpers/utils');
 
     const { EventBus, useSubEnv, xml } = owl;
 
@@ -73,6 +74,7 @@ odoo.define('point_of_sale.tests.PosModal', function(require) {
             setup() {
                 super.setup();
                 useSubEnv({
+                    isDebug: () => false,
                     posbus: new EventBus(),
                 });
             }
@@ -84,8 +86,7 @@ odoo.define('point_of_sale.tests.PosModal', function(require) {
             </div>
         `;
 
-        const root = new Root();
-        await root.mount(testUtils.prepareTarget());
+        const root = await mount(Root, testUtils.prepareTarget());
 
         // Check 1 dialog
         let dialog1Promise = root.showPopup('CustomDialog1', {});
@@ -129,8 +130,5 @@ odoo.define('point_of_sale.tests.PosModal', function(require) {
         let result2 = await dialog2Promise;
         assert.strictEqual(result1.confirmed, false); // false because it's cancelled.
         assert.strictEqual(result2.confirmed, true); // true because it's confirmed.
-
-        root.unmount();
-        root.destroy();
     });
 });
