@@ -753,36 +753,6 @@
         </xpath>
     </template>
 
-    <template id="recommended_products" inherit_id="website_sale.product" customize_show="True" name="Alternative Products">
-        <xpath expr="//div[@id='product_full_description']" position="after">
-            <t t-set="alternative_products" t-value="product._get_website_alternative_product()"/>
-            <div t-if="alternative_products" class="container mt32">
-                <h3>Alternative Products:</h3>
-                <div class="row mt16" style="">
-                    <t t-foreach="alternative_products" t-as="alt_product">
-                        <div class="col-lg-2" t-att-data-publish="alt_product.website_published and 'on' or 'off'" style="width: 170px; height:130px; float:left; display:inline; margin-right: 10px; overflow:hidden;">
-                            <div class="mt16 text-center" style="height: 100%;">
-                                <t t-set="first_combination" t-value="alt_product._get_first_possible_combination(False)"/>
-                                <t t-set="alternative_variant" t-value="alt_product._get_variant_for_combination(combination)"/>
-                                <div t-if="alternative_variant"
-                                    t-field="alternative_variant.image_128"
-                                    t-options="{'widget': 'image', 'qweb_img_responsive': False, 'class': 'rounded shadow o_alternative_product o_image_64_max' }"/>
-                                <div t-else=""
-                                    t-field="alt_product.image_128"
-                                    t-options="{'widget': 'image', 'qweb_img_responsive': False, 'class': 'rounded shadow o_alternative_product o_image_64_max' }"/>
-                                <h6>
-                                    <a t-att-href="alt_product.website_url" style="display: block">
-                                        <span t-att-title="alt_product.name" t-field="alt_product.name" class="o_text_overflow" style="display: block;" />
-                                    </a>
-                                </h6>
-                            </div>
-                        </div>
-                    </t>
-                </div>
-            </div>
-        </xpath>
-    </template>
-
     <!-- Product options: OpenChatter -->
     <template id="product_comment" inherit_id="website_sale.product" active="False" customize_show="True" name="Discussion and Rating" priority="15">
         <xpath expr="//div[@t-field='product.website_description']" position="after">

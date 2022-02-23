@@ -83,10 +83,12 @@ const DynamicSnippetProducts = DynamicSnippetCarousel.extend({
         if (productNames) {
             const nameDomain = [];
             for (const productName of productNames.split(',')) {
-                if (nameDomain.length) {
-                    nameDomain.unshift('|');
-                }
-                nameDomain.push(['name', 'ilike', productName]);
+                // Search on name, internal reference and barcode.
+                nameDomain.push(...[
+                    '|', ['name', 'ilike', productName],
+                    '|', ['default_code', '=', productName],
+                    '|', ['barcode', '=', productName],
+                ])
             }
             searchDomain.push(...nameDomain);
         }
