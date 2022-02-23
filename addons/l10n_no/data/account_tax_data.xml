@@ -3,9 +3,9 @@
     <data>
         <record id="tax2" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">1 Inngående mva høy sats 25%</field>
+            <field name="name">1 Incoming VAT high rate 25%</field>
             <field name="sequence">0</field>
-            <field name="description">Fradrag for inngående mva</field>
+            <field name="description">Deduction for incoming VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -38,8 +38,8 @@
 
        <record id="tax1" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">0 Ingen mvabehandling 0%</field>
-            <field name="description">Ingen mvabehandling(anskaffelser)</field>
+            <field name="name">0 No VAT treatment 0%</field>
+            <field name="description">No VAT treatment(procurements)</field>
             <field name="amount">0</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -68,8 +68,8 @@
 
         <record id="tax3" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">3 Utgående mva høy sats 25%</field>
-            <field name="description">Utgående mva</field>
+            <field name="name">3 Outgoing VAT high rate 25%</field>
+            <field name="description">Outgoing VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -104,8 +104,8 @@
 
         <record id="tax4" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">5 Mvafritt salg 0%</field>
-            <field name="description">Mvafritt salg</field>
+            <field name="name">5 Sales without VAT 0%</field>
+            <field name="description">Sales without VAT</field>
             <field name="amount">0</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -136,8 +136,8 @@
 
         <record id="tax5" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">6 Omsetning utenfor mvaloven 0%</field>
-            <field name="description">Omsetning utenfor merverdiavgiftsloven</field>
+            <field name="name">6 Turnover outside the VAT Act 0%</field>
+            <field name="description">Turnover outside the VAT Act</field>
             <field name="amount">0</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -168,8 +168,8 @@
 
         <record id="tax6" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">7 Ingen mvabehandling(inntekter) 0%</field>
-            <field name="description">Ingen mvabehandling(inntekter)</field>
+            <field name="name">7 No VAT treatment (income) 0%</field>
+            <field name="description">No VAT treatment (income)</field>
             <field name="amount">0</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -198,8 +198,8 @@
 
         <record id="tax7" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">11 Inngående mva middel sats 15%</field>
-            <field name="description">Fradrag for inngående mva</field>
+            <field name="name">11 Incoming VAT middle rate 15%</field>
+            <field name="description">Deduction for incoming VAT</field>
             <field name="amount">15</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -232,8 +232,8 @@
 
         <record id="tax8" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">12 Inngående mva råfisk 11%</field>
-            <field name="description">Fradrag for inngående mva</field>
+            <field name="name">12 Incoming VAT raw fish 11%</field>
+            <field name="description">Deduction for incoming VAT</field>
             <field name="amount">11</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -266,8 +266,8 @@
 
         <record id="tax9" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">13 Inngående mva lav sats 12%</field>
-            <field name="description">Fradrag for inngående mva</field>
+            <field name="name">13 Incoming VAT low rate 12%</field>
+            <field name="description">Deduction for incoming VAT</field>
             <field name="amount">12</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -300,8 +300,8 @@
 
         <record id="tax10" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">14 Innførselsmva høy sats 25%</field>
-            <field name="description">Fradrag for innførselsmva</field>
+            <field name="name">14 Import VAT high rate 25%</field>
+            <field name="description">Deduction for import VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -334,8 +334,8 @@
 
         <record id="tax11" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">15 Innførselsmva middel sats 15%</field>
-            <field name="description">Fradrag for innførselsmva</field>
+            <field name="name">15 Import VAT middle rate 15%</field>
+            <field name="description">Deduction for import VAT</field>
             <field name="amount">15</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -368,8 +368,8 @@
 
         <record id="tax12" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">20 Grunnlag ved innførsel av varer nullsats 0%</field>
-            <field name="description">Grunnlag ved innførsel av varer</field>
+            <field name="name">20 Tax base for the import of goods zero rate 0%</field>
+            <field name="description">Tax base for the import of goods</field>
             <field name="amount">0</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -398,8 +398,8 @@
 
         <record id="tax13" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">21 Grunnlag ved innførsel av varer høy sats 25%</field>
-            <field name="description">Grunnlag ved innførsel av varer</field>
+            <field name="name">21 Tax base for the import of goods high rate 25%</field>
+            <field name="description">Tax base for the import of goods</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -428,8 +428,8 @@
 
         <record id="tax14" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">22 Grunnlag ved innførsel av varer middel sats 15%</field>
-            <field name="description">Grunnlag ved innførsel av varer</field>
+            <field name="name">22 Tax base for the import of goods middle rate 15%</field>
+            <field name="description">Tax base for the import of goods</field>
             <field name="amount">15</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -458,8 +458,8 @@
 
         <record id="tax15" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">31 Utgående mva middel sats 15%</field>
-            <field name="description">Utgående mva</field>
+            <field name="name">31 Outgoing VAT middle rate 15%</field>
+            <field name="description">Outgoing VAT</field>
             <field name="amount">15</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -494,8 +494,8 @@
 
         <record id="tax16" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">32 Utgående mva råfisk 11%</field>
-            <field name="description">Utgående mva</field>
+            <field name="name">32 Outgoing VAT raw fish 11%</field>
+            <field name="description">Outgoing VAT</field>
             <field name="amount">11</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -530,8 +530,8 @@
 
         <record id="tax17" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">33 Utgående mva lav sats 12%</field>
-            <field name="description">Utgående mva</field>
+            <field name="name">33 Outgoing VAT low rate 12%</field>
+            <field name="description">Outgoing VAT</field>
             <field name="amount">12</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -566,8 +566,8 @@
 
         <record id="tax18" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">51 Innenlands omsetning med omvendt avgiftsplikt nullsats 0%</field>
-            <field name="description">Innlands omsetning med omvendt avgiftsplikt</field>
+            <field name="name">51 Sale of climate quotas and gold to businesses zero rate 0%</field>
+            <field name="description">Sale of climate quotas and gold to businesses</field>
             <field name="amount">0</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -598,8 +598,8 @@
 
         <record id="tax19" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">52 Utførsel av varer og tjenester nullsats 0%</field>
-            <field name="description">Utførsel av varer og tjenester</field>
+            <field name="name">52 Export of goods and services zero rate 0%</field>
+            <field name="description">Export of goods and services</field>
             <field name="amount">0</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">sale</field>
@@ -630,8 +630,8 @@
 
         <record id="tax20" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">81 Innførsel av varer med fradrag for innførselsmva høy sats 25%</field>
-            <field name="description">Innførsel av varer med fradrag for innførselsmva</field>
+            <field name="name">81 Imports of goods with a deduction for import VAT high rate 25%</field>
+            <field name="description">Imports of goods with a deduction for import VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -666,8 +666,8 @@
 
         <record id="tax21" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">82 Innførsel av varer uten fradrag for innførselsmva høy sats 25%</field>
-            <field name="description">Innførsel av varer uten fradrag for innførselsmva</field>
+            <field name="name">82 Imports of goods without deduction for import VAT high rate 25%</field>
+            <field name="description">Imports of goods without deduction for import VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -702,8 +702,8 @@
 
         <record id="tax22" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">83 Innførsel av varer med fradrag for innførselsmva middel sats 15%</field>
-            <field name="description">Innførsel av varer med fradrag for innførselsmva</field>
+            <field name="name">83 Imports of goods less import duty medium rate 15%</field>
+            <field name="description">Imports of goods less import duty</field>
             <field name="amount">15</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -738,8 +738,8 @@
 
         <record id="tax23" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">84 Innførsel av varer uten fradrag for innførselsmva middel sats 15%</field>
-            <field name="description">Innførsel av varer uten fradrag for innførselsmva</field>
+            <field name="name">84 Imports of goods without deduction for import VAT medium rate 15%</field>
+            <field name="description">Imports of goods without deduction for import VAT</field>
             <field name="amount">15</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -774,8 +774,8 @@
 
         <record id="tax24" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">85 Innførsel av varer uten mva beregning 0%</field>
-            <field name="description">Innførsel av varer som det ikke skal beregnes mervediavgift av</field>
+            <field name="name">85 Importation of goods without VAT calculation</field>
+            <field name="description">Imports of goods for which VAT is not to be calculated</field>
             <field name="amount">0</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -806,8 +806,8 @@
 
         <record id="tax25" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">86 Tjenester kjøpt fra utlandet med fradrag for mva høy sats 25%</field>
-            <field name="description">Tjenester kjøpt fra utlandet med fradrag for mva</field>
+            <field name="name">86 Services purchased from abroad with a deduction for VAT high rate 25%</field>
+            <field name="description">Services purchased from abroad with a deduction for VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -842,8 +842,8 @@
 
         <record id="tax26" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">87 Tjenester kjøpt fra utlandet uten fradrag for mva høy sats 25%</field>
-            <field name="description">Tjenester kjøpt fra utlandet uten fradrag for mva</field>
+            <field name="name">87 Services purchased from abroad without deduction for VAT high rate 25%</field>
+            <field name="description">Services purchased from abroad without deduction for VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -878,8 +878,8 @@
 
         <record id="tax27" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">88 Tjenester kjøpt fra utlandet med fradrag for mva lav sats 12%</field>
-            <field name="description">Tjenester kjøpt fra utlandet med fradrag for mva</field>
+            <field name="name">88 Services purchased from abroad with a deduction for VAT low rate 12%</field>
+            <field name="description">Services purchased from abroad with a deduction for VAT</field>
             <field name="amount">12</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -914,8 +914,8 @@
 
         <record id="tax28" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">89 Tjenester kjøpt fra utlandet uten fradrag for mva lav sats 12%</field>
-            <field name="description">Tjenester kjøpt fra utlandet uten fradrag for mva</field>
+            <field name="name">89 Services purchased from abroad without deduction for VAT low rate 12%</field>
+            <field name="description">Services purchased from abroad without deduction for VAT</field>
             <field name="amount">12</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -950,8 +950,8 @@
 
         <record id="tax29" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">91 Kjøp av klimakvoter eller gull med fradrag for mva høy sats 25%</field>
-            <field name="description">Kjøp av klimakvoter eller gull med fradrag for mva</field>
+            <field name="name">91 Purchase of climate quotas or gold with a deduction for VAT high rate 25%</field>
+            <field name="description">Purchase of climate quotas or gold with a deduction for VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
@@ -986,8 +986,8 @@
 
         <record id="tax30" model="account.tax.template">
             <field name="chart_template_id" ref="no_chart_template"/>
-            <field name="name">92 Kjøp av klimakvoter eller gull uten fradrag for mva høy sats 25%</field>
-            <field name="description">Kjøp av klimakvoter eller gull uten fradrag for mva</field>
+            <field name="name">92 Purchase of climate quotas or gold without deduction for VAT high rate 25%</field>
+            <field name="description">Purchase of climate quotas or gold without deduction for VAT</field>
             <field name="amount">25</field>
             <field name="amount_type">percent</field>
             <field name="type_tax_use">purchase</field>
