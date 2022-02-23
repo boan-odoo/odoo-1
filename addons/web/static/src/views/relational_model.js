@@ -712,7 +712,8 @@ export class Record extends DataPoint {
         const changes = { ...(allFields ? this.data : this._changes) };
         for (const fieldName of Object.keys(this.activeFields)) {
             const { type } = this.fields[fieldName];
-            if (["one2many", "many2many"].includes(type)) {
+            if (["one2many", "many2many"].includes(type) && this.data[fieldName]) {
+                // bof
                 changes[fieldName] = this.data[fieldName].getChanges();
             }
         }
