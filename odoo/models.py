@@ -1427,7 +1427,7 @@ class BaseModel(metaclass=MetaModel):
     @api.model
     def fields_get_keys(self):
         warnings.warn(
-            'fields_get_keys() method is deprecated, use `_fields` or `fields_view_get` instead',
+            'fields_get_keys() method is deprecated, use `_fields` or `load_views` instead',
             DeprecationWarning
         )
         return list(self._fields)
@@ -1626,8 +1626,8 @@ class BaseModel(metaclass=MetaModel):
         result = {}
 
         toolbar = options.get('toolbar')
-        result['fields_views'] = {
-            v_type: self.fields_view_get(v_id, v_type if v_type != 'list' else 'tree',
+        result['views'] = {
+            v_type: self.view_get(v_id, v_type if v_type != 'list' else 'tree',
                                          toolbar=toolbar if v_type != 'search' else False)
             for [v_id, v_type] in views
         }
@@ -1636,16 +1636,52 @@ class BaseModel(metaclass=MetaModel):
         if options.get('load_filters'):
             result['filters'] = self.env['ir.filters'].get_filters(self._name, options.get('action_id'))
 
+        # TODO: Remove, this is to simulate the old behavior.
+        # ---------------------------------------------------
+        def collect_fields(node, fields_info):
+            view_fields = set(el.get('name') for el in node.xpath('.//field[not(ancestor::field)]'))
+            view_fields = {fname: fields_info.get(fname) for fname in view_fields}
+            for el in node.xpath('.//field[not(ancestor::field)][descendant::field]'):
+                fname = el.get('name')
+                comodel = self.env[fields_info[fname]['relation']]
+                comodel_fields_info = comodel.fields_get()
+                views = {}
+                for child in el:
+                    el.remove(child)
+                    views[child.tag] = {
+                        'arch': etree.tostring(child, encoding='unicode'),
+                        'fields': collect_fields(child, comodel_fields_info),
+                    }
+                view_fields[fname]['views'] = views
+            for el in node.xpath('.//groupby'):
+                fname = el.get('name')
+                comodel = self.env[fields_info[fname]['relation']]
+                comodel_fields_info = comodel.fields_get()
+                view_fields[fname]['views'] = {
+                    'groupby': {
+                        'arch': etree.tostring(el, encoding='unicode'),
+                        'fields': collect_fields(el, comodel_fields_info)
+                    }
+                }
+                for child in el:
+                    el.remove(child)
+            return node, view_fields
+        
+        fields_views = {}
+        for view_type, view_info in result['views'].items():
+            node = etree.fromstring(view_info['arch'])
+            node, fields = collect_fields(node, result['fields'])
+            arch = etree.tostring(node, encoding="unicode").replace('\t', '')
+            fields_views[view_type] = dict(view_info, arch=arch, fields=fields)
+
+        result['fields_views'] = fields_views
+        # ---------------------------------------------------
 
         return result
 
     @api.model
-    def _fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
+    def _view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         View = self.env['ir.ui.view'].sudo()
-        result = {
-            'model': self._name,
-            'field_parent': False,
-        }
 
         # try to find a view_id if none provided
         if not view_id:
@@ -1672,26 +1708,19 @@ class BaseModel(metaclass=MetaModel):
         if view_id:
             # read the view with inherited views applied
             view = View.browse(view_id)
-            result['arch'] = view.get_combined_arch()
-            result['name'] = view.name
-            result['type'] = view.type
-            result['view_id'] = view.id
-            result['field_parent'] = view.field_parent
-            result['base_model'] = view.model
+            arch = view._get_combined_arch()
         else:
             # fallback on default views methods if no ir.ui.view could be found
+            view = View.browse()
             try:
-                arch_etree = getattr(self, '_get_default_%s_view' % view_type)()
-                result['arch'] = etree.tostring(arch_etree, encoding='unicode')
-                result['type'] = view_type
-                result['name'] = 'default'
+                arch = getattr(self, '_get_default_%s_view' % view_type)()
             except AttributeError:
                 raise UserError(_("No default view of type '%s' could be found !", view_type))
-        return result
+        return arch, view
 
     @api.model
-    def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
-        """ fields_view_get([view_id | view_type='form'])
+    def view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
+        """ view_get([view_id | view_type='form'])
 
         Get the detailed composition of the requested view like fields, model, view architecture
 
@@ -1709,19 +1738,17 @@ class BaseModel(metaclass=MetaModel):
         :raise Invalid ArchitectureError: if there is view type other than form, tree, calendar, search etc... defined on the structure
         """
         self.check_access_rights('read')
-        view = self.env['ir.ui.view'].sudo().browse(view_id)
 
         # Get the view arch and all other attributes describing the composition of the view
-        result = self._fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
+        arch, view = self._view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
 
         # Override context for postprocessing
-        if view_id and result.get('base_model', self._name) != self._name:
-            view = view.with_context(base_model_name=result['base_model'])
+        if view and (view.model or self._name) != self._name:
+            view = view.with_context(base_model_name=view.model)
 
         # Apply post processing, groups and modifiers etc...
-        xarch, xfields = view.postprocess_and_fields(etree.fromstring(result['arch']), model=self._name)
-        result['arch'] = xarch
-        result['fields'] = xfields
+        arch = view.postprocess_and_fields(arch, model=self._name)
+        result = {'arch': arch}
 
         # Add related action information if asked
         if toolbar:
@@ -6204,7 +6231,7 @@ Fields:
     @api.model
     def _onchange_spec(self, view_info=None):
         """ Return the onchange spec from a view description; if not given, the
-            result of ``self.fields_view_get()`` is used.
+            result of ``self.view_get()`` is used.
         """
         result = {}
 
@@ -6216,14 +6243,14 @@ Fields:
                 if not result.get(names):
                     result[names] = node.attrib.get('on_change')
                 # traverse the subviews included in relational fields
-                for subinfo in info['fields'][name].get('views', {}).values():
-                    process(etree.fromstring(subinfo['arch']), subinfo, names)
+                for child_view in node.xpath("./*[descendant::field]"):
+                    process(child_view, None, names)
             else:
                 for child in node:
                     process(child, info, prefix)
 
         if view_info is None:
-            view_info = self.fields_view_get()
+            view_info = self.view_get()
         process(etree.fromstring(view_info['arch']), view_info, '')
         return result
 

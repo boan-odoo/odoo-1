@@ -328,7 +328,6 @@ class TestO2M(TransactionCase):
 
         subs_field = f._view['fields']['subs']
         tree_view = subs_field['views']['tree']
-        self.assertEqual(tree_view['type'], 'tree')
         self.assertEqual(
             tree_view['view_id'], custom_tree,
             'check that the tree view is the one referenced by tree_view_ref'

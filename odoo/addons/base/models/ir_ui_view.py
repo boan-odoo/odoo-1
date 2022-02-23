@@ -1020,7 +1020,7 @@ actual arch.
         name_manager = self._postprocess_view(node, model or self.model)
 
         arch = etree.tostring(node, encoding="unicode").replace('\t', '')
-        return arch, dict(name_manager.available_fields)
+        return arch
 
     def _postprocess_view(self, node, model_name, editable=True):
         """ Process the given architecture, modifying it in-place to add and
@@ -1150,21 +1150,15 @@ actual arch.
                     node.getparent().remove(node)
                     # no point processing view-level ``groups`` anymore, return
                     return
-                views = {}
                 for child in node:
                     if child.tag in ('form', 'tree', 'graph', 'kanban', 'calendar'):
-                        node.remove(child)
+                        node_info['children'] = []
                         sub_name_manager = self.with_context(
                             base_model_name=name_manager.model._name,
                         )._postprocess_view(
                             child, field.comodel_name, editable=node_info['editable'],
                         )
                         xarch = etree.tostring(child, encoding="unicode").replace('\t', '')
-                        views[child.tag] = {
-                            'arch': xarch,
-                            'fields': dict(sub_name_manager.available_fields),
-                        }
-                attrs['views'] = views
                 if field.type in ('many2one', 'many2many'):
                     comodel = self.env[field.comodel_name].sudo(False)
                     can_create = comodel.check_access_rights('create', raise_exception=False)
