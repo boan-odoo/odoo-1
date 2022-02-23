@@ -133,7 +133,7 @@ QUnit.module("Search", (hooks) => {
         async function (assert) {
             assert.expect(7);
 
-            class ToyView extends LegacyComponent {
+            class ToyView extends Component {
                 setup() {
                     assert.deepEqual(this.props.domain, [["foo", "=", "qsdf"]]);
                     onWillUpdateProps((nextProps) => {
