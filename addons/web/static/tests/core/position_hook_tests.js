@@ -34,17 +34,17 @@ function isWellPositioned(popper, position = "bottom") {
     const v = /** @type {import("@web/core/position/position_hook").VariantsDataKey} */ (variant[0]);
     const posSolution = computePositioning(reference, popper, options).get(d, v);
     const hasCorrectClass = popper.classList.contains(posSolution.className);
-    const correctLeft = parseFloat(popper.style.left) === posSolution.left;
-    const correctTop = parseFloat(popper.style.top) === posSolution.top;
+    const correctLeft = parseFloat(popper.style.left) === Math.round(posSolution.left * 10) / 10;
+    const correctTop = parseFloat(popper.style.top) === Math.round(posSolution.top * 10) / 10;
     return hasCorrectClass && correctLeft && correctTop;
 }
 
 class TestComp extends Component {
     setup() {
-        usePosition(reference, this.constructor.popperOptions);
+        usePosition(reference, "popper", this.constructor.popperOptions);
     }
 }
-TestComp.template = xml`<div id="popper"/>`;
+TestComp.template = xml`<div id="popper" t-ref="popper"/>`;
 /** @type {import("@web/core/position/position_hook").Options} */
 TestComp.popperOptions = {};
 
@@ -110,17 +110,16 @@ QUnit.test("can add margin", async (assert) => {
     assert.strictEqual(popBox1.top + margin, popBox2.top);
 });
 
-QUnit.test("can use a t-ref as popper", async (assert) => {
+QUnit.test("popper is an inner element", async (assert) => {
     patchWithCleanup(TestComp, {
-        popperOptions: { ...TestComp.popperOptions, popper: "popperRef" },
         template: xml`
             <div id="not-popper">
-                <div id="popper" t-ref="popperRef"/>
+                <div id="popper" t-ref="popper"/>
             </div>
         `,
     });
     await mount(TestComp, container);
-    assert.notOk(isWellPositioned(document.getElementById("popper")));
+    assert.notOk(isWellPositioned(document.getElementById("not-popper")));
     assert.ok(isWellPositioned(document.getElementById("popper")));
 });
 

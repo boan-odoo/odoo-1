@@ -106,10 +106,7 @@ export class Dropdown extends Component {
             }
             position = [direction, variant].join("-");
         }
-        const positioningOptions = {
-            popper: "menuRef",
-            position,
-        };
+        const positioningOptions = { position };
         this.directionCaretClass = DIRECTION_CARET_CLASS[direction];
         this.togglerRef = useRef("togglerRef");
         if (this.props.toggler === "parent") {
@@ -132,11 +129,11 @@ export class Dropdown extends Component {
             );
 
             // Position menu relatively to parent element
-            usePosition(() => this.rootRef.el.parentElement, positioningOptions);
+            usePosition(() => this.rootRef.el.parentElement, "menuRef", positioningOptions);
         } else {
             // Position menu relatively to inner toggler
             const togglerRef = useRef("togglerRef");
-            usePosition(() => togglerRef.el, positioningOptions);
+            usePosition(() => togglerRef.el, "menuRef", positioningOptions);
         }
     }
 
