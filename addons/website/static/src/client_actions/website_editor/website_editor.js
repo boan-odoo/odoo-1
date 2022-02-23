@@ -2,34 +2,28 @@
 
 import { registry } from '@web/core/registry';
 import { useService } from '@web/core/utils/hooks';
-import { getWysiwygClass } from 'web_editor.loader';
-import legacyEnv from 'web.commonEnv';
 
-import { WysiwygAdapterComponent } from '../../components/wysiwyg_adapter/wysiwyg';
+import { WebsiteEditorComponent } from '../../components/editor/editor';
 
-const { Component, onWillStart, useEffect, useRef, useState, useChildSubEnv } = owl;
+const { Component, onWillStart, useEffect, useRef, useState } = owl;
 
 export class WebsiteEditorClientAction extends Component {
     setup() {
         super.setup(...arguments);
         this.websiteService = useService('website');
-        this.userService = useService('user');
         this.title = useService('title');
 
-        useChildSubEnv(legacyEnv);
 
         this.iframeFallbackUrl = '/website/iframefallback';
 
         this.iframe = useRef('iframe');
         this.iframefallback = useRef('iframefallback');
-        this.websiteEditRegistery = registry.category('website_edit');
         this.websiteContext = useState(this.websiteService.context);
 
 
         onWillStart(async () => {
             await this.websiteService.fetchWebsites();
             this.initialUrl = await this.websiteService.sendRequest(`/website/force/${this.websiteId}`, { path: this.path });
-            this.Wysiwyg = await getWysiwygClass({}, ['website.compiled_assets_wysiwyg']);
         });
 
         useEffect(() => {
@@ -76,6 +70,6 @@ export class WebsiteEditorClientAction extends Component {
     }
 }
 WebsiteEditorClientAction.template = 'website.WebsiteEditorClientAction';
-WebsiteEditorClientAction.components = { WysiwygAdapterComponent };
+WebsiteEditorClientAction.components = { WebsiteEditorComponent };
 
 registry.category('actions').add('website_editor', WebsiteEditorClientAction);

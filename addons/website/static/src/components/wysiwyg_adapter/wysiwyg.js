@@ -52,7 +52,7 @@ export class WysiwygAdapterComponent extends ComponentAdapter {
             this.observer = new MutationObserver(processRecords);
             const observe = () => {
                 if (this.observer) {
-                    this.observer.observe(this.iframe.el.contentDocument, {
+                    this.observer.observe(this.iframe.el.contentDocument.body, {
                         childList: true,
                         subtree: true,
                         attributes: true,
@@ -74,12 +74,36 @@ export class WysiwygAdapterComponent extends ComponentAdapter {
        super.setup();
     }
 
+    // We restart the widget because it needs to get new HTML elements but
+    // it's probably not needed, all it really needs is to get a new editable
+    updateWidget() {
+        this.widget.destroy();
+        delete this.widget;
+
+    }
+
     save() {
         this.widget.saveContent(false).then(() => this.widget.destroy());
     }
 
-    _trigger_up(event) {
-        super._trigger_up(...arguments);
+    async _trigger_up(event) {
+        switch (event.name) {
+            case 'widgets_start_request':
+                this.iframe.el.contentWindow.websiteRootInstance.then((websiteRootInstance) => {
+                    websiteRootInstance.trigger_up('widgets_start_request', {...event.data});
+                });
+                break;
+            case 'reload_editable':
+                this.props.state.edition = 'reload';
+                break;
+            case 'request_save':
+                this.widget.saveContent(false).then(event.data.onSuccess, event.data.onFailure);
+                break;
+            case 'action_demand':
+                this._handle_action(event.data.actionName, event.data.params);
+                event.data.onSuccess();
+        }
+        return super._trigger_up(...arguments);
     }
      /**
      * Returns the editable areas on the page.
@@ -150,5 +174,9 @@ export class WysiwygAdapterComponent extends ComponentAdapter {
     _getContentEditableAreas() {
         const savableElements = this.iframe.el.contentDocument.querySelectorAll('input, [data-oe-readonly],[data-oe-type="monetary"],[data-oe-many2one-id], [data-oe-field="arch"]:empty');
         return Array.from(savableElements).filter(element => !element.closest('.o_not_editable'));
+    }
+
+    _handle_action(actionName, params) {
+        console.warn('action ', actionName, 'is not yet supported');
     }
 }

@@ -288,7 +288,7 @@ weSnippetEditor.SnippetsMenu.include({
                     el = newEl;
                 }
                 this.bottomFakeOptionEl = el;
-                this.el.appendChild(this.topFakeOptionEl);
+                this.$body[0].appendChild(this.topFakeOptionEl);
             }
 
             // Need all of this in that order so that:

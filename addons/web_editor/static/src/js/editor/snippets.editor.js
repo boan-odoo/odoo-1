@@ -795,13 +795,15 @@ var SnippetEditor = Widget.extend({
                 this.displayOverlayOptions = true;
             }
 
-            return option.appendTo(document.createDocumentFragment());
+            const prom = option.appendTo(document.createDocumentFragment());
+            console.log('option :', option, 'promise :', prom);
+            return prom;
         });
 
         this.isTargetMovable = (this.selectorSiblings.length > 0 || this.selectorChildren.length > 0);
 
         this.$el.find('[data-toggle="dropdown"]').dropdown();
-
+        console.log(defs);
         return Promise.all(defs).then(() => {
             const options = _.sortBy(this.styles, '__order');
             const firstOptions = [];
@@ -3138,11 +3140,11 @@ var SnippetsMenu = Widget.extend({
             if (data.reloadEditor) {
                 data.reload = false;
                 const oldOnSuccess = data.onSuccess;
-                data.onSuccess = async function () {
+                data.onSuccess = async () => {
                     if (oldOnSuccess) {
                         await oldOnSuccess.call(this, ...arguments);
                     }
-                    window.location.href = window.location.origin + window.location.pathname + '?enable_editor=1';
+                    this.trigger_up('reload_editable', {...data});
                 };
             }
             this.trigger_up('request_save', data);

@@ -177,6 +177,7 @@
             'website/static/src/client_actions/*/*.scss',
             'website/static/src/services/website_service.js',
             'website/static/src/components/navbar/navbar.js',
+            'website/static/src/components/editor/editor.js',
             'website/static/src/components/dialog/*.js',
             'website/static/src/components/dialog/*.scss',
             'website/static/src/components/switch/switch.js',
@@ -188,6 +189,7 @@
             'website/static/src/components/fullscreen_indication/fullscreen_indication.scss',
             'website/static/src/systray_items/*.js',
             'website/static/src/systray_items/*.scss',
+            'website/static/src/js/utils.js',
         ],
         'web.qunit_suite_tests': [
             'website/static/tests/dashboard_tests.js',
@@ -261,6 +263,7 @@
             'website/static/src/components/configurator/configurator.xml',
             'website/static/src/components/dialog/*',
             'website/static/src/components/webclient/webclient.xml',
+            'website/static/src/components/editor/editor.xml',
             'website/static/src/client_actions/*/*.xml',
             'website/static/src/systray_items/*.xml',
         ],
