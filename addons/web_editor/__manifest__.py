@@ -84,10 +84,16 @@ Odoo Web Editor widget.
             'web_editor/static/src/js/wysiwyg/wysiwyg.js',
             'web_editor/static/src/js/wysiwyg/wysiwyg_iframe.js',
         ],
-        'web.assets_common': [
+        'web_editor.assets_common_all': [
             'web_editor/static/lib/vkbeautify/**/*',
             'web_editor/static/src/js/common/**/*',
             'web_editor/static/lib/odoo-editor/src/utils/utils.js',
+        ],
+        'web.assets_common': [
+            ('include', 'web_editor.assets_common_all')
+        ],
+        'web.assets_common_bs4': [
+            ('include', 'web_editor.assets_common_all')
         ],
         'web.assets_backend': [
             'web_editor/static/src/scss/web_editor.common.scss',
