@@ -504,7 +504,8 @@ registerModel({
                             },
                         },
                     });
-                    await this._registerConnectionType(token, peerConnection);
+                    const rtcSession = this.messaging.models['RtcSession'].findFromIdentifyingData({ id: token });
+                    await this._registerConnectionType(rtcSession, peerConnection);
                 } catch (e) {
                     if (!(e instanceof DOMException) || e.name !== "OperationError") {
                         throw e;
@@ -786,8 +787,7 @@ registerModel({
                 }
             }
         },
-        async _registerConnectionType(token, peerConnection) {
-            const rtcSession = this.messaging.models['RtcSession'].findFromIdentifyingData({ id: token });
+        async _registerConnectionType(rtcSession, peerConnection) {
             const stats = await peerConnection.getStats();
             for (const { localCandidateId, remoteCandidateId, state, type } of stats.values()) {
                 if (type === 'candidate-pair' && state === 'succeeded' && localCandidateId) {

@@ -82,8 +82,10 @@
                                 <i class="o_RtcCallParticipantCard_volumeMenuAnchor" t-on-click="callParticipantCard.onClickVolumeAnchor" t-ref="volumeMenuAnchor"/>
                                 <t t-set-slot="opened">
                                     <div class="d-flex flex-column">
-                                        <div>Remote Candidate Type: <t t-esc="callParticipantCard.rtcSession.remoteCandidateType"/></div>
-                                        <div>Local Candidate Type: <t t-esc="callParticipantCard.rtcSession.localCandidateType"/></div>
+                                        <t t-if="env.isDebug()">
+                                            <div>Remote Candidate Type: <t t-esc="callParticipantCard.rtcSession.remoteCandidateType"/></div>
+                                            <div>Local Candidate Type: <t t-esc="callParticipantCard.rtcSession.localCandidateType"/></div>
+                                        </t>
                                         <input type="range" min="0.0" max="1" step="0.01" t-att-value="callParticipantCard.rtcSession.volume" t-on-change="callParticipantCard.onChangeVolume"/>
                                     </div>
                                 </t>
