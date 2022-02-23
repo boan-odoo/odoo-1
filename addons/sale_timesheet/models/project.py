@@ -361,7 +361,7 @@ class Project(models.Model):
         super()._get_profitability_sale_lines_domain(include_sol_linked_project)
 
     def _get_profitability_aal_domain(self, sol_ids=None, additional_domain=None):
-        domain = [('so_line', 'in', sol_ids or self._get_all_sale_order_items().ids)]
+        domain = [('so_line', 'in', sol_ids or self._fetch_sale_order_item_ids())]
         if additional_domain:
             domain = expression.AND([domain, additional_domain])
         return expression.OR([
