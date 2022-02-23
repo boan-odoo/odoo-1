@@ -35,10 +35,9 @@ class ProductTemplate(models.Model):
     def _compute_service_upsell_threshold_ratio(self):
         product_uom_hour = self.env.ref('uom.product_uom_hour')
         for record in self:
-            if not record.uom_id:
+            if not record.uom_id or product_uom_hour.factor == record.uom_id.factor:
                 record.service_upsell_threshold_ratio = False
                 continue
-            record.service_upsell_threshold_ratio = ""
             if product_uom_hour.factor != record.uom_id.factor:
                 record.service_upsell_threshold_ratio = f"(1 {record.uom_id.name} = {product_uom_hour.factor / record.uom_id.factor:.2f} Hours)"
 
