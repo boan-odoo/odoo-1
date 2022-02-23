@@ -941,7 +941,7 @@ class expression(object):
             f"Invalid value {right!r} in domain term {leaf!r}"
 
         if leaf in (TRUE_LEAF, FALSE_LEAF):
-            return 'TRUE' if TRUE_LEAF else 'FALSE', []
+            return 'TRUE' if leaf == TRUE_LEAF else 'FALSE', []
 
         field = model._fields[left]  # asserts by `left in model._fields`
 
