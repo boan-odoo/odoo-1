@@ -227,8 +227,8 @@ class Project(models.Model):
 
     def _get_profitability_sale_lines_domain(self, include_sol_linked_project=True):
         if include_sol_linked_project:
-            return [('order_id', 'in', self._get_all_sales_orders().ids)]
-        service_sale_lines = self._get_all_sale_order_items()
+            return [('order_id', 'in', self._get_sale_orders().ids)]
+        service_sale_lines = self._get_sale_order_items()
         return [
             ('order_id', 'in', service_sale_lines.order_id.ids),
             ('id', 'not in', service_sale_lines.ids),
