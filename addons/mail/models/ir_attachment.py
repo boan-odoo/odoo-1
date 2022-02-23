@@ -3,11 +3,12 @@
 import requests
 
 from lxml import html
-from odoo import models, api
+from odoo import models, api, fields
 from odoo.exceptions import AccessError
 from odoo.http import request
 from odoo.tools import image_process
-
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
 
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
@@ -152,3 +153,20 @@ class IrAttachment(models.Model):
             }
             return data
         return False
+
+    @api.autovacuum
+    def _gc_link_preview(self):
+        mimetypes = [
+            'application/o-linkpreview',
+            'image/o-linkpreview-image',
+            'application/o-linkpreview-with-thumbnail',
+        ]
+        date_to_delete = fields.Date.to_string((datetime.now() + relativedelta(days=-7)))
+        domain = [
+            ('mimetype', 'in', mimetypes),
+            ('write_date', '<', date_to_delete)
+        ]
+        records = self.sudo().search(domain)
+        for record in records:
+            # Delete the data but save the mimetype for futur use
+            record.sudo().write({ 'raw': False, 'mimetype': record.mimetype })
