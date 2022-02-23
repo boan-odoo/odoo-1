@@ -319,6 +319,7 @@ export class Record extends DataPoint {
     }
 
     get isDirty() {
+        // to change (call isDirty on x2many children...)
         return Object.keys(this._changes).length > 0;
     }
 
@@ -709,12 +710,15 @@ export class Record extends DataPoint {
 
     _getChanges(allFields = false) {
         const changes = { ...(allFields ? this.data : this._changes) };
+        for (const fieldName of Object.keys(this.activeFields)) {
+            const { type } = this.fields[fieldName];
+            if (["one2many", "many2many"].includes(type)) {
+                changes[fieldName] = this.data[fieldName].getChanges();
+            }
+        }
         for (const fieldName in changes) {
             const fieldType = this.fields[fieldName].type;
-            if (fieldType === "one2many" || fieldType === "many2many") {
-                // TODO: need to generate commands
-                changes[fieldName] = this.data[fieldName].getChanges();
-            } else if (fieldType === "many2one") {
+            if (fieldType === "many2one") {
                 changes[fieldName] = changes[fieldName] ? changes[fieldName][0] : false;
             } else if (fieldType === "date") {
                 changes[fieldName] = changes[fieldName] ? serializeDate(changes[fieldName]) : false;
@@ -1669,8 +1673,17 @@ export class StaticList extends DataPoint {
     }
 
     getChanges() {
-        return this._changes;
+        if (!this._commands.length) {
+            return null;
+        }
+        const commands = [];
+        for (const resId of this.resIds) {
+            commands.push(Commands.linkTo(resId));
+        }
+        commands.push(...this._commands);
+        return commands;
     }
+
     async update(command) {
         await this._applyChange(command);
     }
