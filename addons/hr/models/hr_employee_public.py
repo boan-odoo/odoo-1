@@ -35,16 +35,16 @@ class HrEmployeePublic(models.Model):
     employee_id = fields.Many2one('hr.employee', 'Employee', compute="_compute_employee_id", search="_search_employee_id", compute_sudo=True)
     # hr.employee.public specific fields
     child_ids = fields.One2many('hr.employee.public', 'parent_id', string='Direct subordinates', readonly=True)
-    image_1920 = fields.Image("Image")
-    image_1024 = fields.Image("Image 1024")
-    image_512 = fields.Image("Image 512")
-    image_256 = fields.Image("Image 256")
-    image_128 = fields.Image("Image 128")
-    avatar_1920 = fields.Image("Avatar")
-    avatar_1024 = fields.Image("Avatar 1024")
-    avatar_512 = fields.Image("Avatar 512")
-    avatar_256 = fields.Image("Avatar 256")
-    avatar_128 = fields.Image("Avatar 128")
+    image_1920 = fields.Image("Image", related='employee_id.image_1920', compute_sudo=True)
+    image_1024 = fields.Image("Image 1024", related='employee_id.image_1024', compute_sudo=True)
+    image_512 = fields.Image("Image 512", related='employee_id.image_512', compute_sudo=True)
+    image_256 = fields.Image("Image 256", related='employee_id.image_256', compute_sudo=True)
+    image_128 = fields.Image("Image 128", related='employee_id.image_128', compute_sudo=True)
+    avatar_1920 = fields.Image("Avatar", related='employee_id.avatar_1920', compute_sudo=True)
+    avatar_1024 = fields.Image("Avatar 1024", related='employee_id.avatar_1024', compute_sudo=True)
+    avatar_512 = fields.Image("Avatar 512", related='employee_id.avatar_512', compute_sudo=True)
+    avatar_256 = fields.Image("Avatar 256", related='employee_id.avatar_256', compute_sudo=True)
+    avatar_128 = fields.Image("Avatar 128", related='employee_id.avatar_128', compute_sudo=True)
     parent_id = fields.Many2one('hr.employee.public', 'Manager', readonly=True)
     coach_id = fields.Many2one('hr.employee.public', 'Coach', readonly=True)
     user_partner_id = fields.Many2one(related='user_id.partner_id', related_sudo=False, string="User's partner")
@@ -58,21 +58,12 @@ class HrEmployeePublic(models.Model):
 
     @api.model
     def _get_fields(self):
-        return ','.join('emp.%s' % name for name, field in self._fields.items() if field.store and field.type not in ['many2many', 'one2many', 'binary'])
-
-    @api.model
-    def _get_images(self):
-        sizes = [128, 256, 512, 1024, 1920]
-        return ','.join(
-            ['att.image_%s AS image_%s' % (size, size) for size in sizes] + \
-            ['att.image_%s AS avatar_%s' % (size, size) for size in sizes])
+        return ','.join('emp.%s' % name for name, field in self._fields.items() if field.store and field.type not in ['many2many', 'one2many'])
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
         self.env.cr.execute("""CREATE or REPLACE VIEW %s as (
             SELECT
-                %s,
                 %s
             FROM hr_employee emp
-            INNER JOIN ir_attachment att ON (att.res_id = emp.id AND att.res_model = 'hr.employee')
-        )""" % (self._table, self._get_fields(), self._get_images()))
+        )""" % (self._table, self._get_fields()))
