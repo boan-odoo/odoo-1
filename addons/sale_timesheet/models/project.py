@@ -301,23 +301,51 @@ class Project(models.Model):
             'analytic_account_id': self.analytic_account_id.id,
         }
 
-    def _get_all_sale_order_items_query(self):
-        billable_project = self.filtered('allow_billable')
-        query = super(Project, billable_project)._get_all_sale_order_items_query()
+    def _get_sale_order_items_query(self, domain_per_model=None):
+        billable_project_domain = [('allow_billable', '=', True)]
+        if domain_per_model is None:
+            domain_per_model = {
+                'project.project': billable_project_domain,
+                'project.task': billable_project_domain,
+            }
+        else:
+            domain_per_model['project.project'] = expression.AND([
+                domain_per_model.get('project.project', []),
+                billable_project_domain,
+            ])
+            domain_per_model['project.task'] = expression.AND([
+                domain_per_model.get('project.task', []),
+                billable_project_domain,
+            ])
+        query = super()._get_sale_order_items_query(domain_per_model)
         Timesheet = self.env['account.analytic.line']
-        timesheet_query_str, timesheet_params = Timesheet\
-            ._where_calc([('project_id', 'in', billable_project.ids), ('so_line', '!=', False)])\
-            .select(f'{Timesheet._table}.project_id AS id', f'{Timesheet._table}.so_line')
+        timesheet_domain = [('project_id', 'in', self.ids), ('so_line', '!=', False), ('project_id.allow_billable', '=', True)]
+        timesheet_query = Timesheet._where_calc(timesheet_domain)
+        Timesheet._apply_ir_rules(timesheet_query, 'read')
+        timesheet_query_str, timesheet_params = timesheet_query.select(
+            f'{Timesheet._table}.project_id AS id',
+            f'{Timesheet._table}.so_line AS sale_line_id',
+        )
 
         EmployeeMapping = self.env['project.sale.line.employee.map']
-        employee_mapping_query_str, employee_mapping_params = EmployeeMapping \
-            ._where_calc([('project_id', 'in', billable_project.ids), ('sale_line_id', '!=', False)]) \
-            .select(f'{EmployeeMapping._table}.project_id AS id', f'{EmployeeMapping._table}.sale_line_id')
+        employee_mapping_domain = [('project_id', 'in', self.ids), ('sale_line_id', '!=', False), ('project_id.allow_billable', '=', True)]
+        if EmployeeMapping._name in domain_per_model:
+            employee_mapping_domain = expression.AND([
+                employee_mapping_domain,
+                domain_per_model[EmployeeMapping._name],
+            ])
+        employee_mapping_query = EmployeeMapping._where_calc(employee_mapping_domain)
+        EmployeeMapping._apply_ir_rules(employee_mapping_query, 'read')
+        employee_mapping_query_str, employee_mapping_params = employee_mapping_query.select(
+            f'{EmployeeMapping._table}.project_id AS id',
+            f'{EmployeeMapping._table}.sale_line_id',
+        )
 
         query._tables['project_sale_order_item'] = ' UNION '.join([
             query._tables['project_sale_order_item'],
             timesheet_query_str,
-            employee_mapping_query_str])
+            employee_mapping_query_str,
+        ])
         query._where_params += timesheet_params + employee_mapping_params
         return query
 

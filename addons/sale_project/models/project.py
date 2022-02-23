@@ -75,8 +75,8 @@ class Project(models.Model):
         project_to_invoice.has_any_so_to_invoice = True
         (self - project_to_invoice).has_any_so_to_invoice = False
 
-    def _get_all_sales_orders(self):
-        return self._get_all_sale_order_items().order_id
+    def _get_sale_orders(self):
+        return self._get_sale_order_items().order_id
 
     @api.depends('sale_order_id', 'task_ids.sale_order_id')
     def _compute_sale_order_count(self):
@@ -86,7 +86,7 @@ class Project(models.Model):
 
     def action_view_sos(self):
         self.ensure_one()
-        all_sale_orders = self._get_all_sales_orders()
+        all_sale_orders = self._get_sale_orders()
         action_window = {
             "type": "ir.actions.act_window",
             "res_model": "sale.order",
@@ -158,12 +158,12 @@ class Project(models.Model):
             **get_action(sol_read['id']),
         } for sol_read in sols.read(['display_name', 'product_uom_qty', 'qty_delivered', 'qty_invoiced', 'product_uom'])]
 
-    def _fetch_sale_order_items_per_project(self):
+    def _fetch_sale_order_items_per_project(self, domain_per_model=None):
         if not self:
             return {}
         if len(self) == 1:
-            {self.id: self._fetch_sale_order_items()}
-        query_str, params = self._get_all_sale_order_items_query().select('id, ARRAY_AGG(DISTINCT sale_line_id) AS sale_line_ids')
+            {self.id: self._fetch_sale_order_items(domain_per_model)}
+        query_str, params = self._get_sale_order_items_query(domain_per_model).select('id, ARRAY_AGG(DISTINCT sale_line_id) AS sale_line_ids')
         query = f"""
             {query_str}
             GROUP BY id
@@ -171,41 +171,48 @@ class Project(models.Model):
         self._cr.execute(query, params)
         return {row['id']: row['sale_line_ids'] for row in self._cr.dictfetchall()}
 
-    def _fetch_sale_order_items(self, limit=None, offset=0):
+    def _fetch_sale_order_items(self, domain_per_model=None, limit=None, offset=None):
+        return self.env['sale.order.line'].browse(self._fetch_sale_order_item_ids(domain_per_model, limit, offset))
+
+    def _fetch_sale_order_item_ids(self, domain_per_model=None, limit=None, offset=None):
         if not self:
             return []
-        query_str, params = self._get_all_sale_order_items_query().select('DISTINCT sale_line_id')
-        prefix_term = lambda prefix, term: f"{prefix} {term}" if term else ''
-        query = f"""
-            {query_str}
-            {prefix_term('LIMIT', int(limit) if limit else None)}
-            {prefix_term('OFFSET', int(offset) if limit else None)}
-        """
-        self._cr.execute(query, params)
-        return self._cr.fetchone()
+        query = self._get_sale_order_items_query(domain_per_model)
+        query.limit = limit
+        query.offset = offset
+        query_str, params = query.select('DISTINCT sale_line_id')
+        self._cr.execute(query_str, params)
+        return [row[0] for row in self._cr.fetchall()]
 
-    def _get_all_sale_order_items(self):
+    def _get_sale_order_items(self):
         # FIXME should be rename to _get_service_sale_order_items
-        return self.env['sale.order.line'].browse(self._fetch_sale_order_items())
+        return self._fetch_sale_order_items()
 
-    def _get_all_sale_order_items_query(self):
+    def _get_sale_order_items_query(self, domain_per_model=None):
         # FIXME should be rename to _get_service_sale_order_items_query
-        Project = self.env['project.project']
-        project_query_str, project_params = Project\
-            ._where_calc([('id', 'in', self.ids), ('sale_line_id', '!=', False)])\
-            .select('id', 'sale_line_id')
+        if domain_per_model is None:
+            domain_per_model = {}
+        project_domain = [('id', 'in', self.ids), ('sale_line_id', '!=', False)]
+        if 'project.project' in domain_per_model:
+            project_domain = expression.AND([project_domain, domain_per_model['project.project']])
+        project_query = self.env['project.project']._where_calc(project_domain)
+        self._apply_ir_rules(project_query, 'read')
+        project_query_str, project_params = project_query.select('id', 'sale_line_id')
 
         Task = self.env['project.task']
-        task_query_str, task_params = Task\
-            ._where_calc([('project_id', 'in', self.ids), ('sale_line_id', '!=', False)])\
-            .select(f'{Task._table}.project_id AS id', f'{Task._table}.sale_line_id')
+        task_domain = [('project_id', 'in', self.ids), ('sale_line_id', '!=', False)]
+        if Task._name in domain_per_model:
+            task_domain = expression.AND([task_domain, domain_per_model[Task._name]])
+        task_query = Task._where_calc(task_domain)
+        Task._apply_ir_rules(task_query, 'read')
+        task_query_str, task_params = task_query.select(f'{Task._table}.project_id AS id', f'{Task._table}.sale_line_id')
 
         query = Query(self._cr, 'project_sale_order_item', ' UNION '.join([project_query_str, task_query_str]))
         query._where_params = project_params + task_params
         return query
 
     def _get_sale_items_domain(self, additional_domain=None):
-        sale_line_ids = self._fetch_sale_order_items()
+        sale_line_ids = self._fetch_sale_order_item_ids()
         domain = [('id', 'in', sale_line_ids)]
         if additional_domain:
             domain = expression.AND([domain, additional_domain])
