@@ -12,11 +12,12 @@ import { makeTestEnv } from "../helpers/mock_env";
 import { makeFakeLocalizationService } from "../helpers/mock_services";
 import { click, destroy, getFixture, mount, triggerEvent } from "../helpers/utils";
 import { applyFilter, toggleMenu } from "@web/../tests/search/helpers";
-import { LegacyComponent } from "@web/legacy/legacy_component";
 
 const { Component, xml } = owl;
 const { DateTime } = luxon;
 const serviceRegistry = registry.category("services");
+
+let target;
 
 /**
  * @param {typeof DatePicker} Picker
@@ -35,7 +36,7 @@ const mountPicker = async (Picker, props) => {
         )
         .add("ui", uiService);
 
-    class Parent extends LegacyComponent {}
+    class Parent extends Component {}
     Parent.template = xml/* xml */ `
         <t t-component="props.Picker" t-props="props.props"/>
     `;
@@ -44,7 +45,7 @@ const mountPicker = async (Picker, props) => {
     if (!props.onDateTimeChanged) {
         props.onDateTimeChanged = () => {};
     }
-    const parent = await mount(Parent, getFixture(), { env, props: { Picker, props } });
+    const parent = await mount(Parent, target, { env, props: { Picker, props } });
     return parent;
 };
 
@@ -70,34 +71,38 @@ const useFRLocale = () => {
     return "fr";
 };
 
-QUnit.module("Components", () => {
+QUnit.module("Components", ({ beforeEach }) => {
+    beforeEach(() => {
+        target = getFixture();
+    });
+
     QUnit.module("DatePicker");
 
     QUnit.test("basic rendering", async function (assert) {
         assert.expect(8);
 
-        const picker = await mountPicker(DatePicker, {
+        await mountPicker(DatePicker, {
             date: DateTime.fromFormat("09/01/1997", "dd/MM/yyyy", { zone: "utc" }),
         });
 
-        assert.containsOnce(picker, "input.o_input.o_datepicker_input");
-        assert.containsOnce(picker, "span.o_datepicker_button");
-        assert.containsNone(document.body, "div.bootstrap-datetimepicker-widget");
+        assert.containsOnce(target, "input.o_input.o_datepicker_input");
+        assert.containsOnce(target, "span.o_datepicker_button");
+        assert.containsNone(target, "div.bootstrap-datetimepicker-widget");
 
-        const input = picker.el.querySelector("input.o_input.o_datepicker_input");
+        const input = target.querySelector("input.o_input.o_datepicker_input");
         assert.strictEqual(input.value, "09/01/1997", "Value should be the one given");
         assert.strictEqual(
             input.dataset.target,
-            `#${picker.el.id}`,
+            `#${target.id}`,
             "DatePicker id should match its input target"
         );
 
         await click(input);
 
-        assert.containsOnce(document.body, "div.bootstrap-datetimepicker-widget .datepicker");
-        assert.containsNone(document.body, "div.bootstrap-datetimepicker-widget .timepicker");
+        assert.containsOnce(target, "div.bootstrap-datetimepicker-widget .datepicker");
+        assert.containsNone(target, "div.bootstrap-datetimepicker-widget .timepicker");
         assert.strictEqual(
-            document.querySelector(".datepicker .day.active").dataset.day,
+            target.querySelector(".datepicker .day.active").dataset.day,
             "01/09/1997",
             "Datepicker should have set the correct day"
         );
@@ -106,7 +111,7 @@ QUnit.module("Components", () => {
     QUnit.test("pick a date", async function (assert) {
         assert.expect(5);
 
-        const picker = await mountPicker(DatePicker, {
+        await mountPicker(DatePicker, {
             date: DateTime.fromFormat("09/01/1997", "dd/MM/yyyy", { zone: "utc" }),
             onDateTimeChanged: (date) => {
                 assert.step("datetime-changed");
@@ -117,14 +122,14 @@ QUnit.module("Components", () => {
                 );
             },
         });
-        const input = picker.el.querySelector(".o_datepicker_input");
+        const input = target.querySelector(".o_datepicker_input");
 
         await click(input);
-        await click(document.querySelector(".datepicker th.next")); // next month
+        await click(target.querySelector(".datepicker th.next")); // next month
 
         assert.verifySteps([]);
 
-        await click(document.querySelectorAll(".datepicker table td")[15]); // previous day
+        await click(target.querySelectorAll(".datepicker table td")[15]); // previous day
 
         assert.strictEqual(input.value, "08/02/1997");
         assert.verifySteps(["datetime-changed"]);
@@ -133,7 +138,7 @@ QUnit.module("Components", () => {
     QUnit.test("pick a date with locale (locale given in props)", async function (assert) {
         assert.expect(5);
 
-        const picker = await mountPicker(DatePicker, {
+        await mountPicker(DatePicker, {
             date: DateTime.fromFormat("09/01/1997", "dd/MM/yyyy", { zone: "utc" }),
             format: "dd MMM, yyyy",
             locale: useFRLocale(),
@@ -146,14 +151,14 @@ QUnit.module("Components", () => {
                 );
             },
         });
-        const input = picker.el.querySelector(".o_datepicker_input");
+        const input = target.querySelector(".o_datepicker_input");
 
         assert.strictEqual(input.value, "09 janv., 1997");
 
         await click(input);
-        await click(document.querySelector(".datepicker .picker-switch")); // month picker
-        await click(document.querySelectorAll(".datepicker .month")[8]); // september
-        await click(document.querySelector(".datepicker .day")); // first day
+        await click(target.querySelector(".datepicker .picker-switch")); // month picker
+        await click(target.querySelectorAll(".datepicker .month")[8]); // september
+        await click(target.querySelector(".datepicker .day")); // first day
 
         assert.strictEqual(input.value, "01 sept., 1997");
         assert.verifySteps(["datetime-changed"]);
@@ -162,7 +167,7 @@ QUnit.module("Components", () => {
     QUnit.test("pick a date with locale (locale from date props)", async function (assert) {
         assert.expect(5);
 
-        const picker = await mountPicker(DatePicker, {
+        await mountPicker(DatePicker, {
             date: DateTime.fromFormat("09/01/1997", "dd/MM/yyyy", {
                 zone: "utc",
                 locale: useFRLocale(),
@@ -177,14 +182,14 @@ QUnit.module("Components", () => {
                 );
             },
         });
-        const input = picker.el.querySelector(".o_datepicker_input");
+        const input = target.querySelector(".o_datepicker_input");
 
         assert.strictEqual(input.value, "09 janv., 1997");
 
         await click(input);
-        await click(document.querySelector(".datepicker .picker-switch")); // month picker
-        await click(document.querySelectorAll(".datepicker .month")[8]); // september
-        await click(document.querySelector(".datepicker .day")); // first day
+        await click(target.querySelector(".datepicker .picker-switch")); // month picker
+        await click(target.querySelectorAll(".datepicker .month")[8]); // september
+        await click(target.querySelector(".datepicker .day")); // first day
 
         assert.strictEqual(input.value, "01 sept., 1997");
         assert.verifySteps(["datetime-changed"]);
@@ -193,7 +198,7 @@ QUnit.module("Components", () => {
     QUnit.test("enter a date value", async function (assert) {
         assert.expect(5);
 
-        const picker = await mountPicker(DatePicker, {
+        await mountPicker(DatePicker, {
             date: DateTime.fromFormat("09/01/1997", "dd/MM/yyyy", { zone: "utc" }),
             onDateTimeChanged: (date) => {
                 assert.step("datetime-changed");
@@ -204,19 +209,19 @@ QUnit.module("Components", () => {
                 );
             },
         });
-        const input = picker.el.querySelector(".o_datepicker_input");
+        const input = target.querySelector(".o_datepicker_input");
 
         assert.verifySteps([]);
 
         input.value = "08/02/1997";
-        await triggerEvent(picker.el, ".o_datepicker_input", "change");
+        await triggerEvent(target, ".o_datepicker_input", "change");
 
         assert.verifySteps(["datetime-changed"]);
 
         await click(input);
 
         assert.strictEqual(
-            document.querySelector(".datepicker .day.active").dataset.day,
+            target.querySelector(".datepicker .day.active").dataset.day,
             "02/08/1997",
             "Datepicker should have set the correct day"
         );
@@ -225,11 +230,11 @@ QUnit.module("Components", () => {
     QUnit.test("Date format is correctly set", async function (assert) {
         assert.expect(2);
 
-        const picker = await mountPicker(DatePicker, {
+        await mountPicker(DatePicker, {
             date: DateTime.fromFormat("09/01/1997", "dd/MM/yyyy", { zone: "utc" }),
             format: "yyyy/MM/dd",
         });
-        const input = picker.el.querySelector(".o_datepicker_input");
+        const input = target.querySelector(".o_datepicker_input");
 
         assert.strictEqual(input.value, "1997/01/09");
 
@@ -244,19 +249,19 @@ QUnit.module("Components", () => {
     QUnit.test("basic rendering", async function (assert) {
         assert.expect(11);
 
-        const picker = await mountPicker(DateTimePicker, {
+        await mountPicker(DateTimePicker, {
             date: DateTime.fromFormat("09/01/1997 12:30:01", "dd/MM/yyyy HH:mm:ss"),
         });
 
-        assert.containsOnce(picker, "input.o_input.o_datepicker_input");
-        assert.containsOnce(picker, "span.o_datepicker_button");
+        assert.containsOnce(target, "input.o_input.o_datepicker_input");
+        assert.containsOnce(target, "span.o_datepicker_button");
         assert.containsNone(document.body, "div.bootstrap-datetimepicker-widget");
 
-        const input = picker.el.querySelector("input.o_input.o_datepicker_input");
+        const input = target.querySelector("input.o_input.o_datepicker_input");
         assert.strictEqual(input.value, "09/01/1997 12:30:01", "Value should be the one given");
         assert.strictEqual(
             input.dataset.target,
-            `#${picker.el.id}`,
+            `#${target.id}`,
             "DateTimePicker id should match its input target"
         );
 
@@ -265,23 +270,23 @@ QUnit.module("Components", () => {
         assert.containsOnce(document.body, "div.bootstrap-datetimepicker-widget .datepicker");
         assert.containsOnce(document.body, "div.bootstrap-datetimepicker-widget .timepicker");
         assert.strictEqual(
-            document.querySelector(".datepicker .day.active").dataset.day,
+            target.querySelector(".datepicker .day.active").dataset.day,
             "01/09/1997",
             "Datepicker should have set the correct day"
         );
 
         assert.strictEqual(
-            document.querySelector(".timepicker .timepicker-hour").innerText.trim(),
+            target.querySelector(".timepicker .timepicker-hour").innerText.trim(),
             "12",
             "Datepicker should have set the correct hour"
         );
         assert.strictEqual(
-            document.querySelector(".timepicker .timepicker-minute").innerText.trim(),
+            target.querySelector(".timepicker .timepicker-minute").innerText.trim(),
             "30",
             "Datepicker should have set the correct minute"
         );
         assert.strictEqual(
-            document.querySelector(".timepicker .timepicker-second").innerText.trim(),
+            target.querySelector(".timepicker .timepicker-second").innerText.trim(),
             "01",
             "Datepicker should have set the correct second"
         );
@@ -290,7 +295,7 @@ QUnit.module("Components", () => {
     QUnit.test("pick a date and time", async function (assert) {
         assert.expect(5);
 
-        const picker = await mountPicker(DateTimePicker, {
+        await mountPicker(DateTimePicker, {
             date: DateTime.fromFormat("09/01/1997 12:30:01", "dd/MM/yyyy HH:mm:ss"),
             onDateTimeChanged: (date) => {
                 assert.step("datetime-changed");
@@ -301,21 +306,21 @@ QUnit.module("Components", () => {
                 );
             },
         });
-        const input = picker.el.querySelector("input.o_input.o_datepicker_input");
+        const input = target.querySelector("input.o_input.o_datepicker_input");
 
         await click(input);
-        await click(document.querySelector(".datepicker th.next")); // February
-        await click(document.querySelectorAll(".datepicker table td")[15]); // 08
-        await click(document.querySelector('a[title="Select Time"]'));
-        await click(document.querySelector(".timepicker .timepicker-hour"));
-        await click(document.querySelectorAll(".timepicker .hour")[15]); // 15h
-        await click(document.querySelector(".timepicker .timepicker-minute"));
-        await click(document.querySelectorAll(".timepicker .minute")[9]); // 45m
-        await click(document.querySelector(".timepicker .timepicker-second"));
+        await click(target.querySelector(".datepicker th.next")); // February
+        await click(target.querySelectorAll(".datepicker table td")[15]); // 08
+        await click(target.querySelector('a[title="Select Time"]'));
+        await click(target.querySelector(".timepicker .timepicker-hour"));
+        await click(target.querySelectorAll(".timepicker .hour")[15]); // 15h
+        await click(target.querySelector(".timepicker .timepicker-minute"));
+        await click(target.querySelectorAll(".timepicker .minute")[9]); // 45m
+        await click(target.querySelector(".timepicker .timepicker-second"));
 
         assert.verifySteps([]);
 
-        await click(document.querySelectorAll(".timepicker .second")[1]); // 05s
+        await click(target.querySelectorAll(".timepicker .second")[1]); // 05s
 
         assert.strictEqual(input.value, "08/02/1997 15:45:05");
         assert.verifySteps(["datetime-changed"]);
@@ -324,7 +329,7 @@ QUnit.module("Components", () => {
     QUnit.test("pick a date and time with locale", async function (assert) {
         assert.expect(6);
 
-        const picker = await mountPicker(DateTimePicker, {
+        await mountPicker(DateTimePicker, {
             date: DateTime.fromFormat("09/01/1997 12:30:01", "dd/MM/yyyy HH:mm:ss"),
             format: "dd MMM, yyyy HH:mm:ss",
             locale: useFRLocale(),
@@ -338,26 +343,26 @@ QUnit.module("Components", () => {
             },
         });
 
-        const input = picker.el.querySelector("input.o_input.o_datepicker_input");
+        const input = target.querySelector("input.o_input.o_datepicker_input");
 
         assert.strictEqual(input.value, "09 janv., 1997 12:30:01");
 
         await click(input);
 
-        await click(document.querySelector(".datepicker .picker-switch")); // month picker
-        await click(document.querySelectorAll(".datepicker .month")[8]); // september
-        await click(document.querySelector(".datepicker .day")); // first day
+        await click(target.querySelector(".datepicker .picker-switch")); // month picker
+        await click(target.querySelectorAll(".datepicker .month")[8]); // september
+        await click(target.querySelector(".datepicker .day")); // first day
 
-        await click(document.querySelector('a[title="Select Time"]'));
-        await click(document.querySelector(".timepicker .timepicker-hour"));
-        await click(document.querySelectorAll(".timepicker .hour")[15]); // 15h
-        await click(document.querySelector(".timepicker .timepicker-minute"));
-        await click(document.querySelectorAll(".timepicker .minute")[9]); // 45m
-        await click(document.querySelector(".timepicker .timepicker-second"));
+        await click(target.querySelector('a[title="Select Time"]'));
+        await click(target.querySelector(".timepicker .timepicker-hour"));
+        await click(target.querySelectorAll(".timepicker .hour")[15]); // 15h
+        await click(target.querySelector(".timepicker .timepicker-minute"));
+        await click(target.querySelectorAll(".timepicker .minute")[9]); // 45m
+        await click(target.querySelector(".timepicker .timepicker-second"));
 
         assert.verifySteps([]);
 
-        await click(document.querySelectorAll(".timepicker .second")[1]); // 05s
+        await click(target.querySelectorAll(".timepicker .second")[1]); // 05s
 
         assert.strictEqual(input.value, "01 sept., 1997 15:45:05");
         assert.verifySteps(["datetime-changed"]);
@@ -366,7 +371,7 @@ QUnit.module("Components", () => {
     QUnit.test("enter a datetime value", async function (assert) {
         assert.expect(9);
 
-        const picker = await mountPicker(DateTimePicker, {
+        await mountPicker(DateTimePicker, {
             date: DateTime.fromFormat("09/01/1997 12:30:01", "dd/MM/yyyy HH:mm:ss"),
             onDateTimeChanged: (date) => {
                 assert.step("datetime-changed");
@@ -377,12 +382,12 @@ QUnit.module("Components", () => {
                 );
             },
         });
-        const input = picker.el.querySelector(".o_datepicker_input");
+        const input = target.querySelector(".o_datepicker_input");
 
         assert.verifySteps([]);
 
         input.value = "08/02/1997 15:45:05";
-        await triggerEvent(picker.el, ".o_datepicker_input", "change");
+        await triggerEvent(target, ".o_datepicker_input", "change");
 
         assert.verifySteps(["datetime-changed"]);
 
@@ -390,22 +395,22 @@ QUnit.module("Components", () => {
 
         assert.strictEqual(input.value, "08/02/1997 15:45:05");
         assert.strictEqual(
-            document.querySelector(".datepicker .day.active").dataset.day,
+            target.querySelector(".datepicker .day.active").dataset.day,
             "02/08/1997",
             "Datepicker should have set the correct day"
         );
         assert.strictEqual(
-            document.querySelector(".timepicker .timepicker-hour").innerText.trim(),
+            target.querySelector(".timepicker .timepicker-hour").innerText.trim(),
             "15",
             "Datepicker should have set the correct hour"
         );
         assert.strictEqual(
-            document.querySelector(".timepicker .timepicker-minute").innerText.trim(),
+            target.querySelector(".timepicker .timepicker-minute").innerText.trim(),
             "45",
             "Datepicker should have set the correct minute"
         );
         assert.strictEqual(
-            document.querySelector(".timepicker .timepicker-second").innerText.trim(),
+            target.querySelector(".timepicker .timepicker-second").innerText.trim(),
             "05",
             "Datepicker should have set the correct second"
         );
@@ -414,11 +419,11 @@ QUnit.module("Components", () => {
     QUnit.test("Date time format is correctly set", async function (assert) {
         assert.expect(2);
 
-        const picker = await mountPicker(DateTimePicker, {
+        await mountPicker(DateTimePicker, {
             date: DateTime.fromFormat("09/01/1997 12:30:01", "dd/MM/yyyy HH:mm:ss"),
             format: "HH:mm:ss yyyy/MM/dd",
         });
-        const input = picker.el.querySelector(".o_datepicker_input");
+        const input = target.querySelector(".o_datepicker_input");
 
         assert.strictEqual(input.value, "12:30:01 1997/01/09");
 
