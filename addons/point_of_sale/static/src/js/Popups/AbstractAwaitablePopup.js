@@ -3,8 +3,6 @@ odoo.define('point_of_sale.AbstractAwaitablePopup', function (require) {
 
     const PosComponent = require('point_of_sale.PosComponent');
 
-    const { useExternalListener } = owl;
-
     /**
      * Implement this abstract class by extending it like so:
      * ```js
@@ -31,12 +29,6 @@ odoo.define('point_of_sale.AbstractAwaitablePopup', function (require) {
      * ```
      */
     class AbstractAwaitablePopup extends PosComponent {
-        setup() {
-            super.setup();
-            if (!this.props.notEscapable) {
-                useExternalListener(window, 'keyup', this._cancelAtEscape);
-            }
-        }
         async confirm() {
             this.props.resolve({ confirmed: true, payload: await this.getPayload() });
             this.env.posbus.trigger('close-popup', this.props.id);
@@ -44,11 +36,6 @@ odoo.define('point_of_sale.AbstractAwaitablePopup', function (require) {
         cancel() {
             this.props.resolve({ confirmed: false, payload: null });
             this.env.posbus.trigger('close-popup', this.props.id);
-        }
-        _cancelAtEscape(event) {
-            if (event.key === 'Escape') {
-                this.cancel();
-            }
         }
         /**
          * Override this in the concrete popup implementation to set the

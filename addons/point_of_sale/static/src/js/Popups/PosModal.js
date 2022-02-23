@@ -8,11 +8,12 @@ odoo.define('point_of_sale.PosModal', function(require) {
     class PosModal extends PosComponent {
         setup() {
             super.setup();
-            useBus(this.env.posbus, 'show-popup', this.__showPopup);
-            useBus(this.env.posbus, 'close-popup', this.__closePopup);
+            owl.useExternalListener(window, 'keyup', this._cancelTopPopupAtEscape);
+            useBus(this.env.posbus, 'show-popup', this._showPopup);
+            useBus(this.env.posbus, 'close-popup', this._closePopup);
             this.popups = [];
         }
-        __showPopup({ detail }) {
+        _showPopup({ detail }) {
             const { id, name, props, resolve } = detail;
             const component = this.constructor.components[name];
             if (component.dontShow) {
@@ -27,11 +28,30 @@ odoo.define('point_of_sale.PosModal', function(require) {
             });
             this.render();
         }
-        __closePopup({ detail: id }) {
+        _closePopup({ detail: id }) {
             const index = this.popups.findIndex(popup => popup.props.id == id);
             if (index != -1) {
                 this.popups.splice(index, 1);
                 this.render();
+            }
+        }
+        _cancelTopPopupAtEscape(event) {
+            const topPopup = this.popups[this.popups.length - 1];
+
+            /**
+             * Do nothing:
+             *  - when pressed key is not `Escape` or
+             *  - when no topPopup or
+             *  - when the topPopup is notEscapable.
+             */
+            if (event.key !== 'Escape' || !topPopup || topPopup.props.notEscapable) return;
+
+            // Find the rendered popup component and call its cancel method.
+            const topPopupNode = Object.values(this.__owl__.children).find(
+                (node) => node.component.props.id == topPopup.props.id
+            );
+            if (topPopupNode) {
+                return topPopupNode.component.cancel();
             }
         }
         isShown() {
