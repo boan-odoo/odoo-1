@@ -5,7 +5,7 @@ options.registry.ImageComparison = options.Class.extend({
     isTopOption: true,
     forceNoDeleteButton: true,
     start: function () {
-        this.$overlay.data('$optionsSection')[0];
+        const leftPanelEl = this.$overlay.data('$optionsSection')[0];
         var titleTextEl = leftPanelEl.querySelector('we-title > span');
         this.counterEl = document.createElement('span');
         titleTextEl.prepend(this.counterEl);
@@ -14,6 +14,11 @@ options.registry.ImageComparison = options.Class.extend({
     updateUI: async function () {
         await this._super(...arguments);
         this.counterEl.textContent = 'Left ';
+    },
+    cleanForSave() {
+        console.log('cleanForSave');
+        const sliderVal = 50;
+        this.$target[0].querySelector('.image-right').style.clipPath = "polygon(0 0," + sliderVal + "% 0," + sliderVal + "%100%, 0 100%)";
     },
 });
 export default {

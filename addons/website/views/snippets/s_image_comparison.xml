@@ -12,7 +12,7 @@
     </template>
     <template id="s_image_comparison_options" inherit_id="website.snippet_options">
         <xpath expr="." position="inside">
-            <div data-js="ImageComparison" data-selector=".s_image_comparison.container">
+            <div data-js="ImageComparison" data-selector=".s_image_comparison .container">
                 <we-button class="fa fa-fw fa-angle-left" data-slide="left" data-no-preview="true" data-tooltip="true" title="Move Backward"/>
                 <we-button class="fa fa-fw fa-angle-right mr-2" data-slide="right" data-no-preview="true" data-tooltip="true" title="Move Forward"/>
             </div>
