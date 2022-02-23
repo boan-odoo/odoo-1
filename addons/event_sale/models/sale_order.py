@@ -136,6 +136,9 @@ class SaleOrderLine(models.Model):
             if not line.product_id or line._origin.product_id != line.product_id:
                 # Note: this also computes the price for new lines :)
                 super(SaleOrderLine, line)._compute_price_unit()
+            if line.product_id and line._origin.product_id == line.product_id:
+                # Note: compute the price whenever possible from the ticket itself
+                line.price_unit = line.event_ticket_id.price
 
     @api.depends('event_ticket_id')
     def _compute_name(self):
