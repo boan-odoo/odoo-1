@@ -3867,7 +3867,7 @@ class Many2many(_RelationalMulti):
 
         # determine old and new relation {x: ys}
         set = OrderedSet
-        ids = {rid for recs, cs in records_commands_list for rid in recs.ids}
+        ids = {rid for recs, cs in records_commands_list for rid in recs.ids}  # is not determinist!
         records = records_commands_list[0][0].browse(ids)
 
         if self.store:
