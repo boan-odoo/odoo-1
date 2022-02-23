@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_image_comparison" name="Image Comparison">
+        <section class="s_image_comparison pt32 pb32">
+            <div class="container">
+                <img src="/web/image/website.s_image_comparison_1"/>
+                <img class="image-right" src="/web/image/website.s_image_comparison_2"/>
+                <input type="range" min="0" max="100" value="50" id="slider"/>
+            </div>
+        </section>
+    </template>
+    <template id="s_image_comparison_options" inherit_id="website.snippet_options">
+        <xpath expr="." position="inside">
+            <div data-js="ImageComparison" data-selector=".s_image_comparison.container">
+                <we-button class="fa fa-fw fa-angle-left" data-slide="left" data-no-preview="true" data-tooltip="true" title="Move Backward"/>
+                <we-button class="fa fa-fw fa-angle-right mr-2" data-slide="right" data-no-preview="true" data-tooltip="true" title="Move Forward"/>
+            </div>
+        </xpath>
+    </template>
+    <record id="website.s_image_comparison_000_scss" model="ir.asset">
+        <field name="name">Image Comparison 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">website/static/src/snippets/s_image_comparison/000.scss</field>
+    </record>
+    <record id="website.s_image_comparison_000_js" model="ir.asset">
+        <field name="name">Image Comparison 000 JS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">website/static/src/snippets/s_image_comparison/000.js</field>
+    </record>
+</odoo>

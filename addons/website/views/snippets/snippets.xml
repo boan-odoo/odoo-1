@@ -102,6 +102,7 @@
             <div id="snippet_effect" class="o_panel">
                 <div class="o_panel_header">Dynamic Content</div>
                 <div class="o_panel_body">
+                    <t t-snippet="website.s_image_comparison" t-thumbnail="/website/static/src/img/snippets_thumbs/s_image_text.svg"/>
                     <t t-snippet="website.s_website_form" t-thumbnail="/website/static/src/img/snippets_thumbs/s_website_form.svg"/>
                     <t t-set="google_maps_api_key" t-value="request.env['website'].get_current_website().google_maps_api_key"/>
                     <t t-if="debug or not google_maps_api_key" t-snippet="website.s_map" t-thumbnail="/website/static/src/img/snippets_thumbs/s_map.svg"/>

@@ -1,0 +1,42 @@
+.s_image_comparison {
+    display: grid;
+    place-items: center;
+    *, *:before, *:after {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    }
+    .container {
+        height: 67.5vmin;
+        width: 95vmin;
+        position: relative;
+        overflow: hidden;
+        img {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+        img.image-right {
+            clip-path: polygon(0 0 , 50% 0, 50% 100%, 0 100%);
+        }
+        input {
+            position: relative;
+            -webkit-appearance: none;
+            width: calc(100% + 40px);
+            height: 100%;
+            margin-left:-22px;
+            background-color: transparent;
+            outline: none;
+            &::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                height: 40px;
+                width: 40px;
+                background: url("/web/image/website.s_image_comparison_slider"),rgba(255,255,255,0.3);
+                border: 3px solid #ffffff;
+                border-radius: 50%;
+                background-size: contain;
+                cursor: pointer;
+            }
+        }
+    }
+}
