@@ -37,7 +37,7 @@
       </div>
 
       <div t-if="state.FooterComponent" class="o_command_palette_footer">
-        <t t-component="state.FooterComponent"/>
+        <t t-component="state.FooterComponent" setCommandPaletteConfig="(config) => this.setCommandPaletteConfig(config)"/>
       </div>
 
     </div>

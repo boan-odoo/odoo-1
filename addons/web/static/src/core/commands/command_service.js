@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
+import { useService } from "@web/core/utils/hooks";
 import { CommandPaletteDialog } from "./command_palette_dialog";
 
 const { Component, xml } = owl;
@@ -38,10 +39,19 @@ const commandSetupRegistry = registry.category("command_setup");
 
 class DefaultFooter extends Component {
     setup() {
+        this.command = useService("command");
         this.elements = commandSetupRegistry
             .getEntries()
             .map((el) => ({ namespace: el[0], name: el[1].name }))
             .filter((el) => el.name);
+    }
+
+    onClick(namespaces) {
+        this.props.setCommandPaletteConfig(
+            this.command.openMainPalette({
+                searchValue: namespaces,
+            })
+        );
     }
 }
 DefaultFooter.template = xml`
@@ -50,7 +60,9 @@ DefaultFooter.template = xml`
     <t t-foreach="elements" t-as="element" t-key="element.namespace">
         <t t-if="!(element_first || element_last)">, </t>
         <t t-if="element_last and !element_first"> and </t>
-        <span t-esc="element.namespace" class='o_promote'/><t t-esc="element.name"/>
+        <span class="o_namespace" t-on-click="() => this.onClick(element.namespace)">
+            <span t-esc="element.namespace" class='o_promote'/><t t-esc="element.name"/>
+        </span>
     </t>
 </span>
 `;

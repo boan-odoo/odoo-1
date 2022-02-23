@@ -82,7 +82,7 @@ export class CommandPalette extends Component {
         this.DefaultCommandItem = DefaultCommandItem;
         this.activeElement = useService("ui").activeElement;
         this.defaultDebounceSearch = debounce.apply(this, [this.search, 0]);
-        useAutofocus();
+        this.inputRef = useAutofocus();
 
         useHotkey("Enter", () => this.executeSelectedCommand(), { bypassEditableProtection: true });
         useHotkey("ArrowUp", () => this.selectCommandAndScrollTo("PREV"), {
@@ -146,6 +146,9 @@ export class CommandPalette extends Component {
         }
         this.namespaces = Object.keys(this.providersByNamespace);
         await this.search(config.searchValue || "");
+        if (this.inputRef.el) {
+            this.inputRef.el.focus();
+        }
     }
 
     /**
