@@ -1252,3 +1252,39 @@ class TestAccountTaxDetailsReport(AccountTestInvoicingCommon):
             ],
         )
         self.assertTotalAmounts(invoice, tax_details)
+
+    def test_negative_line(self):
+        tax = self.env['account.tax'].create({
+            'name': "tax",
+            'amount_type': 'percent',
+            'amount': 10.0,
+        })
+
+        amounts = (-1000.0, 200.0, -200.0, 7000.0, -3000.0, -10.0, 20.0, -50.0, -1000.0, -2000.0, -5000.0, 10.0)
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner_a.id,
+            'invoice_date': '2019-01-01',
+            'invoice_line_ids': [
+                Command.create({
+                    'name': 'line2',
+                    'account_id': self.company_data['default_account_revenue'].id,
+                    'price_unit': amount,
+                    'tax_ids': [Command.set(tax.ids)],
+                })
+            for amount in amounts],
+        })
+        base_lines, tax_lines = self._dispatch_move_lines(invoice)
+
+        tax_details = self._get_tax_details()
+        self.assertTaxDetailsValues(
+            tax_details,
+            [
+                {
+                    'tax_line_id': tax_lines[0].id,
+                    'base_amount': -amount,
+                    'tax_amount': -amount * 0.1,
+                }
+            for amount in amounts],
+        )
+        self.assertTotalAmounts(invoice, tax_details)
