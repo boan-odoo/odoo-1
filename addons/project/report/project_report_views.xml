@@ -67,8 +67,8 @@
                     <filter string="Starred" name="starred" domain="[('priority', '=', 1)]"/>
                     <filter string="Not Starred" name="starred" domain="[('priority', '=', 0)]"/>
                     <separator/>
-                    <filter string="Open" name="open_tasks" domain="[('is_closed', '=', False)]"/>
-                    <filter string="Closed" name="closed_tasks" domain="[('is_closed', '=', True)]"/>
+                    <filter string="Open" name="open_tasks" domain="[('fold', '=', False)]"/>
+                    <filter string="Closed" name="closed_tasks" domain="[('fold', '=', True)]"/>
                     <separator/>
                     <filter string="Late Tasks" name="late" domain="[('date_deadline', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
                     <separator/>

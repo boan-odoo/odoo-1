@@ -45,14 +45,19 @@ class ReportProjectTaskUser(models.Model):
     company_id = fields.Many2one('res.company', string='Company', readonly=True)
     partner_id = fields.Many2one('res.partner', string='Customer', readonly=True)
     stage_id = fields.Many2one('project.task.type', string='Stage', readonly=True)
-    is_closed = fields.Boolean(related="task_id.is_closed", string="Closing Stage")
+    fold = fields.Boolean(string="Folded Stage", readonly=True)
     task_id = fields.Many2one('project.task', string='Tasks', readonly=True)
     active = fields.Boolean(readonly=True)
     tag_ids = fields.Many2many('project.tags', relation='project_tags_project_task_rel',
         column1='project_task_id', column2='project_tags_id',
         string='Tags', readonly=True)
     parent_id = fields.Many2one('project.task', string='Parent Task', readonly=True)
-    rating_last_text = fields.Selection(string="Rating Text", groups='base.group_user', related="task_id.rating_last_text")
+    rating_last_text = fields.Selection([
+        ('top', 'Satisfied'),
+        ('ok', 'Okay'),
+        ('ko', 'Dissatisfied'),
+        ('none', 'No Rating yet')
+        ], string="Rating Text", readonly=True)
     personal_stage_type_ids = fields.Many2many('project.task.type', 'project_task_user_rel', column1='task_id', column2='stage_id',
                                                 string="Personal Stage", readonly=True)
 
@@ -74,9 +79,11 @@ class ReportProjectTaskUser(models.Model):
                 t.partner_id,
                 t.parent_id as parent_id,
                 t.stage_id as stage_id,
+                ts.fold as fold,
                 t.kanban_state as state,
                 NULLIF(t.rating_last_value, 0) as rating_last_value,
                 AVG(rt.rating) as rating_avg,
+                rt.rating_text as rating_last_text,
                 t.working_days_close as working_days_close,
                 t.working_days_open  as working_days_open,
                 t.working_hours_open as working_hours_open,
@@ -100,8 +107,10 @@ class ReportProjectTaskUser(models.Model):
                 t.partner_id,
                 t.parent_id,
                 t.stage_id,
+                ts.fold,
                 t.kanban_state,
                 t.rating_last_value,
+                rt.rating_text,
                 t.working_days_close,
                 t.working_days_open,
                 t.working_hours_open,
@@ -113,6 +122,7 @@ class ReportProjectTaskUser(models.Model):
                 project_task t
                     LEFT JOIN project_task_user_rel tu on t.id=tu.task_id
                     LEFT JOIN rating_rating rt ON rt.parent_res_id = t.id
+                    LEFT JOIN project_task_type ts ON ts.id = t.stage_id
                         AND rt.res_model = 'project.task'
                         AND rt.consumed = True
                         AND rt.rating >= {RATING_LIMIT_MIN}
