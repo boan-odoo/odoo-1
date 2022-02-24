@@ -32,6 +32,16 @@ class KnowledgeController(http.Controller):
 
         return redirect('/web/login?redirect=/article/%s' % article_id)
 
+    @http.route('/article/<int:article_id>/toggle_favorite', type='http', auth='user')
+    def article_toggle_favorite(self, article_id, **post):
+        article = request.env['knowledge.article'].sudo().browse(article_id)
+        if not article.user_has_access:
+            return werkzeug.exceptions.Forbidden()
+        if not article.exists():
+            return werkzeug.exceptions.NotFound()
+        article.sudo().is_user_favourite = not article.sudo().is_user_favourite
+        return request.redirect("/article/%s" % article_id)
+
     @http.route('/article/<int:article_id>', type='http', auth='user')
     def redirect_to_article(self, article_id, **post):
         article = request.env['knowledge.article'].browse(article_id)
@@ -47,13 +57,12 @@ class KnowledgeController(http.Controller):
                 request.env.ref('knowledge.knowledge_article_dashboard_action').id,
                 request.env.ref('knowledge.knowledge_menu_root').id
             ))
-        return request.render('knowledge.article_frontend_template', self._prepare_article_frontend_values(article, **post))
+        return request.render('knowledge.knowledge_article_view_frontend', self._prepare_article_frontend_values(article, **post))
 
     def _prepare_article_frontend_values(self, article, **post):
         values = {
             'article': article,
-            'article_name': article.name,
-            'article_body': article.body,
+            'is_favourite': article.sudo().is_user_favourite,
         }
         values.update(self.get_tree_values())
         return values
