@@ -30,7 +30,6 @@ export class SelectionField extends Component {
         }
     }
     get value() {
-        debugger;
         const rawValue = this.props.value;
         return this.props.type === "many2one" && rawValue ? rawValue[0] : rawValue;
     }

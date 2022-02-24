@@ -131,10 +131,12 @@ export class KanbanRenderer extends Component {
     // ------------------------------------------------------------------------
 
     getRawValue(record, fieldName) {
-        // problem data is not good (sometimes a StaticList),
-        // _values not good (does not take into account _changes)
-        // WOWL TO FIX!!!
-        return record._values[fieldName];
+        const field = record.fields[fieldName];
+        let value = record.data[fieldName];
+        if (["one2many", "many2many"].includes(field.type)) {
+            value = value.resIds;
+        }
+        return value;
     }
 
     getValue(record, fieldName) {

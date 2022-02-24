@@ -38,6 +38,7 @@ export class X2ManyField extends Component {
             fields: Object.assign({}, this.props.fields, subViewInfo.fields), // WOWL is this necessary?
             list: this.props.value,
             openRecord: this.openRecord.bind(this),
+            onAdd: this.onAdd.bind(this),
         };
     }
 
@@ -114,6 +115,10 @@ export class X2ManyField extends Component {
             readonly: this.props.readonly,
             title: this.props.record.activeFields[this.props.name].string,
         });
+    }
+
+    onAdd(context) {
+        this.props.value.add(context);
     }
 }
 

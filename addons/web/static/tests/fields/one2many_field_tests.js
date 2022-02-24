@@ -3098,7 +3098,7 @@ QUnit.module("Fields", (hooks) => {
         );
     });
 
-    QUnit.debug("editable one2many list, pager is updated", async function (assert) {
+    QUnit.test("editable one2many list, pager is updated", async function (assert) {
         serverData.models.turtle.records.push({ id: 4, turtle_foo: "stephen hawking" });
         serverData.models.partner.records[0].turtles = [1, 2, 3, 4];
 
@@ -3120,13 +3120,13 @@ QUnit.module("Fields", (hooks) => {
         // add a record, add value to turtle_foo then click in form view to confirm it
         await clickEdit(target);
         await click(target, ".o_field_x2many_list_row_add a");
-        await editInput(target, 'input[name="turtle_foo"]', "nora");
+
+        await editInput(target, 'div[name="turtle_foo"] input', "nora");
         await click(target);
 
         assert.strictEqual(
             target.querySelector(".o_field_widget[name=turtles] .o_pager").innerText.trim(),
-            "1-4 / 5",
-            "pager should display the correct total"
+            "1-4 / 5"
         );
     });
 

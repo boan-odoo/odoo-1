@@ -28,7 +28,11 @@
                             t-att-colspan="state.columns.length + 1"
                             class="o_field_x2many_list_row_add"
                             >
-                            <a href="#" role="button" data-context="">Add a line</a>
+                            <t t-foreach="creates" t-as="create" t-key="create.index">
+                                <a href="#" role="button" t-on-click.stop.prevent="() => props.onAdd(create.context)">
+                                    <t t-esc="create.description"/>
+                                </a>
+                            </t>
                         </td>
                     </tr>
                 </tbody>

@@ -1577,6 +1577,23 @@ export class StaticList extends DataPoint {
         this.records.splice(j, 1);
     }
 
+    async add(context) {
+        const record = this.model.createDataPoint("record", {
+            context: Object.assign({}, this.context, context || {}),
+            resModel: this.resModel,
+            fields: this.fields,
+            activeFields: this.activeFields,
+            viewMode: this.viewMode,
+            views: this.views,
+            onRecordWillSwitchMode: this.onRecordWillSwitchMode,
+        });
+        await record.load();
+        this.records.push(record);
+        this.resIds.push(record.id);
+        this.limit = this.limit + 1; // might be not good
+        this.model.notify();
+    }
+
     exportState() {
         return {
             limit: this.limit,
