@@ -67,6 +67,7 @@ QUnit.module("Fields", (hooks) => {
                                 ["partner", "Partner"],
                             ],
                         },
+                        qux: { string: "Qux", type: "float", digits: [16, 1] },
                     },
                     records: [
                         {
@@ -2005,7 +2006,7 @@ QUnit.module("Fields", (hooks) => {
                 form,
                 "field_changed",
                 function (event) {
-                    assert.step(String(form.model.get(event.data.changes.turtles.id).res_id));
+                    assert.step(String(form.model.get(event.data.changes.turtles.id)));
                 },
                 true
             );
@@ -3130,12 +3131,12 @@ QUnit.module("Fields", (hooks) => {
         );
     });
 
-    QUnit.skipWOWL("one2many list (non editable): edition", async function (assert) {
+    QUnit.debug("one2many list (non editable): edition", async function (assert) {
         assert.expect(12);
 
         let nbWrite = 0;
         serverData.models.partner.records[0].p = [2, 4];
-        const form = await makeView({
+        await makeView({
             type: "form",
             resModel: "partner",
             serverData,
@@ -3143,7 +3144,8 @@ QUnit.module("Fields", (hooks) => {
                 <form>
                     <field name="p">
                         <tree>
-                            <field name="display_name"/><field name="qux"/>
+                            <field name="display_name"/>
+                            <field name="qux"/>
                         </tree>
                         <form string="Partners">
                             <field name="display_name"/>
@@ -3151,74 +3153,54 @@ QUnit.module("Fields", (hooks) => {
                     </field>
                 </form>
             `,
-            res_id: 1,
+            resId: 1,
             mockRPC: function (route, args) {
                 if (args.method === "write") {
                     nbWrite++;
-                    assert.deepEqual(
-                        args.args[1],
-                        {
-                            p: [
-                                [1, 2, { display_name: "new name" }],
-                                [2, 4, false],
-                            ],
-                        },
-                        "should have sent the correct commands"
-                    );
+                    assert.deepEqual(args.args[1], {
+                        p: [
+                            [1, 2, { display_name: "new name" }],
+                            [2, 4, false],
+                        ],
+                    });
                 }
             },
         });
 
-        assert.ok(
-            form.$(".o_list_record_remove").length,
-            "remove icon should be visible in readonly"
-        );
-        assert.ok(
-            form.$(".o_field_x2many_list_row_add").length,
-            '"Add an item" should be visible in readonly'
-        );
+        assert.containsN(target, ".o_list_record_remove", 2);
+        assert.containsOnce(target, ".o_field_x2many_list_row_add");
 
         await clickEdit(target);
 
-        assert.containsN(form, ".o_list_view td.o_list_number", 2, "should contain 2 records");
-        assert.strictEqual(
-            form.$(".o_list_view tbody td:first()").text(),
-            "second record",
-            "display_name of first subrecord should be the one in DB"
-        );
-        assert.ok(form.$(".o_list_record_remove").length, "remove icon should be visible in edit");
-        assert.ok(
-            form.$(".o_field_x2many_list_row_add").length,
-            '"Add an item" should not visible in edit'
-        );
+        assert.containsN(target, "td.o_list_number", 2);
+        assert.strictEqual(target.querySelector("tbody td").innerText, "second record");
+        assert.containsN(target, ".o_list_record_remove", 2);
+        assert.containsNone(target, ".o_field_x2many_list_row_add");
 
         // edit existing subrecord
-        await click(form.$(".o_list_view tbody tr:first() td:eq(1)"));
+        await click(target.querySelectorAll(".o_list_renderer tbody tr td")[1]); // ?
 
-        await testUtils.fields.editInput($(".modal .o_form_view input"), "new name");
-        await click($(".modal .modal-footer .btn-primary"));
-        assert.strictEqual(
-            form.$(".o_list_view tbody td:first()").text(),
-            "new name",
-            "value of subrecord should have been updated"
-        );
-        assert.strictEqual(nbWrite, 0, "should not have write anything in DB");
+        await editInput(target, ".modal .o_form_view input", "new name");
 
-        // create new subrecords
-        // TODO when 'Add an item' will be implemented
+        debugger;
 
-        // remove subrecords
-        await click(form.$(".o_list_record_remove:nth(1)"));
-        assert.containsOnce(form, ".o_list_view td.o_list_number", "should contain 1 subrecord");
-        assert.strictEqual(
-            form.$(".o_list_view tbody td:first()").text(),
-            "new name",
-            'the remaining subrecord should be "new name"'
-        );
+        // await click(target, ".modal .modal-footer .btn-primary");
+        // assert.strictEqual(target.querySelector("tbody td").innerText, "new name");
+        // assert.strictEqual(nbWrite, 0, "should not have write anything in DB");
 
-        await clickSave(target); // save the record
-        assert.strictEqual(nbWrite, 1, "should have write the changes in DB");
-        s;
+        // // create new subrecords
+        // // TODO when 'Add an item' will be implemented
+
+        // // remove subrecords
+        // await click(target.querySelectorAll(".o_list_record_remove")[1]);
+        // assert.containsOnce(target, "td.o_list_number");
+        // assert.strictEqual(
+        //     target.querySelector("tbody td").innerText,
+        //     "new name"
+        // );
+
+        // await clickSave(target); // save the record
+        // assert.strictEqual(nbWrite, 1, "should have write the changes in DB");
     });
 
     QUnit.skipWOWL("one2many list (editable): edition", async function (assert) {
@@ -11341,7 +11323,7 @@ QUnit.module("Fields", (hooks) => {
                 const records = await this._rpc({
                     method: "read",
                     resModel: "partner",
-                    args: [this.value.res_ids],
+                    args: [this.valueIs],
                 });
                 this.$el.text(records.map((r) => `${r.display_name}/${r.int_field}`).join(", "));
                 this.$el.append($('<button class="update fa fa-edit">'));
