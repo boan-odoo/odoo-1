@@ -428,7 +428,12 @@ export const editorCommands = {
         // because the content editable root is the link
         const closestEl = closestElement(sel.focusNode, 'a');
         if (closestEl && closestEl.getAttribute('contenteditable') === 'true') {
-            editor._activateContenteditable();
+            // Chrome applies the 'unlink' command until the end of the document.
+            // FIXME When Chrome is fixed, revert to: editor._activateContenteditable();
+            closestEl.parentNode.setAttribute('contenteditable', true);
+            // Firefox turns the `<a>` into a span - thus keeping classes and styles.
+            closestEl.className = '';
+            delete closestEl.style;
         }
         if (sel.isCollapsed) {
             const cr = preserveCursor(editor.document);
