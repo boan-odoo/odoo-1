@@ -1,17 +1,19 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { useService } from "@web/core/utils/hooks";
 import { _lt } from "@web/core/l10n/translation";
 import { standardFieldProps } from "./standard_field_props";
 
-import { ColorPickerDialog } from "@web/core/colorpicker/colorpicker_dialog";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 
-const { Component } = owl;
+const { Component, useState } = owl;
 
 export class Many2ManyTagsField extends Component {
     setup() {
-        this.dialogService = useService("dialog");
+        this.state = useState({
+            isOpen: false,
+        });
     }
     get tags() {
         const colorField = this.props.colorField;
@@ -25,19 +27,13 @@ export class Many2ManyTagsField extends Component {
     }
 
     onClick() {
-        if (this.isReadonly) return;
-        const self = this;
-        this.dialogService.add(ColorPickerDialog, {
-            onColorSelected(hex) {
-                self.props.update(hex);
-            },
-            color: self.props.colorField || "#ffffff",
-        });
+        this.state.isOpen = !this.state.isOpen;
     }
 }
 
 Many2ManyTagsField.components = {
-    ColorPickerDialog,
+    Dropdown,
+    DropdownItem,
 };
 Many2ManyTagsField.template = "web.Many2ManyTagsField";
 Many2ManyTagsField.props = {
