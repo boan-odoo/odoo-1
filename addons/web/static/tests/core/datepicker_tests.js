@@ -87,22 +87,22 @@ QUnit.module("Components", ({ beforeEach }) => {
 
         assert.containsOnce(target, "input.o_input.o_datepicker_input");
         assert.containsOnce(target, "span.o_datepicker_button");
-        assert.containsNone(target, "div.bootstrap-datetimepicker-widget");
+        assert.containsNone(document.body, "div.bootstrap-datetimepicker-widget");
 
         const input = target.querySelector("input.o_input.o_datepicker_input");
         assert.strictEqual(input.value, "09/01/1997", "Value should be the one given");
         assert.strictEqual(
             input.dataset.target,
-            `#${target.id}`,
+            `#${target.querySelector(".o_datepicker").id}`,
             "DatePicker id should match its input target"
         );
 
         await click(input);
 
-        assert.containsOnce(target, "div.bootstrap-datetimepicker-widget .datepicker");
-        assert.containsNone(target, "div.bootstrap-datetimepicker-widget .timepicker");
+        assert.containsOnce(document.body, "div.bootstrap-datetimepicker-widget .datepicker");
+        assert.containsNone(document.body, "div.bootstrap-datetimepicker-widget .timepicker");
         assert.strictEqual(
-            target.querySelector(".datepicker .day.active").dataset.day,
+            document.querySelector(".datepicker .day.active").dataset.day,
             "01/09/1997",
             "Datepicker should have set the correct day"
         );
@@ -125,11 +125,11 @@ QUnit.module("Components", ({ beforeEach }) => {
         const input = target.querySelector(".o_datepicker_input");
 
         await click(input);
-        await click(target.querySelector(".datepicker th.next")); // next month
+        await click(document.querySelector(".datepicker th.next")); // next month
 
         assert.verifySteps([]);
 
-        await click(target.querySelectorAll(".datepicker table td")[15]); // previous day
+        await click(document.querySelectorAll(".datepicker table td")[15]); // previous day
 
         assert.strictEqual(input.value, "08/02/1997");
         assert.verifySteps(["datetime-changed"]);
@@ -156,9 +156,9 @@ QUnit.module("Components", ({ beforeEach }) => {
         assert.strictEqual(input.value, "09 janv., 1997");
 
         await click(input);
-        await click(target.querySelector(".datepicker .picker-switch")); // month picker
-        await click(target.querySelectorAll(".datepicker .month")[8]); // september
-        await click(target.querySelector(".datepicker .day")); // first day
+        await click(document.querySelector(".datepicker .picker-switch")); // month picker
+        await click(document.querySelectorAll(".datepicker .month")[8]); // september
+        await click(document.querySelector(".datepicker .day")); // first day
 
         assert.strictEqual(input.value, "01 sept., 1997");
         assert.verifySteps(["datetime-changed"]);
@@ -187,9 +187,9 @@ QUnit.module("Components", ({ beforeEach }) => {
         assert.strictEqual(input.value, "09 janv., 1997");
 
         await click(input);
-        await click(target.querySelector(".datepicker .picker-switch")); // month picker
-        await click(target.querySelectorAll(".datepicker .month")[8]); // september
-        await click(target.querySelector(".datepicker .day")); // first day
+        await click(document.querySelector(".datepicker .picker-switch")); // month picker
+        await click(document.querySelectorAll(".datepicker .month")[8]); // september
+        await click(document.querySelector(".datepicker .day")); // first day
 
         assert.strictEqual(input.value, "01 sept., 1997");
         assert.verifySteps(["datetime-changed"]);
@@ -221,7 +221,7 @@ QUnit.module("Components", ({ beforeEach }) => {
         await click(input);
 
         assert.strictEqual(
-            target.querySelector(".datepicker .day.active").dataset.day,
+            document.querySelector(".datepicker .day.active").dataset.day,
             "02/08/1997",
             "Datepicker should have set the correct day"
         );
@@ -261,7 +261,7 @@ QUnit.module("Components", ({ beforeEach }) => {
         assert.strictEqual(input.value, "09/01/1997 12:30:01", "Value should be the one given");
         assert.strictEqual(
             input.dataset.target,
-            `#${target.id}`,
+            `#${target.querySelector(".o_datepicker").id}`,
             "DateTimePicker id should match its input target"
         );
 
@@ -270,23 +270,23 @@ QUnit.module("Components", ({ beforeEach }) => {
         assert.containsOnce(document.body, "div.bootstrap-datetimepicker-widget .datepicker");
         assert.containsOnce(document.body, "div.bootstrap-datetimepicker-widget .timepicker");
         assert.strictEqual(
-            target.querySelector(".datepicker .day.active").dataset.day,
+            document.querySelector(".datepicker .day.active").dataset.day,
             "01/09/1997",
             "Datepicker should have set the correct day"
         );
 
         assert.strictEqual(
-            target.querySelector(".timepicker .timepicker-hour").innerText.trim(),
+            document.querySelector(".timepicker .timepicker-hour").innerText.trim(),
             "12",
             "Datepicker should have set the correct hour"
         );
         assert.strictEqual(
-            target.querySelector(".timepicker .timepicker-minute").innerText.trim(),
+            document.querySelector(".timepicker .timepicker-minute").innerText.trim(),
             "30",
             "Datepicker should have set the correct minute"
         );
         assert.strictEqual(
-            target.querySelector(".timepicker .timepicker-second").innerText.trim(),
+            document.querySelector(".timepicker .timepicker-second").innerText.trim(),
             "01",
             "Datepicker should have set the correct second"
         );
@@ -309,18 +309,18 @@ QUnit.module("Components", ({ beforeEach }) => {
         const input = target.querySelector("input.o_input.o_datepicker_input");
 
         await click(input);
-        await click(target.querySelector(".datepicker th.next")); // February
-        await click(target.querySelectorAll(".datepicker table td")[15]); // 08
-        await click(target.querySelector('a[title="Select Time"]'));
-        await click(target.querySelector(".timepicker .timepicker-hour"));
-        await click(target.querySelectorAll(".timepicker .hour")[15]); // 15h
-        await click(target.querySelector(".timepicker .timepicker-minute"));
-        await click(target.querySelectorAll(".timepicker .minute")[9]); // 45m
-        await click(target.querySelector(".timepicker .timepicker-second"));
+        await click(document.querySelector(".datepicker th.next")); // February
+        await click(document.querySelectorAll(".datepicker table td")[15]); // 08
+        await click(document.querySelector('a[title="Select Time"]'));
+        await click(document.querySelector(".timepicker .timepicker-hour"));
+        await click(document.querySelectorAll(".timepicker .hour")[15]); // 15h
+        await click(document.querySelector(".timepicker .timepicker-minute"));
+        await click(document.querySelectorAll(".timepicker .minute")[9]); // 45m
+        await click(document.querySelector(".timepicker .timepicker-second"));
 
         assert.verifySteps([]);
 
-        await click(target.querySelectorAll(".timepicker .second")[1]); // 05s
+        await click(document.querySelectorAll(".timepicker .second")[1]); // 05s
 
         assert.strictEqual(input.value, "08/02/1997 15:45:05");
         assert.verifySteps(["datetime-changed"]);
@@ -349,20 +349,20 @@ QUnit.module("Components", ({ beforeEach }) => {
 
         await click(input);
 
-        await click(target.querySelector(".datepicker .picker-switch")); // month picker
-        await click(target.querySelectorAll(".datepicker .month")[8]); // september
-        await click(target.querySelector(".datepicker .day")); // first day
+        await click(document.querySelector(".datepicker .picker-switch")); // month picker
+        await click(document.querySelectorAll(".datepicker .month")[8]); // september
+        await click(document.querySelector(".datepicker .day")); // first day
 
-        await click(target.querySelector('a[title="Select Time"]'));
-        await click(target.querySelector(".timepicker .timepicker-hour"));
-        await click(target.querySelectorAll(".timepicker .hour")[15]); // 15h
-        await click(target.querySelector(".timepicker .timepicker-minute"));
-        await click(target.querySelectorAll(".timepicker .minute")[9]); // 45m
-        await click(target.querySelector(".timepicker .timepicker-second"));
+        await click(document.querySelector('a[title="Select Time"]'));
+        await click(document.querySelector(".timepicker .timepicker-hour"));
+        await click(document.querySelectorAll(".timepicker .hour")[15]); // 15h
+        await click(document.querySelector(".timepicker .timepicker-minute"));
+        await click(document.querySelectorAll(".timepicker .minute")[9]); // 45m
+        await click(document.querySelector(".timepicker .timepicker-second"));
 
         assert.verifySteps([]);
 
-        await click(target.querySelectorAll(".timepicker .second")[1]); // 05s
+        await click(document.querySelectorAll(".timepicker .second")[1]); // 05s
 
         assert.strictEqual(input.value, "01 sept., 1997 15:45:05");
         assert.verifySteps(["datetime-changed"]);
@@ -395,22 +395,22 @@ QUnit.module("Components", ({ beforeEach }) => {
 
         assert.strictEqual(input.value, "08/02/1997 15:45:05");
         assert.strictEqual(
-            target.querySelector(".datepicker .day.active").dataset.day,
+            document.querySelector(".datepicker .day.active").dataset.day,
             "02/08/1997",
             "Datepicker should have set the correct day"
         );
         assert.strictEqual(
-            target.querySelector(".timepicker .timepicker-hour").innerText.trim(),
+            document.querySelector(".timepicker .timepicker-hour").innerText.trim(),
             "15",
             "Datepicker should have set the correct hour"
         );
         assert.strictEqual(
-            target.querySelector(".timepicker .timepicker-minute").innerText.trim(),
+            document.querySelector(".timepicker .timepicker-minute").innerText.trim(),
             "45",
             "Datepicker should have set the correct minute"
         );
         assert.strictEqual(
-            target.querySelector(".timepicker .timepicker-second").innerText.trim(),
+            document.querySelector(".timepicker .timepicker-second").innerText.trim(),
             "05",
             "Datepicker should have set the correct second"
         );
@@ -454,17 +454,17 @@ QUnit.module("Components", ({ beforeEach }) => {
         }
         const searchModel = new MockedSearchModel();
         const date_field = { name: "date_field", string: "A date", type: "date", searchable: true };
-        const cfi = await createComponent(CustomFilterItem, {
+        await createComponent(CustomFilterItem, {
             props: {
                 fields: { date_field },
             },
             env: { searchModel },
         });
-        await toggleMenu(cfi, "Add Custom Filter");
-        await editSelect(cfi.el.querySelector(".o_generator_menu_field"), "date_field");
-        const valueInput = cfi.el.querySelector(".o_generator_menu_value .o_input");
+        await toggleMenu(target, "Add Custom Filter");
+        await editSelect(target.querySelector(".o_generator_menu_field"), "date_field");
+        const valueInput = target.querySelector(".o_generator_menu_value .o_input");
         await click(valueInput);
         await editSelect(valueInput, "05/05/2005");
-        await applyFilter(cfi);
+        await applyFilter(target);
     });
 });
