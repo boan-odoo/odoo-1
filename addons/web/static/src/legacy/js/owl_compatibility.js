@@ -603,7 +603,7 @@ odoo.define('web.OwlCompatibility', function (require) {
             this.status = "willMount";
             const prom = this.app.mountNode(this.node, this.target, this.mountOptions);
             if (remount) {
-                this.node.fiber.force = true;
+                this.node.fiber.deep = true;
             }
             prepareForFinish(this.node);
             await prom;
