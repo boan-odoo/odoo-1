@@ -27,7 +27,9 @@
                         <td t-if="props.activeActions.canCreate"
                             t-att-colspan="state.columns.length + 1"
                             class="o_field_x2many_list_row_add"
-                        />
+                            >
+                            <a href="#" role="button" data-context="">Add a line</a>
+                        </td>
                     </tr>
                 </tbody>
                 <tfoot t-on-click="unselectRow">
