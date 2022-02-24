@@ -109,10 +109,10 @@ export class X2ManyField extends Component {
     }
 
     openRecord(record) {
+        record.switchMode("edit");
         this.dialogService.add(FormViewDialog, {
             archInfo: this.props.value.views.form, // FIXME: might not be there
             record,
-            readonly: this.props.readonly,
             title: this.props.record.activeFields[this.props.name].string,
         });
     }

@@ -708,6 +708,15 @@ export class Record extends DataPoint {
         return specs;
     }
 
+    getChanges() {
+        const changes = this._getChanges();
+        if (!Object.keys(changes).length) {
+            return null;
+        }
+        const command = Commands.update(this.resId, changes);
+        return command;
+    }
+
     _getChanges(allFields = false) {
         const changes = { ...(allFields ? this.data : this._changes) };
         for (const fieldName of Object.keys(this.activeFields)) {
@@ -1696,7 +1705,15 @@ export class StaticList extends DataPoint {
         }
         const commands = [];
         for (const resId of this.resIds) {
-            commands.push(Commands.linkTo(resId));
+            let record = this._cache[resId];
+            if (record) {
+                const command = record.getChanges();
+                if (command) {
+                    commands.push(command);
+                }
+            } else {
+                commands.push(Commands.linkTo(resId));
+            }
         }
         commands.push(...this._commands);
         return commands;

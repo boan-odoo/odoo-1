@@ -3173,34 +3173,29 @@ QUnit.module("Fields", (hooks) => {
         await clickEdit(target);
 
         assert.containsN(target, "td.o_list_number", 2);
-        assert.strictEqual(target.querySelector("tbody td").innerText, "second record");
+        assert.strictEqual(
+            target.querySelector(".o_list_renderer tbody td").innerText,
+            "second record"
+        );
         assert.containsN(target, ".o_list_record_remove", 2);
-        assert.containsNone(target, ".o_field_x2many_list_row_add");
+        assert.containsOnce(target, ".o_field_x2many_list_row_add");
 
         // edit existing subrecord
         await click(target.querySelectorAll(".o_list_renderer tbody tr td")[1]); // ?
 
-        await editInput(target, ".modal .o_form_view input", "new name");
+        await editInput(target, ".modal .o_form_editable input", "new name");
 
-        debugger;
+        await click(target, ".modal .modal-footer .btn-primary");
+        assert.strictEqual(target.querySelector(".o_list_renderer tbody td").innerText, "new name");
+        assert.strictEqual(nbWrite, 0, "should not have write anything in DB");
 
-        // await click(target, ".modal .modal-footer .btn-primary");
-        // assert.strictEqual(target.querySelector("tbody td").innerText, "new name");
-        // assert.strictEqual(nbWrite, 0, "should not have write anything in DB");
+        // remove subrecords
+        await click(target.querySelectorAll(".o_list_record_remove")[1]);
+        assert.containsOnce(target, "td.o_list_number");
+        assert.strictEqual(target.querySelector(".o_list_renderer tbody td").innerText, "new name");
 
-        // // create new subrecords
-        // // TODO when 'Add an item' will be implemented
-
-        // // remove subrecords
-        // await click(target.querySelectorAll(".o_list_record_remove")[1]);
-        // assert.containsOnce(target, "td.o_list_number");
-        // assert.strictEqual(
-        //     target.querySelector("tbody td").innerText,
-        //     "new name"
-        // );
-
-        // await clickSave(target); // save the record
-        // assert.strictEqual(nbWrite, 1, "should have write the changes in DB");
+        await clickSave(target); // save the record
+        assert.strictEqual(nbWrite, 1, "should have write the changes in DB");
     });
 
     QUnit.skipWOWL("one2many list (editable): edition", async function (assert) {
