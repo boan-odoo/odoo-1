@@ -22,7 +22,7 @@
             <field name="name">account.analytic.line.tree.hr_timesheet</field>
             <field name="model">account.analytic.line</field>
             <field name="arch" type="xml">
-                <tree editable="top" string="Timesheet Activities" sample="1" multi_edit="1">
+                <tree editable="top" string="Timesheet Activities" sample="1">
                     <field name="date"/>
                     <field name="employee_id" invisible="1"/>
                     <field name="project_id" required="1" options="{'no_create_edit': True}"/>
@@ -167,21 +167,19 @@
                     <field name="date"/>
                     <field name="employee_id"/>
                     <field name="project_id"/>
-                    <field name="parent_task_id" groups="project.group_subtask_project"/>
                     <field name="task_id"/>
-                    <field name="tag_ids"/>
+                    <field name="parent_task_id" groups="project.group_subtask_project"/>
+                    <field name="tag_ids" groups="analytic.group_analytic_tags"/>
                     <field name="name"/>
                     <field name="department_id"/>
                     <field name="manager_id"/>
                     <filter name="mine" string="My Timesheets" domain="[('user_id', '=', uid)]"/>
                     <separator/>
-                    <filter string="Suspicious Durations" name="suspicious_durations" domain="['|', ('unit_amount', '>', 24), ('unit_amount', '=', 0), ('date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
-                    <separator/>
                     <filter name="month" string="Date" date="date"/>
                     <group expand="0" string="Group By">
                         <filter string="Project" name="groupby_project" domain="[]" context="{'group_by': 'project_id'}"/>
-                        <filter string="Task" name="groupby_task" domain="[]" context="{'group_by': 'task_id'}"/>
                         <filter string="Parent Task" name="groupby_parent_task" domain="[]" context="{'group_by': 'parent_task_id'}" groups="project.group_subtask_project"/>
+                        <filter string="Task" name="groupby_task" domain="[]" context="{'group_by': 'task_id'}"/>
                         <filter string="Date" name="groupby_date" domain="[]" context="{'group_by': 'date'}" help="Timesheet by Date"/>
                         <filter string="Department" name="groupby_department" domain="[]" context="{'group_by': 'department_id'}"/>
                         <filter string="Manager" name="groupby_manager" domain="[]" context="{'group_by': 'manager_id'}"/>
