@@ -519,7 +519,7 @@ QUnit.test("registrations and elements belong to the correct UI owner", async (a
             assert.step("MyComponent2 [data-hotkey]");
         }
     }
-    MyComponent2.template = xml`<div><button data-hotkey="b" t-on-click="onClick" t-ref="active"/></div>`;
+    MyComponent2.template = xml`<div t-ref="active"><button data-hotkey="b" t-on-click="onClick"/></div>`;
 
     await mount(MyComponent1, target, { env });
     triggerHotkey("a");
