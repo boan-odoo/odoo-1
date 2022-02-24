@@ -20,6 +20,12 @@ const TaskWithHours = FieldMany2One.extend({
         return value && value.split('\u00A0')[0];
     },
     /**
+    * @override
+    */
+    _getDisplayName: function (value) {
+        return value && value.split('\n')[0];
+    },
+    /**
      * @override
      * @private
      */
