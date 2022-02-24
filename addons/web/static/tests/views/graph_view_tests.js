@@ -3034,37 +3034,37 @@ QUnit.module("Views", (hooks) => {
             `,
         });
 
-        assert.containsOnce(graph, "button.oi-sort--ascending");
-        assert.containsOnce(graph, "button.oi-sort--descending");
+        assert.containsOnce(graph, "button.fa-sort-amount-asc");
+        assert.containsOnce(graph, "button.fa-sort-amount-desc");
 
         checkLegend(assert, graph, "Count", "measure should be by count");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             'sorting should be applie on descending order by default when sorting="desc"'
         );
         checkDatasets(assert, graph, "data", { data: [4, 3, 1] });
 
-        await click(graph.el, "button.oi-sort--ascending");
+        await click(graph.el, "button.fa-sort-amount-asc");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--ascending"),
+            graph.el.querySelector("button.fa-sort-amount-asc"),
             "active",
             "ascending order should be applied"
         );
         checkDatasets(assert, graph, "data", { data: [1, 3, 4] });
 
-        await click(graph.el, "button.oi-sort--descending");
+        await click(graph.el, "button.fa-sort-amount-desc");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             "descending order button should be active"
         );
         checkDatasets(assert, graph, "data", { data: [4, 3, 1] });
 
         // again click on descending button to deactivate order button
-        await click(graph.el, "button.oi-sort--descending");
+        await click(graph.el, "button.fa-sort-amount-desc");
         assert.doesNotHaveClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             "descending order button should not be active"
         );
@@ -3072,28 +3072,28 @@ QUnit.module("Views", (hooks) => {
 
         // set line mode
         await selectMode(graph.el, "line");
-        assert.containsOnce(graph, "button.oi-sort--ascending");
-        assert.containsOnce(graph, "button.oi-sort--descending");
+        assert.containsOnce(graph, "button.fa-sort-amount-asc");
+        assert.containsOnce(graph, "button.fa-sort-amount-desc");
 
         checkLegend(assert, graph, "Count", "measure should be by count");
         assert.doesNotHaveClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             "descending order should be applied"
         );
         checkDatasets(assert, graph, "data", { data: [4, 1, 3] });
 
-        await click(graph.el, "button.oi-sort--ascending");
+        await click(graph.el, "button.fa-sort-amount-asc");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--ascending"),
+            graph.el.querySelector("button.fa-sort-amount-asc"),
             "active",
             "ascending order button should be active"
         );
         checkDatasets(assert, graph, "data", { data: [1, 3, 4] });
 
-        await click(graph.el, "button.oi-sort--descending");
+        await click(graph.el, "button.fa-sort-amount-desc");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             "descending order button should be active"
         );
@@ -3122,26 +3122,26 @@ QUnit.module("Views", (hooks) => {
         checkLegend(assert, graph, ["false", "true"], "measure should be by count");
         checkDatasets(assert, graph, "data", [{ data: [1, 1, 3] }, { data: [3, 0, 0] }]);
 
-        await click(graph.el, "button.oi-sort--ascending");
+        await click(graph.el, "button.fa-sort-amount-asc");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--ascending"),
+            graph.el.querySelector("button.fa-sort-amount-asc"),
             "active",
             "ascending order should be applied by default"
         );
         checkDatasets(assert, graph, "data", [{ data: [1, 3, 1] }, { data: [0, 0, 3] }]);
 
-        await click(graph.el, "button.oi-sort--descending");
+        await click(graph.el, "button.fa-sort-amount-desc");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             "ascending order button should be active"
         );
         checkDatasets(assert, graph, "data", [{ data: [1, 3, 1] }, { data: [3, 0, 0] }]);
 
         // again click on descending button to deactivate order button
-        await click(graph.el, "button.oi-sort--descending");
+        await click(graph.el, "button.fa-sort-amount-desc");
         assert.doesNotHaveClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             "descending order button should not be active"
         );
@@ -3182,9 +3182,9 @@ QUnit.module("Views", (hooks) => {
             { data: [0, 1, 0, 0] },
         ]);
 
-        await click(graph.el, "button.oi-sort--ascending");
+        await click(graph.el, "button.fa-sort-amount-asc");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--ascending"),
+            graph.el.querySelector("button.fa-sort-amount-asc"),
             "active",
             "ascending order should be applied by default"
         );
@@ -3194,9 +3194,9 @@ QUnit.module("Views", (hooks) => {
             { data: [0, 0, 0, 1] },
         ]);
 
-        await click(graph.el, "button.oi-sort--descending");
+        await click(graph.el, "button.fa-sort-amount-desc");
         assert.hasClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             "descending order button should be active"
         );
@@ -3207,9 +3207,9 @@ QUnit.module("Views", (hooks) => {
         ]);
 
         // again click on descending button to deactivate order button
-        await click(graph.el, "button.oi-sort--descending");
+        await click(graph.el, "button.fa-sort-amount-desc");
         assert.doesNotHaveClass(
-            graph.el.querySelector("button.oi-sort--descending"),
+            graph.el.querySelector("button.fa-sort-amount-desc"),
             "active",
             "descending order button should not be active"
         );
