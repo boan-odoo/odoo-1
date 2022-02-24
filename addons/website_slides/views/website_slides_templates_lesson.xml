@@ -297,8 +297,7 @@
         <div class="tab-content mt-3">
             <div role="tabpanel" t-att-class="not comments and 'tab-pane fade in show active' or 'tab-pane fade'" id="about">
                 <div t-field="slide.description"/>
-                <div t-if="slide.channel_id.allow_comment and slide.channel_id.channel_type == 'documentation'"
-                 class="d-flex">
+                <div t-if="slide.channel_id.allow_comment" class="d-flex">
                     <span class="text-muted font-weight-bold mr-3">Rating</span>
                     <div class="text-muted border-left pl-3">
                         <div class="o_wslides_js_slide_like mr-2">
@@ -317,7 +316,7 @@
             <div role="tabpanel" t-att-class="comments and 'tab-pane fade in show active' or 'tab-pane fade'" id="discuss">
                 <t t-call="portal.message_thread">
                     <t t-set="object" t-value="slide"/>
-                    <t t-set="disable_composer" t-value="not (slide.channel_id.can_comment and slide.channel_id.allow_comment and slide.channel_id.channel_type == 'training')"/>
+                    <t t-set="disable_composer" t-value="not (slide.channel_id.can_comment and slide.channel_id.allow_comment)"/>
                     <t t-set="display_rating" t-value="False"/>
                 </t>
             </div>
