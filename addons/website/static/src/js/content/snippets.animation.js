@@ -653,50 +653,108 @@ registry.mediaVideo = publicWidget.Widget.extend({
         // TODO: this code should be refactored to make more sense and be better
         // integrated with Odoo (this refactoring should be done in master).
 
-        var def = this._super.apply(this, arguments);
+        var proms = [this._super(...arguments)];
+
+        this.iframeID = _.uniqueId('o_video_iframe_');
+        this.iframe = false;
+        this.autoplay = false;
+
         if (this.$target.children('iframe').length) {
+            this.iframe = this.$target.children('iframe')[0];
+            this.videoSrc = _.escape(this.iframe.src);
+            this.iframeID = this.iframe.id || this.iframeID;
+            this.iframe.id = this.iframeID;
+        } else {
+            // Rebuild the iframe:
+            // Depending on version / compatibility / instance,
+            // the src is saved in the 'data-src' attribute or the
+            // 'data-oe-expression' one (the latter is used as a workaround in 10.0
+            // system but should obviously be reviewed in master).
+            this.videoSrc = _.escape(this.$target.data('oe-expression') || this.$target.data('src'));
+            // Validate the src to only accept supported domains we can trust
+            var m = this.videoSrc.match(/^(?:https?:)?\/\/([^/?#]+)/);
+            if (!m) {
+                // Unsupported protocol or wrong URL format, don't inject iframe
+                return Promise.all(proms);
+            }
+            var domain = m[1].replace(/^www\./, '');
+            var supportedDomains = ['youtu.be', 'youtube.com', 'youtube-nocookie.com', 'instagram.com', 'vine.co', 'player.vimeo.com', 'vimeo.com', 'dailymotion.com', 'player.youku.com', 'youku.com'];
+            if (!_.contains(supportedDomains, domain)) {
+                // Unsupported domain, don't inject iframe
+                return Promise.all(proms);
+            }
+        }
+        this.isYoutubeVideo = this.videoSrc.indexOf('youtube') >= 0;
+        this.isMobileEnv = config.device.size_class <= config.device.SIZES.LG && config.device.touch;
+
+        if (this.isYoutubeVideo && this.isMobileEnv) {
+            var query = new URLSearchParams(new URL(this.videoSrc).search);
+            this.autoplay = query.get('autoplay') === '1';
+            this.videoSrc = this.videoSrc + "&enablejsapi=1";
+
+            if (!window.YT) {
+                var oldOnYoutubeIframeAPIReady = window.onYouTubeIframeAPIReady;
+                proms.push(new Promise(resolve => {
+                    window.onYouTubeIframeAPIReady = () => {
+                        if (oldOnYoutubeIframeAPIReady) {
+                            oldOnYoutubeIframeAPIReady();
+                        }
+                        return resolve();
+                    };
+                }));
+                $('<script/>', {
+                    src: 'https://www.youtube.com/iframe_api',
+                }).appendTo('head');
+            }
+        }
+
+        if (this.iframe) {
             // There already is an <iframe/>, do nothing. This is the normal
             // case. The whole code that follows is only there to ensure
             // compatibility with videos added before bug fixes or new Odoo
             // versions where the <iframe/> element is properly saved.
-            return def;
+            this.iframe.src = this.videoSrc;
+        } else {
+            // Bug fix / compatibility: empty the <div/> element as all information
+            // to rebuild the iframe should have been saved on the <div/> element
+            this.$target.empty();
+
+            // Add extra content for size / edition
+            this.$target.append(
+                '<div class="css_editable_mode_display">&nbsp;</div>' +
+                '<div class="media_iframe_video_size">&nbsp;</div>'
+            );
+
+            this.$target.append($('<iframe/>', {
+                id: this.iframeID,
+                src: this.videoSrc,
+                frameborder: '0',
+                allowfullscreen: 'allowfullscreen',
+            }));
         }
 
-        // Bug fix / compatibility: empty the <div/> element as all information
-        // to rebuild the iframe should have been saved on the <div/> element
-        this.$target.empty();
-
-        // Add extra content for size / edition
-        this.$target.append(
-            '<div class="css_editable_mode_display">&nbsp;</div>' +
-            '<div class="media_iframe_video_size">&nbsp;</div>'
-        );
-
-        // Rebuild the iframe. Depending on version / compatibility / instance,
-        // the src is saved in the 'data-src' attribute or the
-        // 'data-oe-expression' one (the latter is used as a workaround in 10.0
-        // system but should obviously be reviewed in master).
-        var src = _.escape(this.$target.data('oe-expression') || this.$target.data('src'));
-        // Validate the src to only accept supported domains we can trust
-        var m = src.match(/^(?:https?:)?\/\/([^/?#]+)/);
-        if (!m) {
-            // Unsupported protocol or wrong URL format, don't inject iframe
-            return def;
-        }
-        var domain = m[1].replace(/^www\./, '');
-        var supportedDomains = ['youtu.be', 'youtube.com', 'youtube-nocookie.com', 'instagram.com', 'vine.co', 'player.vimeo.com', 'vimeo.com', 'dailymotion.com', 'player.youku.com', 'youku.com'];
-        if (!_.contains(supportedDomains, domain)) {
-            // Unsupported domain, don't inject iframe
-            return def;
-        }
-        this.$target.append($('<iframe/>', {
-            src: src,
-            frameborder: '0',
-            allowfullscreen: 'allowfullscreen',
-        }));
-
-        return def;
+        return Promise.all(proms).then(() => this._autoStartVideo());;
     },
+    /**
+    * Auto start video if 'autoplay' is set.
+    *
+    * @private
+    */
+    _autoStartVideo: function () {
+       // YouTube does not allow to auto-play video in mobile devices, so we
+       // have to play the video manually.
+       if (this.isMobileEnv && this.isYoutubeVideo && this.autoplay) {
+           new window.YT.Player(this.iframeID, {
+               events: {
+                   onReady: ev => {
+                       if (this.autoplay) {
+                           ev.target.playVideo();
+                       }
+                   },
+               }
+           });
+       }
+   },
 });
 
 registry.backgroundVideo = publicWidget.Widget.extend({
