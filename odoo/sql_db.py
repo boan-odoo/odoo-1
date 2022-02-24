@@ -3,18 +3,21 @@
 
 
 """
-The PostgreSQL connector is a connectivity layer between the OpenERP code and
+The PostgreSQL connector is a connectivity layer between the Odoo code and
 the database, *not* a database abstraction toolkit. Database abstraction is what
 the ORM does, in fact.
 """
 
-from contextlib import contextmanager
-import itertools
 import logging
 import os
 import time
 import uuid
 import warnings
+import threading
+import re
+from contextlib import contextmanager
+from datetime import datetime, timedelta
+from inspect import currentframe
 
 import psycopg2
 import psycopg2.extras
@@ -24,62 +27,22 @@ from psycopg2.pool import PoolError
 from psycopg2.sql import SQL, Identifier
 from werkzeug import urls
 
+from . import tools
 from .tools.func import frame_codeinfo, locked
 
+def undecimalize(value, cr):
+    if value is None:
+        return None
+    return float(value)
+
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+psycopg2.extensions.register_type(psycopg2.extensions.new_type((700, 701, 1700), 'float', undecimalize))
 
 _logger = logging.getLogger(__name__)
 _logger_conn = _logger.getChild("connection")
 
-
-def unbuffer(symb, cr):
-    if symb is None:
-        return None
-    return str(symb)
-
-def undecimalize(symb, cr):
-    if symb is None:
-        return None
-    return float(symb)
-
-psycopg2.extensions.register_type(psycopg2.extensions.new_type((700, 701, 1700,), 'float', undecimalize))
-
-
-from . import tools
-
-from .tools import parse_version as pv
-if pv(psycopg2.__version__) < pv('2.7'):
-    from psycopg2._psycopg import QuotedString
-    def adapt_string(adapted):
-        """Python implementation of psycopg/psycopg2#459 from v2.7"""
-        if '\x00' in adapted:
-            raise ValueError("A string literal cannot contain NUL (0x00) characters.")
-        return QuotedString(adapted)
-
-    psycopg2.extensions.register_adapter(str, adapt_string)
-
-from datetime import datetime, timedelta
-import threading
-from inspect import currentframe
-
-
-def flush_env(cr, *, clear=True):
-    warnings.warn("Since Odoo 15.0, use cr.flush() instead of flush_env(cr).",
-                  DeprecationWarning, stacklevel=2)
-    cr.flush()
-    if clear:
-        cr.clear()
-
-
-def clear_env(cr):
-    warnings.warn("Since Odoo 15.0, use cr.clear() instead of clear_env(cr).",
-                  DeprecationWarning, stacklevel=2)
-    cr.clear()
-
-
-import re
-re_from = re.compile('.* from "?([a-zA-Z_0-9]+)"? .*$')
-re_into = re.compile('.* into "?([a-zA-Z_0-9]+)"? .*$')
+re_from = re.compile(r'.* from "?([a-zA-Z_0-9]+)"? .*$')
+re_into = re.compile(r'.* into "?([a-zA-Z_0-9]+)"? .*$')
 
 sql_counter = 0
 
@@ -209,7 +172,7 @@ class Cursor(BaseCursor):
        ``cursor`` objects.
 
         ``Cursor`` is the object behind the ``cr`` variable used all
-        over the OpenERP code.
+        over the Odoo code.
 
         .. rubric:: Transaction Isolation
 
@@ -221,7 +184,7 @@ class Cursor(BaseCursor):
         terms of the phenomena that must not occur between concurrent
         transactions, such as *dirty read*, etc.
         In the context of a generic business data management software
-        such as OpenERP, we need the best guarantees that no data
+        such as Odoo, we need the best guarantees that no data
         corruption can ever be cause by simply running multiple
         transactions in parallel. Therefore, the preferred level would
         be the *serializable* level, which ensures that a set of
@@ -242,7 +205,7 @@ class Cursor(BaseCursor):
         detect a concurrent update by parallel transactions, and forcing
         one of them to rollback.
 
-        OpenERP implements its own level of locking protection
+        Odoo implements its own level of locking protection
         for transactions that are highly likely to provoke concurrent
         updates, such as stock reservations or document sequences updates.
         Therefore we mostly care about the properties of snapshot isolation,
@@ -252,15 +215,9 @@ class Cursor(BaseCursor):
         hit of these heuristics).
 
         As a result of the above, we have selected ``REPEATABLE READ`` as
-        the default transaction isolation level for OpenERP cursors, as
+        the default transaction isolation level for Odoo cursors, as
         it will be mapped to the desired ``snapshot isolation`` level for
-        all supported PostgreSQL version (8.3 - 9.x).
-
-        Note: up to psycopg2 v.2.4.2, psycopg2 itself remapped the repeatable
-        read level to serializable before sending it to the database, so it would
-        actually select the new serializable mode on PostgreSQL 9.1. Make
-        sure you use psycopg2 v2.4.2 or newer if you use PostgreSQL 9.1 and
-        the performance hit is a concern for you.
+        all supported PostgreSQL version (>10).
 
         .. attribute:: cache
 
@@ -273,9 +230,9 @@ class Cursor(BaseCursor):
             *any* data which may be modified during the life of the cursor.
 
     """
-    IN_MAX = 1000   # decent limit on size of IN queries - guideline = Oracle limit
+    IN_MAX = 1000  # decent limit on size of IN queries - guideline = Oracle limit
 
-    def __init__(self, pool, dbname, dsn, serialized=True):
+    def __init__(self, pool, dbname, dsn):
         super().__init__()
 
         self.sql_from_log = {}
@@ -284,18 +241,14 @@ class Cursor(BaseCursor):
         # default log level determined at cursor creation, could be
         # overridden later for debugging purposes
         self.sql_log = _logger.isEnabledFor(logging.DEBUG)
-
         self.sql_log_count = 0
 
         # avoid the call of close() (by __del__) if an exception
-        # is raised by any of the following initialisations
+        # is raised by any of the following initializations
         self._closed = True
 
         self.__pool = pool
         self.dbname = dbname
-        # Whether to enable snapshot isolation level for this cursor.
-        # see also the docstring of Cursor.
-        self._serialized = serialized
 
         self._cnx = pool.borrow(dsn)
         self._obj = self._cnx.cursor()
@@ -303,22 +256,23 @@ class Cursor(BaseCursor):
             self.__caller = frame_codeinfo(currentframe(), 2)
         else:
             self.__caller = False
-        self._closed = False   # real initialisation value
+        self._closed = False   # real initialization value
         # See the docstring of this class.
         self.connection.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)
-
-        self._default_log_exceptions = True
 
         self.cache = {}
         self._now = None
 
     def __build_dict(self, row):
         return {d.name: row[i] for i, d in enumerate(self._obj.description)}
+
     def dictfetchone(self):
         row = self._obj.fetchone()
         return row and self.__build_dict(row)
+
     def dictfetchmany(self, size):
         return [self.__build_dict(row) for row in self._obj.fetchmany(size)]
+
     def dictfetchall(self):
         return [self.__build_dict(row) for row in self._obj.fetchall()]
 
@@ -341,25 +295,24 @@ class Cursor(BaseCursor):
         encoding = psycopg2.extensions.encodings[self.connection.encoding]
         return self._obj.mogrify(query, params).decode(encoding, 'replace')
 
-    def execute(self, query, params=None, log_exceptions=None):
+    def execute(self, query, params=None, log_exceptions=True):
         if params and not isinstance(params, (tuple, list, dict)):
             # psycopg2's TypeError is not clear if you mess up the params
-            raise ValueError("SQL query parameters should be a tuple, list or dict; got %r" % (params,))
+            raise ValueError(f"SQL query parameters should be a tuple, list or dict; got {params!r}")
 
         if self.sql_log:
             _logger.debug("query: %s", self._format(query, params))
         start = time.time()
         try:
-            params = params or None
             res = self._obj.execute(query, params)
         except Exception as e:
-            if self._default_log_exceptions if log_exceptions is None else log_exceptions:
+            if log_exceptions:
                 _logger.error("bad query: %s\nERROR: %s", tools.ustr(self._obj.query or query), e)
             raise
 
+        delay = (time.time() - start)
         # simple query count is always computed
         self.sql_log_count += 1
-        delay = (time.time() - start)
         current_thread = threading.current_thread()
         if hasattr(current_thread, 'query_count'):
             current_thread.query_count += 1
@@ -392,8 +345,6 @@ class Cursor(BaseCursor):
         return tools.misc.split_every(size or self.IN_MAX, ids)
 
     def print_log(self):
-        global sql_counter
-
         if not self.sql_log:
             return
         def process(type):
@@ -436,7 +387,7 @@ class Cursor(BaseCursor):
     def _close(self, leak=False):
         global sql_counter
 
-        if not self._obj:
+        if self._closed:
             return
 
         del self.cache
@@ -465,8 +416,7 @@ class Cursor(BaseCursor):
             self._cnx.leaked = True
         else:
             chosen_template = tools.config['db_template']
-            templates_list = tuple(set(['template0', 'template1', 'postgres', chosen_template]))
-            keep_in_pool = self.dbname not in templates_list
+            keep_in_pool = self.dbname not in ('template0', 'template1', 'postgres', chosen_template)
             self.__pool.give_back(self._cnx, keep_in_pool=keep_in_pool)
 
     def autocommit(self, on):
@@ -727,13 +677,9 @@ class Connection(object):
         self.dsn = dsn
         self.__pool = pool
 
-    def cursor(self, serialized=True):
-        cursor_type = serialized and 'serialized ' or ''
-        _logger.debug('create %scursor to %r', cursor_type, self.dsn)
-        return Cursor(self.__pool, self.dbname, self.dsn, serialized=serialized)
-
-    # serialized_cursor is deprecated - cursors are serialized by default
-    serialized_cursor = cursor
+    def cursor(self):
+        _logger.debug('Create cursor to %r', self.dsn)
+        return Cursor(self.__pool, self.dbname, self.dsn)
 
     def __bool__(self):
         raise NotImplementedError()
