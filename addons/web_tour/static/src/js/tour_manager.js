@@ -500,9 +500,10 @@ return core.Class.extend(mixins.EventDispatcherMixin, ServicesMixin, {
         }
 
         function exec() {
-            if (!tip.widget.$anchor[0].ownerDocument.contains(tip.widget.$anchor[0])) {
-                // Trigger removed from document, run the same step again.
-                // console.error("NOT IN DOCUMENT");
+            const anchorIsInDocument = tip.widget.$anchor[0].ownerDocument.contains(tip.widget.$anchor[0]);
+            const uiIsBlocked = $('body').hasClass('o_ui_blocked');
+            if (!anchorIsInDocument || uiIsBlocked) {
+                // trigger is no longer in the DOM, or UI is now blocked, so run the same step again
                 self._deactivate_tip(self.active_tooltips[tour_name]);
                 self._to_next_step(tour_name, 0);
                 self.update();
