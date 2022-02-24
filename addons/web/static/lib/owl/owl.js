@@ -1501,210 +1501,6 @@
         return new Markup(value);
     }
 
-    // Allows to get the target of a Reactive (used for making a new Reactive from the underlying object)
-    const TARGET = Symbol("Target");
-    // Escape hatch to prevent reactivity system to turn something into a reactive
-    const SKIP = Symbol("Skip");
-    // Special key to subscribe to, to be notified of key creation/deletion
-    const KEYCHANGES = Symbol("Key changes");
-    const objectToString = Object.prototype.toString;
-    /**
-     * Checks whether a given value can be made into a reactive object.
-     *
-     * @param value the value to check
-     * @returns whether the value can be made reactive
-     */
-    function canBeMadeReactive(value) {
-        if (typeof value !== "object") {
-            return false;
-        }
-        // extract "RawType" from strings like "[object RawType]" => this lets us
-        // ignore many native objects such as Promise (whose toString is [object Promise])
-        // or Date ([object Date]).
-        const rawType = objectToString.call(value).slice(8, -1);
-        return rawType === "Object" || rawType === "Array";
-    }
-    /**
-     * Mark an object or array so that it is ignored by the reactivity system
-     *
-     * @param value the value to mark
-     * @returns the object itself
-     */
-    function markRaw(value) {
-        value[SKIP] = true;
-        return value;
-    }
-    /**
-     * Given a reactive objet, return the raw (non reactive) underlying object
-     *
-     * @param value a reactive value
-     * @returns the underlying value
-     */
-    function toRaw(value) {
-        return value[TARGET] || value;
-    }
-    const targetToKeysToCallbacks = new WeakMap();
-    /**
-     * Observes a given key on a target with an callback. The callback will be
-     * called when the given key changes on the target.
-     *
-     * @param target the target whose key should be observed
-     * @param key the key to observe (or Symbol(KEYCHANGES) for key creation
-     *  or deletion)
-     * @param callback the function to call when the key changes
-     */
-    function observeTargetKey(target, key, callback) {
-        if (!targetToKeysToCallbacks.get(target)) {
-            targetToKeysToCallbacks.set(target, new Map());
-        }
-        const keyToCallbacks = targetToKeysToCallbacks.get(target);
-        if (!keyToCallbacks.get(key)) {
-            keyToCallbacks.set(key, new Set());
-        }
-        keyToCallbacks.get(key).add(callback);
-        if (!callbacksToTargets.has(callback)) {
-            callbacksToTargets.set(callback, new Set());
-        }
-        callbacksToTargets.get(callback).add(target);
-    }
-    /**
-     * Notify Reactives that are observing a given target that a key has changed on
-     * the target.
-     *
-     * @param target target whose Reactives should be notified that the target was
-     *  changed.
-     * @param key the key that changed (or Symbol `KEYCHANGES` if a key was created
-     *   or deleted)
-     */
-    function notifyReactives(target, key) {
-        const keyToCallbacks = targetToKeysToCallbacks.get(target);
-        if (!keyToCallbacks) {
-            return;
-        }
-        const callbacks = keyToCallbacks.get(key);
-        if (!callbacks) {
-            return;
-        }
-        // Loop on copy because clearReactivesForCallback will modify the set in place
-        for (const callback of [...callbacks]) {
-            clearReactivesForCallback(callback);
-            callback();
-        }
-    }
-    const callbacksToTargets = new WeakMap();
-    /**
-     * Clears all subscriptions of the Reactives associated with a given callback.
-     *
-     * @param callback the callback for which the reactives need to be cleared
-     */
-    function clearReactivesForCallback(callback) {
-        const targetsToClear = callbacksToTargets.get(callback);
-        if (!targetsToClear) {
-            return;
-        }
-        for (const target of targetsToClear) {
-            const observedKeys = targetToKeysToCallbacks.get(target);
-            if (!observedKeys) {
-                continue;
-            }
-            for (const callbacks of observedKeys.values()) {
-                callbacks.delete(callback);
-            }
-        }
-        targetsToClear.clear();
-    }
-    const reactiveCache = new WeakMap();
-    /**
-     * Creates a reactive proxy for an object. Reading data on the reactive object
-     * subscribes to changes to the data. Writing data on the object will cause the
-     * notify callback to be called if there are suscriptions to that data. Nested
-     * objects and arrays are automatically made reactive as well.
-     *
-     * Whenever you are notified of a change, all subscriptions are cleared, and if
-     * you would like to be notified of any further changes, you should go read
-     * the underlying data again. We assume that if you don't go read it again after
-     * being notified, it means that you are no longer interested in that data.
-     *
-     * Subscriptions:
-     * + Reading a property on an object will subscribe you to changes in the value
-     *    of that property.
-     * + Accessing an object keys (eg with Object.keys or with `for..in`) will
-     *    subscribe you to the creation/deletion of keys. Checking the presence of a
-     *    key on the object with 'in' has the same effect.
-     * - getOwnPropertyDescriptor does not currently subscribe you to the property.
-     *    This is a choice that was made because changing a key's value will trigger
-     *    this trap and we do not want to subscribe by writes. This also means that
-     *    Object.hasOwnProperty doesn't subscribe as it goes through this trap.
-     *
-     * @param target the object for which to create a reactive proxy
-     * @param callback the function to call when an observed property of the
-     *  reactive has changed
-     * @returns a proxy that tracks changes to it
-     */
-    function reactive(target, callback = () => { }) {
-        if (!canBeMadeReactive(target)) {
-            throw new Error(`Cannot make the given value reactive`);
-        }
-        if (SKIP in target) {
-            return target;
-        }
-        const originalTarget = target[TARGET];
-        if (originalTarget) {
-            return reactive(originalTarget, callback);
-        }
-        if (!reactiveCache.has(target)) {
-            reactiveCache.set(target, new Map());
-        }
-        const reactivesForTarget = reactiveCache.get(target);
-        if (!reactivesForTarget.has(callback)) {
-            const proxy = new Proxy(target, {
-                get(target, key, proxy) {
-                    if (key === TARGET) {
-                        return target;
-                    }
-                    observeTargetKey(target, key, callback);
-                    const value = Reflect.get(target, key, proxy);
-                    if (!canBeMadeReactive(value)) {
-                        return value;
-                    }
-                    return reactive(value, callback);
-                },
-                set(target, key, value, proxy) {
-                    const isNewKey = !Object.hasOwnProperty.call(target, key);
-                    const originalValue = Reflect.get(target, key, proxy);
-                    const ret = Reflect.set(target, key, value, proxy);
-                    if (isNewKey) {
-                        notifyReactives(target, KEYCHANGES);
-                    }
-                    // While Array length may trigger the set trap, it's not actually set by this
-                    // method but is updated behind the scenes, and the trap is not called with the
-                    // new value. We disable the "same-value-optimization" for it because of that.
-                    if (originalValue !== value || (Array.isArray(target) && key === "length")) {
-                        notifyReactives(target, key);
-                    }
-                    return ret;
-                },
-                deleteProperty(target, key) {
-                    const ret = Reflect.deleteProperty(target, key);
-                    notifyReactives(target, KEYCHANGES);
-                    notifyReactives(target, key);
-                    return ret;
-                },
-                ownKeys(target) {
-                    observeTargetKey(target, KEYCHANGES, callback);
-                    return Reflect.ownKeys(target);
-                },
-                has(target, key) {
-                    // TODO: this observes all key changes instead of only the presence of the argument key
-                    observeTargetKey(target, KEYCHANGES, callback);
-                    return Reflect.has(target, key);
-                },
-            });
-            reactivesForTarget.set(callback, proxy);
-        }
-        return reactivesForTarget.get(callback);
-    }
-
     /**
      * This file contains utility functions that will be injected in each template,
      * to perform various useful tasks in the compiled code.
@@ -1714,8 +1510,7 @@
     }
     function callSlot(ctx, parent, key, name, dynamic, extra, defaultContent) {
         key = key + "__slot_" + name;
-        const nonReactiveProps = ctx.props && ctx.props[TARGET];
-        const slots = nonReactiveProps ? nonReactiveProps.slots || {} : {};
+        const slots = (ctx.props && ctx.props.slots) || {};
         const { __render, __ctx, __scope } = slots[name] || {};
         const slotScope = Object.create(__ctx || {});
         if (__scope) {
@@ -1922,6 +1717,210 @@
         return stopped;
     };
 
+    // Allows to get the target of a Reactive (used for making a new Reactive from the underlying object)
+    const TARGET = Symbol("Target");
+    // Escape hatch to prevent reactivity system to turn something into a reactive
+    const SKIP = Symbol("Skip");
+    // Special key to subscribe to, to be notified of key creation/deletion
+    const KEYCHANGES = Symbol("Key changes");
+    const objectToString = Object.prototype.toString;
+    /**
+     * Checks whether a given value can be made into a reactive object.
+     *
+     * @param value the value to check
+     * @returns whether the value can be made reactive
+     */
+    function canBeMadeReactive(value) {
+        if (typeof value !== "object") {
+            return false;
+        }
+        // extract "RawType" from strings like "[object RawType]" => this lets us
+        // ignore many native objects such as Promise (whose toString is [object Promise])
+        // or Date ([object Date]).
+        const rawType = objectToString.call(value).slice(8, -1);
+        return rawType === "Object" || rawType === "Array";
+    }
+    /**
+     * Mark an object or array so that it is ignored by the reactivity system
+     *
+     * @param value the value to mark
+     * @returns the object itself
+     */
+    function markRaw(value) {
+        value[SKIP] = true;
+        return value;
+    }
+    /**
+     * Given a reactive objet, return the raw (non reactive) underlying object
+     *
+     * @param value a reactive value
+     * @returns the underlying value
+     */
+    function toRaw(value) {
+        return value[TARGET] || value;
+    }
+    const targetToKeysToCallbacks = new WeakMap();
+    /**
+     * Observes a given key on a target with an callback. The callback will be
+     * called when the given key changes on the target.
+     *
+     * @param target the target whose key should be observed
+     * @param key the key to observe (or Symbol(KEYCHANGES) for key creation
+     *  or deletion)
+     * @param callback the function to call when the key changes
+     */
+    function observeTargetKey(target, key, callback) {
+        if (!targetToKeysToCallbacks.get(target)) {
+            targetToKeysToCallbacks.set(target, new Map());
+        }
+        const keyToCallbacks = targetToKeysToCallbacks.get(target);
+        if (!keyToCallbacks.get(key)) {
+            keyToCallbacks.set(key, new Set());
+        }
+        keyToCallbacks.get(key).add(callback);
+        if (!callbacksToTargets.has(callback)) {
+            callbacksToTargets.set(callback, new Set());
+        }
+        callbacksToTargets.get(callback).add(target);
+    }
+    /**
+     * Notify Reactives that are observing a given target that a key has changed on
+     * the target.
+     *
+     * @param target target whose Reactives should be notified that the target was
+     *  changed.
+     * @param key the key that changed (or Symbol `KEYCHANGES` if a key was created
+     *   or deleted)
+     */
+    function notifyReactives(target, key) {
+        const keyToCallbacks = targetToKeysToCallbacks.get(target);
+        if (!keyToCallbacks) {
+            return;
+        }
+        const callbacks = keyToCallbacks.get(key);
+        if (!callbacks) {
+            return;
+        }
+        // Loop on copy because clearReactivesForCallback will modify the set in place
+        for (const callback of [...callbacks]) {
+            clearReactivesForCallback(callback);
+            callback();
+        }
+    }
+    const callbacksToTargets = new WeakMap();
+    /**
+     * Clears all subscriptions of the Reactives associated with a given callback.
+     *
+     * @param callback the callback for which the reactives need to be cleared
+     */
+    function clearReactivesForCallback(callback) {
+        const targetsToClear = callbacksToTargets.get(callback);
+        if (!targetsToClear) {
+            return;
+        }
+        for (const target of targetsToClear) {
+            const observedKeys = targetToKeysToCallbacks.get(target);
+            if (!observedKeys) {
+                continue;
+            }
+            for (const callbacks of observedKeys.values()) {
+                callbacks.delete(callback);
+            }
+        }
+        targetsToClear.clear();
+    }
+    const reactiveCache = new WeakMap();
+    /**
+     * Creates a reactive proxy for an object. Reading data on the reactive object
+     * subscribes to changes to the data. Writing data on the object will cause the
+     * notify callback to be called if there are suscriptions to that data. Nested
+     * objects and arrays are automatically made reactive as well.
+     *
+     * Whenever you are notified of a change, all subscriptions are cleared, and if
+     * you would like to be notified of any further changes, you should go read
+     * the underlying data again. We assume that if you don't go read it again after
+     * being notified, it means that you are no longer interested in that data.
+     *
+     * Subscriptions:
+     * + Reading a property on an object will subscribe you to changes in the value
+     *    of that property.
+     * + Accessing an object keys (eg with Object.keys or with `for..in`) will
+     *    subscribe you to the creation/deletion of keys. Checking the presence of a
+     *    key on the object with 'in' has the same effect.
+     * - getOwnPropertyDescriptor does not currently subscribe you to the property.
+     *    This is a choice that was made because changing a key's value will trigger
+     *    this trap and we do not want to subscribe by writes. This also means that
+     *    Object.hasOwnProperty doesn't subscribe as it goes through this trap.
+     *
+     * @param target the object for which to create a reactive proxy
+     * @param callback the function to call when an observed property of the
+     *  reactive has changed
+     * @returns a proxy that tracks changes to it
+     */
+    function reactive(target, callback = () => { }) {
+        if (!canBeMadeReactive(target)) {
+            throw new Error(`Cannot make the given value reactive`);
+        }
+        if (SKIP in target) {
+            return target;
+        }
+        const originalTarget = target[TARGET];
+        if (originalTarget) {
+            return reactive(originalTarget, callback);
+        }
+        if (!reactiveCache.has(target)) {
+            reactiveCache.set(target, new Map());
+        }
+        const reactivesForTarget = reactiveCache.get(target);
+        if (!reactivesForTarget.has(callback)) {
+            const proxy = new Proxy(target, {
+                get(target, key, proxy) {
+                    if (key === TARGET) {
+                        return target;
+                    }
+                    observeTargetKey(target, key, callback);
+                    const value = Reflect.get(target, key, proxy);
+                    if (!canBeMadeReactive(value)) {
+                        return value;
+                    }
+                    return reactive(value, callback);
+                },
+                set(target, key, value, proxy) {
+                    const isNewKey = !Object.hasOwnProperty.call(target, key);
+                    const originalValue = Reflect.get(target, key, proxy);
+                    const ret = Reflect.set(target, key, value, proxy);
+                    if (isNewKey) {
+                        notifyReactives(target, KEYCHANGES);
+                    }
+                    // While Array length may trigger the set trap, it's not actually set by this
+                    // method but is updated behind the scenes, and the trap is not called with the
+                    // new value. We disable the "same-value-optimization" for it because of that.
+                    if (originalValue !== value || (Array.isArray(target) && key === "length")) {
+                        notifyReactives(target, key);
+                    }
+                    return ret;
+                },
+                deleteProperty(target, key) {
+                    const ret = Reflect.deleteProperty(target, key);
+                    notifyReactives(target, KEYCHANGES);
+                    notifyReactives(target, key);
+                    return ret;
+                },
+                ownKeys(target) {
+                    observeTargetKey(target, KEYCHANGES, callback);
+                    return Reflect.ownKeys(target);
+                },
+                has(target, key) {
+                    // TODO: this observes all key changes instead of only the presence of the argument key
+                    observeTargetKey(target, KEYCHANGES, callback);
+                    return Reflect.has(target, key);
+                },
+            });
+            reactivesForTarget.set(callback, proxy);
+        }
+        return reactivesForTarget.get(callback);
+    }
+
     // Maps fibers to thrown errors
     const fibersInError = new WeakMap();
     const nodeErrorHandlers = new WeakMap();
@@ -2030,11 +2029,11 @@
             this.bdom = null;
             this.children = [];
             this.appliedToDom = false;
-            this.force = false;
+            this.deep = false;
             this.node = node;
             this.parent = parent;
             if (parent) {
-                this.force = parent.force;
+                this.deep = parent.deep;
                 const root = parent.root;
                 root.counter++;
                 this.root = root;
@@ -2215,7 +2214,7 @@
         const parentFiber = ctx.fiber;
         if (node) {
             const currentProps = node.component.props[TARGET];
-            if (parentFiber.force || arePropsDifferent(currentProps, props)) {
+            if (parentFiber.deep || arePropsDifferent(currentProps, props)) {
                 node.updateAndRender(props, parentFiber);
             }
         }
@@ -2286,7 +2285,7 @@
                 this._render(fiber);
             }
         }
-        async render(force = false) {
+        async render(deep = false) {
             let current = this.fiber;
             if (current && current.root.locked) {
                 await Promise.resolve();
@@ -2295,20 +2294,20 @@
             }
             if (current) {
                 if (!current.bdom && !fibersInError.has(current)) {
-                    if (force) {
-                        // we want the render from this point on to be with force=true
-                        current.force = force;
+                    if (deep) {
+                        // we want the render from this point on to be with deep=true
+                        current.deep = deep;
                     }
                     return;
                 }
-                // if current rendering was with force=true, we want this one to be the same
-                force = force || current.force;
+                // if current rendering was with deep=true, we want this one to be the same
+                deep = deep || current.deep;
             }
             else if (!this.bdom) {
                 return;
             }
             const fiber = makeRootFiber(this);
-            fiber.force = force;
+            fiber.deep = deep;
             this.fiber = fiber;
             this.app.scheduler.addFiber(fiber);
             await Promise.resolve();
@@ -2369,6 +2368,7 @@
             applyDefaultProps(props, component.constructor);
             currentNode = this;
             props = useState(props);
+            currentNode = null;
             const prom = Promise.all(this.willUpdateProps.map((f) => f.call(component, props)));
             await prom;
             if (fiber !== this.fiber) {
@@ -4792,8 +4792,8 @@
             this.__owl__ = node;
         }
         setup() { }
-        render(force = false) {
-            this.__owl__.render(force);
+        render(deep = false) {
+            this.__owl__.render(deep);
         }
     }
     Component.template = "";
@@ -5210,8 +5210,8 @@ See https://github.com/odoo/owl/blob/${hash}/doc/reference/app.md#configuration 
 
 
     __info__.version = '2.0.0-alpha.2';
-    __info__.date = '2022-02-23T12:46:50.551Z';
-    __info__.hash = '8ed3466';
+    __info__.date = '2022-02-24T16:13:24.513Z';
+    __info__.hash = '7845304';
     __info__.url = 'https://github.com/odoo/owl';
 
 
