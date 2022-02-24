@@ -28,12 +28,16 @@
     'license': 'LGPL-3',
     'assets': {
         'web.assets_backend': [
+            'knowledge/static/src/components/*/*.js',
+            'knowledge/static/src/components/*/*.scss',
             'knowledge/static/src/scss/knowledge_views.scss',
             'knowledge/static/src/js/knowledge_controller.js',
+            'knowledge/static/src/js/knowledge_emojis.js',
             'knowledge/static/src/js/knowledge_model.js',
             'knowledge/static/src/js/knowledge_renderers.js',
             'knowledge/static/src/js/knowledge_views.js',
             'knowledge/static/src/js/widgets/knowledge_dialogs.js',
+            'knowledge/static/src/js/widgets/knowledge_emoji_picker.js',
             'knowledge/static/src/webclient/commands/*.js',
             'knowledge/static/src/models/*/*.js',
         ],
@@ -41,6 +45,7 @@
             'knowledge/static/src/js/wysiwyg.js',
         ],
         'web.assets_qweb': [
+            'knowledge/static/src/components/*/*.xml',
             'knowledge/static/src/xml/knowledge_editor.xml',
             'knowledge/static/src/xml/knowledge_templates.xml',
             'knowledge/static/src/xml/chatter_topbar.xml',

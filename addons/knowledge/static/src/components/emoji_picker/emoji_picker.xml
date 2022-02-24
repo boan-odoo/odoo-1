@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="knowledge.EmojiPicker" owl="1">
+        <div t-ref="root" class="o_emoji_picker">
+            <div class="bg-light border-bottom p-2">
+                <input class="form-control" type="text"
+                    placeholder="Search..."
+                    t-on-input="_onInputChange"/>
+            </div>
+            <div class="d-flex">
+                <nav class="flex-shrink-0 bg-light border-right">
+                    <ul class="nav nav-pills flex-column p-0">
+                        <li t-foreach="emojis" t-as="section" t-key="section.id" class="nav-item">
+                            <a class="nav-link px-2 py-1"
+                                t-att-href="'#' + uid + '_' + section.id"
+                                t-on-click="onNavItemClick">
+                                <t t-esc="section.icon" />
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="o_emoji_container flex-grow-1 position-relative">
+                    <div class="o_emoji_pane px-2">
+                        <div t-foreach="emojis" t-as="section" t-key="section.id" class="o_section">
+                            <div t-att-id="uid + '_' + section.id" t-esc="section.title" class="py-2"/>
+                            <div class="o_emojis">
+                                <span t-foreach="section.emojis" t-as="emoji" t-key="emoji_index"
+                                    t-if="isVisible(emoji)"
+                                    t-esc="emoji[0]"
+                                    t-on-click="() => { this.onEmojiClick(emoji[0]) }"
+                                    t-att-title="emoji[1]"
+                                    class="o_emoji rounded"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
