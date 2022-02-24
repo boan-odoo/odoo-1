@@ -83,6 +83,8 @@ class Partner(models.Model):
             raise ValueError(_('An email is required for find_or_create to work'))
 
         parsed_name, parsed_email = self._parse_partner_name(email)
+        if not parsed_email and assert_valid_email:
+            raise ValueError(_('A valid email is required for find_or_create to work properly.'))
         if parsed_email:
             email_normalized = tools.email_normalize(parsed_email)
             if email_normalized:

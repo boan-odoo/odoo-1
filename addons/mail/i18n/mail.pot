@@ -494,6 +494,12 @@ msgid ""
 msgstr ""
 
 #. module: mail
+#: code:addons/mail/models/res_partner.py:0
+#, python-format
+msgid "A valid email is required for find_or_create to work properly."
+msgstr ""
+
+#. module: mail
 #: model:ir.model.constraint,message:mail.constraint_res_users_settings_volumes_partner_or_guest_exists
 msgid "A volume setting must have a partner or a guest."
 msgstr ""
