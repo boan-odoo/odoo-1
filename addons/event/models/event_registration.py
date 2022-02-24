@@ -47,6 +47,9 @@ class EventRegistration(models.Model):
         ('draft', 'Unconfirmed'), ('cancel', 'Cancelled'),
         ('open', 'Confirmed'), ('done', 'Attended')],
         string='Status', default='draft', readonly=True, copy=False, tracking=True)
+    # event related field added for search
+    event_organizer_id = fields.Many2one(string='Event organizer', related='event_id.organizer_id', readonly=True)
+    event_user_id = fields.Many2one(string='Event responsible', related='event_id.user_id', readonly=True)
 
     @api.depends('partner_id')
     def _compute_name(self):
