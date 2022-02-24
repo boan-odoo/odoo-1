@@ -5,6 +5,10 @@ options.registry.ImageComparison = options.Class.extend({
     isTopOption: true,
     forceNoDeleteButton: true,
     start: function () {
+        console.log('start options', this.$target[0]);
+        this.currentImage = this.$target[0].querySelector('img');
+        // My hack
+        // this.currentImage.click();
         const leftPanelEl = this.$overlay.data('$optionsSection')[0];
         var titleTextEl = leftPanelEl.querySelector('we-title > span');
         titleTextEl.innerText = 'Left Image';
