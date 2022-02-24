@@ -38,22 +38,23 @@ class TestPricelist(TransactionCase):
     def test_10_discount(self):
         # Make sure the price using a pricelist is the same than without after
         # applying the computation manually
+        not_a_pricelist = self.env['product.pricelist']  # TODO edm: just find a name for this...
 
         self.assertEqual(
-            self.usb_adapter.lst_price*0.9,
+            not_a_pricelist._get_product_price(self.usb_adapter, 1.0)*.9,
             self.sale_pricelist_id._get_product_price(self.usb_adapter, 1.0))
 
         self.assertEqual(
-            self.datacard.lst_price-0.5,
+            not_a_pricelist._get_product_price(self.datacard, 1.0)-.5,
             self.sale_pricelist_id._get_product_price(self.datacard, 1.0))
 
         self.assertAlmostEqual(
-            self.usb_adapter.lst_price*12*0.9,
+            not_a_pricelist._get_product_price(self.usb_adapter, 1.0, uom=self.uom_unit)*12*0.9,
             self.sale_pricelist_id._get_product_price(self.usb_adapter, 1.0, uom=self.uom_dozen))
 
         # price_surcharge applies to product default UoM, here "Units", so surcharge will be multiplied
         self.assertAlmostEqual(
-            (self.datacard.lst_price-0.5)*12,
+            not_a_pricelist._get_product_price(self.datacard, 1.0, uom=self.uom_unit)*12-6,
             self.sale_pricelist_id._get_product_price(self.datacard, 1.0, uom=self.uom_dozen))
 
     def test_20_pricelist_uom(self):

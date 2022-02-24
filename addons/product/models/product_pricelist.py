@@ -119,7 +119,7 @@ class Pricelist(models.Model):
         :returns: unit price of the product, considering pricelist rules
         :rtype: float
         """
-        self.ensure_one()
+        # self.ensure_one()
         return self._compute_price_rule(product, quantity, uom=uom, date=date)[product.id][0]
 
     def _get_product_price_rule(self, product, quantity, uom=None, date=False):
@@ -158,7 +158,9 @@ class Pricelist(models.Model):
         :returns: product_id: (price, pricelist_rule)
         :rtype: dict
         """
-        self.ensure_one()
+        # self.ensure_one()
+        # TODO edm: if this is called without a pricelist, it doesn't convert based on the currency
+        #  unlike in the SO. Maybe add "currency_id" in the params when calling this function
 
         if not products:
             return {}
@@ -196,7 +198,7 @@ class Pricelist(models.Model):
                 # fall back on Sales Price if no rule is found
                 price = product.price_compute('list_price', uom=target_uom, date=date)[product.id]
 
-                if product.currency_id != self.currency_id:
+                if self.currency_id and product.currency_id != self.currency_id:  # TODO edm the price if there is a pricelist
                     price = product.currency_id._convert(price, self.currency_id, self.env.company, date, round=False)
 
             results[product.id] = (price, suitable_rule.id)
@@ -205,7 +207,7 @@ class Pricelist(models.Model):
 
     # Split methods to ease (community) overrides
     def _get_applicable_rules(self, products, date, **kwargs):
-        self.ensure_one()
+        # self.ensure_one()
         # Do not filter out archived pricelist items, since it means current pricelist is also archived
         # We do not want the computation of prices for archived pricelist to always fallback on the Sales price
         # because no rule was found (thanks to the automatic orm filtering on active field)
