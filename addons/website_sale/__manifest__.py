@@ -78,7 +78,7 @@
             'website_sale/static/src/js/website_sale_form_editor.js',
             'website_sale/static/src/js/tours/website_sale_shop_frontend.js',
         ],
-        'web.assets_common': [
+        'web.assets_common_bs4': [
             'website_sale/static/src/js/tours/tour_utils.js',
             'website_sale/static/src/js/tours/website_sale_shop.js',
         ],
