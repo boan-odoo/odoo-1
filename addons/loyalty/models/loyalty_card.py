@@ -93,7 +93,7 @@ class LoyaltyCard(models.Model):
         for program in self.program_id:
             create_comm_per_program[program] = program.communication_plan_ids.filtered(lambda c: c.trigger == 'create')
         for coupon in self:
-            if not create_comm_per_program[coupon.program_id]:
+            if not create_comm_per_program[coupon.program_id] or not coupon._get_mail_partner():
                 continue
             for comm in create_comm_per_program[coupon.program_id]:
                 comm.mail_template_id.send_mail(res_id=coupon.id, email_layout_xmlid='mail.mail_notification_light')
@@ -110,6 +110,8 @@ class LoyaltyCard(models.Model):
                 .filtered(lambda c: c.trigger == 'points_reach')\
                 .sorted('points', reverse=True)
         for coupon in self:
+            if not coupon._get_mail_partner():
+                continue
             coupon_change = points_changes[coupon]
             # Do nothing if coupon lost points or did not change
             if not milestones_per_program[coupon.program_id] or\
