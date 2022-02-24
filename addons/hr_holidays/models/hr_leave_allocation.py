@@ -330,11 +330,19 @@ class HolidaysAllocation(models.Model):
     def _end_of_year_accrual(self):
         # to override in payroll
         today = fields.Date.today()
+        last_day_last_year = today + relativedelta(years=-1, month=12, day=31)
         for allocation in self:
             current_level = allocation._get_current_accrual_plan_level_id(today)[0]
-            if current_level and current_level.action_with_unused_accruals == 'lost':
+            if not current_level:
+                continue
+            if current_level.action_with_unused_accruals == 'lost':
                 # Allocations are lost but number_of_days should not be lower than leaves_taken
                 allocation.write({'number_of_days': allocation.leaves_taken, 'lastcall': today, 'nextcall': False})
+            elif current_level.action_with_unused_accruals == 'postponed' and current_level.postpone_max_days:
+                # Make sure the period was ran until the last day of last year
+                allocation._process_accrual_plans(last_day_last_year)
+                number_of_days = min(allocation.number_of_days, current_level.postpone_max_days) + allocation.leaves_taken
+                allocation.write({'number_of_days': number_of_days, 'lastcall': today, 'nextcall': False})
 
     def _get_current_accrual_plan_level_id(self, date, level_ids=False):
         """
@@ -392,12 +400,12 @@ class HolidaysAllocation(models.Model):
             period_prorata = min(1, call_days / period_days) if period_days else 1
         return added_value * period_prorata
 
-    def _process_accrual_plans(self):
+    def _process_accrual_plans(self, date_to=False):
         """
         This method is part of the cron's process.
         The goal of this method is to retroactively apply accrual plan levels and progress from nextcall to today
         """
-        today = fields.Date.today()
+        date_to = date_to or fields.Date.today()
         first_allocation = _("""This allocation have already ran once, any modification won't be effective to the days allocated to the employee. If you need to change the configuration of the allocation, cancel and create a new one.""")
         for allocation in self:
             level_ids = allocation.accrual_plan_id.level_ids.sorted('sequence')
@@ -406,7 +414,7 @@ class HolidaysAllocation(models.Model):
             if not allocation.nextcall:
                 first_level = level_ids[0]
                 first_level_start_date = allocation.date_from + get_timedelta(first_level.start_count, first_level.start_type)
-                if today < first_level_start_date:
+                if date_to < first_level_start_date:
                     # Accrual plan is not configured properly or has not started
                     continue
                 allocation.lastcall = max(allocation.lastcall, first_level_start_date)
@@ -416,7 +424,7 @@ class HolidaysAllocation(models.Model):
                     allocation.nextcall = min(second_level_start_date - relativedelta(days=1), allocation.nextcall)
                 allocation._message_log(body=first_allocation)
             days_added_per_level = defaultdict(lambda: 0)
-            while allocation.nextcall <= today:
+            while allocation.nextcall <= date_to:
                 (current_level, current_level_idx) = allocation._get_current_accrual_plan_level_id(allocation.nextcall)
                 nextcall = current_level._get_next_date(allocation.nextcall)
                 # Since _get_previous_date returns the given date if it corresponds to a call date
@@ -449,7 +457,10 @@ class HolidaysAllocation(models.Model):
         """
         # Get the current date to determine the start and end of the accrual period
         today = datetime.combine(fields.Date.today(), time(0, 0, 0))
-        if today.day == 1 and today.month == 1:
+        # Assume that the method is called from the cron
+        accrual_cron = self.sudo().env.ref('hr_holidays.hr_leave_allocation_cron_accrual')
+        if (accrual_cron.lastcall or today).year < today.year\
+            or (not accrual_cron.lastcall and today.day == 1 and today.month == 1):
             end_of_year_allocations = self.search(
             [('allocation_type', '=', 'accrual'), ('state', '=', 'validate'), ('accrual_plan_id', '!=', False), ('employee_id', '!=', False),
              '|', ('date_to', '=', False), ('date_to', '>', fields.Datetime.now())])
