@@ -88,7 +88,14 @@ class IrUiMenu(models.Model):
             lambda menu: not menu.groups_id or menu.groups_id & groups)
 
         # take apart menus that have an action
-        action_menus = menus.filtered(lambda m: m.action and m.action.exists())
+        mapped_actions = defaultdict(lambda: set())
+        for action in menus.mapped('action'):
+            if not action:
+                continue
+            model = action._name
+            mapped_actions[model].add(action.id)
+        existing_actions = {model: self.env[model].browse(action_ids).exists() for model, action_ids in mapped_actions.items()}
+        action_menus = menus.filtered(lambda m: m.action and m.action in existing_actions[m.action._name])
         folder_menus = menus - action_menus
         visible = self.browse()
 
