@@ -221,7 +221,7 @@ class MailChannel(models.Model):
                 message = plaintext2html(step_id.message_no_operator) or _("Oops, no-one is available currently :(")
 
         self.with_context(mail_create_nosubscribe=True).message_post(
-            author_id=self.env.ref('base.partner_root').id,
+            author_id=step_id.chatbot_id.operator_partner_id.id,
             body=message,
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
@@ -236,7 +236,7 @@ class MailChannel(models.Model):
         method. We need a 'chatbot.mail.message' record before it happens to correctly display the message.
         It's created only if the author is Odoobot and if the mail channel is linked to a chatbot step.
         """
-        if self.livechat_chatbot_current_step_id and message.author_id == self.env.ref('base.partner_root'):
+        if self.livechat_chatbot_current_step_id:
             self.env['im_livechat.chatbot.mail.message'].sudo().create({
                 'mail_message_id': message.id,
                 'mail_channel_id': self.id,
@@ -245,6 +245,7 @@ class MailChannel(models.Model):
         return super(MailChannel, self)._message_post_after_hook(message, msg_vals)
 
     def _chatbot_restart(self):
+        chatbot = self.livechat_chatbot_current_step_id.chatbot_id
         self.write({
             'livechat_chatbot_current_step_id': False
         })
@@ -252,7 +253,7 @@ class MailChannel(models.Model):
         self.livechat_chatbot_message_ids.unlink()
 
         self.with_context(mail_create_nosubscribe=True).message_post(
-            author_id=self.env.ref('base.partner_root').id,
+            author_id=chatbot.operator_partner_id.id,
             body=_("Restarting conversation..."),
             message_type='comment',
             subtype_xmlid='mail.mt_comment',

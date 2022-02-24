@@ -14,11 +14,13 @@ class MailMessage(models.Model):
         vals_list = super()._message_format(fnames=fnames, format_reply=format_reply)
         for vals in vals_list:
             message_sudo = self.browse(vals['id']).sudo().with_prefetch(self.ids)
-            if message_sudo.model == 'mail.channel' and self.env['mail.channel'].browse(message_sudo.res_id).channel_type == 'livechat':
+            mail_channel = self.env['mail.channel'].browse(message_sudo.res_id) if message_sudo.model == 'mail.channel' else self.env['mail.channel']
+            if mail_channel.channel_type == 'livechat':
                 vals.pop('email_from')
                 if message_sudo.author_id.user_livechat_username:
                     vals['author_id'] = (message_sudo.author_id.id, message_sudo.author_id.user_livechat_username, message_sudo.author_id.user_livechat_username)
-                if message_sudo.author_id.id == self.env.ref('base.partner_root').id:
+                if mail_channel.livechat_chatbot_current_step_id \
+                        and message_sudo.author_id == mail_channel.livechat_chatbot_current_step_id.chatbot_id.operator_partner_id:
                     chatbot_mail_message_id = self.env['im_livechat.chatbot.mail.message'].sudo().search([
                         ('mail_message_id', '=', message_sudo.id)], limit=1)
                     if chatbot_mail_message_id.chatbot_step_id:

@@ -125,14 +125,14 @@ class ImLivechatChannel(models.Model):
         self.ensure_one()
         return self.user_ids.filtered(lambda user: user.im_status == 'online')
 
-    def _get_livechat_mail_channel_vals(self, anonymous_name, operator, chatbot=None, user_id=None, country_id=None):
+    def _get_livechat_mail_channel_vals(self, anonymous_name, operator=None, chatbot=None, user_id=None, country_id=None):
         # partner to add to the mail.channel
-        operator_partner_id = operator.partner_id.id
+        operator_partner_id = operator.partner_id.id if operator else chatbot.operator_partner_id.id
         channel_partner_to_add = [Command.create({'partner_id': operator_partner_id, 'is_pinned': False})]
         visitor_user = False
         if user_id:
             visitor_user = self.env['res.users'].browse(user_id)
-            if visitor_user and visitor_user.active and visitor_user != operator:  # valid session user (not public)
+            if visitor_user and visitor_user.active and operator and visitor_user != operator:  # valid session user (not public)
                 channel_partner_to_add.append(Command.create({'partner_id': visitor_user.partner_id.id}))
 
         if chatbot:
@@ -172,27 +172,26 @@ class ImLivechatChannel(models.Model):
             the system will first try to assign that operator if he's available (to improve user experience).
         """
         self.ensure_one()
-        operator = False
+        user_operator = False
         if chatbot:
             if chatbot.id not in self.chatbot_ids.ids:
                 return False
-            # if a chatbot is set we set Odoobot as the operator
-            operator = self.env.ref('base.user_root')
         elif previous_operator_id:
             available_users = self._get_available_users()
             # previous_operator_id is the partner_id of the previous operator, need to convert to user
             if previous_operator_id in available_users.mapped('partner_id').ids:
-                operator = next(available_user for available_user in available_users if available_user.partner_id.id == previous_operator_id)
-        if not operator:
-            operator = self._get_random_operator()
-        if not operator:
+                user_operator = next(available_user for available_user in available_users if available_user.partner_id.id == previous_operator_id)
+        if not user_operator and not chatbot:
+            user_operator = self._get_random_operator()
+        if not user_operator and not chatbot:
             # no one available
             return False
 
         # create the session, and add the link with the given channel
-        mail_channel_vals = self._get_livechat_mail_channel_vals(anonymous_name, operator, chatbot, user_id=user_id, country_id=country_id)
+        mail_channel_vals = self._get_livechat_mail_channel_vals(anonymous_name, user_operator, chatbot, user_id=user_id, country_id=country_id)
         mail_channel = self.env["mail.channel"].with_context(mail_create_nosubscribe=False).sudo().create(mail_channel_vals)
-        mail_channel._broadcast([operator.partner_id.id])
+        if user_operator:
+            mail_channel._broadcast([user_operator.partner_id.id])
         return mail_channel.sudo().channel_info()[0]
 
     def _get_random_operator(self):

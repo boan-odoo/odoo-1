@@ -73,7 +73,6 @@ class LivechatController(http.Controller):
                 rule.update({'chatbot': {
                     'chatbot_id': chatbot.id,
                     'chatbot_name': chatbot.name,
-                    'chatbot_operator_id': request.env.ref('base.partner_root').id,
                     'chatbot_welcome_steps': [{
                         'chatbot_step_answers': [{
                             'id': answer.id,

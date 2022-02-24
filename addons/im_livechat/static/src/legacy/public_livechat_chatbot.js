@@ -405,7 +405,6 @@ WebsiteLivechatMessage.include({
         if (parent._isChatbot) {
             this._chatbotId = parent._chatbot.chatbot_id;
             this._chatbotName = parent._chatbot.chatbot_name;
-            this._chatbotOperatorId = parent._chatbot.chatbot_operator_id;
 
             this._chatbotStepId = data.chatbot_script_step_id;
             this._chatbotStepAnswers = data.chatbot_step_answers;
@@ -417,19 +416,6 @@ WebsiteLivechatMessage.include({
     // Public
     //--------------------------------------------------------------------------
 
-    /**
-     * @override
-     */
-    getAvatarSource: function () {
-        var source = this._serverURL;
-
-        if (this.isAuthorChatbot()) {
-            source += '/web/image/im_livechat.chatbot.script/' + this._chatbotId + '/image_128';
-            return source;
-        } else {
-            return this._super(...arguments);
-        }
-    },
     /**
      * Builds the display class for this chatbot answer
      *
@@ -476,16 +462,6 @@ WebsiteLivechatMessage.include({
     /**
      * @override
      */
-    getDisplayedAuthor: function () {
-        if (this.isAuthorChatbot()) {
-            return this._chatbotName;
-        } else {
-            return this._super(...arguments);
-        }
-    },
-    isAuthorChatbot: function () {
-        return this.hasAuthor() && this.getAuthorID() === this._chatbotOperatorId;
-    },
     setChatbotStepAnswerId: function (chatbotStepAnswerId) {
         this._chatbotStepAnswerId = chatbotStepAnswerId;
     }
