@@ -43,7 +43,6 @@ class StockMoveInvoice(AccountTestInvoicingCommon):
             'partner_id': self.partner_18.id,
             'partner_invoice_id': self.partner_18.id,
             'partner_shipping_id': self.partner_18.id,
-            'pricelist_id': self.pricelist_id.id,
             'order_line': [(0, 0, {
                 'name': 'Cable Management Box',
                 'product_id': self.product_cable_management_box.id,
@@ -112,7 +111,6 @@ class StockMoveInvoice(AccountTestInvoicingCommon):
             'partner_id': self.partner_18.id,
             'partner_invoice_id': self.partner_18.id,
             'partner_shipping_id': self.partner_18.id,
-            'pricelist_id': self.pricelist_id.id,
             'order_line': [(0, 0, {
                 'name': 'Cable Management Box',
                 'product_id': self.product_cable_management_box.id,

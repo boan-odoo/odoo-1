@@ -48,7 +48,6 @@ class TestDeliveryCost(common.TransactionCase):
             "UPDATE res_company SET currency_id = %s WHERE id = %s",
             [self.env.ref('base.USD').id, self.env.company.id])
         self.env.company.invalidate_cache()
-        self.pricelist.currency_id = self.env.ref('base.USD').id
 
     def test_00_delivery_cost(self):
         # In order to test Carrier Cost
@@ -58,7 +57,6 @@ class TestDeliveryCost(common.TransactionCase):
             'partner_id': self.partner_18.id,
             'partner_invoice_id': self.partner_18.id,
             'partner_shipping_id': self.partner_18.id,
-            'pricelist_id': self.pricelist.id,
             'order_line': [(0, 0, {
                 'name': 'PC Assamble + 2GB RAM',
                 'product_id': self.product_4.id,
@@ -117,7 +115,6 @@ class TestDeliveryCost(common.TransactionCase):
             'partner_id': self.partner_4.id,
             'partner_invoice_id': self.partner_address_13.id,
             'partner_shipping_id': self.partner_address_13.id,
-            'pricelist_id': self.pricelist.id,
             'order_line': [(0, 0, {
                 'name': 'Service on demand',
                 'product_id': self.product_consultant.id,
