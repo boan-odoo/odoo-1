@@ -890,13 +890,15 @@ QUnit.module("ActionManager", (hooks) => {
         ]);
     });
 
-    QUnit.test("execute smart button and back", async function (assert) {
+    QUnit.debug("execute smart button and back", async function (assert) {
         assert.expect(8);
         const mockRPC = async (route, args) => {
             if (args.method === "read") {
+                debugger;
                 assert.notOk("default_partner" in args.kwargs.context);
             }
             if (args.method === "web_search_read") {
+                debugger;
                 assert.strictEqual(args.kwargs.context.default_partner, 2);
             }
         };
