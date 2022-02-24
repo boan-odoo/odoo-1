@@ -73,6 +73,9 @@ class MassMailing(models.Model):
              'Keep it empty if you prefer the first characters of your email content to appear instead.')
     email_from = fields.Char(string='Send From', required=True, store=True, readonly=False, compute='_compute_email_from',
                              default=lambda self: self.env.user.email_formatted)
+    favorite = fields.Boolean('Favorite', copy=False, tracking=True)
+    favorite_date = fields.Datetime('Favorite Date', help='When this mailing was added in the favorites',
+                                    store=True, copy=False, compute='_compute_favorite_date')
     sent_date = fields.Datetime(string='Sent Date', copy=False)
 
     schedule_type = fields.Selection([('now', 'Send now'), ('scheduled', 'Send on')], string='Schedule',
@@ -207,6 +210,14 @@ class MassMailing(models.Model):
                 mailing.email_from = notification_email
             else:
                 mailing.email_from = mailing.email_from or user_email
+
+    @api.depends('favorite')
+    def _compute_favorite_date(self):
+        for mailing in self:
+            if mailing.favorite and not mailing.favorite_date:
+                mailing.favorite_date = fields.Datetime.now()
+            elif not mailing.favorite:
+                mailing.favorite_date = False
 
     def _compute_total(self):
         for mass_mailing in self:
@@ -454,6 +465,48 @@ class MassMailing(models.Model):
     # ------------------------------------------------------
     # ACTIONS
     # ------------------------------------------------------
+
+    def action_set_favorite(self):
+        """Add the current mailing in the favorites list."""
+        if any(mailing.is_body_empty for mailing in self):
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'message': _('Please create a template before adding in your favorites list.'),
+                    'next': {'type': 'ir.actions.act_window_close'},
+                    'sticky': False,
+                    'type': 'warning',
+                }
+            }
+
+        self.favorite = True
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'message': _('Design added to your templates'),
+                'next': {'type': 'ir.actions.act_window_close'},
+                'sticky': False,
+                'type': 'info',
+            }
+        }
+
+    def action_remove_favorite(self):
+        """Remove the current mailing from the favorites list."""
+        self.favorite = False
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'message': _('Design removed from your templates'),
+                'next': {'type': 'ir.actions.act_window_close'},
+                'sticky': False,
+                'type': 'info',
+            }
+        }
 
     def action_duplicate(self):
         self.ensure_one()
@@ -1203,3 +1256,25 @@ class MassMailing(models.Model):
             return lxml.html.tostring(root, encoding='unicode')
 
         return body_html
+
+    @api.model
+    def action_fetch_favorites(self):
+        """Return all mailings set as favorite and skip mailings with empty body."""
+        values_list = self.search_read(
+            domain=[('favorite', '=', True)],
+            fields=['id', 'subject', 'body_arch', 'user_id'],
+            order='favorite_date DESC',
+        )
+
+        values_list = [
+            values for values in values_list
+            if not tools.is_html_empty(values['body_arch'])
+        ]
+
+        # You see first the mailings without responsible, then your mailings and then the others
+        values_list.sort(
+            key=lambda values:
+            values['user_id'][0] != self.env.user.id if values['user_id'] else -1
+        )
+
+        return values_list
