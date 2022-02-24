@@ -793,20 +793,18 @@ class StockMove(models.Model):
                     new_moves.append(new_move)
         return self.env['stock.move'].concat(*new_moves)
 
-    def _merge_moves_fields(self, sum_quantities: bool = True):
+    def _merge_moves_fields(self):
         """ This method will return a dict of stock move’s values that represent the values of all moves in `self` merged. """
         state = self._get_relevant_state_among_moves()
         origin = '/'.join(set(self.filtered(lambda m: m.origin).mapped('origin')))
-        new_vals = {
+        return {
+            'product_uom_qty': sum(self.mapped('product_uom_qty')),
             'date': min(self.mapped('date')) if self.mapped('picking_id').move_type == 'direct' else max(self.mapped('date')),
             'move_dest_ids': [(4, m.id) for m in self.mapped('move_dest_ids')],
             'move_orig_ids': [(4, m.id) for m in self.mapped('move_orig_ids')],
             'state': state,
             'origin': origin,
         }
-        if sum_quantities:
-            new_vals.update({'product_uom_qty': sum(self.mapped('product_uom_qty')),})
-        return new_vals
 
     @api.model
     def _prepare_merge_moves_distinct_fields(self):
@@ -867,7 +865,7 @@ class StockMove(models.Model):
                     # link all move lines to record 0 (the one we will keep).
                     moves.mapped('move_line_ids').write({'move_id': moves[0].id})
                     # merge move data
-                    moves[0].write(moves._merge_moves_fields(sum_quantities=merge_into is not self))
+                    moves[0].write(moves._merge_moves_fields())
                     # update merged moves dicts
                     moves_to_unlink |= moves[1:]
                     merged_moves |= moves[0]
@@ -1626,36 +1624,32 @@ class StockMove(models.Model):
                 if float_compare(move.product_uom_qty, 0.0, precision_rounding=move.product_uom.rounding) == 0 or cancel_backorder:
                     move._action_cancel()
 
-        # # Create extra moves where necessary
-        # for move in moves:
-        #     if move.state == 'cancel' or (move.quantity_done <= 0 and not move.is_inventory):
-        #         continue
-        #
-        #     moves_ids_todo |= move._create_extra_move().ids
+        # Create extra moves where necessary
+        for move in moves:
+            if move.state == 'cancel' or (move.quantity_done <= 0 and not move.is_inventory):
+                continue
+
+            moves_ids_todo |= move._create_extra_move().ids
 
         moves_todo = self.browse(moves_ids_todo)
         moves_todo._check_company()
         # Split moves where necessary and move quants
-        if not cancel_backorder:
-            backorder_moves_vals = []
-            for move in moves_todo:
-                # To know whether we need to create a backorder or not, round to the general product's
-                # decimal precision and not the product's UOM.
-                rounding = self.env['decimal.precision'].precision_get('Product Unit of Measure')
-                if float_compare(move.quantity_done, move.product_uom_qty, precision_digits=rounding) < 0:
-                    # Need to do some kind of conversion here
-                    qty_split = move.product_uom._compute_quantity(move.product_uom_qty - move.quantity_done, move.product_id.uom_id, rounding_method='HALF-UP')
-                    new_move_vals = move._split(qty_split)
-                    backorder_moves_vals += new_move_vals
-            backorder_moves = self.env['stock.move'].create(backorder_moves_vals)
-            # The backorder moves are not yet in their own picking. We do not want to check entire packs for those
-            # ones as it could messed up the result_package_id of the moves being currently validated
-            backorder_moves.with_context(bypass_entire_pack=True)._action_confirm(merge=False)
-        # FIXME
-        # if cancel_backorder:
-        #     backorder_moves.with_context(moves_todo=moves_todo)._action_cancel()
-        else:
-            moves_todo |= self
+        backorder_moves_vals = []
+        for move in moves_todo:
+            # To know whether we need to create a backorder or not, round to the general product's
+            # decimal precision and not the product's UOM.
+            rounding = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+            if float_compare(move.quantity_done, move.product_uom_qty, precision_digits=rounding) < 0:
+                # Need to do some kind of conversion here
+                qty_split = move.product_uom._compute_quantity(move.product_uom_qty - move.quantity_done, move.product_id.uom_id, rounding_method='HALF-UP')
+                new_move_vals = move._split(qty_split)
+                backorder_moves_vals += new_move_vals
+        backorder_moves = self.env['stock.move'].create(backorder_moves_vals)
+        # The backorder moves are not yet in their own picking. We do not want to check entire packs for those
+        # ones as it could messed up the result_package_id of the moves being currently validated
+        backorder_moves.with_context(bypass_entire_pack=True)._action_confirm(merge=False)
+        if cancel_backorder:
+            backorder_moves.with_context(moves_todo=moves_todo)._action_cancel()
         moves_todo.mapped('move_line_ids').sorted()._action_done()
         # Check the consistency of the result packages; there should be an unique location across
         # the contained quants.
@@ -1752,7 +1746,7 @@ class StockMove(models.Model):
         # compatible with the move's UOM.
         new_product_qty = self.product_id.uom_id._compute_quantity(self.product_qty - qty, self.product_uom, round=False)
         new_product_qty = float_round(new_product_qty, precision_digits=self.env['decimal.precision'].precision_get('Product Unit of Measure'))
-        # self.with_context(do_not_unreserve=True).write({'product_uom_qty': new_product_qty})
+        self.with_context(do_not_unreserve=True).write({'product_uom_qty': new_product_qty})
         return new_move_vals
 
     def _recompute_state(self):
