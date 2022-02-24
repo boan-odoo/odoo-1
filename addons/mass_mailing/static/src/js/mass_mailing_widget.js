@@ -409,6 +409,7 @@ var MassMailingFieldHtml = FieldHtml.extend({
             });
             return {
                 name: name,
+                title: $theme.data("title") || "",
                 className: classname || "",
                 img: $theme.data("img") || "",
                 template: $theme.html().trim(),
