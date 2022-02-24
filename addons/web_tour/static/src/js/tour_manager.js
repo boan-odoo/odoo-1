@@ -483,7 +483,7 @@ return core.Class.extend(mixins.EventDispatcherMixin, ServicesMixin, {
         this._stop_running_tour_timeout();
         this.running_tour_timeout = setTimeout((function() {
             var descr = this._describeTip(step);
-            this._consume_tour(tour_name, _.str.sprintf("Tour %s failed at step %s", tour_name, descr));
+            this._consume_tour(tour_name, _.str.sprintf("STEP TIMEOUT %s. Tour %s failed at step %s", (step.timeout || RUNNING_TOUR_TIMEOUT) + this.running_step_delay, tour_name, descr));
         }).bind(this), (step.timeout || RUNNING_TOUR_TIMEOUT) + this.running_step_delay);
     },
     _stop_running_tour_timeout: function () {
