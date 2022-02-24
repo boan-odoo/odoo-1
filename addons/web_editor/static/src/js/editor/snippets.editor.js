@@ -448,6 +448,11 @@ var SnippetEditor = Widget.extend({
         }
         await Promise.all(editorUIsToUpdate.map(editor => editor.updateOptionsUI()));
         await Promise.all(editorUIsToUpdate.map(editor => editor.updateOptionsUIVisibility()));
+
+        // Initialize bootstrap tooltip on options
+        $('[title]').tooltip({ container: 'body' });
+        // Kind of weird we have to do this, to make them ALL work (eg: Label Position)
+        $('[data-original-title]').tooltip();
     },
     /**
      * @param {boolean} [show]
