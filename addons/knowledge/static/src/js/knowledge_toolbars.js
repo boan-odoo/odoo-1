@@ -97,6 +97,19 @@ const KnowledgeToolbar = Widget.extend({
 });
 
 /**
+ * Toolbar for the /file command
+ */
+ const FileToolbar = KnowledgeToolbar.extend({
+    xmlDependencies: ['/knowledge/static/src/xml/knowledge_toolbars.xml'],
+    repositionToolbar: function (target) {
+        this._super.apply(this, arguments);
+    },
+    _setupButton: function (button) {
+        this._super.apply(this, arguments);
+    },
+});
+
+/**
  * Toolbar for the /template command
  */
 const TemplateToolbar = KnowledgeToolbar.extend({
@@ -218,6 +231,10 @@ const ToolbarsManager = Widget.extend({
         o_knowledge_template: {
             template: 'knowledge.template_toolbar',
             Toolbar: TemplateToolbar,
+        },
+        o_knowledge_file: {
+            template: 'knowledge.file_toolbar',
+            Toolbar: FileToolbar,
         },
     },
     /**
@@ -343,5 +360,6 @@ const ToolbarsManager = Widget.extend({
 export {
     ToolbarsManager,
     TemplateToolbar,
+    FileToolbar,
     KnowledgeToolbar,
 };
