@@ -68,12 +68,12 @@
     border-radius: 0;
 
     &:hover, &:focus {
-        background-color: gray('200');
+        background-color: map-get($grays, '200');
     }
 
     &.o-active {
         @include o-hover-text-color($o-brand-odoo, $link-hover-color);
-        background-color: gray('100');
+        background-color: map-get($grays, '100');
         border-right-color: $border-color;
 
         &:not(:first-of-type),
@@ -86,7 +86,7 @@
         }
 
         &:focus {
-            background-color: gray('200');
+            background-color: map-get($grays, '200');
         }
     }
 }
@@ -94,12 +94,12 @@
 .o_ChatterTopbar_buttonClose {
     border-radius: 0 0 10px 10px;
     font-size: $font-size-lg;
-    background-color: gray('700');
-    color: gray('100');
+    background-color: map-get($grays, '700');
+    color: map-get($grays, '100');
     cursor: pointer;
 
     &:hover {
-        background-color: gray('600');
+        background-color: map-get($grays, '600');
         color: $white;
     }
 }

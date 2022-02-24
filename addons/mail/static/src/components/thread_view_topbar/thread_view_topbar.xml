@@ -5,7 +5,7 @@
         <div class="o_ThreadViewTopbar d-flex flex-shrink-0 w-100 px-3" t-attf-class="{{ className }}" t-ref="root">
             <t t-if="threadViewTopbar">
                 <t t-if="threadViewTopbar.thread">
-                    <ThreadIcon className="'o_ThreadViewTopbar_threadIcon mr-2 align-self-center'" threadLocalId="threadViewTopbar.thread.localId"/>
+                    <ThreadIcon className="'o_ThreadViewTopbar_threadIcon me-2 align-self-center'" threadLocalId="threadViewTopbar.thread.localId"/>
                 </t>
                 <div class="o_ThreadViewTopbar_title d-flex flex-grow-1 align-self-center align-items-center">
                     <t t-if="threadViewTopbar.thread">
@@ -42,7 +42,7 @@
                         </t>
                     </t>
                 </div>
-                <div class="o_ThreadViewTopbar_actions d-flex align-items-center ml-1">
+                <div class="o_ThreadViewTopbar_actions d-flex align-items-center ms-1">
                     <t t-if="threadViewTopbar.thread and threadViewTopbar.thread === messaging.inbox">
                         <button class="o_ThreadViewTopbar_markAllReadButton btn btn-secondary" t-att-disabled="threadViewTopbar.threadView.messages.length === 0" t-on-click="threadViewTopbar.onClickInboxMarkAllAsRead">Mark all read</button>
                     </t>
@@ -80,7 +80,7 @@
                 <!-- FIXME: handle display on mobile -->
                 <t t-if="threadViewTopbar.threadView.threadViewer.discussPublicView and !messaging.device.isMobile">
                     <div class="o_ThreadViewTopbar_userInfo d-flex align-items-center">
-                        <img class="o_ThreadViewTopbar_avatar ml-1 mr-1 rounded-circle" t-att-src="threadViewTopbar.avatarUrl" alt="Avatar"/>
+                        <img class="o_ThreadViewTopbar_avatar ms-1 me-1 rounded-circle" t-att-src="threadViewTopbar.avatarUrl" alt="Avatar"/>
                         <t t-if="!threadViewTopbar.isEditingGuestName">
                             <span class="o_ThreadViewTopbar_userName o_ThreadViewTopbar_editableItem px-1 font-weight-bold text-truncate" t-att-class="{ 'o-userNameEditable': threadViewTopbar.isMouseOverUserName and messaging.isCurrentUserGuest }" t-on-click="threadViewTopbar.onClickUserName" t-on-mouseenter="threadViewTopbar.onMouseEnterUserName" t-on-mouseleave="threadViewTopbar.onMouseLeaveUserName">
                                 <t t-esc="messaging.isCurrentUserGuest ? messaging.currentGuest.name : messaging.currentUser.nameOrDisplayName"/>

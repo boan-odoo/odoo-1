@@ -31,7 +31,7 @@ $o-onboarding-violet-ui-2: #FBEEC8;
     overflow: hidden;
     background: white center top;
     background-size: cover;
-    border-bottom: 1px solid gray('300');
+    border-bottom: 1px solid map-get($grays, '300');
 
     .o_onboarding_wrap {
         padding: $o-horizontal-padding*2 $o-horizontal-padding;
@@ -58,7 +58,7 @@ $o-onboarding-violet-ui-2: #FBEEC8;
         @include o-position-absolute(auto, 0,0,0);
         //transform: translateY(115%);
         //transition: transform $o-onboarding-dot-timing;
-        box-shadow: 0 2px 10px gray(600);
+        box-shadow: 0 2px 10px map-get($grays, 600);
         padding: $o-horizontal-padding;
         background-color: white;
         color: $o-main-text-color;
@@ -122,7 +122,7 @@ $o-onboarding-violet-ui-2: #FBEEC8;
             padding: 0 10px;
 
             .o_onboarding_step_action {
-                border: 1px solid gray('200');
+                border: 1px solid map-get($grays, '200');
                 display: none;
             }
 
@@ -135,7 +135,7 @@ $o-onboarding-violet-ui-2: #FBEEC8;
             @include o-position-absolute($o-onboarding-dot-size*0.5 - 2px, calc(50% + 10px));
             width: calc(100% - 20px);
             height: 4px;
-            background-color: gray('200');
+            background-color: map-get($grays, '200');
 
             .progress-bar {
                 background-image: linear-gradient(90deg, $o-brand-primary, $o-brand-odoo);
@@ -155,7 +155,7 @@ $o-onboarding-violet-ui-2: #FBEEC8;
             font-size: 11px;
             display: inline-block;
             border-radius: 100%;
-            background-color: gray('200');
+            background-color: map-get($grays, '200');
             position: relative;
             transition: background $o-onboarding-dot-timing ease $o-onboarding-dot-timing;
         }

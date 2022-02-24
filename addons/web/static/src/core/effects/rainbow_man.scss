@@ -17,9 +17,11 @@
 
   animation: reward-fading ($reward-base-time * 0.5) ease-in-out 0s 1 normal forwards;
   @include o-position-absolute(20%, auto, auto, 50%);
-  @include size($reward-size, $reward-size);
+  width: $reward-size;
+  height: $reward-size;
   @include media-breakpoint-down(sm) {
-    @include size($reward-size-mobile, $reward-size-mobile);
+    width: $reward-size-mobile;
+    height: $reward-size-mobile;
   }
 
   &.o_reward_fading {
@@ -59,7 +61,8 @@
     transform-origin: center;
     animation: reward-jump $reward-base-time * 0.8 ease-in-out 0s 1 normal none running;
     @include o-position-absolute(6%, 0, 0, 0);
-    @include size(100%, 60%);
+    width: 100%;
+    height: 60%;
   }
 
   .o_reward_face {
@@ -69,14 +72,17 @@
     border-radius: 100%;
     background: center center / contain no-repeat;
     animation: reward-float $reward-base-time ease-in-out $reward-base-time infinite alternate;
-    @include size(34%, 56.67%);
+    width: 34%;
+    height: 56.67%;
   }
 
   .o_reward_stars {
     display: block;
-    @include size($reward-size * 0.75, $reward-size / 2);
+    width: $reward-size * 0.75;
+    height: $reward-size / 2;
     @include media-breakpoint-down(sm) {
-      @include size($reward-size-mobile * 0.75, $reward-size-mobile / 2);
+      width: $reward-size-mobile * 0.75;
+      height: $reward-size-mobile / 2;
     }
     @include o-position-absolute(18%, 7%);
 
@@ -161,7 +167,8 @@
     }
 
     .o_reward_shadow {
-      @include size(100%, 12px);
+      width: 100%;
+      height: 12px;
       background-color: #e7eaf0;
       border-radius: 100%;
       transform: scale(0.8) rotateZ(0);

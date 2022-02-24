@@ -57,12 +57,12 @@
             </we-checkbox>
             <we-checkbox string="Pre-filled Options"
                     data-name="pre_filled_opt"
-                    data-toggle-prefilled-options="true"
+                    data-bs-toggle-prefilled-options="true"
                     data-dependencies="!no_input_opt"
                     data-no-preview="true">
             </we-checkbox>
             <we-checkbox string="⌙ Descriptions"
-                    data-toggle-option-description="true"
+                    data-bs-toggle-option-description="true"
                     data-dependencies="pre_filled_opt"
                     data-no-preview="true">
             </we-checkbox>

@@ -26,7 +26,7 @@
                             <t t-set="cell" t-value="row"/>
                         </t>
                         <t t-foreach="row.subGroupMeasurements" t-as="cell" t-key="'row_cell_' + cell_index">
-                            <td class="o_pivot_cell_value text-right" t-att-class="{
+                            <td class="o_pivot_cell_value text-end" t-att-class="{
                                     o_empty: cell.value === undefined,
                                     o_cursor_pointer: cell.value !== undefined,
                                     'font-weight-bold': cell.isBold,

@@ -112,7 +112,7 @@
                          <img border="0" src="/mass_mailing/static/src/img/theme_basic/s_default_image_logo.png" style="height:auto;max-width:400px;" alt="Your Logo" />
                     </a>
                 </div>
-                <div class="col-lg-4 text-right o_mail_no_resize">
+                <div class="col-lg-4 text-end o_mail_no_resize">
                     <div class="o_mail_header_social">
                         <t t-call="mass_mailing.social_links"/>
                     </div>
@@ -133,7 +133,7 @@
                         </a>
                     </h3>
                 </div>
-                <div class="col-lg-4 text-right o_mail_no_resize">
+                <div class="col-lg-4 text-end o_mail_no_resize">
                     <div class="o_mail_header_social">
                         <t t-call="mass_mailing.social_links"/>
                     </div>
@@ -153,7 +153,7 @@
                         <img border="0" src="/mass_mailing/static/src/img/theme_basic/s_default_image_logo.png" style="height:auto;max-width:400px;width:auto"/>
                     </a>
                 </div>
-                <div class="col-lg-4 text-right"/>
+                <div class="col-lg-4 text-end"/>
             </div>
         </div>
     </div>
@@ -229,7 +229,7 @@
                     <p>Cyber-threats continue to increase.
                         <br/>The discussion will examine how to develop new norms and integrate them into EU
                     </p>
-                    <div class="text-left">
+                    <div class="text-start">
                         <a href="#" class="btn btn-primary">Register</a>
                     </div>
                 </div>
@@ -383,9 +383,9 @@
     <!-- H-ALIGN -->
     <div id="so_text_align" data-selector=".s_mail_text_highlight">
         <we-button-group string="Alignment">
-            <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="text-left"/>
+            <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="text-start"/>
             <we-button class="fa fa-fw fa-align-center" title="Center" data-select-class="text-center"/>
-            <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="text-right"/>
+            <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="text-end"/>
         </we-button-group>
     </div>
 
@@ -400,9 +400,9 @@
 
     <div id="so_block_align" data-selector=".s_mail_alert, .s_mail_blockquote, .s_mail_text_highlight">
         <we-button-group string="Alignment" data-dependencies="!so_width_100">
-            <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="mr-auto"/>
+            <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="me-auto"/>
             <we-button class="fa fa-fw fa-align-center" title="Center" data-select-class="mx-auto"/>
-            <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="ml-auto"/>
+            <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="ms-auto"/>
         </we-button-group>
     </div>
 

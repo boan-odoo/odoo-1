@@ -42,13 +42,13 @@
                 t-att-aria-label="'Switch to ' + company.name "
                 t-att-title="'Switch to ' + company.name "
                 tabindex="0"
-                class="d-flex flex-grow-1 align-items-center py-0 log_into pl-2"
-                t-att-class="isCurrent ? 'alert-primary ml-1 mr-2' : 'btn btn-light font-weight-normal border-0'"
+                class="d-flex flex-grow-1 align-items-center py-0 log_into ps-2"
+                t-att-class="isCurrent ? 'alert-primary ms-1 me-2' : 'btn btn-light font-weight-normal border-0'"
                 t-on-click="() => this.logIntoCompany(company.id)">
 
                 <span
-                    class='company_label pr-3'
-                    t-att-class="isCurrent ? 'text-900 font-weight-bold' : 'ml-1'">
+                    class='company_label pe-3'
+                    t-att-class="isCurrent ? 'text-900 font-weight-bold' : 'ms-1'">
                     <t t-esc="company.name"/>
                 </span>
             </div>

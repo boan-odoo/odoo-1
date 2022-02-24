@@ -3,7 +3,7 @@
 
     <t t-name="web.Pager" owl="1">
         <nav class="o_pager" aria-label="Pager">
-            <span class="o_pager_counter mr-2" t-on-click.stop="">
+            <span class="o_pager_counter me-2" t-on-click.stop="">
                 <t t-if="state.isEditing">
                     <input type="text" class="o_pager_value o_input" t-ref="autofocus" t-att-value="value" t-on-blur="onInputBlur" t-on-change="onInputChange" t-on-keydown.stop="onInputKeydown" />
                 </t>

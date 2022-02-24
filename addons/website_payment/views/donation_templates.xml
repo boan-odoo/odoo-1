@@ -47,21 +47,21 @@
                                     <div class="custom-control custom-radio my-2">
                                         <t t-set="is_checked" t-value="float(amount) == float(donation_amount)"/>
                                         <t t-set="has_checked" t-value="has_checked or is_checked"/>
-                                        <input class="o_wpayment_fee_impact custom-control-input" type="radio" name="amount"
+                                        <input class="o_wpayment_fee_impact form-check-input" type="radio" name="amount"
                                             t-attf-id="amount_#{donation_amount_index}" t-att-value="donation_amount"
                                             t-att-checked="is_checked or None"/>
-                                        <label class="custom-control-label mt-0" t-attf-for="amount_#{donation_amount_index}">
+                                        <label class="form-check-label mt-0" t-attf-for="amount_#{donation_amount_index}">
                                             <t t-out="donation_amount"/>
-                                            <span t-if="donation_options.get('descriptions')" class="text-muted font-italic ml-1">
+                                            <span t-if="donation_options.get('descriptions')" class="text-muted font-italic ms-1">
                                                 - <t t-out="donation_descriptions[donation_amount_index]"/>
                                             </span>
                                         </label>
                                     </div>
                                 </t>
                                 <div t-attf-class="custom-control custom-radio my-2 #{not donation_layout and 'd-none' or ''}">
-                                    <input class="o_wpayment_fee_impact custom-control-input" type="radio" id="other_amount" name="amount"
+                                    <input class="o_wpayment_fee_impact form-check-input" type="radio" id="other_amount" name="amount"
                                         t-att-value="amount" t-att-checked="not has_checked or None"/>
-                                    <label class="custom-control-label mt-0 d-block" for="other_amount">
+                                    <label class="form-check-label mt-0 d-block" for="other_amount">
                                         <t t-call="website_payment.donation_input">
                                             <t t-set="amount" t-value="not has_checked and amount or ''"/>
                                         </t>
@@ -73,9 +73,9 @@
                             </t>
                         </div>
                         <div class="col-lg-12 px-0">
-                            <div class="custom-control custom-checkbox mt-3">
-                                <input class="custom-control-input" type="checkbox" value="" id="donation_comment_checkbox"/>
-                                <label class="custom-control-label" for="donation_comment_checkbox">Write us a comment</label>
+                            <div class="custom-control form-check mt-3">
+                                <input class="form-check-input" type="checkbox" value="" id="donation_comment_checkbox"/>
+                                <label class="form-check-label" for="donation_comment_checkbox">Write us a comment</label>
                             </div>
                             <textarea class="form-control d-none mt-2" id="donation_comment" placeholder="Your comment"/>
                         </div>

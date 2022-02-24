@@ -32,7 +32,7 @@
                         <div class="summary clearfix">
                             <div class="line">
                                 <div class="entry total">
-                                    <span class="badge">Total: </span>
+                                    <span class="badge bg-light text-dark">Total: </span>
                                     <span class="value">
                                         <t t-esc="total" />
                                     </span>

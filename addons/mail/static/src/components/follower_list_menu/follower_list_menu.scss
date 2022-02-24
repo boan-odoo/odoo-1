@@ -8,7 +8,7 @@
 
 .o_FollowerListMenu_buttonFollowers {
     &:focus {
-        background-color: gray('200');
+        background-color: map-get($grays, '200');
     }
 }
 

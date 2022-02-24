@@ -31,7 +31,7 @@
                             <span t-esc="company.name"/> - <span t-esc="o.name"/>
                              (<span t-if="data['form']['target_move'] == 'all'">Posted and Draft Entries</span><span t-if="data['form']['target_move'] == 'posted'">Posted Entries only</span>)
                         </div>
-                        <div class="col-2 text-right">
+                        <div class="col-2 text-end">
                             <ul class="list-inline">
                                 <li class="list-inline-item"><span class="page"/></li>
                                 <li class="list-inline-item">/</li>
@@ -68,9 +68,9 @@
                                 <th>Partner</th>
                                 <th>Account</th>
                                 <th>Label</th>
-                                <th t-if="data['form']['amount_currency']" class="text-right">Currency</th>
-                                <th class="text-right">Debit</th>
-                                <th class="text-right">Credit</th>
+                                <th t-if="data['form']['amount_currency']" class="text-end">Currency</th>
+                                <th class="text-end">Debit</th>
+                                <th class="text-end">Credit</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -159,7 +159,7 @@
                                 <td/>
                                 <td/>
                                 <td/>
-                                <td class="text-right"><strong>Total</strong></td>
+                                <td class="text-end"><strong>Total</strong></td>
                                 <td>
                                     <span t-esc="sum_debit(data, o)"
                                           t-options="{
@@ -190,8 +190,8 @@
                                     <tr><th colspan="3">Taxes Applied</th></tr>
                                     <tr>
                                         <th>Name</th>
-                                        <th class="text-right">Base Amount</th>
-                                        <th class="text-right">Tax Amount</th>
+                                        <th class="text-end">Base Amount</th>
+                                        <th class="text-end">Tax Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody>

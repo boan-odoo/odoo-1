@@ -14,7 +14,7 @@
                             <img class="o_image_64_cover rounded-circle" t-attf-src="{{ widget.userimage }}"/>
                         </div>
                         <div class="col-9 col-md-6 col-lg-9">
-                            <div class="pl-3">
+                            <div class="ps-3">
                                 <div class="o_lunch_user_field py-1"/>
                                 <div class="o_lunch_location_field py-1"/>
                                 <div class="d-flex flex-row py-1">
@@ -31,16 +31,16 @@
                 <div class="o_lunch_widget_info col-12 col-md-4 card border-0">
                     <t t-if="!_.isEmpty(widget.lines)">
                         <t t-if="widget.raw_state == 'ordered'">
-                            <t t-set="state_class" t-value="'badge-warning o_lunch_ordered'"/>
+                            <t t-set="state_class" t-value="'bg-warning text-dark o_lunch_ordered'"/>
                         </t>
                         <t t-else="widget.raw_state == 'confirmed'">
-                            <t t-set="state_class" t-value="'badge-success o_lunch_confirmed'"/>
+                            <t t-set="state_class" t-value="'bg-success o_lunch_confirmed'"/>
                         </t>
                         <div class="card-body">
                             <h4 class="card-title">
                                 Your order
                                 <button t-if="widget.raw_state != 'confirmed'" class="btn btn-sm btn-icon btn-link fa fa-trash o_lunch_widget_unlink"/>
-                                <span t-if="widget.raw_state != 'new'" t-esc="widget.state" t-attf-class="badge badge-pill {{ state_class }}"/>
+                                <span t-if="widget.raw_state != 'new'" t-esc="widget.state" t-attf-class="badge bg-light text-dark rounded-pill {{ state_class }}"/>
                             </h4>
                             <ul class="list-unstyled o_lunch_widget_lines">
                                 <li t-foreach="widget.lines" t-as="line" t-key="line_index">
@@ -50,7 +50,7 @@
                                             <span t-esc="line.quantity"/>
                                             <button class="btn btn-sm btn-icon btn-link fa fa-plus-circle o_add_product" t-if="widget.raw_state != 'confirmed'" t-attf-data-id="{{ line.id }}"/>
                                         </div>
-                                        <div class="flex-grow-1 pl-2">
+                                        <div class="flex-grow-1 ps-2">
                                             <button t-esc="line.product[1]" class="btn btn-link o_lunch_open_wizard" t-attf-data-product-id="{{ line.product[0] }}" t-attf-data-id="{{ line.id }}"/>
                                         </div>
                                         <div class="flex-grow-0">
@@ -61,7 +61,7 @@
                                         </div>
                                     </div>
                                     <div t-foreach="line.toppings" t-as="topping" t-key="topping_index" class="d-flex flex-row">
-                                        <div class="flex-grow-1 pl-5">
+                                        <div class="flex-grow-1 ps-5">
                                             <span>+ <t t-esc="topping[0]"/></span>
                                         </div>
                                         <div class="flex-grow-0">
@@ -71,7 +71,7 @@
                                             </t>
                                         </div>
                                     </div>
-                                    <span t-if="line.note" t-esc="line.note" class="text-muted pl-5"/>
+                                    <span t-if="line.note" t-esc="line.note" class="text-muted ps-5"/>
                                 </li>
                             </ul>
                         </div>

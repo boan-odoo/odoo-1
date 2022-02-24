@@ -15,7 +15,7 @@
                     </div>
                     <div class="modal-footer">
                         <a type="action" class="btn btn-primary" data-dismiss="modal"
-                        data-toggle="collapse" href=".o_onboarding_container"
+                        data-bs-toggle="collapse" href=".o_onboarding_container"
                         t-att-data-model="close_model" t-att-data-method="close_method">
                             Remove
                         </a>
@@ -28,8 +28,8 @@
             <div t-att-class="'o_onboarding ' + ('o_onboarding_completed ' if steps_completed else ' ') + classes"
                  t-att-style="'background-image:url(' + bg_image + ')'">
                 <div class="o_onboarding_wrap">
-                    <a href="#" data-toggle="modal" data-target=".o_onboarding_modal"
-                       class="float-right o_onboarding_btn_close">
+                    <a href="#" data-bs-toggle="modal" data-target=".o_onboarding_modal"
+                       class="float-end o_onboarding_btn_close">
                         <i class="fa fa-times" title="Close the onboarding panel" />
                     </a>
                     <div class="o_onboarding_steps">
@@ -41,7 +41,7 @@
                             <t t-if="text_completed" t-esc="text_completed" />
                             <t t-else="">Nice work! Your configuration is done.</t>
                         </span>
-                            <a type="action" class="btn btn-primary" data-toggle="collapse" href=".o_onboarding_container"
+                            <a type="action" class="btn btn-primary" data-bs-toggle="collapse" href=".o_onboarding_container"
                             t-att-data-model="close_model" t-att-data-method="close_method">
                                 Close
                             </a>

@@ -239,7 +239,7 @@
             <div class="oe_import_with_file">
                 <h4>Imported file</h4>
                 <div class="mb-2 d-flex align-items-center">
-                    <i class="fa fa-file white mr-2"></i>
+                    <i class="fa fa-file white me-2"></i>
                     <div id="oe_imported_file" class="font-italic truncate"></div>
                     <span id="oe_imported_file_extension" class="font-italic"></span>
                 </div>
@@ -249,9 +249,9 @@
                     <input class="oe_import_sheet oe_import_dropdown" id="oe_import_sheet"/>
                 </div>
 
-                <input type="checkbox" class="oe_import_has_header custom-control-input"
+                <input type="checkbox" class="oe_import_has_header form-check-input"
                        id="oe_import_has_header" checked="checked"/>
-                <label class="custom-control-label" for="oe_import_has_header">Use first row as header</label>
+                <label class="form-check-label" for="oe_import_has_header">Use first row as header</label>
 
                 <div class="o_import_formatting">
                     <h4 class="mt-3">Formatting</h4>
@@ -274,11 +274,11 @@
                         The file will be imported by batches
                     </div>
                     <div class="d-flex">
-                        <div class="oe_import_options oe_import_batch_limit w-50 pr-1">
+                        <div class="oe_import_options oe_import_batch_limit w-50 pe-1">
                             <label class="mb-1" for="oe_import_batch_limit">Batch limit</label>
                             <input class="w-100" id="oe_import_batch_limit" value="2000"/>
                         </div>
-                        <div class="oe_import_options w-50 pl-1" title="Warning: ignores the labels line, empty lines and
+                        <div class="oe_import_options w-50 ps-1" title="Warning: ignores the labels line, empty lines and
 lines composed only of empty cells">
                             <label class="mb-1" for="oe_import_row_start">Start at line</label>
                             <input class="w-100" id="oe_import_row_start" value="1"/>
@@ -299,16 +299,16 @@ lines composed only of empty cells">
                 <div class="oe_import_debug_option">
                     <h4 class="mt-3">Advanced</h4>
                     <div title="If the model uses openchatter, history tracking will set up subscriptions and send notifications during the import, but lead to a slower import.">
-                        <input type="checkbox" id="oe_import_tracking" class="custom-control-input"/>
-                        <label class="custom-control-label" for="oe_import_tracking">
+                        <input type="checkbox" id="oe_import_tracking" class="form-check-input"/>
+                        <label class="form-check-label" for="oe_import_tracking">
                             Track history during import
                         </label>
                     </div>
 
                     <div>
-                        <input type="checkbox" class="oe_import_advanced_mode custom-control-input" checked="checked"
+                        <input type="checkbox" class="oe_import_advanced_mode form-check-input" checked="checked"
                                id="oe_import_advanced_mode"/>
-                        <label class="custom-control-label" for="oe_import_advanced_mode">Allow matching with subfields</label>
+                        <label class="form-check-label" for="oe_import_advanced_mode">Allow matching with subfields</label>
                     </div>
                 </div>
 
@@ -337,7 +337,7 @@ lines composed only of empty cells">
                         <span>0%</span>
                     </div>
                 </div>
-                <a class="o_progress_stop_import ml-2" role="button"><i class="fa fa-close" aria-label="Stop Import"/></a>
+                <a class="o_progress_stop_import ms-2" role="button"><i class="fa fa-close" aria-label="Stop Import"/></a>
             </div>
         </div>
         <div t-else="">

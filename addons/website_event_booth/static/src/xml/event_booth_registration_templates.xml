@@ -11,15 +11,15 @@
             <div class="d-flex flex-column">
                 <span t-if="contact.name" t-esc="contact.name" class="font-weight-bold"/>
                 <span t-if="contact.email">
-                    <i class="fa fa-fw fa-envelope mr-2"/>
+                    <i class="fa fa-fw fa-envelope me-2"/>
                     <t t-esc="contact.email"/>
                 </span>
                 <span t-if="contact.phone">
-                    <i class="fa fa-fw fa-phone mr-2"/>
+                    <i class="fa fa-fw fa-phone me-2"/>
                     <t t-esc="contact.phone"/>
                 </span>
                 <span t-if="contact.mobile">
-                    <i class="fa fa-fw fa-mobile mr-2"/>
+                    <i class="fa fa-fw fa-mobile me-2"/>
                     <t t-esc="contact.mobile"/>
                 </span>
             </div>

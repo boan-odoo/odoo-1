@@ -48,8 +48,8 @@
 }
 
 .o_popover {
-  $border-color: gray("300");
-  $bg-color: gray("200");
+  $border-color: map-get($grays, "300");
+  $bg-color: map-get($grays, "200");
   $arrow-pad: 0px;
   $arrow-size: 8px;
   $animation-time: 0.2s;

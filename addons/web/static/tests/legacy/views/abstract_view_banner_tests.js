@@ -48,7 +48,7 @@ QUnit.module('Views', {
                         <div class="modal-content">
                             <div class="modal-footer">
                                 <a type="action" class="btn btn-primary" data-dismiss="modal"
-                                data-toggle="collapse" href=".o_onboarding_container">
+                                data-bs-toggle="collapse" href=".o_onboarding_container">
                                     Remove
                                 </a>
                             </div>
@@ -57,7 +57,7 @@ QUnit.module('Views', {
                 </div>
                 <div class="o_onboarding_container collapse show">
                     <div class="o_onboarding_wrap">
-                        <a href="#" data-toggle="modal" data-target=".o_onboarding_modal"
+                        <a href="#" data-bs-toggle="modal" data-target=".o_onboarding_modal"
                            class="float-right o_onboarding_btn_close">
                             <i class="fa fa-times" title="Close the onboarding panel" />
                         </a>

@@ -4,8 +4,8 @@
 
 .o_AttachmentViewer {
     display: flex;
-    width: map-get($sizes, 100);
-    height: map-get($sizes, 100);
+    width: 100%;
+    height: 100%;
     flex-flow: column;
     align-items: center;
     z-index: -1;
@@ -109,7 +109,7 @@
     height: 100%;
 
     &.o-isMobile {
-        width: map-get($sizes, 100);
+        width: 100%;
     }
 }
 
@@ -118,8 +118,8 @@
     height: 75%;
 
     &.o-isMobile {
-        width: map-get($sizes, 100);
-        height: map-get($sizes, 100);
+        width: 100%;
+        height: 100%;
     }
 }
 
@@ -142,20 +142,20 @@
 }
 
 .o_AttachmentViewer_buttonNavigation {
-    color: gray('400');
+    color: map-get($grays, '400');
     background-color: lighten($black, 15%);
     border-radius: 100%;
     cursor: pointer;
 
     &:hover {
-        color: lighten(gray('400'), 15%);
+        color: lighten(map-get($grays, '400'), 15%);
         background-color: $black;
     }
 }
 
 .o_AttachmentViewer_header {
     background-color: rgba($black, 0.7);
-    color: gray('400');
+    color: map-get($grays, '400');
 }
 
 .o_AttachmentViewer_headerItemButton {
@@ -163,7 +163,7 @@
 
     &:hover {
         background-color: rgba($white, 0.1);
-        color: lighten(gray('400'), 15%);
+        color: lighten(map-get($grays, '400'), 15%);
     }
 }
 
@@ -185,12 +185,12 @@
     }
 
     &:not(.o_disabled) {
-        color: gray('400');
+        color: map-get($grays, '400');
         cursor: pointer;
 
         &:hover {
             background-color: $black;
-            color: lighten(gray('400'), 15%);
+            color: lighten(map-get($grays, '400'), 15%);
         }
     }
 }

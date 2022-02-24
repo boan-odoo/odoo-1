@@ -19,9 +19,9 @@
                         title="Edit embedded code">Edit</we-button>
             </we-row>
             <we-button-group string="Alignment">
-                <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="text-left"/>
+                <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="text-start"/>
                 <we-button class="fa fa-fw fa-align-center" title="Center" data-select-class="text-center"/>
-                <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="text-right"/>
+                <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="text-end"/>
             </we-button-group>
         </div>
     </xpath>

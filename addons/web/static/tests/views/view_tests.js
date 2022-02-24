@@ -1076,7 +1076,7 @@ QUnit.module("Views", (hooks) => {
                             <p>Do you want to remove this configuration panel?</p>
                         </div>
                         <div class="modal-footer">
-                            <a type="action" class="btn btn-primary" data-dismiss="modal" data-toggle="collapse" href=".o_onboarding_container" data-model="mah.model" data-method="mah_method">Remove</a>
+                            <a type="action" class="btn btn-primary" data-dismiss="modal" data-bs-toggle="collapse" href=".o_onboarding_container" data-model="mah.model" data-method="mah_method">Remove</a>
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Discard</button>
                         </div>
                     </div>
@@ -1085,7 +1085,7 @@ QUnit.module("Views", (hooks) => {
             <div class="o_onboarding_container collapse show">
                 <div class="o_onboarding" />
                     <div class="o_onboarding_wrap" />
-                        <a href="#" data-toggle="modal" data-target=".o_onboarding_modal" class="float-right o_onboarding_btn_close">
+                        <a href="#" data-bs-toggle="modal" data-target=".o_onboarding_modal" class="float-right o_onboarding_btn_close">
                             <i class="fa fa-times" title="Close the onboarding panel" id="closeOnboarding"></i>
                         </a>
                         <div class="bannerContent">Content</div>

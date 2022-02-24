@@ -180,11 +180,11 @@
 </template>
 
 <template id="snippet_options_background_options" inherit_id="web_editor.snippet_options_background_options">
-    <xpath expr="//we-button[@data-toggle-bg-image]" position="after">
+    <xpath expr="//we-button[@data-bs-toggle-bg-image]" position="after">
         <we-button title="Video" class="fa fa-fw fa-film"
                    data-name="bg_video_toggler_opt"
                    t-att-data-dependencies="images_dependencies"
-                   data-toggle-bg-video="true"
+                   data-bs-toggle-bg-video="true"
                    data-no-preview="true"/>
     </xpath>
     <xpath expr="//t[@t-set='color_filter_dependencies']" position="after">
@@ -357,9 +357,9 @@
     <!-- H-ALIGN -->
     <div id="so_text_align" data-selector=".s_share, .s_text_highlight, .s_social_media">
         <we-button-group string="Alignment">
-            <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="text-left"/>
+            <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="text-start"/>
             <we-button class="fa fa-fw fa-align-center" title="Center" data-select-class="text-center"/>
-            <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="text-right"/>
+            <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="text-end"/>
         </we-button-group>
     </div>
 
@@ -374,9 +374,9 @@
 
     <div id="so_block_align" data-selector=".s_alert, .s_card, .s_blockquote, .s_text_highlight">
         <we-button-group string="Alignment" data-dependencies="!so_width_100">
-            <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="mr-auto"/>
+            <we-button class="fa fa-fw fa-align-left" title="Left" data-select-class="me-auto"/>
             <we-button class="fa fa-fw fa-align-center" title="Center" data-select-class="mx-auto"/>
-            <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="ml-auto"/>
+            <we-button class="fa fa-fw fa-align-right" title="Right" data-select-class="ms-auto"/>
         </we-button-group>
     </div>
 
@@ -417,7 +417,7 @@
     <div data-js="CarouselItem"
          data-selector=".s_carousel .carousel-item, .s_quotes_carousel .carousel-item">
         <we-button class="fa fa-fw fa-angle-left" data-slide="left" data-no-preview="true" data-tooltip="true" title="Move Backward"/>
-        <we-button class="fa fa-fw fa-angle-right mr-2" data-slide="right" data-no-preview="true" data-tooltip="true" title="Move Forward"/>
+        <we-button class="fa fa-fw fa-angle-right me-2" data-slide="right" data-no-preview="true" data-tooltip="true" title="Move Forward"/>
         <we-button class="fa fa-fw fa-plus o_we_bg_success" data-add-slide-item="true" data-no-preview="true" data-tooltip="true" title="Add Slide"/>
         <we-button class="fa fa-fw fa-minus o_we_bg_danger" data-remove-slide="true" data-no-preview="true" data-tooltip="true" title="Remove Slide"/>
     </div>
@@ -548,7 +548,7 @@
 
     <div data-js="menu_data"
          data-selector="#top_menu li > a, [data-content_menu_id] li > a"
-         data-exclude=".dropdown-toggle, li.o_header_menu_button a, [data-toggle], .o_offcanvas_logo"
+         data-exclude=".dropdown-toggle, li.o_header_menu_button a, [data-bs-toggle], .o_offcanvas_logo"
          data-no-check="true"/>
 
     <div data-js="company_data"
@@ -1036,7 +1036,7 @@
                 <t t-set="with_color_combinations" t-value="True"/>
                 <t t-set="with_gradients" t-value="True"/>
             </t>
-            <we-button-group class="ml-auto">
+            <we-button-group class="ms-auto">
                 <we-imagepicker title="Image" data-background="" data-button-style="true"/>
                 <we-button class="fa fa-fw fa-ban" title="None" data-background="">
                 </we-button>
@@ -1056,7 +1056,7 @@
         <we-select string="Text Alignment" data-name="text_align_opt" data-cover-opt-name="text_align">
             <we-button data-select-class="">Left</we-button>
             <we-button data-select-class="text-center">Centered</we-button>
-            <we-button data-select-class="text-right">Right</we-button>
+            <we-button data-select-class="text-end">Right</we-button>
         </we-select>
     </div>
 
@@ -1086,7 +1086,7 @@
         </we-button-group>
 
         <we-checkbox string="Scroll down button"
-                     data-toggle-button="true"
+                     data-bs-toggle-button="true"
                      data-no-preview="true"
                      data-dependencies="full_height_opt"
                      data-name="scroll_button_opt"/>

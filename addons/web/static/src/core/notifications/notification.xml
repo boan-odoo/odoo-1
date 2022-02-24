@@ -10,7 +10,7 @@
                     <span class="d-inline" aria-hidden="true">×</span>
                 </button>
                 <div t-if="props.title" class="font-weight-bold o_notification_title mb-1" t-esc="props.title"/>
-                <div t-if="props.message" class="mr-auto o_notification_content">
+                <div t-if="props.message" class="me-auto o_notification_content">
                     <t t-out="props.message"/>
                 </div>
                 <div t-if="props.buttons.length" class="mt-2 o_notification_buttons">

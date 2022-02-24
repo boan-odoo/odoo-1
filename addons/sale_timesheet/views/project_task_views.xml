@@ -19,7 +19,7 @@
                 <button name="action_billable_time_button" type="object" class="oe_stat_button" icon="fa-clock-o" attrs="{'invisible': ['|', ('allow_timesheets', '=', False), ('analytic_account_id', '=', False)]}" groups="hr_timesheet.group_hr_timesheet_approver">
                     <div class="o_field_widget o_stat_info">
                         <div class="oe_inline">
-                            <span class="o_stat_value mr-1">
+                            <span class="o_stat_value me-1">
                                 <field name="billable_percentage" widget="statinfo" nolabel="1"/>%
                             </span>
                         </div>

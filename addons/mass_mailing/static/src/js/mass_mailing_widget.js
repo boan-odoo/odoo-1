@@ -475,7 +475,7 @@ var MassMailingFieldHtml = FieldHtml.extend({
         $themeSelector.on("mouseleave", ".dropdown-item", function (e) {
             self._switchThemes(selectedTheme);
         });
-        $themeSelector.on("click", '[data-toggle="dropdown"]', function (e) {
+        $themeSelector.on("click", '[data-bs-toggle="dropdown"]', function (e) {
             var $menu = $themeSelector.find('.dropdown-menu');
             var isVisible = $menu.hasClass('show');
             if (isVisible) {

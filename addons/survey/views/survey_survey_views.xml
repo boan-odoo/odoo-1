@@ -128,7 +128,7 @@
                                         </div>
                                     </div> 
                                     <field name="certification_mail_template_id" attrs="{'invisible': [('certification', '=', False)]}"/>
-                                    <div colspan="2" class="float-left o_checkbox_optional_field"
+                                    <div colspan="2" class="float-start o_checkbox_optional_field"
                                         attrs="{'invisible': ['|', ('certification', '=', False), ('users_login_required', '=', False)]}">
                                         <label for="certification_give_badge"/>
                                         <field name="certification_give_badge"/>
@@ -153,7 +153,7 @@
                                         <label for="session_link" string="Session Link" class="oe_read_only o_form_label" />
                                     </div>
                                     <div class="d-flex">
-                                        <field name="session_code" nolabel="1" class="mr-2 oe_edit_only" />
+                                        <field name="session_code" nolabel="1" class="me-2 oe_edit_only" />
                                         <field name="session_link" nolabel="1" widget="CopyClipboardChar" class="oe_read_only" />
                                     </div>
                                     <field name="session_speed_rating" />
@@ -268,7 +268,7 @@
                                     <span class="text-muted" t-else="">Certified</span>
                                 </a>
                             </div>
-                            <div class="col-lg-3 col-sm-12 py-0 my-2 pb-lg-3 ml-auto text-lg-right">
+                            <div class="col-lg-3 col-sm-12 py-0 my-2 pb-lg-3 ms-auto text-lg-right">
                                 <button name="action_send_survey"
                                         string="Share" type="object"
                                         class="btn btn-secondary border"
@@ -312,7 +312,7 @@
                             <div class="o_dropdown_kanban dropdown" t-if="widget.editable">
                                 <a href="#" role="button"
                                     class="dropdown-toggle o-no-caret btn"
-                                    data-toggle="dropdown" data-display="static"
+                                    data-bs-toggle="dropdown" data-bs-display="static"
                                     aria-label="Dropdown menu" title="Dropdown menu">
                                     <span class="fa fa-ellipsis-v"/>
                                 </a>
@@ -331,7 +331,7 @@
                             <div class="row">
                                 <div class="col-10 p-0 pb-1">
                                     <div class="container o_kanban_card_content" t-if="record.answer_count.raw_value != 0">
-                                        <div class="row mt-4 ml-5">
+                                        <div class="row mt-4 ms-5">
                                             <div class="col-4 p-0">
                                                 <a name="action_survey_user_input" type="object" class="d-flex flex-column align-items-center">
                                                     <span class="font-weight-bold"><field name="answer_count"/></span>

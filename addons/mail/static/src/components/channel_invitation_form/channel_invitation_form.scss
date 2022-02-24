@@ -41,6 +41,6 @@
 
 .o_ChannelInvitationForm_selectablePartner {
     &:hover {
-        background-color: gray('100');
+        background-color: map-get($grays, '100');
     }
 }

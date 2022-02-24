@@ -7,7 +7,7 @@
             <t t-set="_tax" t-value="getTax()" />
             <div class="line">
                 <div class="entry total">
-                    <span class="badge">Total: </span>
+                    <span class="badge bg-light text-dark">Total: </span>
                     <span class="value">
                         <t t-esc="_total" />
                     </span>

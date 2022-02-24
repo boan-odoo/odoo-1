@@ -39,11 +39,11 @@
                         <h1 class="mb-4" t-field="survey.title" />
                         <h2 class="mb-5 font-weight-normal">
                             <span>Go to <a t-att-href="survey.session_link" t-esc="survey.session_link" target="_blank" /></span>
-                            <i class="fa fa-link font-weight-normal ml-3 o_survey_session_copy" />
+                            <i class="fa fa-link font-weight-normal ms-3 o_survey_session_copy" />
                             <input class="o_survey_session_copy_url d-none" type="text" t-att-value="survey.session_link" />
                         </h2>
                         <h2 class="font-weight-normal"><span>Waiting for attendees...</span>
-                            <span class="ml-1 font-weight-bold o_survey_session_attendees_count" t-esc="survey.session_answer_count" />
+                            <span class="ms-1 font-weight-bold o_survey_session_attendees_count" t-esc="survey.session_answer_count" />
                         </h2>
                     </div>
                     <a role="button"
@@ -87,13 +87,13 @@
             <div class="o_survey_question_header flex-wrap px-3 w-100 d-flex justify-content-between align-items-center position-absolute">
                 <h3>
                     <span>Go to <a t-att-href="survey.session_link" t-esc="survey.session_link" target="_blank" /></span>
-                    <i class="fa fa-copy font-weight-normal ml-3 mr-1 o_survey_session_copy" />
+                    <i class="fa fa-copy font-weight-normal ms-3 me-1 o_survey_session_copy" />
                     <input class="o_survey_session_copy_url d-none" type="text" t-att-value="survey.session_link" />
                 </h3>
                 <h1 t-if="question.is_time_limited" class="o_survey_timer_container">
                     <span class="o_survey_timer d-inline-block"/>
                 </h1>
-                <div class="text-right d-flex flex-column justify-content-center">
+                <div class="text-end d-flex flex-column justify-content-center">
                     <div t-if="show_bar_chart or show_text_answers">
                         <div class="progress" title="Attendees are answering the question...">
                             <div class="progress-bar o_survey_session_progress_small font-weight-bold"
@@ -153,7 +153,7 @@
                             <span t-else="">Leaderboard</span>
                         </h1>
                         <div t-att-class="'o_survey_leaderboard_buttons font-weight-bold %s' % 'd-none' if not is_last_question else ''">
-                            <a href="#" role="button" class="o_survey_session_close btn btn-primary mr-4"><i class="fa fa-close"/> Close</a>
+                            <a href="#" role="button" class="o_survey_session_close btn btn-primary me-4"><i class="fa fa-close"/> Close</a>
                             <a href="#" role="button" class="o_survey_session_close btn btn-primary" t-att-data-show-results="True"><i class="fa fa-bar-chart"/> Results</a>
                         </div>
                     </div>
@@ -168,7 +168,7 @@
             <t t-set="max_score" t-value="max(score.get('scoring_total', 1) for score in leaderboard) or 1" />
             <t t-set="max_updated_score" t-value="max(score.get('updated_score', 1) for score in leaderboard)" />
             <t t-foreach="leaderboard" t-as="score">
-                <div class="o_survey_session_leaderboard_item ml-2 d-flex position-absolute"
+                <div class="o_survey_session_leaderboard_item ms-2 d-flex position-absolute"
                     t-attf-style="top: calc(#{score_index} * 3.8rem);"
                     t-att-data-current-position="str(score_index)"
                     t-att-data-new-position="str(score.get('leaderboard_position', score_index))"
@@ -178,17 +178,17 @@
                     t-att-data-max-question-score="round(score.get('max_question_score', 1))"
                     t-att-data-max-updated-score="round(max_updated_score)">
                     <div class="d-inline-block font-weight-bold align-top">
-                        <div class="d-inline-block mr-2 o_survey_session_leaderboard_score" t-esc="'%.0f p' % score['scoring_total']" />
+                        <div class="d-inline-block me-2 o_survey_session_leaderboard_score" t-esc="'%.0f p' % score['scoring_total']" />
                     </div>
                     <!-- We keep "18rem" of space to display the points / nickname.
                     Then, the length of the bar is a percentage of the attendee's score compared to the max_score. -->
                     <t t-set="width_ratio" t-value="round(round(score['scoring_total']) / round(max_score), 3)"/>
                     <t t-set="width_ratio_question" t-value="str(round(round(score.get('question_score', 0)) / round(score.get('max_question_score', 1)), 3))"/>
-                    <div class="o_survey_session_leaderboard_bar ml-2 align-top d-inline-block text-right font-weight-bold"
+                    <div class="o_survey_session_leaderboard_bar ms-2 align-top d-inline-block text-end font-weight-bold"
                         t-att-style="'width: calc(calc(%s - 18rem) * %s)' % ('100%', width_ratio)"
                         t-att-data-width-ratio="width_ratio">
                     </div>
-                    <div class="o_survey_session_leaderboard_bar_question mr-2 align-top d-inline-block text-right font-weight-bold position-relative"
+                    <div class="o_survey_session_leaderboard_bar_question me-2 align-top d-inline-block text-end font-weight-bold position-relative"
                         style="width: 0px;"
                         t-att-data-width-ratio="width_ratio_question"
                         t-att-data-max-question-score="str(score.get('max_question_score', 1))"

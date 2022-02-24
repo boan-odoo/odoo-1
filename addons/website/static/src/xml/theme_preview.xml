@@ -14,7 +14,7 @@
     </t>
 
     <t t-name="website.ThemePreview.SwitchModeButton">
-        <div class="btn-group btn-group-toggle ml-1" data-toggle="buttons">
+        <div class="btn-group btn-group-toggle ms-1" data-bs-toggle="buttons">
             <label class="btn btn-secondary active">
                 <input type="radio" name="viewer" data-mode='desktop' autocomplete="off" checked='checked'/> Desktop
             </label>

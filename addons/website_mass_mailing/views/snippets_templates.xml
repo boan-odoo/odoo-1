@@ -91,7 +91,7 @@
         <div data-js="recaptchaSubscribe"
             t-att-data-selector="selector">
             <t t-set="recaptcha_public_key" t-value="request.env['ir.config_parameter'].sudo().get_param('recaptcha_public_key')"/>
-            <we-checkbox t-if="recaptcha_public_key" string="Show reCaptcha Policy" data-toggle-recaptcha-legal="" data-no-preview="true"/>
+            <we-checkbox t-if="recaptcha_public_key" string="Show reCaptcha Policy" data-bs-toggle-recaptcha-legal="" data-no-preview="true"/>
         </div>
         <div t-att-data-selector="selector" data-drop-near="p, h1, h2, h3, blockquote, .card"/>
     </xpath>

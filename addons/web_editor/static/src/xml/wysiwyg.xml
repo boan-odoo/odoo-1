@@ -83,10 +83,10 @@
     <!-- Media Dialog (allows to choose an img/pictogram/video) -->
     <div t-name="wysiwyg.widgets.media">
         <ul class="nav nav-tabs" role="tablist">
-            <li t-if="!widget.options.noImages" class="nav-item"><a t-attf-class="nav-link #{widget.isImageActive() ? 'active' : ''}" id="editor-media-image-tab" data-toggle="tab" href="#editor-media-image" role="tab" aria-controls="editor-media-image" t-att-aria-selected="widget.isImageActive().toString()">Image</a></li>
-            <li t-if="!widget.options.noDocuments" class="nav-item"><a t-attf-class="nav-link #{widget.isDocumentActive() ? 'active' : ''}" id="editor-media-document-tab" data-toggle="tab" href="#editor-media-document" role="tab" aria-controls="editor-media-document" t-att-aria-selected="widget.isDocumentActive().toString()">Document</a></li>
-            <li t-if="!widget.options.noIcons" class="nav-item"><a t-attf-class="nav-link #{widget.isIconActive() ? 'active' : ''}" id="editor-media-icon-tab" data-toggle="tab" href="#editor-media-icon" role="tab" aria-controls="editor-media-icon" t-att-aria-selected="widget.isIconActive().toString()">Pictogram</a></li>
-            <li t-if="!widget.options.noVideos" class="nav-item"><a t-attf-class="nav-link #{widget.isVideoActive() ? 'active' : ''}" id="editor-media-video-tab" data-toggle="tab" href="#editor-media-video" role="tab" aria-controls="editor-media-video" t-att-aria-selected="widget.isVideoActive().toString()">Video</a></li>
+            <li t-if="!widget.options.noImages" class="nav-item"><a t-attf-class="nav-link #{widget.isImageActive() ? 'active' : ''}" id="editor-media-image-tab" data-bs-toggle="tab" href="#editor-media-image" role="tab" aria-controls="editor-media-image" t-att-aria-selected="widget.isImageActive().toString()">Image</a></li>
+            <li t-if="!widget.options.noDocuments" class="nav-item"><a t-attf-class="nav-link #{widget.isDocumentActive() ? 'active' : ''}" id="editor-media-document-tab" data-bs-toggle="tab" href="#editor-media-document" role="tab" aria-controls="editor-media-document" t-att-aria-selected="widget.isDocumentActive().toString()">Document</a></li>
+            <li t-if="!widget.options.noIcons" class="nav-item"><a t-attf-class="nav-link #{widget.isIconActive() ? 'active' : ''}" id="editor-media-icon-tab" data-bs-toggle="tab" href="#editor-media-icon" role="tab" aria-controls="editor-media-icon" t-att-aria-selected="widget.isIconActive().toString()">Pictogram</a></li>
+            <li t-if="!widget.options.noVideos" class="nav-item"><a t-attf-class="nav-link #{widget.isVideoActive() ? 'active' : ''}" id="editor-media-video-tab" data-bs-toggle="tab" href="#editor-media-video" role="tab" aria-controls="editor-media-video" t-att-aria-selected="widget.isVideoActive().toString()">Video</a></li>
         </ul>
         <!-- Tab panes -->
         <div class="tab-content">
@@ -98,7 +98,7 @@
     </div>
 
     <t t-name="wysiwyg.widgets.media.search">
-        <div class="input-group mr-auto">
+        <div class="input-group me-auto">
             <input type="text" class="form-control o_we_search" t-att-placeholder="searchPlaceholder.trim()"/>
             <div class="input-group-append">
                 <div class="input-group-text o_we_search_icon">
@@ -130,7 +130,7 @@
 
             <input type="file" class="d-none o_file_input" name="upload" t-att-accept="widget.options.accept" t-att-multiple="widget.options.multiImages &amp;&amp; 'multiple'"/>
 
-            <div class="input-group align-items-center ml-2">
+            <div class="input-group align-items-center ms-2">
                 <input type="text" class="form-control o_we_url_input o_we_horizontal_collapse o_we_transition_ease" name="url" t-att-placeholder="urlPlaceholder"/>
                 <div class="input-group-append align-items-center">
                     <button type="button" class="btn btn-secondary o_upload_media_url_button">
@@ -160,10 +160,10 @@
             <t t-set="searchPlaceholder">Search an image</t>
             <t t-set="urlWarningTitle">Uploaded image's format is not supported. Try with: </t>
             <t t-set="urlWarningTitle" t-value="urlWarningTitle + widget.IMAGE_EXTENSIONS.join(', ')"/>
-            <div class="d-flex justify-content-start flex-grow-1 ml-2">
-                <div t-attf-class="custom-control custom-switch #{__debug__ and 'd-flex' or 'd-none'} align-items-center mr-2">
-                    <input class="o_we_show_optimized ml-2 custom-control-input" type="checkbox" id="o_we_show_optimized_switch"/>
-                    <label class="custom-control-label" for="o_we_show_optimized_switch">
+            <div class="d-flex justify-content-start flex-grow-1 ms-2">
+                <div t-attf-class="custom-control custom-switch #{__debug__ and 'd-flex' or 'd-none'} align-items-center me-2">
+                    <input class="o_we_show_optimized ms-2 form-check-input" type="checkbox" id="o_we_show_optimized_switch"/>
+                    <label class="form-check-label" for="o_we_show_optimized_switch">
                         Show optimized images
                     </label>
                 </div>
@@ -218,7 +218,7 @@
             <div class="o_we_media_dialog_img_wrapper">
                 <img class="img img-fluid o_we_attachment_highlight" t-attf-src="#{attachment.thumbnail_src or attachment.image_src}" t-att-alt="attachment.name" t-att-title="attachment.name"/>
             </div>
-            <span t-if="isOptimized" class="badge badge-success">Optimized</span>
+            <span t-if="isOptimized" class="badge bg-success">Optimized</span>
         </div>
     </t>
 
@@ -279,7 +279,7 @@
             </div>
             <div class='js_progressbar_txt'>
                 <span class="text-success d-none"><i class='fa fa-check'/> File has been uploaded</span>
-                <span class="text-danger d-none"><i class='fa fa-times float-left m-1'/> <span class="o_we_error_text">File could not be saved</span></span>
+                <span class="text-danger d-none"><i class='fa fa-times float-start m-1'/> <span class="o_we_error_text">File could not be saved</span></span>
             </div>
             <div class="progress">
                 <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">0%</div>
@@ -295,7 +295,7 @@
                     aria-label="Close">
                         <span class="d-inline" aria-hidden="true">×</span>
                     </button>
-                    <div class="mr-auto o_notification_content"/>
+                    <div class="me-auto o_notification_content"/>
                 </div>
             </div>
         </div>
@@ -335,7 +335,7 @@
                     <label class="col-form-label" for="o_video_text">
                         Video code <small>(URL or Embed)</small>
                     </label>
-                    <div class="text-left">
+                    <div class="text-start">
                         <small class="text-muted">Accepts <b><i>Youtube</i></b>, <b><i>Vimeo</i></b>, <b><i>Dailymotion</i></b> and <b><i>Youku</i></b> videos</small>
                     </div>
                     <textarea class="form-control" id="o_video_text" placeholder="Copy-paste your URL or embed code here"/>
@@ -416,7 +416,7 @@
                     <div class="col-md-9 d-flex align-items-center">
                         <div t-attf-class="#{widget.colorCombinationClass ? ('p-2 ' + widget.colorCombinationClass) : ''}">
                             <t t-foreach="widget.colorsData" t-as="colorData">
-                                <label role="button" class="m-0 mr-2" t-if="colorData.type !== 'custom'">
+                                <label role="button" class="m-0 me-2" t-if="colorData.type !== 'custom'">
                                     <input type="radio" name="link_style_color" class="d-none link-style" t-att-value="colorData.type"/>
                                     <span t-esc="colorData.label"
                                             t-attf-class="o_btn_preview btn btn-sm btn-#{colorData.btnPreview} #{colorData.type ? '' : 'px-0'}"/>
@@ -475,17 +475,17 @@
 
     <!-- Link Edition : Popover -->
     <div t-name="wysiwyg.widgets.link.edit.tooltip" class="d-flex">
-        <span class="mr-2 o_we_preview_favicon"><i class="fa fa-globe"/><img class="align-baseline d-none"/></span>
+        <span class="me-2 o_we_preview_favicon"><i class="fa fa-globe"/><img class="align-baseline d-none"/></span>
         <div class="w-100">
             <div class="d-flex">
                 <a href="#" target="_blank" class="o_we_url_link font-weight-bold flex-grow-1" t-esc="widget.href" title="Open in a new tab"/>
-                <a href="#" class="mx-2 o_we_copy_link text-dark" data-toggle="tooltip" data-placement="top" title="Copy Link">
+                <a href="#" class="mx-2 o_we_copy_link text-dark" data-bs-toggle="tooltip" data-placement="top" title="Copy Link">
                     <i class="fa fa-clone"/>
                 </a>
-                <a href="#" class="mx-2 o_we_edit_link text-dark" data-toggle="tooltip" data-placement="top" title="Edit Link">
+                <a href="#" class="mx-2 o_we_edit_link text-dark" data-bs-toggle="tooltip" data-placement="top" title="Edit Link">
                     <i class="fa fa-edit"/>
                 </a>
-                <a href="#" class="ml-2 o_we_remove_link text-dark" data-toggle="tooltip" data-placement="top" title="Remove Link">
+                <a href="#" class="ms-2 o_we_remove_link text-dark" data-bs-toggle="tooltip" data-placement="top" title="Remove Link">
                     <i class="fa fa-chain-broken"/>
                 </a>
             </div>
@@ -522,7 +522,7 @@
                 <we-title>⌙ Style</we-title>
                 <div class="dropdown">
                     <button class="dropdown-toggle"
-                        data-toggle="dropdown" title="" tabindex="-1"
+                        data-bs-toggle="dropdown" title="" tabindex="-1"
                         data-original-title="Link Style" aria-expanded="false">
                         <we-toggler/>
                     </button>
@@ -541,7 +541,7 @@
             <we-select title="Color" class="o_we_user_value_widget o_we_so_color_palette">
                 <we-title> ⌙ Text Color</we-title><!-- &emsp; -->
                 <div class="dropdown">
-                    <span data-toggle="dropdown" data-css-property="color" class="o_we_color_preview"></span>
+                    <span data-bs-toggle="dropdown" data-css-property="color" class="o_we_color_preview"></span>
                     <we-selection-items class="dropdown-menu" name="link_text_color"/>
                 </div>
             </we-select>
@@ -550,7 +550,7 @@
             <we-select title="Color" class="o_we_user_value_widget o_we_so_color_palette">
                 <we-title> ⌙ Fill Color</we-title><!-- &emsp; -->
                 <div class="dropdown">
-                    <span data-toggle="dropdown" data-css-property="background-color" class="o_we_color_preview"></span>
+                    <span data-bs-toggle="dropdown" data-css-property="background-color" class="o_we_color_preview"></span>
                     <we-selection-items class="dropdown-menu" name="link_fill_color"/>
                 </div>
             </we-select>
@@ -560,14 +560,14 @@
             <div>
                 <we-input class="o_we_user_value_widget" title="Border Width">
                     <div class="o_custom_border_width_input">
-                        <input name="custom_border_width" type="text" class="text-right" size="2"/>
+                        <input name="custom_border_width" type="text" class="text-end" size="2"/>
                         <span>px</span>
                     </div>
                 </we-input>
                 <we-select class="o_we_user_value_widget" title="Border Style">
                     <div class="dropdown">
                         <button class="dropdown-toggle"
-                            data-toggle="dropdown" title="" tabindex="-1"
+                            data-bs-toggle="dropdown" title="" tabindex="-1"
                             data-original-title="Link Border Style" aria-expanded="false">
                             <we-toggler/>
                         </button>
@@ -581,7 +581,7 @@
                 </we-select>
                 <we-select title="Border Color" class="o_we_user_value_widget o_we_so_color_palette">
                     <div class="dropdown">
-                        <span data-toggle="dropdown" data-css-property="border-color" class="o_we_color_preview"></span>
+                        <span data-bs-toggle="dropdown" data-css-property="border-color" class="o_we_color_preview"></span>
                         <we-selection-items class="dropdown-menu" name="link_border_color"/>
                     </div>
                 </we-select>
@@ -593,7 +593,7 @@
                 <div>
                     <div class="dropdown">
                         <button class="dropdown-toggle"
-                            data-toggle="dropdown" title="" tabindex="-1"
+                            data-bs-toggle="dropdown" title="" tabindex="-1"
                             data-original-title="Link Size" aria-expanded="false">
                             <we-toggler>
                                 Medium
@@ -621,7 +621,7 @@
                 <div>
                     <div class="dropdown">
                         <button class="dropdown-toggle"
-                            data-toggle="dropdown" title="" tabindex="-1"
+                            data-bs-toggle="dropdown" title="" tabindex="-1"
                             data-original-title="Link Shape" aria-expanded="false">
                             <we-toggler>
                                 Default
@@ -655,7 +655,7 @@
         <div class="o_we_cropper_wrapper">
             <img class="o_we_cropper_img"/>
             <div class="o_we_crop_buttons text-center mt16 position-absolute o_we_no_overlay" contenteditable="false">
-                <div class="btn-group btn-group-toggle" title="Aspect Ratio" data-toggle="buttons">
+                <div class="btn-group btn-group-toggle" title="Aspect Ratio" data-bs-toggle="buttons">
                     <t t-foreach="widget.aspectRatios" t-as="ratio">
                         <t t-set="is_active" t-value="ratio === widget.aspectRatio"/>
                         <label t-attf-class="btn #{is_active and 'active' or ''}" data-action="ratio" t-att-data-value="ratio">
