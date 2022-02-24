@@ -790,8 +790,13 @@ class Picking(models.Model):
         @return: True
         """
         self.filtered(lambda picking: picking.state == 'draft').action_confirm()
+<<<<<<< HEAD
         moves = self.move_ids.filtered(lambda move: move.state not in ('draft', 'cancel', 'done')).sorted(
             key=lambda move: (-int(move.priority), not bool(move.date_deadline), move.date_deadline, move.id)
+=======
+        moves = self.mapped('move_lines').filtered(lambda move: move.state not in ('draft', 'cancel', 'done')).sorted(
+            key=lambda move: (-int(move.priority), not bool(move.date_deadline), move.date_deadline, move.date, move.id)
+>>>>>>> bf6b35a956e... temp
         )
         if not moves:
             raise UserError(_('Nothing to check the availability for.'))
