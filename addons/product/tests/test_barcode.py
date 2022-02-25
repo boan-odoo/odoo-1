@@ -50,6 +50,6 @@ class TestProductBarcode(TransactionCase):
         try:
             self.env['product.product'].create(batch)
         except exceptions.ValidationError as exc:
-            assert 'Barcode "3" assigned to product(s): BC3, BC4' in exc.args[0]
-            assert 'Barcode "4" assigned to product(s): BC5, BC6' in exc.args[0]
-            assert 'Barcode "1" assigned to product(s): BC1' in exc.args[0]
+            assert 'Barcode "3" already assigned to product(s): BC3, BC4' in exc.args[0]
+            assert 'Barcode "4" already assigned to product(s): BC5, BC6' in exc.args[0]
+            assert 'Barcode "1" already assigned to product(s): BC1' in exc.args[0]

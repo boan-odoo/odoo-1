@@ -2,7 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import re
-from collections import defaultdict
+from operator import itemgetter
 
 from odoo import api, fields, models, tools, _
 from odoo.exceptions import ValidationError
@@ -172,28 +172,29 @@ class ProductProduct(models.Model):
     @api.constrains("barcode")
     def _check_barcode_unique(self):
 
-        # Collect duplicates (if there are any)
-        duplicates = defaultdict(set)
-        for product in self:
+        # Collect `product.product.id` of objects that share a barcode with any of those in `self`,
+        # and group them by barcode.
+        candidate_duplicates = self.env['product.product'].sudo().read_group(
+            domain=[("barcode", "in", list(set(product.barcode for product in self if product.barcode)))],
+            fields=['ids:array_agg(id)', 'barcode'],
+            groupby=['barcode']
+        )
 
-            # Skip check on products without a barcode
-            if not product.barcode:
-                continue
-
-            products_with_same_barcode = self.env['product.product'].sudo().search(
-                [('barcode', '=', product.barcode)]
-            ) - product
-
-            if products_with_same_barcode:
-                for other in products_with_same_barcode:
-                    duplicates[product.barcode].add(other.display_name)
-
+        # Keep only barcodes that match more than one `product.product` object.
+        duplicates = [candidate for candidate in candidate_duplicates if candidate['barcode_count'] > 1]
         if duplicates:
-            duplicates_joined = {barcode: ', '.join(sorted(products)) for barcode, products in sorted(duplicates.items())}
+            # Prepare a mapping of "{ `product.barcode`: [`product.display_name`, ... ] }" to show the user.
+            duplicates_joined = {dup['barcode']: ', '.join(
+                sorted([product.display_name for product in
+                        self.env['product.product'].browse([_id for _id in dup['ids']])])
+            ) for dup in sorted(duplicates, key=itemgetter('barcode'))}
+
+            # Transform the mapping into a prettified string and raise.
             duplicates_as_str = "\n".join(
-                f"Barcode \"{barcode}\" assigned to product(s): {products}"
+                f"Barcode \"{barcode}\" already assigned to product(s): {products}"
                 for barcode, products in duplicates_joined.items()
             )
+
             raise ValidationError(
                 "Barcode(s) already assigned:\n\n{duplicates}".format(duplicates=duplicates_as_str)
             )
